@@ -1,4 +1,4 @@
-import { collection, addDoc, query, where, getDocs, Timestamp, doc, deleteDoc, updateDoc, getDoc, or } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, Timestamp, doc, deleteDoc, updateDoc, getDoc, or, limit } from "firebase/firestore";
 import { db } from "./config";
 
 export interface Act {
@@ -180,4 +180,22 @@ export const getActById = async (actId: string): Promise<Act | null> => {
   if (!actDoc.exists()) return null;
   
   return { id: actDoc.id, ...actDoc.data() } as Act;
+};
+
+export const contractNumberExists = async (numeroContrat: string): Promise<boolean> => {
+  if (!db) return false;
+
+  const normalizedNumber = numeroContrat.trim();
+  if (!normalizedNumber) {
+    return false;
+  }
+
+  const q = query(
+    collection(db, "acts"),
+    where("numeroContrat", "==", normalizedNumber),
+    limit(1)
+  );
+
+  const snapshot = await getDocs(q);
+  return !snapshot.empty;
 };

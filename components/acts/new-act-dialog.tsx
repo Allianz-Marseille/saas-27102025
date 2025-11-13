@@ -14,7 +14,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { CalendarIcon, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { createAct } from "@/lib/firebase/acts";
+import { contractNumberExists, createAct } from "@/lib/firebase/acts";
 import { Act } from "@/types";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { getCompanies, type Company } from "@/lib/firebase/companies";
@@ -195,8 +195,10 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
     }
 
     // Pour AN, validation complète
+    const trimmedContractNumber = numeroContrat.trim();
+
     const errors: { numeroContrat?: string } = {};
-    if (!numeroContrat) {
+    if (!trimmedContractNumber) {
       errors.numeroContrat = "Le numéro de contrat est obligatoire.";
     }
 
@@ -213,11 +215,21 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
 
     setIsLoading(true);
     try {
+      const alreadyExists = await contractNumberExists(trimmedContractNumber);
+
+      if (alreadyExists) {
+        const duplicateError = "Ce numéro de contrat est déjà enregistré.";
+        setFormErrors({ numeroContrat: duplicateError });
+        toast.error(duplicateError);
+        setIsLoading(false);
+        return;
+      }
+
       const actData: any = {
         userId: user.uid,
         kind,
         clientNom,
-        numeroContrat,
+        numeroContrat: trimmedContractNumber,
         contratType,
         compagnie,
         dateEffet,
