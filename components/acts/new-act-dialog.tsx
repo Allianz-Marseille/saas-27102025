@@ -90,6 +90,7 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
   const [dateEffetOpen, setDateEffetOpen] = useState(false);
   const [primeAnnuelle, setPrimeAnnuelle] = useState<number | undefined>();
   const [montantVersement, setMontantVersement] = useState<number | undefined>();
+  const [formErrors, setFormErrors] = useState<{ numeroContrat?: string }>({});
 
   // Charger les compagnies actives
   useEffect(() => {
@@ -131,6 +132,7 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
     setNote("");
     setNumeroContrat("");
     setContratType("");
+    setFormErrors({});
     // Réinitialiser avec Allianz si disponible, sinon la première compagnie
     const allianz = companies.find(c => c.name.toLowerCase() === 'allianz');
     setCompagnie(allianz ? allianz.name : (companies.length > 0 ? companies[0].name : ""));
@@ -144,6 +146,7 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
   const handleKindSelect = (selectedKind: "AN" | "M+3" | "PRETERME_AUTO" | "PRETERME_IRD") => {
     setKind(selectedKind);
     setStep(2);
+    setFormErrors({});
   };
 
   const handleSubmit = async () => {
@@ -192,10 +195,21 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
     }
 
     // Pour AN, validation complète
-    if (!numeroContrat || !contratType || !compagnie || !dateEffet) {
+    const errors: { numeroContrat?: string } = {};
+    if (!numeroContrat) {
+      errors.numeroContrat = "Le numéro de contrat est obligatoire.";
+    }
+
+    if (!contratType || !compagnie || !dateEffet) {
       toast.error("Veuillez remplir tous les champs obligatoires");
+    }
+
+    if (errors.numeroContrat || !contratType || !compagnie || !dateEffet) {
+      setFormErrors(errors);
       return;
     }
+
+    setFormErrors({});
 
     setIsLoading(true);
     try {
@@ -367,9 +381,23 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
             <Input
               id="numeroContrat"
               value={numeroContrat}
-              onChange={(e) => setNumeroContrat(e.target.value)}
+              onChange={(e) => {
+                setNumeroContrat(e.target.value);
+                if (formErrors.numeroContrat) {
+                  setFormErrors((prev) => ({ ...prev, numeroContrat: undefined }));
+                }
+              }}
               placeholder="Ex: CT001234"
+              className={cn(
+                formErrors.numeroContrat &&
+                  "border-red-500 focus-visible:ring-red-500 dark:border-red-400"
+              )}
             />
+            {formErrors.numeroContrat && (
+              <span className="text-sm text-red-600 dark:text-red-400">
+                {formErrors.numeroContrat}
+              </span>
+            )}
           </div>
 
           {/* Type de contrat */}
