@@ -413,7 +413,19 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
                             {renderSortIcon("clientNom")}
                           </button>
                         </th>
-                        <th className="text-center p-3 font-semibold text-sm border-b">N° Contrat</th>
+                        <th
+                          className="text-center p-3 font-semibold text-sm border-b"
+                          aria-sort={getAriaSort("numeroContrat", sortConfig)}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleSortChange("numeroContrat")}
+                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold"
+                          >
+                            N° Contrat
+                            {renderSortIcon("numeroContrat")}
+                          </button>
+                        </th>
                         <th
                           className="text-center p-3 font-semibold text-sm border-b"
                           aria-sort={getAriaSort("contratType", sortConfig)}
@@ -586,6 +598,8 @@ function getSortableValue(act: Act, key: SortKey): number | string | null {
       return typeof act.commissionPotentielle === "number" ? act.commissionPotentielle : null;
     case "primeAnnuelle":
       return typeof act.primeAnnuelle === "number" ? act.primeAnnuelle : null;
+    case "numeroContrat":
+      return act.numeroContrat ? act.numeroContrat.toLowerCase() : null;
     case "contratType":
       return act.contratType ? act.contratType.toLowerCase() : null;
     case "clientNom":
@@ -687,6 +701,7 @@ type SortKey =
   | "dateSaisie"
   | "dateEffet"
   | "clientNom"
+  | "numeroContrat"
   | "contratType"
   | "primeAnnuelle"
   | "commissionPotentielle";
