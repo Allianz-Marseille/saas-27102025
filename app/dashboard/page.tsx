@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { DollarSign, FileText, Plus, ClipboardCheck, Car, Building2, Scale, Edit, Trash2, Coins, AlertCircle, CheckCircle2, Target, ChevronLeft, ChevronRight, Lock, Unlock } from "lucide-react";
@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation";
 import { getActsByMonth } from "@/lib/firebase/acts";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { Timestamp } from "firebase/firestore";
+import { clsx } from "clsx";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -56,6 +57,7 @@ export default function DashboardPage() {
     note: "",
     clientName: "",
   });
+  const timelineContainerRef = useRef<HTMLDivElement | null>(null);
 
   const loadActs = async () => {
     if (!user) {
@@ -125,14 +127,33 @@ export default function DashboardPage() {
       toast.error("Cet acte est bloqué et ne peut pas être modifié");
       return;
     }
-    // TODO: Implémenter l'édition d'acte
     console.log("Édition de l'acte:", act.id);
     toast.info(`Édition de ${act.clientNom} - Fonctionnalité à venir`);
   };
 
   const kpi = calculateKPI(acts);
 
-  const timelineDays = generateTimeline(selectedMonth, acts);
+  const timelineDays = useMemo(() => generateTimeline(selectedMonth, acts), [selectedMonth, acts]);
+
+  useEffect(() => {
+    const container = timelineContainerRef.current;
+    if (!container) return;
+
+    const todayElement = container.querySelector<HTMLDivElement>('[data-timeline-day="today"]');
+
+    if (!todayElement) {
+      container.scrollTo({ left: 0, behavior: "auto" });
+      return;
+    }
+
+    const targetLeft = todayElement.offsetLeft - container.clientWidth / 2 + todayElement.clientWidth / 2;
+    const safeTarget = Math.max(targetLeft, 0);
+
+    container.scrollTo({
+      left: safeTarget,
+      behavior: "smooth",
+    });
+  }, [timelineDays]);
 
   // Fonction pour déterminer si un acte est bloqué
   // Règle : Le 15 du mois M, les saisies du mois M-1 se bloquent automatiquement
@@ -486,16 +507,22 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <div ref={timelineContainerRef} className="overflow-x-auto">
               <div className="flex gap-2 min-w-max">
                 {timelineDays.map((day, index) => (
                   <div
                     key={index}
-                    className={`flex flex-col items-center p-3 rounded-lg min-w-[80px] ${
-                      day.isSaturday ? "bg-orange-100 dark:bg-orange-900/20" :
-                      day.isSunday ? "bg-red-100 dark:bg-red-900/20" :
-                      "bg-muted"
-                    }`}
+                    data-timeline-day={day.isToday ? "today" : undefined}
+                    className={clsx(
+                      "flex flex-col items-center p-3 rounded-lg min-w-[80px] transition-colors border",
+                      {
+                        "bg-orange-100 dark:bg-orange-900/20": day.isSaturday && !day.isToday,
+                        "bg-red-100 dark:bg-red-900/20": day.isSunday && !day.isToday,
+                        "bg-muted": !day.isSaturday && !day.isSunday && !day.isToday,
+                        "border-blue-500 bg-blue-500/20 shadow-lg": day.isToday,
+                        "border-transparent": !day.isToday,
+                      }
+                    )}
                   >
                     <span className="text-xs font-medium">
                       {format(day.date, "EEE", { locale: fr }).substring(0, 3)}
@@ -676,10 +703,12 @@ export default function DashboardPage() {
   );
 }
 
-function generateTimeline(monthKey: string, acts: Act[] = []) {
+function generateTimeline(monthKey: string, acts: Act[] = []): TimelineDay[] {
   const [year, month] = monthKey.split("-").map(Number);
   const daysInMonth = new Date(year, month, 0).getDate();
-  const timelineDays = [];
+  const timelineDays: TimelineDay[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   // Créer un map des actes par jour (basé sur la date de saisie)
   const actsByDay = new Map<string, Act[]>();
@@ -696,6 +725,8 @@ function generateTimeline(monthKey: string, acts: Act[] = []) {
 
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month - 1, day);
+    const normalizedDate = new Date(date);
+    normalizedDate.setHours(0, 0, 0, 0);
     const dayOfWeek = date.getDay();
     const isSaturday = dayOfWeek === 6;
     const isSunday = dayOfWeek === 0;
@@ -707,10 +738,19 @@ function generateTimeline(monthKey: string, acts: Act[] = []) {
       date,
       isSaturday,
       isSunday,
+      isToday: normalizedDate.getTime() === today.getTime(),
       acts: dayActs,
     });
   }
 
   return timelineDays;
 }
+
+type TimelineDay = {
+  date: Date;
+  isSaturday: boolean;
+  isSunday: boolean;
+  isToday: boolean;
+  acts: Act[];
+};
 
