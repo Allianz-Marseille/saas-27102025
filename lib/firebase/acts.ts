@@ -119,7 +119,10 @@ export const calculateCommission = (
 
   // IRD_PRO: 20 € + 10 €/tranche de 1000 € > 999 €
   if (contratType === "IRD_PRO") {
-    return 20 + Math.floor((primeAnnuelle - 1000) / 1000) * 10;
+    if (primeAnnuelle <= 999) return 20;
+    const montantExcedent = primeAnnuelle - 999;
+    const tranches = Math.ceil(montantExcedent / 1000);
+    return 20 + tranches * 10;
   }
 
   // VIE_PU: 1% du montant versé
