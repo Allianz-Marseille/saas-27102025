@@ -143,7 +143,7 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
     if (isProcess) {
       setIsLoading(true);
       try {
-        const updates: Partial<Act> = {
+        const updates: Record<string, unknown> = {
           clientNom,
         };
         
@@ -151,7 +151,7 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
           updates.note = note;
         }
         
-        await updateAct(act.id, updates);
+        await updateAct(act.id, updates as Partial<Act>);
         toast.success("Acte modifié avec succès");
         onSuccess?.();
         onOpenChange(false);
@@ -179,7 +179,7 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
         montantVersement || 0
       );
 
-      const updates: Partial<Act> = {
+      const updates: Record<string, unknown> = {
         clientNom,
         contratType,
         compagnie,
@@ -199,11 +199,11 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
         updates.note = note;
       }
       
-      await updateAct(act.id, updates);
+      await updateAct(act.id, updates as Partial<Act>);
       toast.success("Acte modifié avec succès");
       onSuccess?.();
       onOpenChange(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Erreur lors de la modification de l'acte:", err);
       toast.error("Erreur lors de la modification de l'acte");
     } finally {
