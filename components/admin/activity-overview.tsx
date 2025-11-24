@@ -387,13 +387,13 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
                       <tr>
                         <th className="text-center p-3 font-semibold text-sm border-b w-12"></th>
                         <th
-                          className="text-center p-3 font-semibold text-sm border-b"
+                          className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
                           aria-sort={getAriaSort("dateSaisie", sortConfig)}
                         >
                           <button
                             type="button"
                             onClick={() => handleSortChange("dateSaisie")}
-                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold"
+                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                           >
                             Date de saisie
                             {renderSortIcon("dateSaisie")}
@@ -406,46 +406,46 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
                           <button
                             type="button"
                             onClick={() => handleSortChange("kind")}
-                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold"
+                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                           >
                             Type
                             {renderSortIcon("kind")}
                           </button>
                         </th>
                         <th
-                          className="text-center p-3 font-semibold text-sm border-b"
+                          className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
                           aria-sort={getAriaSort("clientNom", sortConfig)}
                         >
                           <button
                             type="button"
                             onClick={() => handleSortChange("clientNom")}
-                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold"
+                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                           >
                             Client
                             {renderSortIcon("clientNom")}
                           </button>
                         </th>
                         <th
-                          className="text-center p-3 font-semibold text-sm border-b"
+                          className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
                           aria-sort={getAriaSort("numeroContrat", sortConfig)}
                         >
                           <button
                             type="button"
                             onClick={() => handleSortChange("numeroContrat")}
-                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold"
+                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                           >
                             N° Contrat
                             {renderSortIcon("numeroContrat")}
                           </button>
                         </th>
                         <th
-                          className="text-center p-3 font-semibold text-sm border-b"
+                          className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
                           aria-sort={getAriaSort("contratType", sortConfig)}
                         >
                           <button
                             type="button"
                             onClick={() => handleSortChange("contratType")}
-                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold"
+                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                           >
                             Type Contrat
                             {renderSortIcon("contratType")}
@@ -458,46 +458,46 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
                           <button
                             type="button"
                             onClick={() => handleSortChange("compagnie")}
-                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold"
+                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                           >
                             Compagnie
                             {renderSortIcon("compagnie")}
                           </button>
                         </th>
                         <th
-                          className="text-center p-3 font-semibold text-sm border-b"
+                          className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
                           aria-sort={getAriaSort("dateEffet", sortConfig)}
                         >
                           <button
                             type="button"
                             onClick={() => handleSortChange("dateEffet")}
-                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold"
+                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                           >
                             Date d&apos;effet
                             {renderSortIcon("dateEffet")}
                           </button>
                         </th>
                         <th
-                          className="text-center p-3 font-semibold text-sm border-b"
+                          className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
                           aria-sort={getAriaSort("primeAnnuelle", sortConfig)}
                         >
                           <button
                             type="button"
                             onClick={() => handleSortChange("primeAnnuelle")}
-                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold"
+                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                           >
                             Prime annuelle
                             {renderSortIcon("primeAnnuelle")}
                           </button>
                         </th>
                         <th
-                          className="text-center p-3 font-semibold text-sm border-b"
+                          className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
                           aria-sort={getAriaSort("commissionPotentielle", sortConfig)}
                         >
                           <button
                             type="button"
                             onClick={() => handleSortChange("commissionPotentielle")}
-                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold"
+                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                           >
                             Commission
                             {renderSortIcon("commissionPotentielle")}

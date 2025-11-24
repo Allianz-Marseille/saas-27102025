@@ -643,7 +643,7 @@ export default function DashboardPage() {
                       >
                         <button
                           onClick={() => handleSortChange("dateSaisie")}
-                          className="flex items-center justify-center gap-1 w-full"
+                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                         >
                           Date de saisie
                           {renderSortIcon("dateSaisie")}
@@ -655,7 +655,7 @@ export default function DashboardPage() {
                       >
                         <button
                           onClick={() => handleSortChange("kind")}
-                          className="flex items-center justify-center gap-1 w-full"
+                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                         >
                           Type
                           {renderSortIcon("kind")}
@@ -667,7 +667,7 @@ export default function DashboardPage() {
                       >
                         <button
                           onClick={() => handleSortChange("clientNom")}
-                          className="flex items-center justify-center gap-1 w-full"
+                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                         >
                           Client
                           {renderSortIcon("clientNom")}
@@ -679,7 +679,7 @@ export default function DashboardPage() {
                       >
                         <button
                           onClick={() => handleSortChange("numeroContrat")}
-                          className="flex items-center justify-center gap-1 w-full"
+                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                         >
                           N° Contrat
                           {renderSortIcon("numeroContrat")}
@@ -691,7 +691,7 @@ export default function DashboardPage() {
                       >
                         <button
                           onClick={() => handleSortChange("contratType")}
-                          className="flex items-center justify-center gap-1 w-full"
+                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                         >
                           Type Contrat
                           {renderSortIcon("contratType")}
@@ -703,7 +703,7 @@ export default function DashboardPage() {
                       >
                         <button
                           onClick={() => handleSortChange("compagnie")}
-                          className="flex items-center justify-center gap-1 w-full"
+                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                         >
                           Compagnie
                           {renderSortIcon("compagnie")}
@@ -715,7 +715,7 @@ export default function DashboardPage() {
                       >
                         <button
                           onClick={() => handleSortChange("dateEffet")}
-                          className="flex items-center justify-center gap-1 w-full"
+                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                         >
                           Date d&apos;effet
                           {renderSortIcon("dateEffet")}
@@ -727,7 +727,7 @@ export default function DashboardPage() {
                       >
                         <button
                           onClick={() => handleSortChange("primeAnnuelle")}
-                          className="flex items-center justify-center gap-1 w-full"
+                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                         >
                           Prime annuelle
                           {renderSortIcon("primeAnnuelle")}
@@ -739,7 +739,7 @@ export default function DashboardPage() {
                       >
                         <button
                           onClick={() => handleSortChange("commissionPotentielle")}
-                          className="flex items-center justify-center gap-1 w-full"
+                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                         >
                           Commission
                           {renderSortIcon("commissionPotentielle")}
