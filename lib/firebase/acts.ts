@@ -30,6 +30,15 @@ export interface CommissionRule {
 export const createAct = async (act: any): Promise<Act> => {
   if (!db) throw new Error('Firebase not initialized');
   
+  // Vérification de l'unicité du numéro de contrat (insensible à la casse) - Protection serveur
+  const trimmedContractNumber = act.numeroContrat?.trim();
+  if (trimmedContractNumber) {
+    const alreadyExists = await contractNumberExists(trimmedContractNumber);
+    if (alreadyExists) {
+      throw new Error('Ce numéro de contrat est déjà enregistré.');
+    }
+  }
+  
   const dateSaisie = new Date();
   const moisKey = dateSaisie.toISOString().slice(0, 7); // YYYY-MM
 
@@ -188,17 +197,19 @@ export const getActById = async (actId: string): Promise<Act | null> => {
 export const contractNumberExists = async (numeroContrat: string): Promise<boolean> => {
   if (!db) return false;
 
-  const normalizedNumber = numeroContrat.trim();
+  const normalizedNumber = numeroContrat.trim().toLowerCase();
   if (!normalizedNumber) {
     return false;
   }
 
-  const q = query(
-    collection(db, "acts"),
-    where("numeroContrat", "==", normalizedNumber),
-    limit(1)
-  );
-
+  // Récupérer tous les actes pour comparer en minuscules (Firestore ne supporte pas les comparaisons case-insensitive)
+  const q = query(collection(db, "acts"));
   const snapshot = await getDocs(q);
-  return !snapshot.empty;
+  
+  // Vérifier si un numéro de contrat existe (comparaison insensible à la casse)
+  return snapshot.docs.some((doc) => {
+    const actData = doc.data();
+    const existingNumber = actData.numeroContrat?.trim().toLowerCase();
+    return existingNumber === normalizedNumber;
+  });
 };

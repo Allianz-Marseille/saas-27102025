@@ -215,12 +215,12 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
 
     setIsLoading(true);
     try {
+      // Vérification de l'unicité (insensible à la casse) - Protection client
       const alreadyExists = await contractNumberExists(trimmedContractNumber);
 
       if (alreadyExists) {
         const duplicateError = "Ce numéro de contrat est déjà enregistré.";
         setFormErrors({ numeroContrat: duplicateError });
-        toast.error(duplicateError);
         setIsLoading(false);
         return;
       }
@@ -253,9 +253,16 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
       resetForm();
       onSuccess?.();
       onOpenChange(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erreur lors de la création de l'acte:", err);
-      toast.error("Erreur lors de la création de l'acte");
+      
+      // Gérer l'erreur de doublon depuis le serveur (protection serveur)
+      if (err?.message?.includes("déjà enregistré")) {
+        const duplicateError = "Ce numéro de contrat est déjà enregistré.";
+        setFormErrors({ numeroContrat: duplicateError });
+      } else {
+        toast.error("Erreur lors de la création de l'acte");
+      }
     } finally {
       setIsLoading(false);
     }
