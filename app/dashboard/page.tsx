@@ -19,6 +19,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { Act } from "@/types";
 import { NewActDialog } from "@/components/acts/new-act-dialog";
+import { EditActDialog } from "@/components/acts/edit-act-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { logout } from "@/lib/firebase/auth";
@@ -44,6 +45,8 @@ export default function DashboardPage() {
   const [acts, setActs] = useState<Act[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [actToEdit, setActToEdit] = useState<Act | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>(
     format(new Date(), "yyyy-MM")
   );
@@ -131,8 +134,12 @@ export default function DashboardPage() {
       toast.error("Cet acte est bloqué et ne peut pas être modifié");
       return;
     }
-    console.log("Édition de l'acte:", act.id);
-    toast.info(`Édition de ${act.clientNom} - Fonctionnalité à venir`);
+    setActToEdit(act);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    loadActs();
   };
 
   const kpi = calculateKPI(acts);
@@ -348,6 +355,14 @@ export default function DashboardPage() {
           open={isDialogOpen} 
           onOpenChange={setIsDialogOpen}
           onSuccess={handleActCreated}
+        />
+
+        {/* Dialog Éditer Acte */}
+        <EditActDialog 
+          open={isEditDialogOpen} 
+          onOpenChange={setIsEditDialogOpen}
+          act={actToEdit}
+          onSuccess={handleEditSuccess}
         />
 
         {/* KPI Cards */}
