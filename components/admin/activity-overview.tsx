@@ -611,24 +611,26 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
 function getSortableValue(act: Act, key: SortKey): number | string | null {
   switch (key) {
     case "dateSaisie": {
+      const dateValue = act.dateSaisie as Date | Timestamp | unknown;
       let date: Date;
-      if (act.dateSaisie instanceof Date) {
-        date = act.dateSaisie;
-      } else if (act.dateSaisie instanceof Timestamp) {
-        date = act.dateSaisie.toDate();
+      if (dateValue instanceof Date) {
+        date = dateValue;
+      } else if (dateValue instanceof Timestamp) {
+        date = dateValue.toDate();
       } else {
-        date = new Date(act.dateSaisie);
+        date = new Date(dateValue as string | number);
       }
       return Number.isNaN(date.getTime()) ? null : date.getTime();
     }
     case "dateEffet": {
+      const dateValue = act.dateEffet as Date | Timestamp | unknown;
       let date: Date;
-      if (act.dateEffet instanceof Date) {
-        date = act.dateEffet;
-      } else if (act.dateEffet instanceof Timestamp) {
-        date = act.dateEffet.toDate();
+      if (dateValue instanceof Date) {
+        date = dateValue;
+      } else if (dateValue instanceof Timestamp) {
+        date = dateValue.toDate();
       } else {
-        date = new Date(act.dateEffet);
+        date = new Date(dateValue as string | number);
       }
       return Number.isNaN(date.getTime()) ? null : date.getTime();
     }
