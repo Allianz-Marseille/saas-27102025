@@ -159,25 +159,23 @@ export const deleteAct = async (actId: string): Promise<void> => {
   await deleteDoc(doc(db, "acts", actId));
 };
 
-export const updateAct = async (actId: string, updates: Partial<Act>): Promise<void> => {
+export const updateAct = async (actId: string, updates: Record<string, unknown>): Promise<void> => {
   if (!db) throw new Error('Firebase not initialized');
   
   const actRef = doc(db, "acts", actId);
-  const updateData: Record<string, any> = {};
+  const updateData: Record<string, unknown> = {};
   
   // Convertir les dates en Timestamp si nécessaire
-  if (updates.dateEffet) {
+  if (updates.dateEffet && updates.dateEffet instanceof Date) {
     updateData.dateEffet = Timestamp.fromDate(updates.dateEffet);
   }
-  if (updates.dateSaisie) {
-    // dateSaisie peut être un Timestamp ou une Date
-    const dateSaisie = (updates as any).dateSaisie;
-    updateData.dateSaisie = dateSaisie instanceof Timestamp ? dateSaisie : Timestamp.fromDate(dateSaisie);
-  }
+  
+  // dateSaisie ne devrait jamais être modifié lors d'une mise à jour
+  // donc on l'ignore si présent dans updates
   
   // Ajouter les autres champs
   Object.entries(updates).forEach(([key, value]) => {
-    if (key !== 'dateEffet' && key !== 'dateSaisie' && value !== undefined) {
+    if (key !== 'dateEffet' && key !== 'dateSaisie' && key !== 'id' && value !== undefined) {
       updateData[key] = value;
     }
   });

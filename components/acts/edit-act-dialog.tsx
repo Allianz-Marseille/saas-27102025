@@ -151,7 +151,7 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
           updates.note = note;
         }
         
-        await updateAct(act.id, updates as Partial<Act>);
+        await updateAct(act.id, updates);
         toast.success("Acte modifié avec succès");
         onSuccess?.();
         onOpenChange(false);
