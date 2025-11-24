@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { DollarSign, FileText, Plus, ClipboardCheck, Car, Building2, Scale, Edit, Trash2, Coins, AlertCircle, CheckCircle2, Target, ChevronLeft, ChevronRight, Lock, Unlock } from "lucide-react";
+import { DollarSign, FileText, Plus, ClipboardCheck, Car, Building2, Scale, Edit, Trash2, Coins, AlertCircle, CheckCircle2, Target, ChevronLeft, ChevronRight, Lock, Unlock, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { deleteAct } from "@/lib/firebase/acts";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { KPICard } from "@/components/dashboard/kpi-card";
@@ -58,6 +58,10 @@ export default function DashboardPage() {
     clientName: "",
   });
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortState>({
+    key: "dateSaisie",
+    direction: "desc",
+  });
 
   const loadActs = async () => {
     if (!user) {
@@ -132,6 +136,80 @@ export default function DashboardPage() {
   };
 
   const kpi = calculateKPI(acts);
+
+  const sortedActs = useMemo(() => {
+    if (acts.length === 0) {
+      return acts;
+    }
+
+    const actsClone = [...acts];
+    actsClone.sort((actA, actB) => {
+      const valueA = getSortableValue(actA, sortConfig.key);
+      const valueB = getSortableValue(actB, sortConfig.key);
+
+      // Gérer les valeurs null
+      if (valueA === null && valueB === null) {
+        return 0;
+      }
+      if (valueA === null) {
+        return sortConfig.direction === "asc" ? -1 : 1;
+      }
+      if (valueB === null) {
+        return sortConfig.direction === "asc" ? 1 : -1;
+      }
+
+      // Comparaison selon le type
+      if (typeof valueA === "number" && typeof valueB === "number") {
+        return sortConfig.direction === "asc" ? valueA - valueB : valueB - valueA;
+      }
+
+      if (typeof valueA === "string" && typeof valueB === "string") {
+        const comparison = valueA.localeCompare(valueB, "fr", { sensitivity: "base" });
+        return sortConfig.direction === "asc" ? comparison : -comparison;
+      }
+
+      return 0;
+    });
+
+    return actsClone;
+  }, [acts, sortConfig]);
+
+  const handleSortChange = (key: SortKey) => {
+    setSortConfig((current) => {
+      if (current.key === key) {
+        // Si on clique sur la même colonne, inverser la direction
+        return {
+          key,
+          direction: current.direction === "asc" ? "desc" : "asc",
+        };
+      }
+      // Si on clique sur une nouvelle colonne, trier par défaut en descendant
+      return {
+        key,
+        direction: "desc",
+      };
+    });
+  };
+
+  const renderSortIcon = (key: SortKey) => {
+    if (sortConfig.key !== key) {
+      return <ArrowUpDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />;
+    }
+
+    if (sortConfig.direction === "asc") {
+      return <ArrowUp className="h-4 w-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />;
+    }
+
+    return <ArrowDown className="h-4 w-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />;
+  };
+
+  const getAriaSort = (column: SortKey, sortConfig: SortState): "ascending" | "descending" | "none" => {
+    if (sortConfig.key !== column) {
+      return "none";
+    }
+
+    return sortConfig.direction === "asc" ? "ascending" : "descending";
+  };
 
   const timelineDays = useMemo(() => generateTimeline(selectedMonth, acts), [selectedMonth, acts]);
 
@@ -559,21 +637,120 @@ export default function DashboardPage() {
                   <thead className="bg-muted/50">
                     <tr>
                       <th className="text-center p-3 font-semibold text-sm border-b w-12"></th>
-                      <th className="text-center p-3 font-semibold text-sm border-b">Date de saisie</th>
-                      <th className="text-center p-3 font-semibold text-sm border-b">Type</th>
-                      <th className="text-center p-3 font-semibold text-sm border-b">Client</th>
-                      <th className="text-center p-3 font-semibold text-sm border-b">N° Contrat</th>
-                      <th className="text-center p-3 font-semibold text-sm border-b">Type Contrat</th>
-                      <th className="text-center p-3 font-semibold text-sm border-b">Compagnie</th>
-                      <th className="text-center p-3 font-semibold text-sm border-b">Date d&apos;effet</th>
-                      <th className="text-center p-3 font-semibold text-sm border-b">Prime annuelle</th>
-                      <th className="text-center p-3 font-semibold text-sm border-b">Commission</th>
+                      <th 
+                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
+                        aria-sort={getAriaSort("dateSaisie", sortConfig)}
+                      >
+                        <button
+                          onClick={() => handleSortChange("dateSaisie")}
+                          className="flex items-center justify-center gap-1 w-full"
+                        >
+                          Date de saisie
+                          {renderSortIcon("dateSaisie")}
+                        </button>
+                      </th>
+                      <th 
+                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
+                        aria-sort={getAriaSort("kind", sortConfig)}
+                      >
+                        <button
+                          onClick={() => handleSortChange("kind")}
+                          className="flex items-center justify-center gap-1 w-full"
+                        >
+                          Type
+                          {renderSortIcon("kind")}
+                        </button>
+                      </th>
+                      <th 
+                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
+                        aria-sort={getAriaSort("clientNom", sortConfig)}
+                      >
+                        <button
+                          onClick={() => handleSortChange("clientNom")}
+                          className="flex items-center justify-center gap-1 w-full"
+                        >
+                          Client
+                          {renderSortIcon("clientNom")}
+                        </button>
+                      </th>
+                      <th 
+                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
+                        aria-sort={getAriaSort("numeroContrat", sortConfig)}
+                      >
+                        <button
+                          onClick={() => handleSortChange("numeroContrat")}
+                          className="flex items-center justify-center gap-1 w-full"
+                        >
+                          N° Contrat
+                          {renderSortIcon("numeroContrat")}
+                        </button>
+                      </th>
+                      <th 
+                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
+                        aria-sort={getAriaSort("contratType", sortConfig)}
+                      >
+                        <button
+                          onClick={() => handleSortChange("contratType")}
+                          className="flex items-center justify-center gap-1 w-full"
+                        >
+                          Type Contrat
+                          {renderSortIcon("contratType")}
+                        </button>
+                      </th>
+                      <th 
+                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
+                        aria-sort={getAriaSort("compagnie", sortConfig)}
+                      >
+                        <button
+                          onClick={() => handleSortChange("compagnie")}
+                          className="flex items-center justify-center gap-1 w-full"
+                        >
+                          Compagnie
+                          {renderSortIcon("compagnie")}
+                        </button>
+                      </th>
+                      <th 
+                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
+                        aria-sort={getAriaSort("dateEffet", sortConfig)}
+                      >
+                        <button
+                          onClick={() => handleSortChange("dateEffet")}
+                          className="flex items-center justify-center gap-1 w-full"
+                        >
+                          Date d&apos;effet
+                          {renderSortIcon("dateEffet")}
+                        </button>
+                      </th>
+                      <th 
+                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
+                        aria-sort={getAriaSort("primeAnnuelle", sortConfig)}
+                      >
+                        <button
+                          onClick={() => handleSortChange("primeAnnuelle")}
+                          className="flex items-center justify-center gap-1 w-full"
+                        >
+                          Prime annuelle
+                          {renderSortIcon("primeAnnuelle")}
+                        </button>
+                      </th>
+                      <th 
+                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
+                        aria-sort={getAriaSort("commissionPotentielle", sortConfig)}
+                      >
+                        <button
+                          onClick={() => handleSortChange("commissionPotentielle")}
+                          className="flex items-center justify-center gap-1 w-full"
+                        >
+                          Commission
+                          {renderSortIcon("commissionPotentielle")}
+                        </button>
+                      </th>
                       <th className="text-center p-3 font-semibold text-sm border-b w-20">Statut</th>
                       <th className="text-center p-3 font-semibold text-sm border-b w-24">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {acts.map((act) => {
+                    {sortedActs.map((act) => {
                       const isProcess = act.kind === "M+3" || act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD";
                       const isLocked = isActLocked(act);
                       
@@ -703,6 +880,35 @@ export default function DashboardPage() {
   );
 }
 
+function getSortableValue(act: Act, key: SortKey): number | string | null {
+  switch (key) {
+    case "dateSaisie": {
+      const date = act.dateSaisie instanceof Date ? act.dateSaisie : new Date(act.dateSaisie);
+      return Number.isNaN(date.getTime()) ? null : date.getTime();
+    }
+    case "dateEffet": {
+      const date = act.dateEffet instanceof Date ? act.dateEffet : new Date(act.dateEffet);
+      return Number.isNaN(date.getTime()) ? null : date.getTime();
+    }
+    case "commissionPotentielle":
+      return typeof act.commissionPotentielle === "number" ? act.commissionPotentielle : null;
+    case "primeAnnuelle":
+      return typeof act.primeAnnuelle === "number" ? act.primeAnnuelle : null;
+    case "numeroContrat":
+      return act.numeroContrat ? act.numeroContrat.toLowerCase() : null;
+    case "contratType":
+      return act.contratType ? act.contratType.toLowerCase() : null;
+    case "compagnie":
+      return act.compagnie ? act.compagnie.toLowerCase() : null;
+    case "clientNom":
+      return act.clientNom ? act.clientNom.toLowerCase() : null;
+    case "kind":
+      return act.kind ? act.kind.toLowerCase() : null;
+    default:
+      return null;
+  }
+}
+
 function generateTimeline(monthKey: string, acts: Act[] = []): TimelineDay[] {
   const [year, month] = monthKey.split("-").map(Number);
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -752,5 +958,23 @@ type TimelineDay = {
   isSunday: boolean;
   isToday: boolean;
   acts: Act[];
+};
+
+type SortKey =
+  | "dateSaisie"
+  | "dateEffet"
+  | "clientNom"
+  | "numeroContrat"
+  | "contratType"
+  | "compagnie"
+  | "primeAnnuelle"
+  | "commissionPotentielle"
+  | "kind";
+
+type SortDirection = "asc" | "desc";
+
+type SortState = {
+  key: SortKey;
+  direction: SortDirection;
 };
 
