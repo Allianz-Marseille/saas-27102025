@@ -399,7 +399,19 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
                             {renderSortIcon("dateSaisie")}
                           </button>
                         </th>
-                        <th className="text-center p-3 font-semibold text-sm border-b">Type</th>
+                        <th
+                          className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
+                          aria-sort={getAriaSort("kind", sortConfig)}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleSortChange("kind")}
+                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold"
+                          >
+                            Type
+                            {renderSortIcon("kind")}
+                          </button>
+                        </th>
                         <th
                           className="text-center p-3 font-semibold text-sm border-b"
                           aria-sort={getAriaSort("clientNom", sortConfig)}
@@ -439,7 +451,19 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
                             {renderSortIcon("contratType")}
                           </button>
                         </th>
-                        <th className="text-center p-3 font-semibold text-sm border-b">Compagnie</th>
+                        <th
+                          className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
+                          aria-sort={getAriaSort("compagnie", sortConfig)}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleSortChange("compagnie")}
+                            className="flex w-full items-center justify-center gap-2 text-sm font-semibold"
+                          >
+                            Compagnie
+                            {renderSortIcon("compagnie")}
+                          </button>
+                        </th>
                         <th
                           className="text-center p-3 font-semibold text-sm border-b"
                           aria-sort={getAriaSort("dateEffet", sortConfig)}
@@ -576,7 +600,7 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
             <DialogTitle>Note — {noteDialog.clientName}</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-base whitespace-pre-wrap break-words">{noteDialog.note}</p>
+            <p className="text-base whitespace-pre-wrap wrap-break-word">{noteDialog.note}</p>
           </div>
         </DialogContent>
       </Dialog>
@@ -604,6 +628,10 @@ function getSortableValue(act: Act, key: SortKey): number | string | null {
       return act.contratType ? act.contratType.toLowerCase() : null;
     case "clientNom":
       return act.clientNom ? act.clientNom.toLowerCase() : null;
+    case "compagnie":
+      return act.compagnie ? act.compagnie.toLowerCase() : null;
+    case "kind":
+      return act.kind ? act.kind.toLowerCase() : null;
     default:
       return null;
   }
@@ -703,8 +731,10 @@ type SortKey =
   | "clientNom"
   | "numeroContrat"
   | "contratType"
+  | "compagnie"
   | "primeAnnuelle"
-  | "commissionPotentielle";
+  | "commissionPotentielle"
+  | "kind";
 
 type SortDirection = "asc" | "desc";
 
