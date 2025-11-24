@@ -114,12 +114,13 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
       setCompagnie(act.compagnie);
       
       // Gérer la conversion de dateEffet (peut être Date ou Timestamp)
-      if (act.dateEffet instanceof Date) {
-        setDateEffet(act.dateEffet);
-      } else if (act.dateEffet instanceof Timestamp) {
-        setDateEffet(act.dateEffet.toDate());
+      const dateEffetValue = act.dateEffet as Date | Timestamp | unknown;
+      if (dateEffetValue instanceof Date) {
+        setDateEffet(dateEffetValue);
+      } else if (dateEffetValue && typeof dateEffetValue === 'object' && 'toDate' in dateEffetValue) {
+        setDateEffet((dateEffetValue as Timestamp).toDate());
       } else {
-        setDateEffet(new Date(act.dateEffet));
+        setDateEffet(new Date(dateEffetValue as string | number));
       }
       
       setPrimeAnnuelle(act.primeAnnuelle);
