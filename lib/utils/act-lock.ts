@@ -1,4 +1,3 @@
-import { Act } from "@/types";
 import { Timestamp } from "firebase/firestore";
 import { UserData } from "@/lib/firebase/auth";
 import { isAdmin } from "./roles";
@@ -12,11 +11,14 @@ import { isAdmin } from "./roles";
  * 
  * Les administrateurs ne sont JAMAIS bloqués
  * 
- * @param act L'acte à vérifier
+ * @param act L'acte à vérifier (avec dateSaisie pouvant être Date, Timestamp ou string)
  * @param userData Les données de l'utilisateur connecté
  * @returns true si l'acte est bloqué pour cet utilisateur, false sinon
  */
-export function isActLocked(act: Act | null, userData: UserData | null): boolean {
+export function isActLocked(
+  act: { dateSaisie: Date | Timestamp | string | unknown } | null, 
+  userData: UserData | null
+): boolean {
   if (!act) return false;
   
   // Les administrateurs ne sont jamais bloqués
@@ -27,12 +29,18 @@ export function isActLocked(act: Act | null, userData: UserData | null): boolean
   const now = new Date();
   const today = now.getDate();
   
-  // Convertir Timestamp en Date si nécessaire
-  const dateSaisie = act.dateSaisie instanceof Timestamp 
-    ? act.dateSaisie.toDate() 
-    : act.dateSaisie instanceof Date 
-      ? act.dateSaisie 
-      : new Date(act.dateSaisie);
+  // Convertir dateSaisie en Date quelque soit son format
+  let dateSaisie: Date;
+  
+  if (act.dateSaisie instanceof Date) {
+    dateSaisie = act.dateSaisie;
+  } else if (act.dateSaisie instanceof Timestamp) {
+    dateSaisie = act.dateSaisie.toDate();
+  } else if (typeof act.dateSaisie === 'object' && act.dateSaisie !== null && 'toDate' in act.dateSaisie) {
+    dateSaisie = (act.dateSaisie as Timestamp).toDate();
+  } else {
+    dateSaisie = new Date(act.dateSaisie as string | number);
+  }
   
   // Si on est le 15 ou après le 15 du mois actuel
   if (today >= 15) {
