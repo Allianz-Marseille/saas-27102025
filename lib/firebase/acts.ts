@@ -1,23 +1,6 @@
 import { collection, addDoc, query, where, getDocs, Timestamp, doc, deleteDoc, updateDoc, getDoc, or, limit } from "firebase/firestore";
 import { db } from "./config";
-
-export interface Act {
-  id: string;
-  userId: string;
-  kind: "AN" | "M+3" | "PRETERME_AUTO" | "PRETERME_IRD";
-  clientNom: string;
-  numeroContrat: string;
-  contratType: string;
-  compagnie: string;
-  dateEffet: Date;
-  dateSaisie: Timestamp;
-  primeAnnuelle?: number;
-  montantVersement?: number;
-  commissionPotentielle: number;
-  commissionReelle?: number;
-  moisKey: string;
-  note?: string;
-}
+import { Act } from "@/types";
 
 export interface CommissionRule {
   id: string;

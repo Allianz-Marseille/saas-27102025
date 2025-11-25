@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase/firestore";
+
 export interface User {
   id: string;
   email: string;
@@ -14,8 +16,8 @@ export interface Act {
   numeroContrat: string;
   contratType: string;
   compagnie: string;
-  dateEffet: Date;
-  dateSaisie: Date;
+  dateEffet: Date | Timestamp;
+  dateSaisie: Date | Timestamp;
   primeAnnuelle?: number;
   montantVersement?: number;
   commissionPotentielle: number;
