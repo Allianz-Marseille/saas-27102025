@@ -16,10 +16,20 @@ export function WeatherCard() {
   useEffect(() => {
     const fetchWeather = async () => {
       try {
+        // Timeout de 5 secondes pour éviter de rester bloqué
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
         // API météo gratuite wttr.in (pas besoin de clé)
         const response = await fetch(
-          'https://wttr.in/Marseille?format=%t+%C&lang=fr'
+          'https://wttr.in/Marseille?format=%t+%C&lang=fr',
+          { 
+            signal: controller.signal,
+            mode: 'cors',
+          }
         );
+        
+        clearTimeout(timeoutId);
         
         if (response.ok) {
           const data = await response.text();
@@ -32,9 +42,13 @@ export function WeatherCard() {
             description: desc,
             icon: '',
           });
+        } else {
+          console.error("Erreur API météo: status", response.status);
+          setWeather(null);
         }
       } catch (error) {
         console.error("Erreur API météo:", error);
+        setWeather(null);
       } finally {
         setLoading(false);
       }
@@ -56,11 +70,9 @@ export function WeatherCard() {
 
   if (!weather) {
     return (
-      <div className="flex items-center gap-3">
-        <Cloud className="h-8 w-8 text-muted-foreground" />
-        <div>
-          <p className="text-sm text-muted-foreground">Météo non disponible</p>
-        </div>
+      <div className="flex items-center justify-center gap-2">
+        <Sun className="h-5 w-5 text-yellow-500" />
+        <span className="text-sm text-muted-foreground">Marseille</span>
       </div>
     );
   }
