@@ -29,6 +29,7 @@ import { useAuth } from "@/lib/firebase/use-auth";
 import { Timestamp } from "firebase/firestore";
 import { clsx } from "clsx";
 import { isActLocked as checkActLocked } from "@/lib/utils/act-lock";
+import { toDate } from "@/lib/utils/date-helpers";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -766,13 +767,13 @@ export default function DashboardPage() {
                               <span className="text-muted-foreground">—</span>
                             )}
                           </td>
-                          <td className="p-3 text-sm text-center align-middle">{format(act.dateSaisie, "dd/MM/yyyy")}</td>
+                          <td className="p-3 text-sm text-center align-middle">{format(toDate(act.dateSaisie), "dd/MM/yyyy")}</td>
                           <td className="p-3 text-sm text-center align-middle">{act.kind}</td>
                           <td className="p-3 text-sm font-medium text-center align-middle">{act.clientNom}</td>
                           <td className="p-3 text-sm text-center align-middle">{isProcess ? "-" : act.numeroContrat}</td>
                           <td className="p-3 text-sm text-center align-middle">{isProcess ? "-" : act.contratType}</td>
                           <td className="p-3 text-sm text-center align-middle">{isProcess ? "-" : act.compagnie}</td>
-                          <td className="p-3 text-sm text-center align-middle">{format(act.dateEffet, "dd/MM/yyyy")}</td>
+                          <td className="p-3 text-sm text-center align-middle">{format(toDate(act.dateEffet), "dd/MM/yyyy")}</td>
                           <td className="p-3 text-sm text-center align-middle">
                             {act.primeAnnuelle ? formatCurrency(act.primeAnnuelle) : "-"}
                           </td>

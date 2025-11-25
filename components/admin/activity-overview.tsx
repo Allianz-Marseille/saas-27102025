@@ -25,6 +25,7 @@ import { EditActDialog } from "@/components/acts/edit-act-dialog";
 import { DeleteActDialog } from "@/components/acts/delete-act-dialog";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { isActLocked as checkActLocked } from "@/lib/utils/act-lock";
+import { toDate } from "@/lib/utils/date-helpers";
 
 interface ActivityOverviewProps {
   initialMonth?: string;
@@ -527,8 +528,8 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
                         const commercialEmail = commercialEmailById.get(act.userId) ?? "Commercial inconnu";
                         
                         // Convertir Timestamp en Date si nécessaire
-                        const dateSaisie = act.dateSaisie instanceof Timestamp ? act.dateSaisie.toDate() : act.dateSaisie;
-                        const dateEffet = act.dateEffet instanceof Timestamp ? act.dateEffet.toDate() : act.dateEffet;
+                        const dateSaisie = toDate(act.dateSaisie);
+                        const dateEffet = toDate(act.dateEffet);
                         
                         return (
                           <Tooltip key={act.id}>
