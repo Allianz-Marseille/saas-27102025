@@ -2,6 +2,9 @@ import { collection, addDoc, query, where, getDocs, Timestamp, doc, deleteDoc, u
 import { db } from "./config";
 import { Act } from "@/types";
 
+// Réexporter Act pour compatibilité avec les imports existants
+export type { Act };
+
 export interface CommissionRule {
   id: string;
   contratType: string;
