@@ -28,10 +28,11 @@ import { getActsByMonth } from "@/lib/firebase/acts";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { Timestamp } from "firebase/firestore";
 import { clsx } from "clsx";
+import { isActLocked as checkActLocked } from "@/lib/utils/act-lock";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -130,7 +131,7 @@ export default function DashboardPage() {
   };
 
   const handleEditAct = (act: Act) => {
-    if (isActLocked(act)) {
+    if (checkActLocked(act, userData)) {
       toast.error("Cet acte est bloqué et ne peut pas être modifié");
       return;
     }
@@ -240,30 +241,6 @@ export default function DashboardPage() {
     });
   }, [timelineDays]);
 
-  // Fonction pour déterminer si un acte est bloqué
-  // Règle : Le 15 du mois M, les saisies du mois M-1 se bloquent automatiquement
-  // Exemple : Le 15 octobre 2025, les saisies de septembre 2025 sont bloquées
-  const isActLocked = (act: Act): boolean => {
-    const now = new Date();
-    const today = now.getDate();
-    const actDate = new Date(act.dateSaisie);
-    
-    // Si on est le 15 ou après le 15 du mois actuel
-    if (today >= 15) {
-      const actYear = actDate.getFullYear();
-      const actMonth = actDate.getMonth();
-      const nowYear = now.getFullYear();
-      const nowMonth = now.getMonth();
-      
-      // Si l'acte est du mois précédent (M-1), il est bloqué
-      // Comparaison exacte de l'année et du mois
-      if (actYear < nowYear || (actYear === nowYear && actMonth < nowMonth)) {
-        return true;
-      }
-    }
-    
-    return false;
-  };
 
   return (
     <RouteGuard>
@@ -767,7 +744,7 @@ export default function DashboardPage() {
                   <tbody>
                     {sortedActs.map((act) => {
                       const isProcess = act.kind === "M+3" || act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD";
-                      const isLocked = isActLocked(act);
+                      const isLocked = checkActLocked(act, userData);
                       
                       return (
                         <tr

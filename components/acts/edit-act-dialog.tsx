@@ -12,12 +12,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { updateAct, calculateCommission } from "@/lib/firebase/acts";
 import { Act } from "@/types";
 import { getCompanies, type Company } from "@/lib/firebase/companies";
 import { Timestamp } from "firebase/firestore";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/lib/firebase/use-auth";
+import { isActLocked as checkActLocked } from "@/lib/utils/act-lock";
 
 interface EditActDialogProps {
   open: boolean;
@@ -39,6 +42,7 @@ const CONTRACT_TYPES = [
 ];
 
 export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDialogProps) {
+  const { userData } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   
@@ -222,7 +226,15 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Modifier l'acte - {act.kind}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              Modifier l'acte - {act.kind}
+              {checkActLocked(act, userData) && (
+                <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-700">
+                  <Lock className="h-3 w-3 mr-1" />
+                  Bloqué pour les commerciaux
+                </Badge>
+              )}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
@@ -274,7 +286,15 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Modifier l'acte - AN</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            Modifier l'acte - AN
+            {checkActLocked(act, userData) && (
+              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-700">
+                <Lock className="h-3 w-3 mr-1" />
+                Bloqué pour les commerciaux
+              </Badge>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, FileText as FileTextIcon, Lock, Unlock, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText as FileTextIcon, Lock, Unlock, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -21,12 +21,17 @@ import { ContractTypeRanking } from "./contract-type-ranking";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { clsx } from "clsx";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { EditActDialog } from "@/components/acts/edit-act-dialog";
+import { DeleteActDialog } from "@/components/acts/delete-act-dialog";
+import { useAuth } from "@/lib/firebase/use-auth";
+import { isActLocked as checkActLocked } from "@/lib/utils/act-lock";
 
 interface ActivityOverviewProps {
   initialMonth?: string;
 }
 
 export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
+  const { userData } = useAuth();
   const [acts, setActs] = useState<Act[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<string>(
@@ -38,6 +43,14 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
     open: false,
     note: "",
     clientName: "",
+  });
+  const [editDialog, setEditDialog] = useState<{ open: boolean; act: Act | null }>({
+    open: false,
+    act: null,
+  });
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; act: Act | null }>({
+    open: false,
+    act: null,
   });
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
   const [sortConfig, setSortConfig] = useState<SortState>({
@@ -504,12 +517,13 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
                           </button>
                         </th>
                         <th className="text-center p-3 font-semibold text-sm border-b w-20">Statut</th>
+                        <th className="text-center p-3 font-semibold text-sm border-b w-32">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {sortedActs.map((act) => {
                         const isProcess = act.kind === "M+3" || act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD";
-                        const isLocked = isActLocked(act);
+                        const isLocked = checkActLocked(act, userData);
                         const commercialEmail = commercialEmailById.get(act.userId) ?? "Commercial inconnu";
                         
                         // Convertir Timestamp en Date si nécessaire
@@ -568,6 +582,28 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
                                     </div>
                                   )}
                                 </td>
+                                <td className="p-3 text-center align-middle">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => setEditDialog({ open: true, act })}
+                                      className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                      title="Modifier l'acte"
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => setDeleteDialog({ open: true, act })}
+                                      className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/20"
+                                      title="Supprimer l'acte"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </td>
                               </tr>
                             </TooltipTrigger>
                             <TooltipContent side="right">
@@ -604,6 +640,22 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog d'édition */}
+      <EditActDialog
+        open={editDialog.open}
+        onOpenChange={(open) => setEditDialog({ open, act: open ? editDialog.act : null })}
+        act={editDialog.act}
+        onSuccess={loadActs}
+      />
+
+      {/* Dialog de suppression */}
+      <DeleteActDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog({ open, act: open ? deleteDialog.act : null })}
+        act={deleteDialog.act}
+        onSuccess={loadActs}
+      />
     </div>
   );
 }
@@ -707,31 +759,6 @@ function generateTimeline(monthKey: string, acts: Act[] = []) {
   return timelineDays;
 }
 
-// Fonction pour vérifier si un acte est bloqué
-function isActLocked(act: Act): boolean {
-  const now = new Date();
-  const today = now.getDate();
-  
-  // Convertir Timestamp en Date si nécessaire
-  const dateSaisie = act.dateSaisie instanceof Timestamp ? act.dateSaisie.toDate() : act.dateSaisie;
-  const actDate = new Date(dateSaisie);
-  
-  if (today >= 15) {
-    const actYear = actDate.getFullYear();
-    const actMonth = actDate.getMonth();
-    const nowYear = now.getFullYear();
-    const nowMonth = now.getMonth();
-    
-    if (actYear === nowYear && actMonth < nowMonth) {
-      return true;
-    }
-    if (actYear < nowYear) {
-      return true;
-    }
-  }
-  
-  return false;
-}
 
 type TimelineDay = {
   date: Date;
