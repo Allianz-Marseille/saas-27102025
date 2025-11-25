@@ -82,18 +82,10 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
       
       // Convertir les Timestamp en Date
       const convertedActs = actsData.map((act) => {
-        const dateEffet = (act as unknown as { dateEffet: Timestamp | Date }).dateEffet instanceof Timestamp 
-          ? (act as unknown as { dateEffet: Timestamp }).dateEffet.toDate() 
-          : (act as unknown as { dateEffet: Date }).dateEffet;
-          
-        const dateSaisie = (act as unknown as { dateSaisie: Timestamp | Date }).dateSaisie instanceof Timestamp 
-          ? (act as unknown as { dateSaisie: Timestamp }).dateSaisie.toDate() 
-          : (act as unknown as { dateSaisie: Date }).dateSaisie;
-        
         return {
           ...act,
-          dateEffet,
-          dateSaisie,
+          dateEffet: toDate((act as unknown as { dateEffet: Timestamp | Date }).dateEffet),
+          dateSaisie: toDate((act as unknown as { dateSaisie: Timestamp | Date }).dateSaisie),
         } as unknown as Act;
       });
       
@@ -126,8 +118,8 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
   // Convertir les Timestamp en Date pour calculateKPI
   const actsForKPI = acts.map(act => ({
     ...act,
-    dateSaisie: act.dateSaisie instanceof Timestamp ? act.dateSaisie.toDate() : act.dateSaisie,
-    dateEffet: act.dateEffet instanceof Timestamp ? act.dateEffet.toDate() : act.dateEffet,
+    dateSaisie: toDate(act.dateSaisie),
+    dateEffet: toDate(act.dateEffet),
   }));
   
   const kpi = calculateKPI(actsForKPI as any);
@@ -664,27 +656,11 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
 function getSortableValue(act: Act, key: SortKey): number | string | null {
   switch (key) {
     case "dateSaisie": {
-      const dateValue = act.dateSaisie as Date | Timestamp | unknown;
-      let date: Date;
-      if (dateValue instanceof Date) {
-        date = dateValue;
-      } else if (dateValue instanceof Timestamp) {
-        date = dateValue.toDate();
-      } else {
-        date = new Date(dateValue as string | number);
-      }
+      const date = toDate(act.dateSaisie);
       return Number.isNaN(date.getTime()) ? null : date.getTime();
     }
     case "dateEffet": {
-      const dateValue = act.dateEffet as Date | Timestamp | unknown;
-      let date: Date;
-      if (dateValue instanceof Date) {
-        date = dateValue;
-      } else if (dateValue instanceof Timestamp) {
-        date = dateValue.toDate();
-      } else {
-        date = new Date(dateValue as string | number);
-      }
+      const date = toDate(act.dateEffet);
       return Number.isNaN(date.getTime()) ? null : date.getTime();
     }
     case "commissionPotentielle":
@@ -727,8 +703,7 @@ function generateTimeline(monthKey: string, acts: Act[] = []) {
   
   acts.forEach((act) => {
     // Convertir Timestamp en Date si nécessaire
-    const dateSaisie = act.dateSaisie instanceof Timestamp ? act.dateSaisie.toDate() : act.dateSaisie;
-    const actDate = new Date(dateSaisie);
+    const actDate = toDate(act.dateSaisie);
     const dayKey = `${actDate.getFullYear()}-${actDate.getMonth() + 1}-${actDate.getDate()}`;
     
     if (!actsByDay.has(dayKey)) {

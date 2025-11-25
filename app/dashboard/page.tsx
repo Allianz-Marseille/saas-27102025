@@ -876,11 +876,11 @@ export default function DashboardPage() {
 function getSortableValue(act: Act, key: SortKey): number | string | null {
   switch (key) {
     case "dateSaisie": {
-      const date = act.dateSaisie instanceof Date ? act.dateSaisie : new Date(act.dateSaisie);
+      const date = toDate(act.dateSaisie);
       return Number.isNaN(date.getTime()) ? null : date.getTime();
     }
     case "dateEffet": {
-      const date = act.dateEffet instanceof Date ? act.dateEffet : new Date(act.dateEffet);
+      const date = toDate(act.dateEffet);
       return Number.isNaN(date.getTime()) ? null : date.getTime();
     }
     case "commissionPotentielle":
@@ -913,7 +913,7 @@ function generateTimeline(monthKey: string, acts: Act[] = []): TimelineDay[] {
   const actsByDay = new Map<string, Act[]>();
   
   acts.forEach((act) => {
-    const actDate = new Date(act.dateSaisie);
+    const actDate = toDate(act.dateSaisie);
     const dayKey = `${actDate.getFullYear()}-${actDate.getMonth() + 1}-${actDate.getDate()}`;
     
     if (!actsByDay.has(dayKey)) {
