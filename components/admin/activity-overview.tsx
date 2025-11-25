@@ -388,7 +388,7 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
           <div>
             <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-400 mb-4 flex items-center gap-2">
               <ClipboardCheck className="h-4 w-4" />
-              Tableau récapitulatif des actes
+              Tableau récapitulatif des actes (avec actions admin)
             </h3>
             {acts.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground">Aucun acte pour ce mois</p>
