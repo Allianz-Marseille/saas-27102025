@@ -16,7 +16,8 @@ interface WelcomeBannerProps {
 
 export function WelcomeBanner({ kpi }: WelcomeBannerProps) {
   const { userData } = useAuth();
-  const firstName = userData?.email.split('@')[0] || 'Utilisateur';
+  const rawFirstName = userData?.email.split('@')[0]?.split('.')[0] || 'Utilisateur';
+  const firstName = rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1).toLowerCase();
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 

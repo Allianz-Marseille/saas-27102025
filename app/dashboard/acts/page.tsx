@@ -5,12 +5,12 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { FileText, Plus, Edit, Trash2, Lock, Unlock, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, Lock, Unlock, ArrowUpDown, ArrowUp, ArrowDown, Shield, Heart, Stethoscope, PiggyBank, Car, Building2, Filter, X } from "lucide-react";
 import { deleteAct } from "@/lib/firebase/acts";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Act } from "@/types";
 import { NewActDialog } from "@/components/acts/new-act-dialog";
@@ -19,7 +19,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { getActsByMonth } from "@/lib/firebase/acts";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { Timestamp } from "firebase/firestore";
-import { clsx } from "clsx";
 import { isActLocked as checkActLocked } from "@/lib/utils/act-lock";
 import { toDate } from "@/lib/utils/date-helpers";
 import { MonthSelector } from "@/components/dashboard/month-selector";
@@ -48,6 +47,13 @@ export default function ActsPage() {
   const [sortConfig, setSortConfig] = useState<SortState>({
     key: "dateSaisie",
     direction: "desc",
+  });
+  const [activeFilter, setActiveFilter] = useState<{
+    type: 'kind' | 'contractType' | null;
+    value: string | null;
+  }>({
+    type: null,
+    value: null,
   });
 
   const loadActs = async () => {
@@ -131,8 +137,16 @@ export default function ActsPage() {
       return acts;
     }
 
-    const actsClone = [...acts];
-    actsClone.sort((actA, actB) => {
+    // Filtrage (mutuellement exclusif : soit par kind, soit par contractType)
+    let filteredActs = [...acts];
+    if (activeFilter.type === 'kind' && activeFilter.value) {
+      filteredActs = filteredActs.filter(act => act.kind === activeFilter.value);
+    } else if (activeFilter.type === 'contractType' && activeFilter.value) {
+      filteredActs = filteredActs.filter(act => act.contratType === activeFilter.value);
+    }
+
+    // Tri
+    filteredActs.sort((actA, actB) => {
       const valueA = getSortableValue(actA, sortConfig.key);
       const valueB = getSortableValue(actB, sortConfig.key);
 
@@ -158,8 +172,8 @@ export default function ActsPage() {
       return 0;
     });
 
-    return actsClone;
-  }, [acts, sortConfig]);
+    return filteredActs;
+  }, [acts, sortConfig, activeFilter]);
 
   const handleSortChange = (key: SortKey) => {
     setSortConfig((current) => {
@@ -198,6 +212,78 @@ export default function ActsPage() {
 
   const timelineDays = useMemo(() => generateTimeline(selectedMonth, acts), [selectedMonth, acts]);
 
+  // Helper functions for badges
+  const getKindBadgeColor = (kind: string) => {
+    switch (kind) {
+      case "AN":
+        return "bg-blue-500 text-white";
+      case "M+3":
+        return "bg-green-500 text-white";
+      case "PRETERME_AUTO":
+        return "bg-orange-500 text-white";
+      case "PRETERME_IRD":
+        return "bg-purple-500 text-white";
+      default:
+        return "bg-gray-500 text-white";
+    }
+  };
+
+  const getContractIcon = (contractType: string) => {
+    switch (contractType) {
+      case "PJ":
+        return <Shield className="h-3.5 w-3.5" />;
+      case "GAV":
+        return <Heart className="h-3.5 w-3.5" />;
+      case "SANTE_PREV":
+        return <Stethoscope className="h-3.5 w-3.5" />;
+      case "VIE_PP":
+      case "VIE_PU":
+        return <PiggyBank className="h-3.5 w-3.5" />;
+      case "AUTO_MOTO":
+        return <Car className="h-3.5 w-3.5" />;
+      case "IRD_PART":
+      case "IRD_PRO":
+        return <Building2 className="h-3.5 w-3.5" />;
+      default:
+        return null;
+    }
+  };
+
+  const getContractBadgeColor = (contractType: string) => {
+    switch (contractType) {
+      case "PJ":
+        return "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300";
+      case "GAV":
+        return "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300";
+      case "SANTE_PREV":
+        return "bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300";
+      case "VIE_PP":
+      case "VIE_PU":
+        return "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300";
+      case "AUTO_MOTO":
+        return "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/50 dark:text-cyan-300";
+      default:
+        return "bg-gray-100 text-gray-700 dark:bg-gray-950/50 dark:text-gray-300";
+    }
+  };
+
+  const getRowBorderColor = (kind: string) => {
+    switch (kind) {
+      case "AN":
+        return "border-l-4 border-l-blue-500";
+      case "M+3":
+        return "border-l-4 border-l-green-500";
+      case "PRETERME_AUTO":
+        return "border-l-4 border-l-orange-500";
+      case "PRETERME_IRD":
+        return "border-l-4 border-l-purple-500";
+      default:
+        return "border-l-4 border-l-gray-300";
+    }
+  };
+
+  const totalCommissions = sortedActs.reduce((sum, act) => sum + act.commissionPotentielle, 0);
+
   useEffect(() => {
     const container = timelineContainerRef.current;
     if (!container) return;
@@ -219,23 +305,55 @@ export default function ActsPage() {
   }, [timelineDays]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
-      <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Mes actes</h1>
-          <div className="flex items-center gap-4">
+      <header className="border-b bg-gradient-to-r from-white via-blue-50/50 to-purple-50/50 dark:from-slate-950 dark:via-blue-950/20 dark:to-purple-950/20 backdrop-blur-lg sticky top-0 z-10 shadow-md shadow-blue-500/5">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
+                Mes actes
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Gérez vos actes commerciaux et suivez vos performances
+              </p>
+            </div>
+            <Button 
+              onClick={() => setIsDialogOpen(true)}
+              className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 hover:from-blue-700 hover:via-purple-700 hover:to-blue-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 gap-2 px-6"
+            >
+              <Plus className="h-5 w-5" />
+              <span className="font-semibold">Nouvel acte</span>
+            </Button>
+          </div>
+          
+          {/* Barre de navigation avec stats */}
+          <div className="flex items-center justify-between pt-3 border-t border-blue-200/30 dark:border-blue-800/30">
             <MonthSelector 
               selectedMonth={selectedMonth}
               onMonthChange={setSelectedMonth}
             />
-            <Button 
-              className="bg-[#00529B] hover:bg-[#003d73]"
-              onClick={() => setIsDialogOpen(true)}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvel acte
-            </Button>
+            
+            {/* Stats rapides */}
+            {!isLoading && acts.length > 0 && (
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-200/50 dark:border-blue-800/50">
+                  <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <div className="text-sm">
+                    <span className="font-bold text-foreground">{acts.length}</span>
+                    <span className="text-muted-foreground ml-1">actes</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-200/50 dark:border-green-800/50">
+                  <span className="text-lg">💰</span>
+                  <div className="text-sm">
+                    <span className="font-bold text-green-600 dark:text-green-400">
+                      {formatCurrency(totalCommissions)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -271,7 +389,7 @@ export default function ActsPage() {
                   <div
                     key={index}
                     data-timeline-day={day.isToday ? "today" : undefined}
-                    className={clsx(
+                    className={cn(
                       "flex flex-col items-center p-3 rounded-lg min-w-[80px] transition-colors border",
                       {
                         "bg-orange-100 dark:bg-orange-900/20": day.isSaturday && !day.isToday,
@@ -301,10 +419,92 @@ export default function ActsPage() {
         {/* Tableau des actes */}
         <Card>
           <CardHeader>
-            <CardTitle>Liste des actes</CardTitle>
-            <CardDescription>
-              Tous vos actes commerciaux du mois sélectionné
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Liste des actes</CardTitle>
+                <CardDescription>
+                  Tous vos actes commerciaux du mois sélectionné
+                </CardDescription>
+              </div>
+              {sortedActs.length > 0 && (
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-foreground">{sortedActs.length}</div>
+                  <div className="text-xs text-muted-foreground">actes</div>
+                </div>
+              )}
+            </div>
+
+            {/* Filtres */}
+            {acts.length > 0 && (
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">Filtres :</span>
+                  
+                  {/* Filtre par type d'acte (process) */}
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={() => setActiveFilter({ type: null, value: null })}
+                      className={cn(
+                        "px-3 py-1 rounded-full text-xs font-medium transition-all",
+                        !activeFilter.type
+                          ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md"
+                          : "bg-muted hover:bg-muted/70"
+                      )}
+                    >
+                      Tous
+                    </button>
+                    {["AN", "M+3", "PRETERME_AUTO", "PRETERME_IRD"].map((kind) => (
+                      <button
+                        key={kind}
+                        onClick={() => setActiveFilter({ type: 'kind', value: kind })}
+                        className={cn(
+                          "px-3 py-1 rounded-full text-xs font-medium transition-all",
+                          activeFilter.type === 'kind' && activeFilter.value === kind
+                            ? getKindBadgeColor(kind) + " shadow-md ring-2 ring-white dark:ring-slate-800"
+                            : "bg-muted hover:bg-muted/70"
+                        )}
+                      >
+                        {kind}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Séparateur */}
+                  <div className="h-4 w-px bg-border" />
+                  
+                  {/* Filtre par type de contrat */}
+                  <div className="flex gap-2 flex-wrap">
+                    {["PJ", "GAV", "SANTE_PREV", "AUTO_MOTO"].map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => setActiveFilter({ type: 'contractType', value: type })}
+                        className={cn(
+                          "px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1",
+                          activeFilter.type === 'contractType' && activeFilter.value === type
+                            ? getContractBadgeColor(type) + " shadow-md ring-2 ring-white dark:ring-slate-800"
+                            : "bg-muted hover:bg-muted/70"
+                        )}
+                      >
+                        {getContractIcon(type)}
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Bouton reset */}
+                  {activeFilter.type && (
+                    <button
+                      onClick={() => setActiveFilter({ type: null, value: null })}
+                      className="ml-auto px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-950/70 transition-all flex items-center gap-1"
+                    >
+                      <X className="h-3 w-3" />
+                      Réinitialiser
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -437,15 +637,19 @@ export default function ActsPage() {
                       return (
                         <tr
                           key={act.id}
-                          className={`border-b hover:bg-muted/30 transition-colors ${
-                            isLocked ? "opacity-60 bg-muted/20" : ""
-                          }`}
+                          className={cn(
+                            "border-b transition-all duration-200 group",
+                            getRowBorderColor(act.kind),
+                            isLocked 
+                              ? "opacity-60 bg-muted/20" 
+                              : "hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-purple-50/50 dark:hover:from-blue-950/20 dark:hover:to-purple-950/20 hover:shadow-sm"
+                          )}
                         >
                           <td className="p-3 text-center align-middle">
                             {act.note ? (
                               <button 
                                 onClick={() => setNoteDialog({ open: true, note: act.note!, clientName: act.clientNom })}
-                                className="hover:opacity-70 transition-opacity" 
+                                className="hover:scale-110 transition-transform" 
                                 title="Voir la note"
                               >
                                 <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -454,18 +658,46 @@ export default function ActsPage() {
                               <span className="text-muted-foreground">—</span>
                             )}
                           </td>
-                          <td className="p-3 text-sm text-center align-middle">{format(toDate(act.dateSaisie), "dd/MM/yyyy")}</td>
-                          <td className="p-3 text-sm text-center align-middle">{act.kind}</td>
-                          <td className="p-3 text-sm font-medium text-center align-middle">{act.clientNom}</td>
-                          <td className="p-3 text-sm text-center align-middle">{isProcess ? "-" : act.numeroContrat}</td>
-                          <td className="p-3 text-sm text-center align-middle">{isProcess ? "-" : act.contratType}</td>
-                          <td className="p-3 text-sm text-center align-middle">{isProcess ? "-" : act.compagnie}</td>
+                          <td className="p-3 text-sm text-center align-middle font-medium">{format(toDate(act.dateSaisie), "dd/MM/yyyy")}</td>
+                          <td className="p-3 text-center align-middle">
+                            <span className={cn(
+                              "inline-flex px-2.5 py-1 rounded-full text-xs font-bold",
+                              getKindBadgeColor(act.kind)
+                            )}>
+                              {act.kind}
+                            </span>
+                          </td>
+                          <td className="p-3 text-sm font-semibold text-center align-middle">{act.clientNom}</td>
+                          <td className="p-3 text-xs text-center align-middle text-muted-foreground font-mono">{isProcess ? "-" : act.numeroContrat}</td>
+                          <td className="p-3 text-center align-middle">
+                            {isProcess ? (
+                              <span className="text-muted-foreground">-</span>
+                            ) : (
+                              <span className={cn(
+                                "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium",
+                                getContractBadgeColor(act.contratType)
+                              )}>
+                                {getContractIcon(act.contratType)}
+                                {act.contratType}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3 text-xs text-center align-middle">{isProcess ? "-" : act.compagnie}</td>
                           <td className="p-3 text-sm text-center align-middle">{format(toDate(act.dateEffet), "dd/MM/yyyy")}</td>
-                          <td className="p-3 text-sm text-center align-middle">
+                          <td className="p-3 text-sm text-center align-middle font-medium">
                             {act.primeAnnuelle ? formatCurrency(act.primeAnnuelle) : "-"}
                           </td>
-                          <td className="p-3 text-sm text-center font-semibold align-middle">
-                            {formatCurrency(act.commissionPotentielle)}
+                          <td className="p-3 text-center align-middle">
+                            <span className={cn(
+                              "inline-flex px-3 py-1.5 rounded-full text-sm font-bold transition-all",
+                              act.commissionPotentielle >= 40
+                                ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md group-hover:shadow-lg group-hover:scale-105"
+                                : act.commissionPotentielle > 0
+                                  ? "bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300"
+                                  : "bg-muted text-muted-foreground"
+                            )}>
+                              {formatCurrency(act.commissionPotentielle)}
+                            </span>
                           </td>
                           <td className="p-3 text-center align-middle">
                             {isLocked ? (
@@ -511,6 +743,46 @@ export default function ActsPage() {
                     })}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {/* Footer avec statistiques */}
+            {sortedActs.length > 0 && (
+              <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border border-blue-200/50 dark:border-blue-800/30">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-6">
+                    <div>
+                      <div className="text-xs text-muted-foreground">Total actes</div>
+                      <div className="text-2xl font-bold text-foreground">{sortedActs.length}</div>
+                    </div>
+                    <div className="h-8 w-px bg-border" />
+                    <div>
+                      <div className="text-xs text-muted-foreground">Commissions potentielles</div>
+                      <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                        {formatCurrency(totalCommissions)}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Répartition par type */}
+                  <div className="flex gap-2 flex-wrap">
+                    {["AN", "M+3", "PRETERME_AUTO", "PRETERME_IRD"].map((kind) => {
+                      const count = sortedActs.filter(act => act.kind === kind).length;
+                      if (count === 0) return null;
+                      return (
+                        <div 
+                          key={kind}
+                          className={cn(
+                            "px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1",
+                            getKindBadgeColor(kind)
+                          )}
+                        >
+                          {kind} • {count}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>

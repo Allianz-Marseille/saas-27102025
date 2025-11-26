@@ -1,7 +1,7 @@
 "use client";
 
-import { Trophy, TrendingUp, TrendingDown } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Coins, TrendingUp, TrendingDown } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -10,32 +10,58 @@ interface LeaderboardWidgetProps {
   currentUserEmail?: string;
   kpi?: {
     caMensuel: number;
+    commissionsPotentielles: number;
   };
 }
 
 export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetProps) {
   // Données simulées - À remplacer par de vraies données depuis Firebase
-  const currentUserCA = kpi?.caMensuel || 6720;
-  const firstName = currentUserEmail?.split('@')[0]?.split('.')[0] || 'Vous';
+  const currentUserCommissions = kpi?.commissionsPotentielles || 0;
+  const rawFirstName = currentUserEmail?.split('@')[0]?.split('.')[0] || 'Vous';
+  const firstName = rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1).toLowerCase();
 
-  const leaderboard = [
-    { rank: 1, name: "Emma D.", ca: 8500, avatar: "E", isCurrentUser: false, trend: 15 },
-    { rank: 2, name: firstName, ca: currentUserCA, avatar: firstName[0].toUpperCase(), isCurrentUser: true, trend: 12 },
-    { rank: 3, name: "Gwendal C.", ca: 6200, avatar: "G", isCurrentUser: false, trend: 8 },
-    { rank: 4, name: "Julien B.", ca: 5900, avatar: "J", isCurrentUser: false, trend: 10 },
-    { rank: 5, name: "Astrid U.", ca: 5500, avatar: "A", isCurrentUser: false, trend: -3 },
+  const simulatedUsers = [
+    { name: "Sophie M.", commissions: 2890, avatar: "S", isCurrentUser: false, trend: 15 },
+    { name: "Gwendal C.", commissions: 2340, avatar: "G", isCurrentUser: false, trend: 8 },
+    { name: "Julien B.", commissions: 2180, avatar: "J", isCurrentUser: false, trend: 10 },
+    { name: "Astrid U.", commissions: 1920, avatar: "A", isCurrentUser: false, trend: -3 },
   ];
 
+  // Ajouter l'utilisateur actuel avec ses vraies données
+  const allUsers = [
+    ...simulatedUsers,
+    { 
+      name: firstName, 
+      commissions: currentUserCommissions, 
+      avatar: firstName[0].toUpperCase(), 
+      isCurrentUser: true, 
+      trend: 12 
+    }
+  ];
+
+  // Trier par commissions décroissantes et attribuer les rangs
+  const leaderboard = allUsers
+    .sort((a, b) => b.commissions - a.commissions)
+    .map((user, index) => ({
+      ...user,
+      rank: index + 1
+    }));
+
   const currentUser = leaderboard.find(u => u.isCurrentUser);
-  const gapToFirst = currentUser ? leaderboard[0].ca - currentUser.ca : 0;
+  const gapToFirst = currentUser ? leaderboard[0].commissions - currentUser.commissions : 0;
 
   return (
-    <Card className="mb-6">
+    <Card className="h-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Trophy className="h-5 w-5 text-amber-500" />
-          Classement du mois
+          <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+            <Coins className="h-5 w-5 text-white" />
+          </div>
+          Classement Commissions Potentielles
         </CardTitle>
+        <CardDescription className="mt-2">
+          Classement par montant de commissions potentielles du mois
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
@@ -102,8 +128,7 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground flex items-center gap-1">
-                    <span className="font-medium">{user.ca.toLocaleString('fr-FR')} €</span>
-                    <span>CA</span>
+                    <span className="font-medium">{user.commissions.toLocaleString('fr-FR')} €</span>
                   </div>
                 </div>
 
@@ -140,7 +165,7 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
               <strong className="text-amber-600 dark:text-amber-400">
                 {gapToFirst.toLocaleString('fr-FR')} €
               </strong>{' '}
-              de CA pour prendre la tête !
+              de commissions potentielles pour prendre la tête !
             </p>
           </motion.div>
         )}
@@ -153,7 +178,7 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
             className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl border border-green-200 dark:border-green-900"
           >
             <p className="text-sm text-center text-green-600 dark:text-green-400 font-semibold">
-              👑 Vous êtes en tête ! Continuez comme ça !
+              👑 Vous êtes en tête des commissions potentielles ! Continuez comme ça !
             </p>
           </motion.div>
         )}

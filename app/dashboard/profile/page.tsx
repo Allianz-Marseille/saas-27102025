@@ -9,10 +9,10 @@ export default function ProfilePage() {
   const { user, userData } = useAuth();
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b bg-card sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      <header className="border-b bg-gradient-to-r from-white via-blue-50/50 to-purple-50/50 dark:from-slate-950 dark:via-blue-950/20 dark:to-purple-950/20 backdrop-blur-lg sticky top-0 z-10 shadow-md shadow-blue-500/5">
         <div className="container mx-auto px-6 py-4">
-          <h1 className="text-2xl font-bold">Mon profil</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">Mon profil</h1>
         </div>
       </header>
 

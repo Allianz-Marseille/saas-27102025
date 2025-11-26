@@ -33,11 +33,22 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
   ];
 
   return (
-    <aside className="w-64 border-r bg-card h-screen fixed left-0 top-0 z-40">
+    <aside className="w-64 border-r h-screen fixed left-0 top-0 z-40 bg-gradient-to-b from-white via-blue-50/30 to-purple-50/30 dark:from-slate-950 dark:via-blue-950/10 dark:to-purple-950/10">
       <div className="flex flex-col h-full">
         {/* Logo et titre */}
-        <div className="p-6 border-b shrink-0">
-          <h2 className="text-lg font-bold text-foreground">Dashboard Admin</h2>
+        <div className="p-6 border-b shrink-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-600/20 dark:via-purple-600/20 dark:to-pink-600/20 backdrop-blur-sm">
+          <div className="flex flex-col gap-2">
+            <div className="relative group">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent transition-all duration-300 group-hover:scale-105">
+                Allianz
+              </h2>
+              {/* Effet glow au hover */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300 -z-10" />
+            </div>
+            <span className="text-xs font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Administration
+            </span>
+          </div>
         </div>
 
         {/* Navigation */}
@@ -53,10 +64,10 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
                 <Button
                   variant="ghost"
                   className={cn(
-                    "w-full justify-start gap-3 transition-colors",
+                    "w-full justify-start gap-3 transition-all relative overflow-hidden",
                     isActive 
-                      ? "bg-primary text-primary-foreground font-semibold hover:bg-primary/90" 
-                      : "hover:bg-accent"
+                      ? "bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 text-white font-semibold hover:from-blue-700 hover:via-purple-700 hover:to-blue-700 shadow-md shadow-blue-500/20" 
+                      : "hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30"
                   )}
                 >
                   <Icon className="h-5 w-5" />
@@ -68,10 +79,10 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
         </nav>
 
         {/* Déconnexion */}
-        <div className="mt-auto p-4 border-t shrink-0">
+        <div className="mt-auto p-4 border-t shrink-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 dark:from-blue-600/10 dark:via-purple-600/10 dark:to-pink-600/10">
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+            className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-red-50 hover:border hover:border-red-200 dark:hover:bg-red-950/30 dark:hover:border-red-800 transition-all"
             onClick={onLogout}
           >
             <LogOut className="h-5 w-5" />

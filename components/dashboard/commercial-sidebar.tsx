@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, FileText, User, LogOut, ChevronLeft } from "lucide-react";
+import { Home, FileText, User, LogOut, ChevronLeft, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { NotificationCenter } from "@/components/dashboard/notification-center";
@@ -30,6 +30,11 @@ const menuItems: SidebarItem[] = [
     href: "/dashboard/acts",
   },
   {
+    icon: Coins,
+    label: "Commissions",
+    href: "/dashboard/commissions",
+  },
+  {
     icon: User,
     label: "Profil",
     href: "/dashboard/profile",
@@ -52,30 +57,52 @@ export function CommercialSidebar() {
   };
 
   return (
-    <aside
-      className={cn(
-        "flex flex-col h-screen border-r bg-card transition-all duration-300",
-        isCollapsed ? "w-16" : "w-64"
-      )}
-    >
-      {/* Header avec logo */}
-      <div className="p-4 border-b flex items-center justify-between">
-        {!isCollapsed && (
-          <div className="flex items-center gap-3">
-            <Image
-              src="/allianz.svg"
-              alt="Allianz"
-              width={80}
-              height={20}
-              className="h-5 w-auto brightness-0 dark:brightness-100"
-            />
+    <>
+      <aside
+        className={cn(
+          "flex flex-col h-screen border-r transition-all duration-300 relative",
+          "bg-gradient-to-b from-white via-blue-50/30 to-purple-50/30",
+          "dark:from-slate-950 dark:via-blue-950/10 dark:to-purple-950/10",
+          isCollapsed ? "w-16" : "w-64"
+        )}
+      >
+        {/* Header avec logo */}
+      <div className="p-4 border-b flex items-center justify-between bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-600/20 dark:via-purple-600/20 dark:to-pink-600/20 backdrop-blur-sm">
+        {!isCollapsed ? (
+          <div className="flex flex-col gap-1 flex-1">
+            <div className="relative group">
+              <Image
+                src="/allianz.svg"
+                alt="Allianz"
+                width={100}
+                height={24}
+                className="h-6 w-auto brightness-0 dark:brightness-100 transition-all duration-300 group-hover:scale-105"
+              />
+              {/* Effet glow au hover */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300 -z-10" />
+            </div>
+            <span className="text-xs font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Agence Marseille
+            </span>
+          </div>
+        ) : (
+          <div className="relative group mx-auto">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:scale-110 p-1">
+              <Image
+                src="/favicon.png"
+                alt="Allianz"
+                width={32}
+                height={32}
+                className="w-full h-full object-contain"
+              />
+            </div>
           </div>
         )}
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="h-8 w-8"
+          className="h-8 w-8 hover:bg-white/50 dark:hover:bg-black/50"
         >
           <ChevronLeft
             className={cn(
@@ -97,8 +124,9 @@ export function CommercialSidebar() {
               key={item.href}
               variant={isActive ? "default" : "ghost"}
               className={cn(
-                "w-full justify-start gap-3 transition-all",
-                isActive && "bg-[#00529B] hover:bg-[#003d73]",
+                "w-full justify-start gap-3 transition-all relative overflow-hidden",
+                isActive && "bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 hover:from-blue-700 hover:via-purple-700 hover:to-blue-700 text-white shadow-md shadow-blue-500/20",
+                !isActive && "hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30",
                 isCollapsed && "justify-center px-2"
               )}
               onClick={() => router.push(item.href)}
@@ -118,7 +146,7 @@ export function CommercialSidebar() {
       </nav>
 
       {/* Footer avec notifications, thème et déconnexion */}
-      <div className="p-4 border-t space-y-2">
+      <div className="p-4 border-t space-y-2 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 dark:from-blue-600/10 dark:via-purple-600/10 dark:to-pink-600/10">
         <div className={cn("flex gap-2", isCollapsed && "flex-col")}>
           <NotificationCenter />
           <ThemeToggle />
@@ -126,7 +154,7 @@ export function CommercialSidebar() {
             <Button
               variant="outline"
               onClick={handleLogout}
-              className="flex-1 gap-2"
+              className="flex-1 gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:hover:bg-red-950/30 dark:hover:text-red-400 dark:hover:border-red-800 transition-all"
             >
               <LogOut className="h-4 w-4" />
               Déconnexion
@@ -138,6 +166,7 @@ export function CommercialSidebar() {
               size="icon"
               onClick={handleLogout}
               title="Déconnexion"
+              className="hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:hover:bg-red-950/30 dark:hover:text-red-400 dark:hover:border-red-800 transition-all"
             >
               <LogOut className="h-4 w-4" />
             </Button>
@@ -145,6 +174,33 @@ export function CommercialSidebar() {
         </div>
       </div>
     </aside>
+
+    {/* Bouton flottant pour rouvrir la sidebar quand elle est collapsed */}
+    {isCollapsed && (
+      <button
+        onClick={() => setIsCollapsed(false)}
+        className="fixed left-16 top-1/2 -translate-y-1/2 z-50 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-r-xl shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-110 group"
+        title="Ouvrir le menu"
+      >
+        <ChevronLeft className="h-5 w-5 rotate-180 group-hover:translate-x-1 transition-transform" />
+        {/* Effet glow */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-50 blur-xl transition-opacity rounded-r-xl -z-10" />
+      </button>
+    )}
+
+    {/* Bouton flottant pour fermer la sidebar quand elle est ouverte */}
+    {!isCollapsed && (
+      <button
+        onClick={() => setIsCollapsed(true)}
+        className="fixed left-64 top-1/2 -translate-y-1/2 z-50 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 rounded-r-xl shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 hover:scale-110 group"
+        title="Fermer le menu"
+      >
+        <ChevronLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+        {/* Effet glow */}
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-50 blur-xl transition-opacity rounded-r-xl -z-10" />
+      </button>
+    )}
+  </>
   );
 }
 

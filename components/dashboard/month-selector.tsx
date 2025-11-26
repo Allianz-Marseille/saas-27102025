@@ -33,34 +33,31 @@ export function MonthSelector({ selectedMonth, onMonthChange }: MonthSelectorPro
   const isCurrentMonth = selectedMonth >= format(new Date(), "yyyy-MM");
 
   return (
-    <div className="flex items-center gap-4">
-      <Label className="text-base font-semibold">Mois</Label>
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handlePreviousMonth}
-          className="h-9 w-9"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
+    <div className="flex items-center gap-3">
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={handlePreviousMonth}
+        className="h-10 w-10 rounded-full border-2 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30 hover:border-blue-300 dark:hover:border-blue-700 transition-all"
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </Button>
 
-        <div className="min-w-[180px] text-center">
-          <span className="text-lg font-semibold">
-            {format(new Date(selectedMonth + "-01"), "MMMM yyyy", { locale: fr })}
-          </span>
-        </div>
-
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handleNextMonth}
-          className="h-9 w-9"
-          disabled={isCurrentMonth}
-        >
-          <ChevronRight className="h-5 w-5" />
-        </Button>
+      <div className="min-w-[200px] px-6 py-2.5 rounded-full bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 border border-blue-200/50 dark:border-blue-800/50 text-center">
+        <span className="text-base font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
+          {format(new Date(selectedMonth + "-01"), "MMMM yyyy", { locale: fr })}
+        </span>
       </div>
+
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={handleNextMonth}
+        className="h-10 w-10 rounded-full border-2 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30 hover:border-blue-300 dark:hover:border-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={isCurrentMonth}
+      >
+        <ChevronRight className="h-5 w-5" />
+      </Button>
     </div>
   );
 }
