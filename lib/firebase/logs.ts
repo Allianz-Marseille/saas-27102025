@@ -47,6 +47,8 @@ const LOGS_COLLECTION = "logs";
 export async function createLog(
   logData: Omit<LogEntry, "id" | "timestamp">
 ): Promise<string> {
+  if (!db) throw new Error("Firestore not initialized");
+  
   try {
     const docRef = await addDoc(collection(db, LOGS_COLLECTION), {
       ...logData,
@@ -70,6 +72,8 @@ export async function getLogs(options?: {
   startDate?: Date;
   endDate?: Date;
 }): Promise<LogEntry[]> {
+  if (!db) throw new Error("Firestore not initialized");
+  
   try {
     const logsRef = collection(db, LOGS_COLLECTION);
     let q = query(logsRef, orderBy("timestamp", "desc"));

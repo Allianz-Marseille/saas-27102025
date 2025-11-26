@@ -42,7 +42,7 @@ export function NotificationCenter({ kpi }: NotificationCenterProps) {
     });
   }
 
-  if (kpi && kpi.ratio < 100) {
+  if (kpi && typeof kpi.ratio === 'number' && kpi.ratio < 100) {
     const manquant = Math.ceil((100 - kpi.ratio) / 10);
     notifications.push({
       id: 2,
@@ -55,7 +55,7 @@ export function NotificationCenter({ kpi }: NotificationCenterProps) {
     });
   }
 
-  if (kpi && kpi.nbContrats > 10) {
+  if (kpi && typeof kpi.nbContrats === 'number' && kpi.nbContrats > 10) {
     notifications.push({
       id: 3,
       type: "info",

@@ -189,7 +189,7 @@ export default function CommissionsPage() {
         <ExportActions 
           kpi={kpi} 
           selectedMonth={selectedMonth}
-          userName={userData?.displayName || userData?.email || "Commercial"}
+          userName={userData?.email || "Commercial"}
         />
       </div>
     </div>

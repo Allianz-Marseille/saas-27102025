@@ -61,7 +61,7 @@ export function QuickActions({ onNewAct, notificationCount = 0 }: QuickActionsPr
             <div className={`absolute inset-0 bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-10 transition-opacity`} />
             
             {/* Badge pour notifications */}
-            {action.badge > 0 && (
+            {action.badge !== undefined && action.badge > 0 && (
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
