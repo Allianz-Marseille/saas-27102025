@@ -324,8 +324,7 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
   return (
     <div className="space-y-8">
       {/* Section 1 : Activité Mensuelle */}
-      <Card className="border-l-4 border-l-blue-500 relative shadow-lg">
-        <div className="absolute -top-1 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 rounded-t-lg z-10" />
+      <Card className="relative shadow-lg">
         <CardHeader className="bg-gradient-to-r from-blue-50/50 via-purple-50/30 to-blue-50/50 dark:from-blue-950/20 dark:via-purple-950/10 dark:to-blue-950/20 border-b">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-md">
