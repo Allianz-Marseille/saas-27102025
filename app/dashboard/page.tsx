@@ -2,71 +2,33 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
-import { DollarSign, FileText, Plus, ClipboardCheck, Car, Building2, Scale, Edit, Trash2, Coins, AlertCircle, CheckCircle2, Target, ChevronLeft, ChevronRight, Lock, Unlock, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import { deleteAct } from "@/lib/firebase/acts";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DollarSign, FileText, ClipboardCheck, Car, Building2, Scale, Coins, AlertCircle, CheckCircle2, Target } from "lucide-react";
 import { KPICard } from "@/components/dashboard/kpi-card";
-import { ThemeToggle } from "@/components/dashboard/theme-toggle";
-import { Button } from "@/components/ui/button";
+import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
+import { QuickActions } from "@/components/dashboard/quick-actions";
+import { ProgressTracker } from "@/components/dashboard/progress-tracker";
+import { AchievementBadges } from "@/components/dashboard/achievement-badges";
+import { LeaderboardWidget } from "@/components/dashboard/leaderboard-widget";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { calculateKPI } from "@/lib/utils/kpi";
 import { formatCurrency } from "@/lib/utils";
-import Image from "next/image";
 import { toast } from "sonner";
 import { Act } from "@/types";
-import { NewActDialog } from "@/components/acts/new-act-dialog";
-import { EditActDialog } from "@/components/acts/edit-act-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { RouteGuard } from "@/components/auth/route-guard";
-import { logout } from "@/lib/firebase/auth";
-import { useRouter } from "next/navigation";
 import { getActsByMonth } from "@/lib/firebase/acts";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { Timestamp } from "firebase/firestore";
-import { clsx } from "clsx";
-import { isActLocked as checkActLocked } from "@/lib/utils/act-lock";
-import { toDate } from "@/lib/utils/date-helpers";
+import { MonthSelector } from "@/components/dashboard/month-selector";
 
 export default function DashboardPage() {
-  const router = useRouter();
   const { user, userData } = useAuth();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast.success("Déconnexion réussie");
-      router.push("/login");
-    } catch {
-      toast.error("Erreur lors de la déconnexion");
-    }
-  };
   const [acts, setActs] = useState<Act[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [actToEdit, setActToEdit] = useState<Act | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>(
     format(new Date(), "yyyy-MM")
   );
-  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; actId: string | null; clientName: string }>({
-    open: false,
-    actId: null,
-    clientName: "",
-  });
-  const [noteDialog, setNoteDialog] = useState<{ open: boolean; note: string; clientName: string }>({
-    open: false,
-    note: "",
-    clientName: "",
-  });
-  const timelineContainerRef = useRef<HTMLDivElement | null>(null);
-  const [sortConfig, setSortConfig] = useState<SortState>({
-    key: "dateSaisie",
-    direction: "desc",
-  });
+  const [isNewActDialogOpen, setIsNewActDialogOpen] = useState(false);
 
   const loadActs = async () => {
     if (!user) {
@@ -109,240 +71,44 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMonth, user]);
 
-  const handleActCreated = () => {
-    loadActs();
-  };
-
-  const handleDeleteActClick = (actId: string, clientName: string) => {
-    setDeleteDialog({ open: true, actId, clientName });
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!deleteDialog.actId) return;
-
-    try {
-      await deleteAct(deleteDialog.actId);
-      toast.success("Acte supprimé avec succès");
-      setDeleteDialog({ open: false, actId: null, clientName: "" });
-      loadActs();
-    } catch (error) {
-      console.error("Erreur lors de la suppression:", error);
-      toast.error("Erreur lors de la suppression de l'acte");
-    }
-  };
-
-  const handleEditAct = (act: Act) => {
-    if (checkActLocked(act, userData)) {
-      toast.error("Cet acte est bloqué et ne peut pas être modifié");
-      return;
-    }
-    setActToEdit(act);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleEditSuccess = () => {
-    loadActs();
-  };
-
   const kpi = calculateKPI(acts);
 
-  const sortedActs = useMemo(() => {
-    if (acts.length === 0) {
-      return acts;
-    }
-
-    const actsClone = [...acts];
-    actsClone.sort((actA, actB) => {
-      const valueA = getSortableValue(actA, sortConfig.key);
-      const valueB = getSortableValue(actB, sortConfig.key);
-
-      // Gérer les valeurs null
-      if (valueA === null && valueB === null) {
-        return 0;
-      }
-      if (valueA === null) {
-        return sortConfig.direction === "asc" ? -1 : 1;
-      }
-      if (valueB === null) {
-        return sortConfig.direction === "asc" ? 1 : -1;
-      }
-
-      // Comparaison selon le type
-      if (typeof valueA === "number" && typeof valueB === "number") {
-        return sortConfig.direction === "asc" ? valueA - valueB : valueB - valueA;
-      }
-
-      if (typeof valueA === "string" && typeof valueB === "string") {
-        const comparison = valueA.localeCompare(valueB, "fr", { sensitivity: "base" });
-        return sortConfig.direction === "asc" ? comparison : -comparison;
-      }
-
-      return 0;
-    });
-
-    return actsClone;
-  }, [acts, sortConfig]);
-
-  const handleSortChange = (key: SortKey) => {
-    setSortConfig((current) => {
-      if (current.key === key) {
-        // Si on clique sur la même colonne, inverser la direction
-        return {
-          key,
-          direction: current.direction === "asc" ? "desc" : "asc",
-        };
-      }
-      // Si on clique sur une nouvelle colonne, trier par défaut en descendant
-      return {
-        key,
-        direction: "desc",
-      };
-    });
-  };
-
-  const renderSortIcon = (key: SortKey) => {
-    if (sortConfig.key !== key) {
-      return <ArrowUpDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />;
-    }
-
-    if (sortConfig.direction === "asc") {
-      return <ArrowUp className="h-4 w-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />;
-    }
-
-    return <ArrowDown className="h-4 w-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />;
-  };
-
-  const getAriaSort = (column: SortKey, sortConfig: SortState): "ascending" | "descending" | "none" => {
-    if (sortConfig.key !== column) {
-      return "none";
-    }
-
-    return sortConfig.direction === "asc" ? "ascending" : "descending";
-  };
-
-  const timelineDays = useMemo(() => generateTimeline(selectedMonth, acts), [selectedMonth, acts]);
-
-  useEffect(() => {
-    const container = timelineContainerRef.current;
-    if (!container) return;
-
-    const todayElement = container.querySelector<HTMLDivElement>('[data-timeline-day="today"]');
-
-    if (!todayElement) {
-      container.scrollTo({ left: 0, behavior: "auto" });
-      return;
-    }
-
-    const targetLeft = todayElement.offsetLeft - container.clientWidth / 2 + todayElement.clientWidth / 2;
-    const safeTarget = Math.max(targetLeft, 0);
-
-    container.scrollTo({
-      left: safeTarget,
-      behavior: "smooth",
-    });
-  }, [timelineDays]);
-
-
   return (
-    <RouteGuard>
-      <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-              <Image
-                src="/allianz.svg"
-                alt="Allianz"
-                width={100}
-                height={26}
-                className="h-6 w-auto brightness-0 dark:brightness-100"
-              />
-            <h1 className="text-xl font-bold">Dashboard Commercial</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button 
-              variant="outline" 
-              onClick={handleLogout}
-              size="sm"
-            >
-              Déconnexion
-            </Button>
-          </div>
+      <header className="border-b bg-card/80 backdrop-blur-lg sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Tableau de bord
+          </h1>
+          <MonthSelector 
+            selectedMonth={selectedMonth}
+            onMonthChange={setSelectedMonth}
+          />
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
-        {/* Sélecteur mensuel avec navigation */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Label>Mois</Label>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  const [year, month] = selectedMonth.split("-").map(Number);
-                  const newDate = new Date(year, month - 1);
-                  newDate.setMonth(newDate.getMonth() - 1);
-                  setSelectedMonth(format(newDate, "yyyy-MM"));
-                }}
-                className="h-9 w-9"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-              
-              <div className="w-48 text-center">
-                <span className="text-lg font-semibold">
-                  {format(new Date(selectedMonth + "-01"), "MMMM yyyy", { locale: fr })}
-                </span>
-              </div>
-              
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  const [year, month] = selectedMonth.split("-").map(Number);
-                  const newDate = new Date(year, month - 1);
-                  newDate.setMonth(newDate.getMonth() + 1);
-                  // Ne pas permettre d'aller au-delà du mois actuel
-                  const now = new Date();
-                  const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-                  if (newDate <= currentMonth) {
-                    setSelectedMonth(format(newDate, "yyyy-MM"));
-                  }
-                }}
-                className="h-9 w-9"
-                disabled={selectedMonth >= format(new Date(), "yyyy-MM")}
-              >
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-          <Button 
-            className="bg-[#00529B] hover:bg-[#003d73]"
-            onClick={() => setIsDialogOpen(true)}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nouvel acte
-          </Button>
-        </div>
+      <div className="container mx-auto px-6 py-6">
+        {/* Welcome Banner */}
+        <WelcomeBanner kpi={kpi} />
 
-        {/* Dialog Nouvel Acte */}
-        <NewActDialog 
-          open={isDialogOpen} 
-          onOpenChange={setIsDialogOpen}
-          onSuccess={handleActCreated}
+        {/* Quick Actions */}
+        <QuickActions 
+          onNewAct={() => setIsNewActDialogOpen(true)}
+          notificationCount={3}
         />
 
-        {/* Dialog Éditer Acte */}
-        <EditActDialog 
-          open={isEditDialogOpen} 
-          onOpenChange={setIsEditDialogOpen}
-          act={actToEdit}
-          onSuccess={handleEditSuccess}
-        />
+        {/* Progress Tracker */}
+        <ProgressTracker kpi={kpi} />
 
+        {/* Achievement Badges */}
+        <AchievementBadges kpi={kpi} />
+
+        {/* Leaderboard */}
+        <LeaderboardWidget 
+          currentUserEmail={userData?.email}
+          kpi={kpi}
+        />
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <KPICard
@@ -350,36 +116,42 @@ export default function DashboardPage() {
             value={formatCurrency(kpi.caMensuel)}
             icon={DollarSign}
             colorScheme="green"
+            delay={0}
           />
           <KPICard
             title="CA Auto / Moto"
             value={formatCurrency(kpi.caAuto)}
             icon={DollarSign}
             colorScheme="blue"
+            delay={0.05}
           />
           <KPICard
             title="CA Autres"
             value={formatCurrency(kpi.caAutres)}
             icon={DollarSign}
             colorScheme="purple"
+            delay={0.1}
           />
           <KPICard
             title="Nombre de contrats"
             value={kpi.nbContrats.toString()}
             icon={ClipboardCheck}
             colorScheme="indigo"
+            delay={0.15}
           />
           <KPICard
             title="Contrats Auto / Moto"
             value={kpi.nbContratsAuto.toString()}
             icon={Car}
             colorScheme="teal"
+            delay={0.2}
           />
           <KPICard
             title="Contrats Autres"
             value={kpi.nbContratsAutres.toString()}
             icon={Building2}
             colorScheme="orange"
+            delay={0.25}
           />
           <KPICard
             title="Ratio"
@@ -388,6 +160,7 @@ export default function DashboardPage() {
             icon={Scale}
             trend={kpi.ratio >= 100 ? "up" : "down"}
             colorScheme={kpi.ratio >= 100 ? "green" : "red"}
+            delay={0.3}
           />
           <KPICard
             title="Nombre de process"
@@ -395,6 +168,7 @@ export default function DashboardPage() {
             subtitle="M+3, Pré-terme auto, Pré-terme IRD"
             icon={FileText}
             colorScheme="pink"
+            delay={0.35}
           />
           <KPICard
             title="Commissions potentielles"
@@ -403,6 +177,7 @@ export default function DashboardPage() {
             icon={Coins}
             trend={kpi.commissionValidee ? "up" : "neutral"}
             colorScheme="green"
+            delay={0.4}
           />
           <KPICard
             title="Commissions réelles"
@@ -411,6 +186,7 @@ export default function DashboardPage() {
             icon={Coins}
             trend={kpi.commissionValidee ? "up" : "neutral"}
             colorScheme="blue"
+            delay={0.45}
           />
         </div>
 
@@ -569,405 +345,18 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Timeline */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Timeline</CardTitle>
-            <CardDescription>
-              Visualisation des actes sur le mois sélectionné
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div ref={timelineContainerRef} className="overflow-x-auto">
-              <div className="flex gap-2 min-w-max">
-                {timelineDays.map((day, index) => (
-                  <div
-                    key={index}
-                    data-timeline-day={day.isToday ? "today" : undefined}
-                    className={clsx(
-                      "flex flex-col items-center p-3 rounded-lg min-w-[80px] transition-colors border",
-                      {
-                        "bg-orange-100 dark:bg-orange-900/20": day.isSaturday && !day.isToday,
-                        "bg-red-100 dark:bg-red-900/20": day.isSunday && !day.isToday,
-                        "bg-muted": !day.isSaturday && !day.isSunday && !day.isToday,
-                        "border-blue-500 bg-blue-500/20 shadow-lg": day.isToday,
-                        "border-transparent": !day.isToday,
-                      }
-                    )}
-                  >
-                    <span className="text-xs font-medium">
-                      {format(day.date, "EEE", { locale: fr }).substring(0, 3)}
-                    </span>
-                    <span className="text-2xl font-bold">
-                      {format(day.date, "d")}
-                    </span>
-                    <span className="text-xs text-muted-foreground mt-1">
-                      {day.acts.length} acte{day.acts.length > 1 ? "s" : ""}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Tableau des actes */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Actes commerciaux</CardTitle>
-            <CardDescription>
-              Liste de tous les actes du mois sélectionné
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <p className="text-center py-8 text-muted-foreground">Chargement...</p>
-            ) : acts.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">Aucun acte pour ce mois</p>
-            ) : (
-              <div className="overflow-x-auto rounded-lg border">
-                <table className="w-full">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="text-center p-3 font-semibold text-sm border-b w-12"></th>
-                      <th 
-                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
-                        aria-sort={getAriaSort("dateSaisie", sortConfig)}
-                      >
-                        <button
-                          onClick={() => handleSortChange("dateSaisie")}
-                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        >
-                          Date de saisie
-                          {renderSortIcon("dateSaisie")}
-                        </button>
-                      </th>
-                      <th 
-                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
-                        aria-sort={getAriaSort("kind", sortConfig)}
-                      >
-                        <button
-                          onClick={() => handleSortChange("kind")}
-                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        >
-                          Type
-                          {renderSortIcon("kind")}
-                        </button>
-                      </th>
-                      <th 
-                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
-                        aria-sort={getAriaSort("clientNom", sortConfig)}
-                      >
-                        <button
-                          onClick={() => handleSortChange("clientNom")}
-                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        >
-                          Client
-                          {renderSortIcon("clientNom")}
-                        </button>
-                      </th>
-                      <th 
-                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
-                        aria-sort={getAriaSort("numeroContrat", sortConfig)}
-                      >
-                        <button
-                          onClick={() => handleSortChange("numeroContrat")}
-                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        >
-                          N° Contrat
-                          {renderSortIcon("numeroContrat")}
-                        </button>
-                      </th>
-                      <th 
-                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
-                        aria-sort={getAriaSort("contratType", sortConfig)}
-                      >
-                        <button
-                          onClick={() => handleSortChange("contratType")}
-                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        >
-                          Type Contrat
-                          {renderSortIcon("contratType")}
-                        </button>
-                      </th>
-                      <th 
-                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
-                        aria-sort={getAriaSort("compagnie", sortConfig)}
-                      >
-                        <button
-                          onClick={() => handleSortChange("compagnie")}
-                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        >
-                          Compagnie
-                          {renderSortIcon("compagnie")}
-                        </button>
-                      </th>
-                      <th 
-                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
-                        aria-sort={getAriaSort("dateEffet", sortConfig)}
-                      >
-                        <button
-                          onClick={() => handleSortChange("dateEffet")}
-                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        >
-                          Date d&apos;effet
-                          {renderSortIcon("dateEffet")}
-                        </button>
-                      </th>
-                      <th 
-                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
-                        aria-sort={getAriaSort("primeAnnuelle", sortConfig)}
-                      >
-                        <button
-                          onClick={() => handleSortChange("primeAnnuelle")}
-                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        >
-                          Prime annuelle
-                          {renderSortIcon("primeAnnuelle")}
-                        </button>
-                      </th>
-                      <th 
-                        className="text-center p-3 font-semibold text-sm border-b cursor-pointer hover:bg-muted/70 transition-colors"
-                        aria-sort={getAriaSort("commissionPotentielle", sortConfig)}
-                      >
-                        <button
-                          onClick={() => handleSortChange("commissionPotentielle")}
-                          className="flex items-center justify-center gap-2 w-full text-sm font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        >
-                          Commission
-                          {renderSortIcon("commissionPotentielle")}
-                        </button>
-                      </th>
-                      <th className="text-center p-3 font-semibold text-sm border-b w-20">Statut</th>
-                      <th className="text-center p-3 font-semibold text-sm border-b w-24">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedActs.map((act) => {
-                      const isProcess = act.kind === "M+3" || act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD";
-                      const isLocked = checkActLocked(act, userData);
-                      
-                      return (
-                        <tr
-                          key={act.id}
-                          className={`border-b hover:bg-muted/30 transition-colors ${
-                            isLocked ? "opacity-60 bg-muted/20" : ""
-                          }`}
-                        >
-                          <td className="p-3 text-center align-middle">
-                            {act.note ? (
-                              <button 
-                                onClick={() => setNoteDialog({ open: true, note: act.note!, clientName: act.clientNom })}
-                                className="hover:opacity-70 transition-opacity" 
-                                title="Voir la note"
-                              >
-                                <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                              </button>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </td>
-                          <td className="p-3 text-sm text-center align-middle">{format(toDate(act.dateSaisie), "dd/MM/yyyy")}</td>
-                          <td className="p-3 text-sm text-center align-middle">{act.kind}</td>
-                          <td className="p-3 text-sm font-medium text-center align-middle">{act.clientNom}</td>
-                          <td className="p-3 text-sm text-center align-middle">{isProcess ? "-" : act.numeroContrat}</td>
-                          <td className="p-3 text-sm text-center align-middle">{isProcess ? "-" : act.contratType}</td>
-                          <td className="p-3 text-sm text-center align-middle">{isProcess ? "-" : act.compagnie}</td>
-                          <td className="p-3 text-sm text-center align-middle">{format(toDate(act.dateEffet), "dd/MM/yyyy")}</td>
-                          <td className="p-3 text-sm text-center align-middle">
-                            {act.primeAnnuelle ? formatCurrency(act.primeAnnuelle) : "-"}
-                          </td>
-                          <td className="p-3 text-sm text-center font-semibold align-middle">
-                            {formatCurrency(act.commissionPotentielle)}
-                          </td>
-                          <td className="p-3 text-center align-middle">
-                            {isLocked ? (
-                              <div className="flex items-center justify-center" title="Bloqué">
-                                <Lock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-center" title="Débloqué">
-                                <Unlock className="h-5 w-5 text-green-600 dark:text-green-400" />
-                              </div>
-                            )}
-                          </td>
-                          <td className="p-3 text-center align-middle">
-                            <div className="flex gap-2 justify-center items-center">
-                              <button
-                                onClick={() => handleEditAct(act)}
-                                className={`p-1 rounded transition-colors ${
-                                  isLocked 
-                                    ? "opacity-30 cursor-not-allowed" 
-                                    : "hover:bg-muted"
-                                }`}
-                                disabled={isLocked}
-                                title={isLocked ? "Modification bloquée" : "Modifier"}
-                              >
-                                <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                              </button>
-                              <button
-                                onClick={() => !isLocked && handleDeleteActClick(act.id, act.clientNom)}
-                                className={`p-1 rounded transition-colors ${
-                                  isLocked 
-                                    ? "opacity-30 cursor-not-allowed" 
-                                    : "hover:bg-muted"
-                                }`}
-                                disabled={isLocked}
-                                title={isLocked ? "Suppression bloquée" : "Supprimer"}
-                              >
-                                <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </main>
-      
-      {/* Modale de confirmation de suppression */}
-      <AlertDialog
-        open={deleteDialog.open}
-        onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer l&apos;acte pour {deleteDialog.clientName} ? Cette action est irréversible.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <Button variant="outline" onClick={() => setDeleteDialog({ ...deleteDialog, open: false })}>
-                Annuler
-              </Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button variant="destructive" onClick={handleConfirmDelete}>
-                Supprimer
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Modale d'affichage de la note */}
-      <Dialog open={noteDialog.open} onOpenChange={(open) => setNoteDialog({ ...noteDialog, open })}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Note - {noteDialog.clientName}</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-base whitespace-pre-wrap wrap-break-word">{noteDialog.note}</p>
-          </div>
-        </DialogContent>
-      </Dialog>
+        {/* Message pour accéder aux actes */}
+        {!isLoading && (
+          <Card>
+            <CardContent className="flex items-center justify-center py-8">
+              <p className="text-muted-foreground">
+                Pour consulter et gérer vos actes, rendez-vous dans l&apos;onglet{" "}
+                <span className="font-semibold text-foreground">Mes actes</span>
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
-    </RouteGuard>
+    </div>
   );
 }
-
-function getSortableValue(act: Act, key: SortKey): number | string | null {
-  switch (key) {
-    case "dateSaisie": {
-      const date = toDate(act.dateSaisie);
-      return Number.isNaN(date.getTime()) ? null : date.getTime();
-    }
-    case "dateEffet": {
-      const date = toDate(act.dateEffet);
-      return Number.isNaN(date.getTime()) ? null : date.getTime();
-    }
-    case "commissionPotentielle":
-      return typeof act.commissionPotentielle === "number" ? act.commissionPotentielle : null;
-    case "primeAnnuelle":
-      return typeof act.primeAnnuelle === "number" ? act.primeAnnuelle : null;
-    case "numeroContrat":
-      return act.numeroContrat ? act.numeroContrat.toLowerCase() : null;
-    case "contratType":
-      return act.contratType ? act.contratType.toLowerCase() : null;
-    case "compagnie":
-      return act.compagnie ? act.compagnie.toLowerCase() : null;
-    case "clientNom":
-      return act.clientNom ? act.clientNom.toLowerCase() : null;
-    case "kind":
-      return act.kind ? act.kind.toLowerCase() : null;
-    default:
-      return null;
-  }
-}
-
-function generateTimeline(monthKey: string, acts: Act[] = []): TimelineDay[] {
-  const [year, month] = monthKey.split("-").map(Number);
-  const daysInMonth = new Date(year, month, 0).getDate();
-  const timelineDays: TimelineDay[] = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Créer un map des actes par jour (basé sur la date de saisie)
-  const actsByDay = new Map<string, Act[]>();
-  
-  acts.forEach((act) => {
-    const actDate = toDate(act.dateSaisie);
-    const dayKey = `${actDate.getFullYear()}-${actDate.getMonth() + 1}-${actDate.getDate()}`;
-    
-    if (!actsByDay.has(dayKey)) {
-      actsByDay.set(dayKey, []);
-    }
-    actsByDay.get(dayKey)!.push(act);
-  });
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month - 1, day);
-    const normalizedDate = new Date(date);
-    normalizedDate.setHours(0, 0, 0, 0);
-    const dayOfWeek = date.getDay();
-    const isSaturday = dayOfWeek === 6;
-    const isSunday = dayOfWeek === 0;
-    
-    const dayKey = `${year}-${month}-${day}`;
-    const dayActs = actsByDay.get(dayKey) || [];
-
-    timelineDays.push({
-      date,
-      isSaturday,
-      isSunday,
-      isToday: normalizedDate.getTime() === today.getTime(),
-      acts: dayActs,
-    });
-  }
-
-  return timelineDays;
-}
-
-type TimelineDay = {
-  date: Date;
-  isSaturday: boolean;
-  isSunday: boolean;
-  isToday: boolean;
-  acts: Act[];
-};
-
-type SortKey =
-  | "dateSaisie"
-  | "dateEffet"
-  | "clientNom"
-  | "numeroContrat"
-  | "contratType"
-  | "compagnie"
-  | "primeAnnuelle"
-  | "commissionPotentielle"
-  | "kind";
-
-type SortDirection = "asc" | "desc";
-
-type SortState = {
-  key: SortKey;
-  direction: SortDirection;
-};
-
