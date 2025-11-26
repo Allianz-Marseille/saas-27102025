@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "create-users": "ts-node --project tsconfig.scripts.json scripts/create-users.ts",
+    "check-users": "ts-node --project tsconfig.scripts.json scripts/check-users.ts",
     "sync-users": "ts-node --project tsconfig.scripts.json scripts/sync-users.ts",
     "init-companies": "ts-node --project tsconfig.scripts.json scripts/init-companies.ts",
     "migrate-ird-pro-commissions": "ts-node --project tsconfig.scripts.json scripts/migrate-ird-pro-commissions.ts"
