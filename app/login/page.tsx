@@ -73,19 +73,25 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4 relative">
       {/* PixelBlast Background */}
-      <div className="fixed inset-0 z-0" style={{ width: '100vw', height: '100vh' }}>
+      <div className="fixed inset-0 z-0 opacity-50" style={{ width: '100vw', height: '100vh' }}>
         <PixelBlast
           variant="circle"
-          pixelSize={8}
-          color="#FF0000"
-          patternScale={1}
-          patternDensity={2}
-          pixelSizeJitter={0}
-          enableRipples={false}
-          liquid={false}
-          speed={0.3}
-          edgeFade={0}
-          transparent={false}
+          pixelSize={6}
+          color="#00529B"
+          patternScale={2}
+          patternDensity={1.8}
+          pixelSizeJitter={0.3}
+          enableRipples
+          rippleSpeed={0.4}
+          rippleThickness={0.15}
+          rippleIntensityScale={1.5}
+          liquid
+          liquidStrength={0.12}
+          liquidRadius={1.2}
+          liquidWobbleSpeed={4}
+          speed={0.5}
+          edgeFade={0.1}
+          transparent
         />
       </div>
 
