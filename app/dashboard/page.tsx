@@ -7,7 +7,6 @@ import { format } from "date-fns";
 import { DollarSign, FileText, ClipboardCheck, Car, Building2, Scale, Coins, AlertCircle, CheckCircle2, Target } from "lucide-react";
 import { KPICard } from "@/components/dashboard/kpi-card";
 import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
-import { QuickActions } from "@/components/dashboard/quick-actions";
 import { ProgressTracker } from "@/components/dashboard/progress-tracker";
 import { AchievementBadges } from "@/components/dashboard/achievement-badges";
 import { LeaderboardWidget } from "@/components/dashboard/leaderboard-widget";
@@ -28,7 +27,6 @@ export default function DashboardPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>(
     format(new Date(), "yyyy-MM")
   );
-  const [isNewActDialogOpen, setIsNewActDialogOpen] = useState(false);
 
   const loadActs = async () => {
     if (!user) {
@@ -91,12 +89,6 @@ export default function DashboardPage() {
       <div className="container mx-auto px-6 py-6">
         {/* Welcome Banner */}
         <WelcomeBanner kpi={kpi} />
-
-        {/* Quick Actions */}
-        <QuickActions 
-          onNewAct={() => setIsNewActDialogOpen(true)}
-          notificationCount={3}
-        />
 
         {/* Progress Tracker */}
         <ProgressTracker kpi={kpi} />
@@ -347,14 +339,14 @@ export default function DashboardPage() {
 
         {/* Message pour accéder aux actes */}
         {!isLoading && (
-          <Card>
+        <Card>
             <CardContent className="flex items-center justify-center py-8">
               <p className="text-muted-foreground">
                 Pour consulter et gérer vos actes, rendez-vous dans l&apos;onglet{" "}
                 <span className="font-semibold text-foreground">Mes actes</span>
               </p>
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
         )}
       </div>
     </div>
