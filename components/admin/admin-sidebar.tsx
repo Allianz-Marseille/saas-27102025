@@ -81,8 +81,8 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
         {/* Déconnexion */}
         <div className="mt-auto p-4 border-t shrink-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 dark:from-blue-600/10 dark:via-purple-600/10 dark:to-pink-600/10">
           <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-red-50 hover:border hover:border-red-200 dark:hover:bg-red-950/30 dark:hover:border-red-800 transition-all"
+            variant="outline"
+            className="w-full justify-start gap-3 bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all"
             onClick={onLogout}
           >
             <LogOut className="h-5 w-5" />

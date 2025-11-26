@@ -154,7 +154,7 @@ export function CommercialSidebar() {
             <Button
               variant="outline"
               onClick={handleLogout}
-              className="flex-1 gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:hover:bg-red-950/30 dark:hover:text-red-400 dark:hover:border-red-800 transition-all"
+              className="flex-1 gap-2 bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all"
             >
               <LogOut className="h-4 w-4" />
               Déconnexion
@@ -166,7 +166,7 @@ export function CommercialSidebar() {
               size="icon"
               onClick={handleLogout}
               title="Déconnexion"
-              className="hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:hover:bg-red-950/30 dark:hover:text-red-400 dark:hover:border-red-800 transition-all"
+              className="bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all"
             >
               <LogOut className="h-4 w-4" />
             </Button>

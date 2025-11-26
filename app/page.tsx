@@ -7,6 +7,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, FileText } from "lucide-react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
+
+const PixelBlast = dynamic(() => import("@/components/ui/PixelBlast"), {
+  ssr: false,
+});
 
 export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -56,8 +61,32 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-      <header className="container mx-auto px-4 py-6">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 relative">
+      {/* PixelBlast Background */}
+      <div className="fixed inset-0 z-0 opacity-30">
+        <PixelBlast
+          variant="circle"
+          pixelSize={6}
+          color="#00529B"
+          patternScale={3}
+          patternDensity={1.2}
+          pixelSizeJitter={0.5}
+          enableRipples
+          rippleSpeed={0.4}
+          rippleThickness={0.12}
+          rippleIntensityScale={1.5}
+          liquid
+          liquidStrength={0.12}
+          liquidRadius={1.2}
+          liquidWobbleSpeed={5}
+          speed={0.6}
+          edgeFade={0.25}
+          transparent
+        />
+      </div>
+
+      <div className="relative z-10">
+        <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="logo-animation">
@@ -75,9 +104,9 @@ export default function HomePage() {
             </span>
           </div>
         </div>
-      </header>
+        </header>
 
-      <main className="container mx-auto px-4 py-20">
+        <main className="container mx-auto px-4 py-20">
         <div ref={heroRef} className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0 }}
@@ -152,11 +181,12 @@ export default function HomePage() {
             </p>
           </motion.div>
         </div>
-      </main>
+        </main>
 
-      <footer className="container mx-auto px-4 py-12 text-center text-muted-foreground">
-        <p>© 2025 Allianz Marseille. Tous droits réservés.</p>
-      </footer>
+        <footer className="container mx-auto px-4 py-12 text-center text-muted-foreground">
+          <p>© 2025 Allianz Marseille. Tous droits réservés.</p>
+        </footer>
+      </div>
     </div>
   );
 }

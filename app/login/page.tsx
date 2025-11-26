@@ -16,6 +16,11 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Image from "next/image";
 import { ROLES } from "@/lib/utils/roles";
+import dynamic from "next/dynamic";
+
+const PixelBlast = dynamic(() => import("@/components/ui/PixelBlast"), {
+  ssr: false,
+});
 
 const loginSchema = z.object({
   email: z.string().email("Email invalide").refine(
@@ -66,8 +71,31 @@ export default function LoginPage() {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4 relative">
+      {/* PixelBlast Background */}
+      <div className="fixed inset-0 z-0 opacity-30">
+        <PixelBlast
+          variant="circle"
+          pixelSize={6}
+          color="#00529B"
+          patternScale={3}
+          patternDensity={1.2}
+          pixelSizeJitter={0.5}
+          enableRipples
+          rippleSpeed={0.4}
+          rippleThickness={0.12}
+          rippleIntensityScale={1.5}
+          liquid
+          liquidStrength={0.12}
+          liquidRadius={1.2}
+          liquidWobbleSpeed={5}
+          speed={0.6}
+          edgeFade={0.25}
+          transparent
+        />
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
         <div className="flex items-center justify-center mb-8">
           <Image
             src="/allianz.svg"
