@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
+import { useState } from "react";
 import Image from "next/image";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
@@ -9,6 +10,7 @@ import { RouteGuard } from "@/components/auth/route-guard";
 import { logout } from "@/lib/firebase/auth";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export default function AdminLayout({
   children,
@@ -16,6 +18,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -31,10 +34,17 @@ export default function AdminLayout({
     <RouteGuard allowedRoles={["ADMINISTRATEUR"]}>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
         {/* Sidebar */}
-        <AdminSidebar onLogout={handleLogout} />
+        <AdminSidebar 
+          onLogout={handleLogout}
+          isCollapsed={isSidebarCollapsed}
+          onCollapsedChange={setIsSidebarCollapsed}
+        />
 
         {/* Main content */}
-        <div className="ml-64">
+        <div className={cn(
+          "transition-all duration-300",
+          isSidebarCollapsed ? "ml-16" : "ml-64"
+        )}>
           {/* Header */}
           <header className="border-b bg-gradient-to-r from-white via-blue-50/50 to-purple-50/50 dark:from-slate-950 dark:via-blue-950/20 dark:to-purple-950/20 backdrop-blur-lg sticky top-0 z-30 shadow-md shadow-blue-500/5">
             <div className="container mx-auto px-4 py-4 flex items-center justify-between">

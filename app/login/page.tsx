@@ -66,8 +66,24 @@ export default function LoginPage() {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen relative flex items-center justify-center p-4">
+      {/* Background image avec flou */}
+      <div className="fixed inset-0 z-0">
+        <Image
+          src="/vieux_port.jpeg"
+          alt="Vieux-Port de Marseille"
+          fill
+          priority
+          className="object-cover"
+          style={{ filter: 'blur(8px)' }}
+          quality={90}
+        />
+        {/* Overlay pour améliorer la lisibilité */}
+        <div className="absolute inset-0 bg-slate-900/40 dark:bg-slate-950/60" />
+      </div>
+
+      {/* Contenu de la page */}
+      <div className="w-full max-w-md relative z-10">
         <div className="flex items-center justify-center mb-8">
           <Image
             src="/allianz.svg"
@@ -75,11 +91,11 @@ export default function LoginPage() {
             width={150}
             height={40}
             priority
-            className="h-12 w-auto brightness-0 dark:brightness-100"
+            className="h-12 w-auto brightness-0 invert drop-shadow-2xl"
           />
         </div>
         
-        <Card>
+        <Card className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-md shadow-2xl">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">
               Connexion

@@ -1,6 +1,6 @@
 "use client";
 
-import { Coins, TrendingUp, TrendingDown } from "lucide-react";
+import { Coins, TrendingUp, TrendingDown, Target } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
@@ -49,23 +49,46 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
 
   const currentUser = leaderboard.find(u => u.isCurrentUser);
   const gapToFirst = currentUser ? leaderboard[0].commissions - currentUser.commissions : 0;
+  
+  // Objectif recommandé : 800€
+  const targetCommissions = 800;
+  const isTargetMet = currentUser ? currentUser.commissions >= targetCommissions : false;
 
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
-            <Coins className="h-5 w-5 text-white" />
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+                <Coins className="h-5 w-5 text-white" />
+              </div>
+              Classement Commissions Potentielles
+            </CardTitle>
+            <CardDescription className="mt-2 flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Objectif : 800 € de commissions potentielles
+            </CardDescription>
           </div>
-          Classement Commissions Potentielles
-        </CardTitle>
-        <CardDescription className="mt-2">
-          Classement par montant de commissions potentielles du mois
-        </CardDescription>
+          
+          {/* Statistiques personnelles */}
+          <div className="text-right">
+            <div className="text-xs text-muted-foreground">Vos commissions</div>
+            <div className={cn(
+              "text-2xl font-bold flex items-center gap-1 justify-end",
+              isTargetMet 
+                ? "text-green-600 dark:text-green-400" 
+                : "text-orange-600 dark:text-orange-400"
+            )}>
+              <Coins className="h-5 w-5" />
+              {currentUserCommissions} €
+            </div>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {leaderboard.map((user, index) => {
+          {leaderboard.slice(0, 3).map((user, index) => {
             const hasMedal = user.rank <= 3;
             const medals = ['🥇', '🥈', '🥉'];
 
@@ -158,15 +181,26 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="mt-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-xl border border-amber-200 dark:border-amber-900"
+            className="mt-4 space-y-2"
           >
-            <p className="text-sm text-center">
-              🎯 Plus que{' '}
-              <strong className="text-amber-600 dark:text-amber-400">
-                {gapToFirst.toLocaleString('fr-FR')} €
-              </strong>{' '}
-              de commissions potentielles pour prendre la tête !
-            </p>
+            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl border border-green-200 dark:border-green-900">
+              <p className="text-sm text-center">
+                🎯 Plus que{' '}
+                <strong className="text-green-600 dark:text-green-400">
+                  {gapToFirst.toLocaleString('fr-FR')} €
+                </strong>{' '}
+                de commissions potentielles pour prendre la tête !
+              </p>
+            </div>
+            <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-xl border border-amber-200 dark:border-amber-900">
+              <p className="text-xs text-center">
+                💡 Objectif :{' '}
+                <strong className="text-amber-600 dark:text-amber-400">
+                  800 € de commissions
+                </strong>{' '}
+                pour un bon résultat mensuel
+              </p>
+            </div>
           </motion.div>
         )}
 
@@ -175,11 +209,22 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.6, type: "spring" }}
-            className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl border border-green-200 dark:border-green-900"
+            className="mt-4 space-y-2"
           >
-            <p className="text-sm text-center text-green-600 dark:text-green-400 font-semibold">
-              👑 Vous êtes en tête des commissions potentielles ! Continuez comme ça !
-            </p>
+            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl border border-green-200 dark:border-green-900">
+              <p className="text-sm text-center text-green-600 dark:text-green-400 font-semibold">
+                👑 Vous êtes en tête des commissions potentielles ! Continuez comme ça !
+              </p>
+            </div>
+            <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-xl border border-amber-200 dark:border-amber-900">
+              <p className="text-xs text-center">
+                💡 Objectif :{' '}
+                <strong className="text-amber-600 dark:text-amber-400">
+                  800 € de commissions
+                </strong>{' '}
+                pour un bon résultat mensuel
+              </p>
+            </div>
           </motion.div>
         )}
       </CardContent>

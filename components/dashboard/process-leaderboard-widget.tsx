@@ -106,7 +106,7 @@ export function ProcessLeaderboardWidget({ currentUserEmail, kpi }: ProcessLeade
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {leaderboard.map((user, index) => {
+          {leaderboard.slice(0, 3).map((user, index) => {
             const hasMedal = user.rank <= 3;
             const medals = ['🥇', '🥈', '🥉'];
             const meetsTarget = user.avgPerDay >= targetPerDay;
@@ -212,15 +212,26 @@ export function ProcessLeaderboardWidget({ currentUserEmail, kpi }: ProcessLeade
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl border border-green-200 dark:border-green-900"
+            className="mt-4 space-y-2"
           >
-            <p className="text-sm text-center">
-              🎯 Plus que{' '}
-              <strong className="text-green-600 dark:text-green-400">
-                {gapToFirst} process
-              </strong>{' '}
-              pour prendre la tête !
-            </p>
+            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl border border-green-200 dark:border-green-900">
+              <p className="text-sm text-center">
+                🎯 Plus que{' '}
+                <strong className="text-green-600 dark:text-green-400">
+                  {gapToFirst} process
+                </strong>{' '}
+                pour prendre la tête !
+              </p>
+            </div>
+            <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-xl border border-amber-200 dark:border-amber-900">
+              <p className="text-xs text-center">
+                💡 Objectif :{' '}
+                <strong className="text-amber-600 dark:text-amber-400">
+                  {targetPerDay.toFixed(1)} process/jour
+                </strong>{' '}
+                en moyenne pour atteindre 20 par semaine
+              </p>
+            </div>
           </motion.div>
         )}
 
@@ -229,29 +240,22 @@ export function ProcessLeaderboardWidget({ currentUserEmail, kpi }: ProcessLeade
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.6, type: "spring" }}
-            className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl border border-green-200 dark:border-green-900"
+            className="mt-4 space-y-2"
           >
-            <p className="text-sm text-center text-green-600 dark:text-green-400 font-semibold">
-              👑 Vous êtes en tête des process ! Excellent suivi client !
-            </p>
-          </motion.div>
-        )}
-
-        {/* Message si objectif non atteint */}
-        {currentUser && !isTargetMet && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 rounded-xl border border-orange-200 dark:border-orange-900"
-          >
-            <p className="text-sm text-center">
-              💡 Objectif :{' '}
-              <strong className="text-orange-600 dark:text-orange-400">
-                {targetPerDay.toFixed(1)} process/jour
-              </strong>{' '}
-              en moyenne pour atteindre 20 par semaine
-            </p>
+            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl border border-green-200 dark:border-green-900">
+              <p className="text-sm text-center text-green-600 dark:text-green-400 font-semibold">
+                👑 Vous êtes en tête des process ! Excellent suivi client !
+              </p>
+            </div>
+            <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-xl border border-amber-200 dark:border-amber-900">
+              <p className="text-xs text-center">
+                💡 Objectif :{' '}
+                <strong className="text-amber-600 dark:text-amber-400">
+                  {targetPerDay.toFixed(1)} process/jour
+                </strong>{' '}
+                en moyenne pour atteindre 20 par semaine
+              </p>
+            </div>
           </motion.div>
         )}
       </CardContent>

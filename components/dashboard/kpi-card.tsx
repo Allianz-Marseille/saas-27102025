@@ -68,7 +68,7 @@ export function KPICard({ title, value, subtitle, icon: Icon, trend, colorScheme
       transition={{ duration: 0.3, delay }}
     >
       <Card className={cn(
-        "overflow-hidden transition-all hover:shadow-2xl hover:scale-[1.03] group cursor-pointer relative",
+        "overflow-hidden transition-all hover:shadow-2xl hover:scale-[1.03] group cursor-pointer relative h-full",
         colors.border
       )}>
         {/* Gradient Background on Hover */}
@@ -86,47 +86,51 @@ export function KPICard({ title, value, subtitle, icon: Icon, trend, colorScheme
           transition={{ duration: 0.6 }}
         />
 
-        <CardContent className="p-6 relative z-10">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
-                {title}
-              </CardTitle>
-              <motion.div 
-                className="text-4xl font-bold mb-2 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text"
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: delay + 0.2, type: "spring", stiffness: 200 }}
-              >
-                {value}
-              </motion.div>
-              {subtitle && (
-                <p className="text-xs text-muted-foreground mt-2">{subtitle}</p>
-              )}
-              {trend && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: delay + 0.3 }}
-                  className="mt-3"
+        <CardContent className="p-6 relative z-10 h-full flex flex-col">
+          <div className="flex items-start justify-between h-full">
+            <div className="flex-1 flex flex-col justify-between min-h-[140px]">
+              <div>
+                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+                  {title}
+                </CardTitle>
+                <motion.div 
+                  className="text-4xl font-bold mb-2 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text"
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: delay + 0.2, type: "spring", stiffness: 200 }}
                 >
-                  <span className={cn(
-                    "text-xs font-semibold flex items-center gap-1 px-2.5 py-1 rounded-full w-fit",
-                    trend === 'up' ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 
-                    trend === 'down' ? 'bg-red-500/10 text-red-600 dark:text-red-400' : 
-                    'bg-gray-500/10 text-muted-foreground'
-                  )}>
-                    {trend === 'up' && '↑ En hausse'}
-                    {trend === 'down' && '↓ En baisse'}
-                    {trend === 'neutral' && '→ Stable'}
-                  </span>
+                  {value}
                 </motion.div>
-              )}
+              </div>
+              <div className="mt-auto">
+                {subtitle && (
+                  <p className="text-xs text-muted-foreground">{subtitle}</p>
+                )}
+                {trend && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: delay + 0.3 }}
+                    className="mt-2"
+                  >
+                    <span className={cn(
+                      "text-xs font-semibold flex items-center gap-1 px-2.5 py-1 rounded-full w-fit",
+                      trend === 'up' ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 
+                      trend === 'down' ? 'bg-red-500/10 text-red-600 dark:text-red-400' : 
+                      'bg-gray-500/10 text-muted-foreground'
+                    )}>
+                      {trend === 'up' && '↑ En hausse'}
+                      {trend === 'down' && '↓ En baisse'}
+                      {trend === 'neutral' && '→ Stable'}
+                    </span>
+                  </motion.div>
+                )}
+              </div>
             </div>
             <motion.div 
               whileHover={{ rotate: 360, scale: 1.1 }}
               transition={{ duration: 0.5 }}
-              className={cn("rounded-xl p-3 flex items-center justify-center", colors.iconBg)}
+              className={cn("rounded-xl p-3 flex items-center justify-center flex-shrink-0", colors.iconBg)}
             >
               <Icon className={cn("h-8 w-8", colors.iconColor)} />
             </motion.div>

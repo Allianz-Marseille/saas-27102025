@@ -51,6 +51,14 @@ service cloud.firestore {
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
+    
+    // Logs collection
+    match /logs/{logId} {
+      allow read: if isAdmin(); // Only admins can read logs
+      allow create: if isAuthenticated(); // Any authenticated user can create logs
+      allow update: if false; // Logs are immutable
+      allow delete: if false; // Logs cannot be deleted to preserve audit trail
+    }
   }
 }
 

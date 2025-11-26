@@ -56,8 +56,25 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-      <header className="container mx-auto px-4 py-6">
+    <div className="min-h-screen relative">
+      {/* Background image avec flou */}
+      <div className="fixed inset-0 z-0">
+        <Image
+          src="/vieux_port.jpeg"
+          alt="Vieux-Port de Marseille"
+          fill
+          priority
+          className="object-cover"
+          style={{ filter: 'blur(8px)' }}
+          quality={90}
+        />
+        {/* Overlay pour améliorer la lisibilité */}
+        <div className="absolute inset-0 bg-slate-900/40 dark:bg-slate-950/60" />
+      </div>
+
+      {/* Contenu de la page */}
+      <div className="relative z-10">
+        <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="logo-animation">
@@ -67,10 +84,10 @@ export default function HomePage() {
                 width={150}
                 height={40}
                 priority
-                className="h-10 w-auto brightness-0 dark:brightness-100"
+                className="h-10 w-auto brightness-0 invert"
               />
             </div>
-            <span className="text-xl font-bold text-[#00529B]">
+            <span className="text-xl font-bold text-white">
               Marseille
             </span>
           </div>
@@ -86,7 +103,7 @@ export default function HomePage() {
           >
             <h1
               ref={titleRef}
-              className="text-5xl md:text-7xl font-bold mb-6 bg-linear-to-r from-[#00529B] to-slate-700 dark:from-[#00529B] dark:to-slate-300 bg-clip-text text-transparent"
+              className="text-5xl md:text-7xl font-bold mb-6 text-white drop-shadow-2xl"
             >
               SaaS Agence
             </h1>
@@ -94,7 +111,7 @@ export default function HomePage() {
 
           <p
             ref={subtitleRef}
-            className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-2xl mx-auto"
+            className="text-xl md:text-2xl text-white/90 mb-12 max-w-2xl mx-auto drop-shadow-lg"
           >
             Gestion complète de votre agence : actes commerciaux, commissions
             et indicateurs en temps réel.
@@ -102,7 +119,7 @@ export default function HomePage() {
 
           <div ref={ctaRef} className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/login">
-              <Button size="lg" className="bg-[#00529B] hover:bg-[#003d73] text-white">
+              <Button size="lg" className="bg-[#00529B] hover:bg-[#003d73] text-white shadow-2xl hover:shadow-blue-500/50 transition-all hover:scale-105">
                 Accéder à mon espace
               </Button>
             </Link>
@@ -115,7 +132,7 @@ export default function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
             viewport={{ once: true }}
-            className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+            className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-6 rounded-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105"
           >
             <TrendingUp className="h-12 w-12 text-[#00529B] mb-4" />
             <h3 className="text-xl font-semibold mb-2">KPI en temps réel</h3>
@@ -129,7 +146,7 @@ export default function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             viewport={{ once: true }}
-            className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+            className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-6 rounded-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105"
           >
             <DollarSign className="h-12 w-12 text-[#00529B] mb-4" />
             <h3 className="text-xl font-semibold mb-2">Calcul automatique</h3>
@@ -143,7 +160,7 @@ export default function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
             viewport={{ once: true }}
-            className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+            className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-6 rounded-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105"
           >
             <FileText className="h-12 w-12 text-[#00529B] mb-4" />
             <h3 className="text-xl font-semibold mb-2">Historique complet</h3>
@@ -154,9 +171,10 @@ export default function HomePage() {
         </div>
       </main>
 
-      <footer className="container mx-auto px-4 py-12 text-center text-muted-foreground">
-        <p>© 2025 Allianz Marseille. Tous droits réservés.</p>
-      </footer>
+        <footer className="container mx-auto px-4 py-12 text-center text-white/90">
+          <p>© 2025 Allianz Marseille. Tous droits réservés.</p>
+        </footer>
+      </div>
     </div>
   );
 }

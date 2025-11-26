@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { logout } from "@/lib/firebase/auth";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useAuth } from "@/lib/firebase/use-auth";
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -44,6 +45,7 @@ const menuItems: SidebarItem[] = [
 export function CommercialSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { userData } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLogout = async () => {
@@ -145,11 +147,46 @@ export function CommercialSidebar() {
         })}
       </nav>
 
-      {/* Footer avec notifications, thème et déconnexion */}
-      <div className="p-4 border-t space-y-2 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 dark:from-blue-600/10 dark:via-purple-600/10 dark:to-pink-600/10">
-        <div className={cn("flex gap-2", isCollapsed && "flex-col")}>
-          <NotificationCenter />
-          <ThemeToggle />
+      {/* Footer avec utilisateur connecté, notifications, thème et déconnexion */}
+      <div className="border-t bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 dark:from-blue-600/10 dark:via-purple-600/10 dark:to-pink-600/10">
+        {/* Info utilisateur */}
+        {userData && !isCollapsed && (
+          <div className="p-4 border-b">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                {userData.email.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold truncate">
+                  {userData.email.split('@')[0]}
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <div className="px-2 py-0.5 rounded-full bg-blue-500 text-white text-[10px] font-bold">
+                    COMMERCIAL
+                  </div>
+                  <User className="h-3 w-3 text-muted-foreground" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Avatar seul pour collapsed */}
+        {userData && isCollapsed && (
+          <div className="p-4 border-b flex justify-center">
+            <div 
+              className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md"
+              title={userData.email}
+            >
+              {userData.email.charAt(0).toUpperCase()}
+            </div>
+          </div>
+        )}
+        
+        <div className="p-4 space-y-2">
+          <div className={cn("flex gap-2", isCollapsed && "flex-col")}>
+            <NotificationCenter />
+            <ThemeToggle />
           {!isCollapsed && (
             <Button
               variant="outline"
@@ -171,6 +208,7 @@ export function CommercialSidebar() {
               <LogOut className="h-4 w-4" />
             </Button>
           )}
+          </div>
         </div>
       </div>
     </aside>
