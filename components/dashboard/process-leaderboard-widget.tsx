@@ -1,11 +1,14 @@
 "use client";
 
-import { Clock, TrendingUp, TrendingDown, Target, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Clock, TrendingUp, TrendingDown, Target } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { KPI } from "@/types";
+import { getAllCommercialsKPI } from "@/lib/firebase/acts";
+import { format } from "date-fns";
 
 interface ProcessLeaderboardWidgetProps {
   currentUserEmail?: string;
@@ -13,9 +16,10 @@ interface ProcessLeaderboardWidgetProps {
 }
 
 export function ProcessLeaderboardWidget({ currentUserEmail, kpi }: ProcessLeaderboardWidgetProps) {
+  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const currentUserProcess = kpi?.nbProcess || 0;
-  const rawFirstName = currentUserEmail?.split('@')[0]?.split('.')[0] || 'Vous';
-  const firstName = rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1).toLowerCase();
   
   // Calcul de la moyenne par jour (basé sur le nombre de jours ouvrés écoulés dans le mois)
   const today = new Date();
@@ -37,229 +41,182 @@ export function ProcessLeaderboardWidget({ currentUserEmail, kpi }: ProcessLeade
   const targetPerWeek = 20;
   const targetPerDay = targetPerWeek / 5; // 4 par jour en moyenne
 
-  // Données simulées - À remplacer par de vraies données depuis Firebase
-  const simulatedUsers = [
-    { name: "Sophie M.", process: 92, avatar: "S", isCurrentUser: false, avgPerDay: 4.6, trend: 20 },
-    { name: "Gwendal C.", process: 76, avatar: "G", isCurrentUser: false, avgPerDay: 3.8, trend: 10 },
-    { name: "Julien B.", process: 68, avatar: "J", isCurrentUser: false, avgPerDay: 3.4, trend: 5 },
-    { name: "Astrid U.", process: 52, avatar: "A", isCurrentUser: false, avgPerDay: 2.6, trend: -5 },
-  ];
+  useEffect(() => {
+    const loadLeaderboard = async () => {
+      try {
+        const currentMonthKey = format(new Date(), "yyyy-MM");
+        const commercialsKPI = await getAllCommercialsKPI(currentMonthKey);
+        
+        // Calculer la moyenne par jour pour chaque commercial
+        const withAvgPerDay = commercialsKPI.map(user => ({
+          name: user.firstName,
+          process: user.process,
+          avatar: user.firstName[0].toUpperCase(),
+          isCurrentUser: user.email === currentUserEmail,
+          avgPerDay: workingDays > 0 ? (user.process / workingDays) : 0,
+          trend: 0 // Peut être calculé en comparant avec le mois précédent
+        }));
+        
+        // Trier par nombre de process décroissants et attribuer les rangs
+        const sorted = withAvgPerDay
+          .sort((a, b) => b.process - a.process)
+          .map((user, index) => ({
+            ...user,
+            rank: index + 1
+          }));
+        
+        setLeaderboardData(sorted);
+      } catch (error) {
+        console.error("Error loading process leaderboard:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  // Ajouter l'utilisateur actuel avec ses vraies données
-  const allUsers = [
-    ...simulatedUsers,
-    { 
-      name: firstName, 
-      process: currentUserProcess, 
-      avatar: firstName[0].toUpperCase(), 
-      isCurrentUser: true, 
-      avgPerDay: parseFloat(avgPerDay), 
-      trend: 15 
-    }
-  ];
+    loadLeaderboard();
+  }, [currentUserEmail, workingDays]);
 
-  // Trier par nombre de process décroissant et attribuer les rangs
-  const leaderboard = allUsers
-    .sort((a, b) => b.process - a.process)
-    .map((user, index) => ({
-      ...user,
-      rank: index + 1
-    }));
+  if (isLoading) {
+    return (
+      <Card className="h-full">
+        <CardContent className="p-6 flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </CardContent>
+      </Card>
+    );
+  }
 
-  const currentUser = leaderboard.find(u => u.isCurrentUser);
-  const gapToFirst = currentUser ? leaderboard[0].process - currentUser.process : 0;
-  
-  // Déterminer si l'objectif de 5 par semaine est atteint
-  const isTargetMet = currentUser ? currentUser.avgPerDay >= targetPerDay : false;
+  const currentUser = leaderboardData.find(u => u.isCurrentUser);
+  const gapToFirst = currentUser && leaderboardData[0] ? 
+    leaderboardData[0].process - currentUser.process : 0;
 
   return (
     <Card className="h-full">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600">
-                <Clock className="h-5 w-5 text-white" />
-              </div>
-              Classement Process
-            </CardTitle>
-            <CardDescription className="mt-2 flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              Objectif : 20 process par semaine (4 par jour)
-            </CardDescription>
-          </div>
-          
-          {/* Statistiques personnelles */}
-          <div className="text-right">
-            <div className="text-xs text-muted-foreground">Votre moyenne</div>
-            <div className={cn(
-              "text-2xl font-bold flex items-center gap-1 justify-end",
-              isTargetMet 
-                ? "text-green-600 dark:text-green-400" 
-                : "text-orange-600 dark:text-orange-400"
-            )}>
-              <Calendar className="h-5 w-5" />
-              {avgPerDay}/jour
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600">
+              <Clock className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Classement Process</CardTitle>
+              <CardDescription>Top des process du mois</CardDescription>
             </div>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          {leaderboard.slice(0, 3).map((user, index) => {
-            const hasMedal = user.rank <= 3;
-            const medals = ['🥇', '🥈', '🥉'];
-            const meetsTarget = user.avgPerDay >= targetPerDay;
-
-            return (
-              <motion.div
-                key={user.rank}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={{ x: 4, scale: 1.02 }}
-                className={cn(
-                  "flex items-center gap-3 p-3 rounded-xl transition-all group",
-                  user.isCurrentUser
-                    ? "bg-green-500/10 dark:bg-green-500/20 border-2 border-green-500 shadow-lg"
-                    : "hover:bg-muted/50 border border-transparent hover:border-muted"
-                )}
-              >
-                {/* Médaille ou rang */}
-                <div className="w-10 text-center flex-shrink-0">
-                  {hasMedal ? (
-                    <motion.span
-                      initial={{ scale: 0, rotate: -180 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      transition={{ delay: 0.3 + index * 0.1, type: "spring" }}
-                      className="text-3xl"
-                    >
-                      {medals[user.rank - 1]}
-                    </motion.span>
-                  ) : (
-                    <span className="text-lg font-bold text-muted-foreground">
-                      #{user.rank}
-                    </span>
-                  )}
-                </div>
-
-                {/* Avatar */}
-                <Avatar
-                  className={cn(
-                    "h-12 w-12 flex-shrink-0 transition-all",
-                    user.isCurrentUser && "ring-2 ring-green-500 ring-offset-2 scale-110"
-                  )}
-                >
-                  <div className="flex items-center justify-center w-full h-full bg-gradient-to-br from-green-400 via-emerald-500 to-teal-500 text-white font-bold text-lg">
-                    {user.avatar}
-                  </div>
-                </Avatar>
-
-                {/* Info utilisateur */}
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm flex items-center gap-2">
-                    {user.name}
-                    {user.isCurrentUser && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full"
-                      >
-                        Vous
-                      </motion.span>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-2">
-                    <span className="font-medium">{user.process} process</span>
-                    <span className="text-xs">•</span>
-                    <span className={cn(
-                      "font-semibold",
-                      meetsTarget 
-                        ? "text-green-600 dark:text-green-400" 
-                        : "text-muted-foreground"
-                    )}>
-                      {user.avgPerDay.toFixed(1)}/jour
-                    </span>
-                    {meetsTarget && (
-                      <span className="text-green-600 dark:text-green-400">✓</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Tendance */}
-                <div className="text-right flex-shrink-0">
-                  <div className={cn(
-                    "text-sm font-bold flex items-center gap-1",
-                    user.trend > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                  )}>
-                    {user.trend > 0 ? (
-                      <TrendingUp className="h-3 w-3" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3" />
-                    )}
-                    {Math.abs(user.trend)}%
-                  </div>
-                  <div className="text-xs text-muted-foreground">vs hier</div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Message de motivation */}
-        {currentUser && currentUser.rank > 1 && (
+      <CardContent className="space-y-4">
+        {/* Votre position */}
+        {currentUser && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="mt-4 space-y-2"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="p-4 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-2 border-purple-200 dark:border-purple-800"
           >
-            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl border border-green-200 dark:border-green-900">
-              <p className="text-sm text-center">
-                🎯 Plus que{' '}
-                <strong className="text-green-600 dark:text-green-400">
-                  {gapToFirst} process
-                </strong>{' '}
-                pour prendre la tête !
-              </p>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-12 w-12 bg-gradient-to-br from-purple-500 to-pink-600 text-white font-bold flex items-center justify-center text-lg">
+                  {currentUser.avatar}
+                </Avatar>
+                <div>
+                  <p className="font-bold text-foreground">Votre position</p>
+                  <p className="text-sm text-muted-foreground">
+                    {currentUser.rank === 1 ? "🏆 1ère place" : `${currentUser.rank}${currentUser.rank === 2 ? "ème" : "ème"} place`}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-foreground">{currentUser.process}</p>
+                <p className="text-xs text-muted-foreground">process</p>
+              </div>
             </div>
-            <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-xl border border-amber-200 dark:border-amber-900">
-              <p className="text-xs text-center">
-                💡 Objectif :{' '}
-                <strong className="text-amber-600 dark:text-amber-400">
-                  {targetPerDay.toFixed(1)} process/jour
-                </strong>{' '}
-                en moyenne pour atteindre 20 par semaine
-              </p>
+
+            {/* Stats */}
+            <div className="mt-3 pt-3 border-t border-border grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Moyenne/jour</p>
+                <p className="text-lg font-bold">{avgPerDay}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Objectif: {targetPerDay}/j</p>
+                <p className={cn(
+                  "text-lg font-bold",
+                  parseFloat(avgPerDay) >= targetPerDay 
+                    ? "text-green-600 dark:text-green-400" 
+                    : "text-orange-600 dark:text-orange-400"
+                )}>
+                  {parseFloat(avgPerDay) >= targetPerDay ? "✓ Atteint" : "En cours"}
+                </p>
+              </div>
             </div>
           </motion.div>
         )}
 
-        {currentUser && currentUser.rank === 1 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.6, type: "spring" }}
-            className="mt-4 space-y-2"
-          >
-            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl border border-green-200 dark:border-green-900">
-              <p className="text-sm text-center text-green-600 dark:text-green-400 font-semibold">
-                👑 Vous êtes en tête des process ! Excellent suivi client !
-              </p>
-            </div>
-            <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-xl border border-amber-200 dark:border-amber-900">
-              <p className="text-xs text-center">
-                💡 Objectif :{' '}
-                <strong className="text-amber-600 dark:text-amber-400">
-                  {targetPerDay.toFixed(1)} process/jour
-                </strong>{' '}
-                en moyenne pour atteindre 20 par semaine
-              </p>
-            </div>
-          </motion.div>
+        {/* Top 5 */}
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold text-muted-foreground mb-3">🔥 Top 5 du mois</h4>
+          {leaderboardData.slice(0, 5).map((user, index) => (
+            <motion.div
+              key={user.name}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className={cn(
+                "p-3 rounded-lg transition-all hover:shadow-md",
+                user.isCurrentUser
+                  ? "bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-950/30 dark:to-pink-950/30 border-2 border-purple-300 dark:border-purple-700"
+                  : "bg-muted/50 hover:bg-muted"
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {/* Médaille pour le top 3 */}
+                  <div className="w-8 flex items-center justify-center">
+                    {user.rank === 1 && <span className="text-2xl">🥇</span>}
+                    {user.rank === 2 && <span className="text-2xl">🥈</span>}
+                    {user.rank === 3 && <span className="text-2xl">🥉</span>}
+                    {user.rank > 3 && (
+                      <span className="text-sm font-bold text-muted-foreground">#{user.rank}</span>
+                    )}
+                  </div>
+                  
+                  <Avatar className={cn(
+                    "h-10 w-10 font-semibold flex items-center justify-center",
+                    user.isCurrentUser 
+                      ? "bg-gradient-to-br from-purple-500 to-pink-600 text-white"
+                      : "bg-gradient-to-br from-slate-400 to-slate-600 text-white"
+                  )}>
+                    {user.avatar}
+                  </Avatar>
+                  
+                  <div>
+                    <p className={cn(
+                      "font-semibold",
+                      user.isCurrentUser && "text-purple-700 dark:text-purple-300"
+                    )}>
+                      {user.isCurrentUser ? "Vous" : user.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {user.avgPerDay.toFixed(1)} / jour
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="text-right">
+                  <p className="text-lg font-bold">{user.process}</p>
+                  <p className="text-xs text-muted-foreground">process</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {leaderboardData.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            Aucune donnée disponible
+          </div>
         )}
       </CardContent>
     </Card>
   );
 }
-
