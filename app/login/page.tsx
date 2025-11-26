@@ -16,9 +16,9 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Image from "next/image";
 import { ROLES } from "@/lib/utils/roles";
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic";
 
-const PixelBlast = dynamic(() => import("@/components/ui/PixelBlast"), {
+const PixelBlast = dynamicImport(() => import("@/components/ui/PixelBlast"), {
   ssr: false,
 });
 
