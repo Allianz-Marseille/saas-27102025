@@ -421,10 +421,10 @@ export default function ActsPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Liste des actes</CardTitle>
-                <CardDescription>
-                  Tous vos actes commerciaux du mois sélectionné
-                </CardDescription>
+            <CardTitle>Liste des actes</CardTitle>
+            <CardDescription>
+              Tous vos actes commerciaux du mois sélectionné
+            </CardDescription>
               </div>
               {sortedActs.length > 0 && (
                 <div className="text-right">
@@ -696,7 +696,7 @@ export default function ActsPage() {
                                   ? "bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300"
                                   : "bg-muted text-muted-foreground"
                             )}>
-                              {formatCurrency(act.commissionPotentielle)}
+                            {formatCurrency(act.commissionPotentielle)}
                             </span>
                           </td>
                           <td className="p-3 text-center align-middle">

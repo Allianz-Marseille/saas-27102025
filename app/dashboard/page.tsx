@@ -79,16 +79,16 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Tableau de bord
-              </h1>
+            Tableau de bord
+          </h1>
               <p className="text-sm text-muted-foreground mt-1">
                 Vue d'ensemble de vos performances
               </p>
             </div>
-            <MonthSelector 
-              selectedMonth={selectedMonth}
-              onMonthChange={setSelectedMonth}
-            />
+          <MonthSelector 
+            selectedMonth={selectedMonth}
+            onMonthChange={setSelectedMonth}
+          />
           </div>
         </div>
       </header>
@@ -112,10 +112,10 @@ export default function DashboardPage() {
         {/* Classements - Grid pour grands écrans */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Leaderboard CA */}
-          <LeaderboardWidget 
-            currentUserEmail={userData?.email}
-            kpi={kpi}
-          />
+        <LeaderboardWidget 
+          currentUserEmail={userData?.email}
+          kpi={kpi}
+        />
 
           {/* Leaderboard Process */}
           <ProcessLeaderboardWidget 

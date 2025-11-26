@@ -338,20 +338,20 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
           {ACT_KINDS.map((actKind) => {
             const Icon = actKind.icon;
             return (
-              <button
-                key={actKind.value}
-                onClick={() => handleKindSelect(actKind.value as any)}
-                className={cn(
+            <button
+              key={actKind.value}
+              onClick={() => handleKindSelect(actKind.value as any)}
+              className={cn(
                   "group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 cursor-pointer",
                   "border-2 hover:scale-105 hover:shadow-2xl",
                   "focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:ring-offset-2",
-                  "active:scale-95",
+                "active:scale-95",
                   "bg-gradient-to-br",
                   actKind.bgGradient,
                   actKind.darkBgGradient,
                   actKind.borderColor
-                )}
-              >
+              )}
+            >
                 {/* Effet de brillance au survol */}
                 <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 
@@ -372,7 +372,7 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
                     </p>
                   </div>
                 </div>
-              </button>
+            </button>
             );
           })}
         </div>
@@ -418,14 +418,14 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
               <div>
                 <DialogTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   {currentKind?.label}
-                </DialogTitle>
+            </DialogTitle>
                 <p className="text-sm text-muted-foreground mt-1">Étape 2/2 : Informations du process</p>
               </div>
             </div>
           </DialogHeader>
 
           <div className="grid gap-6 py-6">
-            {/* Nom du client */}
+          {/* Nom du client */}
             <div className="grid gap-3">
               <Label htmlFor="clientNom" className="text-sm font-semibold flex items-center gap-2">
                 <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs">
@@ -433,14 +433,14 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
                 </span>
                 Nom du client *
               </Label>
-              <Input
-                id="clientNom"
-                value={clientNom}
-                onChange={(e) => handleClientNomChange(e.target.value)}
-                placeholder="Ex: Dupont Jean-Pierre"
+            <Input
+              id="clientNom"
+              value={clientNom}
+              onChange={(e) => handleClientNomChange(e.target.value)}
+              placeholder="Ex: Dupont Jean-Pierre"
                 className="h-11 border-2 focus:border-blue-500 dark:focus:border-blue-400"
-              />
-            </div>
+            />
+          </div>
 
             {/* Note obligatoire */}
             <div className="grid gap-3">
@@ -522,7 +522,7 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
             <div>
               <DialogTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 {currentKind?.label}
-              </DialogTitle>
+          </DialogTitle>
               <p className="text-sm text-muted-foreground mt-1">Étape 2/2 : Détails du contrat</p>
             </div>
           </div>

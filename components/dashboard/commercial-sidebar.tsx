@@ -58,26 +58,26 @@ export function CommercialSidebar() {
 
   return (
     <>
-      <aside
-        className={cn(
+    <aside
+      className={cn(
           "flex flex-col h-screen border-r transition-all duration-300 relative",
           "bg-gradient-to-b from-white via-blue-50/30 to-purple-50/30",
           "dark:from-slate-950 dark:via-blue-950/10 dark:to-purple-950/10",
-          isCollapsed ? "w-16" : "w-64"
-        )}
-      >
-        {/* Header avec logo */}
+        isCollapsed ? "w-16" : "w-64"
+      )}
+    >
+      {/* Header avec logo */}
       <div className="p-4 border-b flex items-center justify-between bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-600/20 dark:via-purple-600/20 dark:to-pink-600/20 backdrop-blur-sm">
         {!isCollapsed ? (
           <div className="flex flex-col gap-1 flex-1">
             <div className="relative group">
-              <Image
-                src="/allianz.svg"
-                alt="Allianz"
+            <Image
+              src="/allianz.svg"
+              alt="Allianz"
                 width={100}
                 height={24}
                 className="h-6 w-auto brightness-0 dark:brightness-100 transition-all duration-300 group-hover:scale-105"
-              />
+            />
               {/* Effet glow au hover */}
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300 -z-10" />
             </div>
