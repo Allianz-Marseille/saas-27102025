@@ -8,7 +8,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { login, getUserData } from "@/lib/firebase/auth";
-import { logUserLogin } from "@/lib/firebase/logs";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -44,27 +43,20 @@ export default function LoginPage() {
     try {
       const firebaseUser = await login(data.email, data.password);
       
-      // Récupérer le rôle de l'utilisateur
+      // Récupérer le rôle de l'utilisateur et rediriger
       if (firebaseUser) {
         const userData = await getUserData(firebaseUser.uid);
         
-        // Logger la connexion
-        try {
-          await logUserLogin(firebaseUser.uid, data.email);
-        } catch (logError) {
-          console.error("Erreur lors de l'enregistrement du log:", logError);
-          // Ne pas bloquer la connexion si le log échoue
-        }
+        // Toast de succès
+        toast.success("Connexion réussie !");
         
-        // Rediriger selon le rôle
+        // Rediriger selon le rôle (le log de connexion sera créé automatiquement par useAuth)
         if (userData?.role === ROLES.ADMINISTRATEUR) {
           router.push("/admin");
         } else {
           router.push("/dashboard");
         }
       }
-      
-      toast.success("Connexion réussie !");
     } catch (error: any) {
       toast.error(error.message || "Erreur de connexion");
     } finally {

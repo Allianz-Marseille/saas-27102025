@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "./config";
 import { UserData } from "./auth";
+import { logUserLogin } from "./logs";
 
 export interface AuthState {
   user: FirebaseUser | null;
@@ -16,6 +17,7 @@ export function useAuth(): AuthState {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasLoggedLogin = useRef(false);
 
   useEffect(() => {
     if (!auth || !db) {
@@ -54,6 +56,17 @@ export function useAuth(): AuthState {
               active: data.active,
               createdAt,
             });
+
+            // Logger la connexion (une seule fois par session)
+            if (!hasLoggedLogin.current && data.email) {
+              hasLoggedLogin.current = true;
+              try {
+                await logUserLogin(firebaseUser.uid, data.email);
+                console.log("✅ Log de connexion enregistré pour:", data.email);
+              } catch (logError) {
+                console.error("❌ Erreur lors de l'enregistrement du log de connexion:", logError);
+              }
+            }
           } else {
             setUserData(null);
           }
@@ -63,6 +76,7 @@ export function useAuth(): AuthState {
         }
       } else {
         setUserData(null);
+        hasLoggedLogin.current = false; // Reset pour la prochaine connexion
       }
 
       setLoading(false);
