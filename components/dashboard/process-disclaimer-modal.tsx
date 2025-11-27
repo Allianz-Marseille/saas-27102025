@@ -47,14 +47,14 @@ export function ProcessDisclaimerModal() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="relative w-full rounded-xl overflow-hidden shadow-2xl"
+            className="relative w-full rounded-xl overflow-hidden shadow-2xl bg-gradient-to-br from-slate-800 to-slate-900"
           >
             <div className="relative w-full h-64 md:h-80">
               <Image
                 src="/les-4.webp"
                 alt="Les 4 - Objectif quotidien process"
                 fill
-                className="object-cover"
+                className="object-contain"
                 priority
               />
             </div>
