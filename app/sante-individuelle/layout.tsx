@@ -17,7 +17,7 @@ import {
   Stethoscope
 } from "lucide-react";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
-import { signOut } from "@/lib/firebase/auth";
+import { logout } from "@/lib/firebase/auth";
 import { toast } from "sonner";
 
 export default function SanteIndividuelleLayout({
@@ -48,7 +48,7 @@ export default function SanteIndividuelleLayout({
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      await signOut();
+      await logout();
       toast.success("Déconnexion réussie");
       router.push("/login");
     } catch (error) {
