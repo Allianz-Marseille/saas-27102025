@@ -70,7 +70,7 @@ export default function SanteIndividuelleLayout({
       icon: FileText,
     },
     {
-      href: "/dashboard/profile",
+      href: "/sante-individuelle/profile",
       label: "Mon profil",
       icon: User,
     },
