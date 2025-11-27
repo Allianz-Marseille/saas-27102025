@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/firebase/use-auth";
+import { useAutoLogout } from "@/lib/hooks/use-auto-logout";
 
 export default function AdminLayout({
   children,
@@ -22,6 +23,14 @@ export default function AdminLayout({
   const router = useRouter();
   const { user, userData } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Déconnexion automatique après 10 minutes d'inactivité
+  useAutoLogout({
+    timeoutMinutes: 10,
+    warningMinutes: 1,
+    userId: user?.uid,
+    userEmail: userData?.email,
+  });
 
   const handleLogout = async () => {
     try {

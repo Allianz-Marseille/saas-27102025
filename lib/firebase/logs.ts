@@ -129,13 +129,17 @@ export async function logUserLogin(userId: string, userEmail: string): Promise<v
 /**
  * Helper pour logger une déconnexion utilisateur
  */
-export async function logUserLogout(userId: string, userEmail: string): Promise<void> {
+export async function logUserLogout(
+  userId: string,
+  userEmail: string,
+  customDescription?: string
+): Promise<void> {
   await createLog({
     level: "info",
     action: "user_logout",
     userId,
     userEmail,
-    description: `Déconnexion de ${userEmail}`,
+    description: customDescription || `Déconnexion de ${userEmail}`,
   });
 }
 
