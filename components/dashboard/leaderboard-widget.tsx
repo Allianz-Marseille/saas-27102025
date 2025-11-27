@@ -26,11 +26,11 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
       try {
         const currentMonth = format(new Date(), "yyyy-MM");
         const commercialsKPI = await getAllCommercialsKPI(currentMonth);
-        
-        // Trier par commissions décroissantes et attribuer les rangs
+
+  // Trier par commissions décroissantes et attribuer les rangs
         const sorted = commercialsKPI
-          .sort((a, b) => b.commissions - a.commissions)
-          .map((user, index) => ({
+    .sort((a, b) => b.commissions - a.commissions)
+    .map((user, index) => ({
             name: user.firstName,
             commissions: user.commissions,
             avatar: user.firstName[0].toUpperCase(),
@@ -73,8 +73,8 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-600">
-              <Coins className="h-5 w-5 text-white" />
-            </div>
+                <Coins className="h-5 w-5 text-white" />
+              </div>
             <div>
               <CardTitle className="text-lg">Commissions potentielles</CardTitle>
               <CardDescription>Top des commissions du mois</CardDescription>
@@ -142,18 +142,18 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
         <div className="space-y-2">
           <h4 className="text-sm font-semibold text-muted-foreground mb-3">🏆 Top 3 du mois</h4>
           {leaderboardData.slice(0, 3).map((user, index) => (
-            <motion.div
+              <motion.div
               key={user.name}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={cn(
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className={cn(
                 "p-3 rounded-lg transition-all hover:shadow-md",
-                user.isCurrentUser
+                  user.isCurrentUser
                   ? "bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-950/30 dark:to-purple-950/30 border-2 border-blue-300 dark:border-blue-700"
                   : "bg-muted/50 hover:bg-muted"
-              )}
-            >
+                )}
+              >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {/* Médaille pour le top 3 */}
@@ -172,8 +172,8 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
                     {user.rank > 3 && (
                       <span className="text-sm font-bold text-muted-foreground">#{user.rank}</span>
                     )}
-                  </div>
-                  
+                </div>
+
                   <Avatar className={cn(
                     "h-10 w-10 font-semibold flex items-center justify-center",
                     user.isCurrentUser 
@@ -192,12 +192,12 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
                     </p>
                     {user.trend !== 0 && (
                       <div className="flex items-center gap-1 text-xs">
-                        {user.trend > 0 ? (
+                    {user.trend > 0 ? (
                           <>
                             <TrendingUp className="h-3 w-3 text-green-600" />
                             <span className="text-green-600">+{user.trend}%</span>
                           </>
-                        ) : (
+                    ) : (
                           <>
                             <TrendingDown className="h-3 w-3 text-red-600" />
                             <span className="text-red-600">{user.trend}%</span>
@@ -206,20 +206,20 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
                       </div>
                     )}
                   </div>
-                </div>
-                
+        </div>
+
                 <div className="text-right">
                   <p className="text-lg font-bold">{formatCurrency(user.commissions)}</p>
-                </div>
-              </div>
-            </motion.div>
+            </div>
+            </div>
+          </motion.div>
           ))}
-        </div>
+            </div>
 
         {leaderboardData.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             Aucune donnée disponible
-          </div>
+            </div>
         )}
       </CardContent>
     </Card>

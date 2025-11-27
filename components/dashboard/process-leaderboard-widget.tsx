@@ -56,15 +56,15 @@ export function ProcessLeaderboardWidget({ currentUserEmail, kpi }: ProcessLeade
           avgPerDay: workingDays > 0 ? (user.process / workingDays) : 0,
           trend: 0 // Peut être calculé en comparant avec le mois précédent
         }));
-        
+
         // Trier par nombre de process décroissants et attribuer les rangs
         const sorted = withAvgPerDay
-          .sort((a, b) => b.process - a.process)
-          .map((user, index) => ({
-            ...user,
-            rank: index + 1
-          }));
-        
+    .sort((a, b) => b.process - a.process)
+    .map((user, index) => ({
+      ...user,
+      rank: index + 1
+    }));
+
         setLeaderboardData(sorted);
       } catch (error) {
         console.error("Error loading process leaderboard:", error);
@@ -96,8 +96,8 @@ export function ProcessLeaderboardWidget({ currentUserEmail, kpi }: ProcessLeade
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600">
-              <Clock className="h-5 w-5 text-white" />
-            </div>
+                <Clock className="h-5 w-5 text-white" />
+              </div>
             <div>
               <CardTitle className="text-lg">Classement Process</CardTitle>
               <CardDescription>Top des process du mois</CardDescription>
@@ -168,18 +168,18 @@ export function ProcessLeaderboardWidget({ currentUserEmail, kpi }: ProcessLeade
         <div className="space-y-2">
           <h4 className="text-sm font-semibold text-muted-foreground mb-3">🔥 Top 3 du mois</h4>
           {leaderboardData.slice(0, 3).map((user, index) => (
-            <motion.div
+              <motion.div
               key={user.name}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={cn(
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className={cn(
                 "p-3 rounded-lg transition-all hover:shadow-md",
-                user.isCurrentUser
+                  user.isCurrentUser
                   ? "bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-950/30 dark:to-pink-950/30 border-2 border-purple-300 dark:border-purple-700"
                   : "bg-muted/50 hover:bg-muted"
-              )}
-            >
+                )}
+              >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {/* Médaille pour le top 3 */}
@@ -221,20 +221,20 @@ export function ProcessLeaderboardWidget({ currentUserEmail, kpi }: ProcessLeade
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="text-right">
                   <p className="text-lg font-bold">{user.process}</p>
                   <p className="text-xs text-muted-foreground">process</p>
                 </div>
-              </div>
-            </motion.div>
+                </div>
+              </motion.div>
           ))}
         </div>
 
         {leaderboardData.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             Aucune donnée disponible
-          </div>
+            </div>
         )}
       </CardContent>
     </Card>
