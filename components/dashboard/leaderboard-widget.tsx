@@ -76,7 +76,7 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
               <Coins className="h-5 w-5 text-white" />
             </div>
             <div>
-              <CardTitle className="text-lg">Classement CA</CardTitle>
+              <CardTitle className="text-lg">Commissions potentielles</CardTitle>
               <CardDescription>Top des commissions du mois</CardDescription>
             </div>
           </div>
@@ -88,7 +88,7 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-2 border-blue-200 dark:border-blue-800"
+            className="min-h-[180px] p-4 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-2 border-blue-200 dark:border-blue-800"
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
@@ -104,16 +104,24 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-foreground">{formatCurrency(currentUser.commissions)}</p>
-                {currentUser.rank > 1 && (
-                  <p className="text-xs text-muted-foreground">
-                    -{formatCurrency(gapToFirst)} vs 1er
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground">commissions</p>
               </div>
             </div>
 
+            {/* Écart avec le 1er */}
+            {currentUser.rank > 1 && (
+              <div className="mt-3 pt-3 border-t border-border">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Écart avec le 1er</span>
+                  <span className="font-semibold text-orange-600 dark:text-orange-400">
+                    -{formatCurrency(gapToFirst)} à combler
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Objectif */}
-            <div className="mt-3 pt-3 border-t border-border">
+            <div className={cn("pt-3 border-t border-border", currentUser.rank > 1 ? "mt-2" : "mt-3")}>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground flex items-center gap-1">
                   <Target className="h-4 w-4" />

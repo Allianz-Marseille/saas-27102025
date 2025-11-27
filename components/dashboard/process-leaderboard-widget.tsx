@@ -111,7 +111,7 @@ export function ProcessLeaderboardWidget({ currentUserEmail, kpi }: ProcessLeade
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="p-4 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-2 border-purple-200 dark:border-purple-800"
+            className="min-h-[180px] p-4 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-2 border-purple-200 dark:border-purple-800"
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
@@ -131,8 +131,20 @@ export function ProcessLeaderboardWidget({ currentUserEmail, kpi }: ProcessLeade
               </div>
             </div>
 
+            {/* Écart avec le 1er */}
+            {currentUser.rank > 1 && (
+              <div className="mt-3 pt-3 border-t border-border">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Écart avec le 1er</span>
+                  <span className="font-semibold text-orange-600 dark:text-orange-400">
+                    -{gapToFirst} process à combler
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Stats */}
-            <div className="mt-3 pt-3 border-t border-border grid grid-cols-2 gap-3">
+            <div className={cn("pt-3 border-t border-border grid grid-cols-2 gap-3", currentUser.rank > 1 ? "mt-2" : "mt-3")}>
               <div>
                 <p className="text-xs text-muted-foreground">Moyenne/jour</p>
                 <p className="text-lg font-bold">{avgPerDay}</p>
