@@ -149,10 +149,26 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {/* Médaille pour le top 3 */}
-                  <div className="w-8 flex items-center justify-center">
-                    {user.rank === 1 && <span className="text-2xl">🥇</span>}
-                    {user.rank === 2 && <span className="text-2xl">🥈</span>}
-                    {user.rank === 3 && <span className="text-2xl">🥉</span>}
+                  <div className="w-10 flex items-center justify-center">
+                    {user.rank === 1 && (
+                      <motion.div
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500 flex items-center justify-center shadow-lg shadow-yellow-500/50 border-2 border-yellow-300"
+                      >
+                        <span className="text-xl font-black text-white drop-shadow-md">1</span>
+                      </motion.div>
+                    )}
+                    {user.rank === 2 && (
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 flex items-center justify-center shadow-lg shadow-slate-400/50 border-2 border-slate-200">
+                        <span className="text-lg font-black text-white drop-shadow-md">2</span>
+                      </div>
+                    )}
+                    {user.rank === 3 && (
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/50 border-2 border-orange-300">
+                        <span className="text-lg font-black text-white drop-shadow-md">3</span>
+                      </div>
+                    )}
                     {user.rank > 3 && (
                       <span className="text-sm font-bold text-muted-foreground">#{user.rank}</span>
                     )}
