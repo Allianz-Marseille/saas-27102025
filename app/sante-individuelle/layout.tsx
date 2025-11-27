@@ -14,13 +14,13 @@ import {
   FileText, 
   User, 
   LogOut,
-  Stethoscope,
   ChevronLeft
 } from "lucide-react";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { logout } from "@/lib/firebase/auth";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 export default function SanteIndividuelleLayout({
   children,
@@ -88,27 +88,42 @@ export default function SanteIndividuelleLayout({
           isCollapsed ? "w-16" : "w-64"
         )}>
           {/* Logo / Header */}
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-green-500/10 dark:from-green-600/20 dark:via-emerald-600/20 dark:to-green-600/20 backdrop-blur-sm">
             {!isCollapsed ? (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                  <Stethoscope className="h-6 w-6 text-white" />
+              <div className="flex flex-col gap-1 flex-1">
+                <div className="relative group">
+                  <Image
+                    src="/allianz.svg"
+                    alt="Allianz"
+                    width={100}
+                    height={24}
+                    className="h-6 w-auto brightness-0 dark:brightness-100 transition-all duration-300 group-hover:scale-105"
+                  />
+                  {/* Effet glow au hover */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-600 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300 -z-10" />
                 </div>
-                <div>
-                  <h1 className="text-lg font-bold text-foreground">Santé Individuelle</h1>
-                  <p className="text-xs text-muted-foreground">Gestion commerciale</p>
-                </div>
+                <span className="text-xs font-medium bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                  Santé Individuelle
+                </span>
               </div>
             ) : (
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mx-auto">
-                <Stethoscope className="h-6 w-6 text-white" />
+              <div className="relative group mx-auto">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:scale-110 p-1">
+                  <Image
+                    src="/favicon.png"
+                    alt="Allianz"
+                    width={32}
+                    height={32}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
               </div>
             )}
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="h-8 w-8 hover:bg-white/50 dark:hover:bg-black/50"
             >
               <ChevronLeft
                 className={cn(
@@ -220,6 +235,32 @@ export default function SanteIndividuelleLayout({
         <main className="flex-1 overflow-y-auto bg-background">
           {children}
         </main>
+
+        {/* Bouton flottant pour rouvrir la sidebar quand elle est collapsed */}
+        {isCollapsed && (
+          <button
+            onClick={() => setIsCollapsed(false)}
+            className="fixed left-16 top-1/2 -translate-y-1/2 z-50 bg-gradient-to-r from-green-500 to-emerald-600 text-white p-3 rounded-r-xl shadow-2xl hover:shadow-green-500/50 transition-all duration-300 hover:scale-110 group"
+            title="Ouvrir le menu"
+          >
+            <ChevronLeft className="h-5 w-5 rotate-180 group-hover:translate-x-1 transition-transform" />
+            {/* Effet glow */}
+            <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 opacity-0 group-hover:opacity-50 blur-xl transition-opacity rounded-r-xl -z-10" />
+          </button>
+        )}
+
+        {/* Bouton flottant pour fermer la sidebar quand elle est ouverte */}
+        {!isCollapsed && (
+          <button
+            onClick={() => setIsCollapsed(true)}
+            className="fixed left-64 top-1/2 -translate-y-1/2 z-50 bg-gradient-to-r from-emerald-600 to-green-600 text-white p-3 rounded-r-xl shadow-2xl hover:shadow-emerald-500/50 transition-all duration-300 hover:scale-110 group"
+            title="Fermer le menu"
+          >
+            <ChevronLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+            {/* Effet glow */}
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-green-600 opacity-0 group-hover:opacity-50 blur-xl transition-opacity rounded-r-xl -z-10" />
+          </button>
+        )}
       </div>
     </RouteGuard>
   );
