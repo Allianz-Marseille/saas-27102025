@@ -227,6 +227,21 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
         }
         
         await createAct(actData);
+        
+        // Logger la création
+        if (userData?.email) {
+          try {
+            await logActCreated(user.uid, userData.email, {
+              clientNom,
+              kind,
+              contratType: "-",
+            });
+          } catch (logError) {
+            console.error("Erreur lors de l'enregistrement du log:", logError);
+            // Ne pas bloquer la création si le log échoue
+          }
+        }
+        
         toast.success("Acte créé avec succès");
         resetForm();
         onSuccess?.();
