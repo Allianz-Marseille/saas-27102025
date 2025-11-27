@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { HealthAct } from "@/types";
 import { getHealthActsByMonth } from "@/lib/firebase/health-acts";
@@ -13,21 +14,31 @@ import { MonthSelector } from "@/components/dashboard/month-selector";
 import { calculateHealthKPI } from "@/lib/utils/health-kpi";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
+import { WeatherCard } from "@/components/admin/weather-card";
 import { 
   TrendingUp, 
   Target, 
   DollarSign,
   FileText,
-  Activity
+  Activity,
+  Calendar
 } from "lucide-react";
 
 export default function SanteIndividuellePage() {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const [acts, setActs] = useState<HealthAct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<string>(
     format(new Date(), "yyyy-MM")
   );
+
+  // Extraire le prénom depuis l'email
+  const rawFirstName = userData?.email.split('@')[0]?.split('.')[0] || 'Utilisateur';
+  const firstName = rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1).toLowerCase();
+
+  // Obtenir le message de bienvenue selon l'heure
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
   const loadActs = async () => {
     if (!user) {
@@ -77,7 +88,7 @@ export default function SanteIndividuellePage() {
       {/* Header */}
       <header className="border-b bg-white dark:bg-slate-950 sticky top-0 z-10 shadow-md">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-green-600 bg-clip-text text-transparent">
                 Tableau de bord Santé Individuelle
@@ -91,20 +102,52 @@ export default function SanteIndividuellePage() {
               onMonthChange={setSelectedMonth}
             />
           </div>
+          
+          {/* Barre d'info : Bienvenue + Date + Météo */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-green-200/30 dark:border-green-800/30">
+            {/* Bienvenue */}
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-green-500/10 rounded-lg">
+                <span className="text-2xl">👋</span>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Bienvenue</p>
+                <p className="font-semibold text-foreground">{greeting}, {firstName} !</p>
+              </div>
+            </div>
+
+            {/* Date du jour */}
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Aujourd'hui</p>
+                <p className="font-semibold text-foreground capitalize">
+                  {format(new Date(), "EEEE d MMMM yyyy", { locale: fr })}
+                </p>
+              </div>
+            </div>
+
+            {/* Météo Marseille */}
+            <div className="flex items-center gap-2">
+              <WeatherCard />
+            </div>
+          </div>
         </div>
       </header>
 
       <div className="container mx-auto px-6 py-6">
-        {/* Welcome Banner */}
+        {/* Résumé du mois */}
         <Card className="mb-6 border-green-200 dark:border-green-800 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Bonjour 👋
+                <h2 className="text-xl font-bold text-foreground mb-2">
+                  Aperçu de votre production
                 </h2>
                 <p className="text-muted-foreground">
-                  Voici un aperçu de votre production du mois
+                  Résumé pour le mois sélectionné
                 </p>
               </div>
               <div className="text-right">
