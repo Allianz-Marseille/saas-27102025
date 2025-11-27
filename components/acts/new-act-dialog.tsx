@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon, ArrowLeft } from "lucide-react";
+import { CalendarIcon, ArrowLeft, Plus, FileText, Clock, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { contractNumberExists, createAct } from "@/lib/firebase/acts";
 import { Act } from "@/types";
@@ -38,10 +38,50 @@ const CONTRACT_TYPES = [
 ];
 
 const ACT_KINDS = [
-  { value: "AN", label: "AN - Apport Nouveau", color: "bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-700" },
-  { value: "M+3", label: "M+3 - Bilan client", color: "bg-green-50 border-green-200 hover:bg-green-100 text-green-700" },
-  { value: "PRETERME_AUTO", label: "Préterme Auto", color: "bg-orange-50 border-orange-200 hover:bg-orange-100 text-orange-700" },
-  { value: "PRETERME_IRD", label: "Préterme IRD", color: "bg-purple-50 border-purple-200 hover:bg-purple-100 text-purple-700" },
+  { 
+    value: "AN", 
+    label: "AN - Apport Nouveau",
+    description: "Nouvelle souscription",
+    icon: Plus,
+    gradient: "from-blue-500 to-blue-600",
+    bgGradient: "from-blue-50 to-blue-100",
+    darkBgGradient: "dark:from-blue-950/30 dark:to-blue-900/30",
+    borderColor: "border-blue-300 dark:border-blue-700",
+    textColor: "text-blue-700 dark:text-blue-300"
+  },
+  { 
+    value: "M+3", 
+    label: "M+3 - Bilan client",
+    description: "Suivi à 3 mois",
+    icon: Clock,
+    gradient: "from-green-500 to-emerald-600",
+    bgGradient: "from-green-50 to-emerald-100",
+    darkBgGradient: "dark:from-green-950/30 dark:to-emerald-900/30",
+    borderColor: "border-green-300 dark:border-green-700",
+    textColor: "text-green-700 dark:text-green-300"
+  },
+  { 
+    value: "PRETERME_AUTO", 
+    label: "Préterme Auto",
+    description: "Renouvellement anticipé",
+    icon: AlertCircle,
+    gradient: "from-orange-500 to-amber-600",
+    bgGradient: "from-orange-50 to-amber-100",
+    darkBgGradient: "dark:from-orange-950/30 dark:to-amber-900/30",
+    borderColor: "border-orange-300 dark:border-orange-700",
+    textColor: "text-orange-700 dark:text-orange-300"
+  },
+  { 
+    value: "PRETERME_IRD", 
+    label: "Préterme IRD",
+    description: "Renouvellement anticipé",
+    icon: CheckCircle2,
+    gradient: "from-purple-500 to-violet-600",
+    bgGradient: "from-purple-50 to-violet-100",
+    darkBgGradient: "dark:from-purple-950/30 dark:to-violet-900/30",
+    borderColor: "border-purple-300 dark:border-purple-700",
+    textColor: "text-purple-700 dark:text-purple-300"
+  },
 ];
 
 export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProps) {
@@ -163,6 +203,11 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
 
     // Pour les process, validation simplifiée
     if (isProcess) {
+      // Validation de la note obligatoire pour les process
+      if (!note || note.trim().length === 0) {
+        toast.error("Une note est obligatoire pour ce type d'acte");
+        return;
+      }
       setIsLoading(true);
       try {
         const actData: any = {
@@ -274,33 +319,71 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
   // Étape 1 : Sélection du type d'acte
   const renderStep1 = () => (
     <>
-      <DialogHeader>
-        <DialogTitle>Nouvel acte commercial - Étape 1</DialogTitle>
+      <DialogHeader className="pb-6 border-b">
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg">
+            <Sparkles className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Nouvel acte commercial
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground mt-1">Étape 1/2 : Sélectionnez le type d'acte</p>
+          </div>
+        </div>
       </DialogHeader>
 
-      <div className="py-6">
-        <Label className="text-lg mb-6 block">Sélectionnez le type d'acte :</Label>
+      <div className="py-8">
         <div className="grid grid-cols-2 gap-4">
-          {ACT_KINDS.map((actKind) => (
+          {ACT_KINDS.map((actKind) => {
+            const Icon = actKind.icon;
+            return (
             <button
               key={actKind.value}
               onClick={() => handleKindSelect(actKind.value as any)}
               className={cn(
-                "border-2 rounded-lg p-6 transition-all duration-200 cursor-pointer",
-                "hover:scale-105 hover:shadow-lg hover:border-blue-500",
-                "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+                  "group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 cursor-pointer",
+                  "border-2 hover:scale-105 hover:shadow-2xl",
+                  "focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:ring-offset-2",
                 "active:scale-95",
-                actKind.color
+                  "bg-gradient-to-br",
+                  actKind.bgGradient,
+                  actKind.darkBgGradient,
+                  actKind.borderColor
               )}
             >
-              <div className="font-semibold text-base">{actKind.label}</div>
+                {/* Effet de brillance au survol */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                <div className="relative z-10 flex flex-col items-start gap-3">
+                  <div className={cn(
+                    "p-3 rounded-xl bg-gradient-to-br shadow-lg transition-transform duration-300 group-hover:scale-110",
+                    actKind.gradient
+                  )}>
+                    <Icon className="h-6 w-6 text-white" />
+                  </div>
+                  
+                  <div className="text-left">
+                    <div className={cn("font-bold text-base mb-1", actKind.textColor)}>
+                      {actKind.label}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {actKind.description}
+                    </p>
+                  </div>
+                </div>
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      <DialogFooter>
-        <Button variant="outline" onClick={() => onOpenChange(false)}>
+      <DialogFooter className="border-t pt-6">
+        <Button 
+          variant="outline" 
+          onClick={() => onOpenChange(false)}
+          className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-900 dark:hover:to-gray-800"
+        >
           Annuler
         </Button>
       </DialogFooter>
@@ -309,55 +392,107 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
 
   // Étape 2 : Formulaire selon le type d'acte sélectionné
   const renderStep2 = () => {
+    const currentKind = ACT_KINDS.find(a => a.value === kind);
+    const KindIcon = currentKind?.icon || FileText;
+    
     if (isProcess) {
       return (
         <>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+          <DialogHeader className="pb-6 border-b">
+            <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setStep(1)}
                 disabled={isLoading}
-                className="h-8 w-8 p-0"
+                className="h-10 w-10 p-0 rounded-xl hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-200 dark:hover:from-gray-800 dark:hover:to-gray-700"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="h-5 w-5" />
               </Button>
-              Nouvel acte - {ACT_KINDS.find(a => a.value === kind)?.label}
+              <div className={cn(
+                "p-3 rounded-xl bg-gradient-to-br shadow-lg",
+                currentKind?.gradient
+              )}>
+                <KindIcon className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  {currentKind?.label}
             </DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">Étape 2/2 : Informations du process</p>
+              </div>
+            </div>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-6 py-6">
           {/* Nom du client */}
-          <div className="grid gap-2">
-            <Label htmlFor="clientNom">Nom du client *</Label>
+            <div className="grid gap-3">
+              <Label htmlFor="clientNom" className="text-sm font-semibold flex items-center gap-2">
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs">
+                  1
+                </span>
+                Nom du client *
+              </Label>
             <Input
               id="clientNom"
               value={clientNom}
               onChange={(e) => handleClientNomChange(e.target.value)}
               placeholder="Ex: Dupont Jean-Pierre"
+                className="h-11 border-2 focus:border-blue-500 dark:focus:border-blue-400"
             />
           </div>
 
-            {/* Note */}
-            <div className="grid gap-2">
-              <Label htmlFor="note">Note</Label>
+            {/* Note obligatoire */}
+            <div className="grid gap-3">
+              <Label htmlFor="note" className="text-sm font-semibold flex items-center gap-2">
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs">
+                  2
+                </span>
+                Note *
+                <span className="ml-auto text-xs font-normal text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  Obligatoire pour les process
+                </span>
+              </Label>
               <Textarea
                 id="note"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Ajoutez une note (optionnel)"
-                rows={4}
+                placeholder="Décrivez le contexte de ce process (ex: Bilan effectué, échanges avec le client, opportunités détectées...)"
+                rows={5}
+                className="border-2 focus:border-blue-500 dark:focus:border-blue-400 resize-none"
               />
+              <p className="text-xs text-muted-foreground">
+                Cette note permet de garder une trace du suivi client et facilite le pilotage de l'activité.
+              </p>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+          <DialogFooter className="border-t pt-6 gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)} 
+              disabled={isLoading}
+              className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-900 dark:hover:to-gray-800"
+            >
               Annuler
             </Button>
-            <Button onClick={handleSubmit} disabled={isLoading} className="bg-[#00529B] hover:bg-[#003d73]">
-              {isLoading ? "Création..." : "Créer l'acte"}
+            <Button 
+              onClick={handleSubmit} 
+              disabled={isLoading || !clientNom || !note}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <>
+                  <Clock className="mr-2 h-4 w-4 animate-spin" />
+                  Création en cours...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Créer le process
+                </>
+              )}
             </Button>
           </DialogFooter>
         </>
@@ -367,36 +502,52 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
     // Formulaire complet pour AN
     return (
       <>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="pb-6 border-b">
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setStep(1)}
               disabled={isLoading}
-              className="h-8 w-8 p-0"
+              className="h-10 w-10 p-0 rounded-xl hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-200 dark:hover:from-gray-800 dark:hover:to-gray-700"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-5 w-5" />
             </Button>
-            Nouvel acte - {ACT_KINDS.find(a => a.value === kind)?.label}
+            <div className={cn(
+              "p-3 rounded-xl bg-gradient-to-br shadow-lg",
+              currentKind?.gradient
+            )}>
+              <KindIcon className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <DialogTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                {currentKind?.label}
           </DialogTitle>
+              <p className="text-sm text-muted-foreground mt-1">Étape 2/2 : Détails du contrat</p>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-5 py-6">
           {/* Nom du client */}
-          <div className="grid gap-2">
-            <Label htmlFor="clientNom">Nom du client *</Label>
+          <div className="grid gap-3">
+            <Label htmlFor="clientNom" className="text-sm font-semibold">
+              Nom du client *
+            </Label>
             <Input
               id="clientNom"
               value={clientNom}
               onChange={(e) => handleClientNomChange(e.target.value)}
               placeholder="Ex: Dupont Jean-Pierre"
+              className="h-11 border-2 focus:border-blue-500 dark:focus:border-blue-400"
             />
           </div>
 
           {/* Numéro de contrat */}
-          <div className="grid gap-2">
-            <Label htmlFor="numeroContrat">Numéro de contrat *</Label>
+          <div className="grid gap-3">
+            <Label htmlFor="numeroContrat" className="text-sm font-semibold">
+              Numéro de contrat *
+            </Label>
             <Input
               id="numeroContrat"
               value={numeroContrat}
@@ -408,22 +559,27 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
               }}
               placeholder="Ex: CT001234"
               className={cn(
-                formErrors.numeroContrat &&
-                  "border-red-500 focus-visible:ring-red-500 dark:border-red-400"
+                "h-11 border-2",
+                formErrors.numeroContrat
+                  ? "border-red-500 focus:border-red-500 dark:border-red-400"
+                  : "focus:border-blue-500 dark:focus:border-blue-400"
               )}
             />
             {formErrors.numeroContrat && (
-              <span className="text-sm text-red-600 dark:text-red-400">
-                {formErrors.numeroContrat}
-              </span>
+              <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{formErrors.numeroContrat}</span>
+              </div>
             )}
           </div>
 
           {/* Type de contrat */}
-          <div className="grid gap-2">
-            <Label htmlFor="contratType">Type de contrat *</Label>
+          <div className="grid gap-3">
+            <Label htmlFor="contratType" className="text-sm font-semibold">
+              Type de contrat *
+            </Label>
             <Select value={contratType} onValueChange={setContratType}>
-              <SelectTrigger id="contratType">
+              <SelectTrigger id="contratType" className="h-11 border-2 focus:border-blue-500">
                 <SelectValue placeholder="Sélectionnez un type de contrat" />
               </SelectTrigger>
               <SelectContent>
@@ -437,10 +593,12 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
           </div>
 
           {/* Compagnie */}
-          <div className="grid gap-2">
-            <Label htmlFor="compagnie">Compagnie *</Label>
+          <div className="grid gap-3">
+            <Label htmlFor="compagnie" className="text-sm font-semibold">
+              Compagnie *
+            </Label>
             <Select value={compagnie} onValueChange={setCompagnie}>
-              <SelectTrigger id="compagnie">
+              <SelectTrigger id="compagnie" className="h-11 border-2 focus:border-blue-500">
                 <SelectValue placeholder="Sélectionnez une compagnie" />
               </SelectTrigger>
               <SelectContent>
@@ -454,14 +612,14 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
           </div>
 
           {/* Date d'effet */}
-          <div className="grid gap-2">
-            <Label>Date d'effet *</Label>
+          <div className="grid gap-3">
+            <Label className="text-sm font-semibold">Date d'effet *</Label>
             <Popover open={dateEffetOpen} onOpenChange={setDateEffetOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal",
+                    "w-full h-11 justify-start text-left font-normal border-2 hover:border-blue-500",
                     !dateEffet && "text-muted-foreground"
                   )}
                 >
@@ -485,8 +643,10 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
 
           {/* Prime annuelle (conditionnelle) */}
           {showPrimeAnnuelle && (
-            <div className="grid gap-2">
-              <Label htmlFor="primeAnnuelle">Prime annuelle (€)</Label>
+            <div className="grid gap-3">
+              <Label htmlFor="primeAnnuelle" className="text-sm font-semibold">
+                Prime annuelle (€)
+              </Label>
               <Input
                 id="primeAnnuelle"
                 type="number"
@@ -494,14 +654,17 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
                 value={primeAnnuelle || ""}
                 onChange={(e) => setPrimeAnnuelle(e.target.value ? parseFloat(e.target.value) : undefined)}
                 placeholder="Ex: 500.00"
+                className="h-11 border-2 focus:border-blue-500 dark:focus:border-blue-400"
               />
             </div>
           )}
 
           {/* Montant versé (conditionnel) */}
           {showMontantVersement && (
-            <div className="grid gap-2">
-              <Label htmlFor="montantVersement">Montant versé (€) *</Label>
+            <div className="grid gap-3">
+              <Label htmlFor="montantVersement" className="text-sm font-semibold">
+                Montant versé (€) *
+              </Label>
               <Input
                 id="montantVersement"
                 type="number"
@@ -509,29 +672,52 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
                 value={montantVersement || ""}
                 onChange={(e) => setMontantVersement(e.target.value ? parseFloat(e.target.value) : undefined)}
                 placeholder="Ex: 1000.00"
+                className="h-11 border-2 focus:border-blue-500 dark:focus:border-blue-400"
               />
             </div>
           )}
 
           {/* Note */}
-          <div className="grid gap-2">
-            <Label htmlFor="note">Note</Label>
+          <div className="grid gap-3">
+            <Label htmlFor="note" className="text-sm font-semibold">
+              Note <span className="text-muted-foreground font-normal">(optionnel)</span>
+            </Label>
             <Textarea
               id="note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Ajoutez une note (optionnel)"
+              placeholder="Ajoutez une note si nécessaire..."
               rows={3}
+              className="border-2 focus:border-blue-500 dark:focus:border-blue-400 resize-none"
             />
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+        <DialogFooter className="border-t pt-6 gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)} 
+            disabled={isLoading}
+            className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-900 dark:hover:to-gray-800"
+          >
             Annuler
           </Button>
-          <Button onClick={handleSubmit} disabled={isLoading} className="bg-[#00529B] hover:bg-[#003d73]">
-            {isLoading ? "Création..." : "Créer l'acte"}
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isLoading}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all"
+          >
+            {isLoading ? (
+              <>
+                <Clock className="mr-2 h-4 w-4 animate-spin" />
+                Création en cours...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                Créer l'acte
+              </>
+            )}
           </Button>
         </DialogFooter>
       </>
@@ -540,7 +726,7 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto border-2 shadow-2xl">
         {step === 1 ? renderStep1() : renderStep2()}
       </DialogContent>
     </Dialog>

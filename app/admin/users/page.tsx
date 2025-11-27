@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, UserX, UserCheck, Trash2 } from "lucide-react";
+import { Plus, UserX, UserCheck, Trash2, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -36,7 +36,9 @@ export default function UsersManagementPage() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [newPassword, setNewPassword] = useState("");
   
   const [formData, setFormData] = useState({
     email: "",
@@ -147,6 +149,38 @@ export default function UsersManagementPage() {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!selectedUser || !newPassword) return;
+
+    if (newPassword.length < 6) {
+      toast.error("Le mot de passe doit contenir au moins 6 caractères");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid: selectedUser.uid,
+          password: newPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erreur réinitialisation mot de passe");
+      }
+      
+      toast.success("Mot de passe réinitialisé avec succès");
+      setIsPasswordDialogOpen(false);
+      setSelectedUser(null);
+      setNewPassword("");
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
   return (
     <RouteGuard allowedRoles={["ADMINISTRATEUR"]}>
       {loading ? (
@@ -230,6 +264,18 @@ export default function UsersManagementPage() {
                                 ) : (
                                   <UserCheck className="h-4 w-4" />
                                 )}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setNewPassword("");
+                                  setIsPasswordDialogOpen(true);
+                                }}
+                                title="Réinitialiser le mot de passe"
+                              >
+                                <KeyRound className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
@@ -320,6 +366,37 @@ export default function UsersManagementPage() {
                   className="bg-destructive hover:bg-destructive/90"
                 >
                   Supprimer
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Dialog réinitialisation mot de passe */}
+          <AlertDialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Réinitialiser le mot de passe</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Définir un nouveau mot de passe pour {selectedUser?.email}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="py-4">
+                <Label htmlFor="new-password">Nouveau mot de passe</Label>
+                <PasswordInput
+                  id="new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Minimum 6 caractères"
+                  autoComplete="new-password"
+                />
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setNewPassword("")}>Annuler</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleResetPassword}
+                  disabled={!newPassword || newPassword.length < 6}
+                >
+                  Réinitialiser
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

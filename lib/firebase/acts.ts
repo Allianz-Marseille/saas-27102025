@@ -197,3 +197,71 @@ export const contractNumberExists = async (numeroContrat: string): Promise<boole
     return existingNumber === normalizedNumber;
   });
 };
+
+/**
+ * Récupère les KPI de tous les commerciaux pour un mois donné
+ * Utilisé pour les leaderboards
+ */
+export async function getAllCommercialsKPI(monthKey: string): Promise<{
+  userId: string;
+  email: string;
+  firstName: string;
+  commissions: number;
+  process: number;
+  ca: number;
+}[]> {
+  if (!db) return [];
+  
+  try {
+    // 1. Récupérer tous les commerciaux
+    const { getAllCommercials } = await import('./auth');
+    const commercials = await getAllCommercials();
+    
+    // 2. Récupérer tous les actes du mois en une seule requête (plus efficace)
+    const actsQuery = query(
+      collection(db, "acts"),
+      where("moisKey", "==", monthKey)
+    );
+    const actsSnapshot = await getDocs(actsQuery);
+    const allActs = actsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Act[];
+    
+    // 3. Grouper les actes par userId
+    const actsByUser = new Map<string, Act[]>();
+    allActs.forEach(act => {
+      if (!actsByUser.has(act.userId)) {
+        actsByUser.set(act.userId, []);
+      }
+      actsByUser.get(act.userId)!.push(act);
+    });
+    
+    // 4. Calculer les KPI pour chaque commercial
+    const { calculateKPI } = await import('../utils/kpi');
+    
+    const results = commercials.map(commercial => {
+      const userActs = actsByUser.get(commercial.id) || [];
+      const kpi = calculateKPI(userActs);
+      
+      // Extraire le prénom depuis l'email
+      const emailParts = commercial.email.split('@')[0].split('.');
+      const rawFirstName = emailParts[0] || 'Commercial';
+      const firstName = rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1).toLowerCase();
+      
+      return {
+        userId: commercial.id,
+        email: commercial.email,
+        firstName,
+        commissions: kpi.commissionsPotentielles || 0,
+        process: kpi.nbProcess || 0,
+        ca: kpi.caMensuel || 0,
+      };
+    });
+    
+    return results;
+  } catch (error) {
+    console.error("Error fetching all commercials KPI:", error);
+    return [];
+  }
+}

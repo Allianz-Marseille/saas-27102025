@@ -1,6 +1,9 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface KPICardProps {
   title: string;
@@ -9,6 +12,7 @@ interface KPICardProps {
   icon: LucideIcon;
   trend?: "up" | "down" | "neutral";
   colorScheme?: "blue" | "green" | "orange" | "purple" | "red" | "teal" | "pink" | "indigo";
+  delay?: number;
 }
 
 const colorSchemes = {
@@ -54,48 +58,86 @@ const colorSchemes = {
   },
 };
 
-export function KPICard({ title, value, subtitle, icon: Icon, trend, colorScheme = "blue" }: KPICardProps) {
+export function KPICard({ title, value, subtitle, icon: Icon, trend, colorScheme = "blue", delay = 0 }: KPICardProps) {
   const colors = colorSchemes[colorScheme];
 
   return (
-    <Card className={cn("overflow-hidden transition-all hover:shadow-lg hover:scale-[1.02]", colors.border)}>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-sm font-medium text-muted-foreground mb-4">
-              {title}
-            </CardTitle>
-            <div className="text-3xl font-bold mb-2">{value}</div>
-            {subtitle && (
-              <p className="text-xs text-muted-foreground mt-2">{subtitle}</p>
-            )}
-            {trend && (
-              <div className="mt-3">
-                <span className={cn(
-                  "text-xs font-semibold flex items-center gap-1",
-                  trend === 'up' ? 'text-green-600 dark:text-green-400' : 
-                  trend === 'down' ? 'text-red-600 dark:text-red-400' : 
-                  'text-muted-foreground'
-                )}>
-                  {trend === 'up' && (
-                    <span className="text-green-600 dark:text-green-400">↑ Hausse</span>
-                  )}
-                  {trend === 'down' && (
-                    <span className="text-red-600 dark:text-red-400">↓ Baisse</span>
-                  )}
-                  {trend === 'neutral' && (
-                    <span className="text-muted-foreground">— Stable</span>
-                  )}
-                </span>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay }}
+    >
+      <Card className={cn(
+        "overflow-hidden transition-all hover:shadow-2xl hover:scale-[1.03] group cursor-pointer relative h-full",
+        colors.border
+      )}>
+        {/* Gradient Background on Hover */}
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent to-transparent opacity-0 group-hover:opacity-5 transition-opacity duration-300" 
+          style={{ 
+            backgroundImage: `linear-gradient(135deg, var(--${colorScheme}-500) 0%, var(--${colorScheme}-700) 100%)` 
+          }} 
+        />
+        
+        {/* Shine Effect */}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+          initial={{ x: '-100%' }}
+          whileHover={{ x: '100%' }}
+          transition={{ duration: 0.6 }}
+        />
+
+        <CardContent className="p-6 relative z-10 h-full flex flex-col">
+          <div className="flex items-start justify-between h-full">
+            <div className="flex-1 flex flex-col justify-between min-h-[140px]">
+              <div>
+                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+                  {title}
+                </CardTitle>
+                <motion.div 
+                  className="text-4xl font-bold mb-2 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text"
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: delay + 0.2, type: "spring", stiffness: 200 }}
+                >
+                  {value}
+                </motion.div>
               </div>
-            )}
+              <div className="mt-auto">
+                {subtitle && (
+                  <p className="text-xs text-muted-foreground">{subtitle}</p>
+                )}
+                {trend && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: delay + 0.3 }}
+                    className="mt-2"
+                  >
+                    <span className={cn(
+                      "text-xs font-semibold flex items-center gap-1 px-2.5 py-1 rounded-full w-fit",
+                      trend === 'up' ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 
+                      trend === 'down' ? 'bg-red-500/10 text-red-600 dark:text-red-400' : 
+                      'bg-gray-500/10 text-muted-foreground'
+                    )}>
+                      {trend === 'up' && '↑ En hausse'}
+                      {trend === 'down' && '↓ En baisse'}
+                      {trend === 'neutral' && '→ Stable'}
+                    </span>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+            <motion.div 
+              whileHover={{ rotate: 360, scale: 1.1 }}
+              transition={{ duration: 0.5 }}
+              className={cn("rounded-xl p-3 flex items-center justify-center flex-shrink-0", colors.iconBg)}
+            >
+              <Icon className={cn("h-8 w-8", colors.iconColor)} />
+            </motion.div>
           </div>
-          <div className={cn("rounded-xl p-3 flex items-center justify-center", colors.iconBg)}>
-            <Icon className={cn("h-10 w-10", colors.iconColor)} />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 

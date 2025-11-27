@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { uid, role, active } = body;
+    const { uid, role, active, password } = body;
 
     if (!uid) {
       return NextResponse.json(
@@ -175,6 +175,17 @@ export async function PATCH(request: NextRequest) {
       } else {
         await auth.updateUser(uid, { disabled: false });
       }
+    }
+
+    // Mettre à jour le mot de passe dans Auth
+    if (password) {
+      if (password.length < 6) {
+        return NextResponse.json(
+          { error: "Le mot de passe doit contenir au moins 6 caractères" },
+          { status: 400 }
+        );
+      }
+      await auth.updateUser(uid, { password });
     }
 
     return NextResponse.json({ success: true });
