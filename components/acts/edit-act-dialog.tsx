@@ -43,7 +43,7 @@ const CONTRACT_TYPES = [
 ];
 
 export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDialogProps) {
-  const { userData } = useAuth();
+  const { user, userData } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   
