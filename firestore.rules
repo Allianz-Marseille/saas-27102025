@@ -20,6 +20,12 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'CDC_COMMERCIAL';
     }
     
+    // Helper function to check if user is Commercial Santé Individuel
+    function isCommercialSante() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMERCIAL_SANTE_INDIVIDUEL';
+    }
+    
     // Users collection
     match /users/{userId} {
       allow read: if isAuthenticated();
@@ -50,6 +56,14 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update: if isAdmin();
       allow delete: if isAdmin();
+    }
+    
+    // Health acts collection (Santé Individuelle)
+    match /health_acts/{actId} {
+      allow read: if isAuthenticated();
+      allow create: if isCommercialSante();
+      allow update: if isCommercialSante() && resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin() || (isCommercialSante() && resource.data.userId == request.auth.uid);
     }
     
     // Logs collection

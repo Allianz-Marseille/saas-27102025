@@ -53,6 +53,8 @@ export default function LoginPage() {
         // Rediriger selon le rôle (le log de connexion sera créé automatiquement par useAuth)
         if (userData?.role === ROLES.ADMINISTRATEUR) {
           router.push("/admin");
+        } else if (userData?.role === ROLES.COMMERCIAL_SANTE_INDIVIDUEL) {
+          router.push("/sante-individuelle");
         } else {
           router.push("/dashboard");
         }

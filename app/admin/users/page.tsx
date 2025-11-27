@@ -26,7 +26,7 @@ import { useAuth } from "@/lib/firebase/use-auth";
 interface User {
   uid: string;
   email: string;
-  role: "ADMINISTRATEUR" | "CDC_COMMERCIAL";
+  role: "ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL";
   active: boolean;
   createdAt: string;
   emailVerified: boolean;
@@ -45,7 +45,7 @@ export default function UsersManagementPage() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    role: "CDC_COMMERCIAL" as "ADMINISTRATEUR" | "CDC_COMMERCIAL",
+    role: "CDC_COMMERCIAL" as "ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL",
   });
 
   // Helper pour créer les headers avec l'ID et l'email de l'admin
@@ -122,7 +122,7 @@ export default function UsersManagementPage() {
     }
   };
 
-  const handleUpdateRole = async (user: User, newRole: "ADMINISTRATEUR" | "CDC_COMMERCIAL") => {
+  const handleUpdateRole = async (user: User, newRole: "ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL") => {
     try {
       const response = await fetch("/api/admin/users", {
         method: "PATCH",
@@ -241,16 +241,17 @@ export default function UsersManagementPage() {
                           <td className="p-3 text-center">
                             <Select
                               value={user.role}
-                              onValueChange={(value: "ADMINISTRATEUR" | "CDC_COMMERCIAL") =>
+                              onValueChange={(value: "ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL") =>
                                 handleUpdateRole(user, value)
                               }
                             >
-                              <SelectTrigger className="w-[180px] mx-auto">
+                              <SelectTrigger className="w-[220px] mx-auto">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="ADMINISTRATEUR">Administrateur</SelectItem>
                                 <SelectItem value="CDC_COMMERCIAL">CDC Commercial</SelectItem>
+                                <SelectItem value="COMMERCIAL_SANTE_INDIVIDUEL">Commercial Santé Individuel</SelectItem>
                               </SelectContent>
                             </Select>
                           </td>
@@ -342,7 +343,7 @@ export default function UsersManagementPage() {
                   <Label htmlFor="role">Rôle</Label>
                   <Select
                     value={formData.role}
-                    onValueChange={(value: "ADMINISTRATEUR" | "CDC_COMMERCIAL") =>
+                    onValueChange={(value: "ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL") =>
                       setFormData({ ...formData, role: value })
                     }
                   >
@@ -352,6 +353,7 @@ export default function UsersManagementPage() {
                     <SelectContent>
                       <SelectItem value="ADMINISTRATEUR">Administrateur</SelectItem>
                       <SelectItem value="CDC_COMMERCIAL">CDC Commercial</SelectItem>
+                      <SelectItem value="COMMERCIAL_SANTE_INDIVIDUEL">Commercial Santé Individuel</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
