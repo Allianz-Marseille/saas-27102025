@@ -4,11 +4,11 @@ import { HealthAct } from "@/types";
 
 // Coefficients par type d'acte selon le document de spécification
 export const HEALTH_ACT_COEFFICIENTS: Record<string, number> = {
-  AFFAIRE_NOUVELLE: 1.0, // À définir selon les besoins
-  REVISION: 0.5, // À définir selon les besoins
-  ADHESION_SALARIE: 0.3, // À définir selon les besoins
-  COURT_TO_AZ: 0.7, // À définir selon les besoins
-  AZ_TO_COURTAGE: 0.5, // Coefficient 50% selon le doc
+  AFFAIRE_NOUVELLE: 1.0, // 100% - À définir selon les besoins
+  REVISION: 0.5, // 50% - À définir selon les besoins
+  ADHESION_SALARIE: 0.5, // 50% - Adhésion salarié / Renforts
+  COURT_TO_AZ: 0.75, // 75% - Courtage → Allianz
+  AZ_TO_COURTAGE: 0.5, // 50% - Allianz → Courtage
 };
 
 /**
