@@ -218,3 +218,63 @@ export async function logSystemError(
   });
 }
 
+/**
+ * Helper pour logger la création d'un utilisateur par un admin
+ */
+export async function logUserCreated(
+  adminUserId: string,
+  adminEmail: string,
+  newUserEmail: string,
+  role: string
+): Promise<void> {
+  await createLog({
+    level: "success",
+    action: "user_created",
+    userId: adminUserId,
+    userEmail: adminEmail,
+    description: `Création d'un utilisateur ${newUserEmail} avec le rôle ${role}`,
+    metadata: { newUserEmail, role },
+  });
+}
+
+/**
+ * Helper pour logger la modification d'un utilisateur par un admin
+ */
+export async function logUserUpdated(
+  adminUserId: string,
+  adminEmail: string,
+  targetUserEmail: string,
+  changes: Record<string, unknown>
+): Promise<void> {
+  const changeDescription = Object.entries(changes)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(", ");
+    
+  await createLog({
+    level: "info",
+    action: "user_updated",
+    userId: adminUserId,
+    userEmail: adminEmail,
+    description: `Modification de l'utilisateur ${targetUserEmail} (${changeDescription})`,
+    metadata: { targetUserEmail, changes },
+  });
+}
+
+/**
+ * Helper pour logger la suppression d'un utilisateur par un admin
+ */
+export async function logUserDeleted(
+  adminUserId: string,
+  adminEmail: string,
+  deletedUserEmail: string
+): Promise<void> {
+  await createLog({
+    level: "warning",
+    action: "user_deleted",
+    userId: adminUserId,
+    userEmail: adminEmail,
+    description: `Suppression de l'utilisateur ${deletedUserEmail}`,
+    metadata: { deletedUserEmail },
+  });
+}
+

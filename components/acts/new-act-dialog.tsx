@@ -15,6 +15,7 @@ import { fr } from "date-fns/locale";
 import { CalendarIcon, ArrowLeft, Plus, FileText, Clock, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { contractNumberExists, createAct } from "@/lib/firebase/acts";
+import { logActCreated } from "@/lib/firebase/logs";
 import { Act } from "@/types";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { getCompanies, type Company } from "@/lib/firebase/companies";
@@ -294,6 +295,20 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
       }
       
       await createAct(actData);
+      
+      // Logger la création
+      if (userData?.email) {
+        try {
+          await logActCreated(user.uid, userData.email, {
+            clientNom,
+            kind,
+            contratType: contratType || "",
+          });
+        } catch (logError) {
+          console.error("Erreur lors de l'enregistrement du log:", logError);
+        }
+      }
+      
       toast.success("Acte créé avec succès");
       resetForm();
       onSuccess?.();

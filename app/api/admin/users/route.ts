@@ -127,6 +127,24 @@ export async function POST(request: NextRequest) {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
+    // Logger la création (récupérer l'admin qui a fait l'action depuis les headers si disponible)
+    const adminUserId = request.headers.get("x-user-id") || "admin";
+    const adminEmail = request.headers.get("x-user-email") || "admin";
+    
+    try {
+      await db.collection("logs").add({
+        level: "success",
+        action: "user_created",
+        userId: adminUserId,
+        userEmail: adminEmail,
+        description: `Création d'un utilisateur ${email} avec le rôle ${role}`,
+        metadata: { newUserEmail: email, role },
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (logError) {
+      console.error("Erreur lors de l'enregistrement du log:", logError);
+    }
+
     return NextResponse.json({
       success: true,
       user: {
@@ -188,6 +206,37 @@ export async function PATCH(request: NextRequest) {
       await auth.updateUser(uid, { password });
     }
 
+    // Logger la modification
+    const adminUserId = request.headers.get("x-user-id") || "admin";
+    const adminEmail = request.headers.get("x-user-email") || "admin";
+    
+    try {
+      // Récupérer l'email de l'utilisateur modifié
+      const userDoc = await db.collection("users").doc(uid).get();
+      const targetUserEmail = userDoc.data()?.email || uid;
+      
+      const changes: Record<string, unknown> = {};
+      if (role) changes.role = role;
+      if (typeof active === "boolean") changes.active = active;
+      if (password) changes.password = "***";
+      
+      const changeDescription = Object.entries(changes)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(", ");
+      
+      await db.collection("logs").add({
+        level: "info",
+        action: "user_updated",
+        userId: adminUserId,
+        userEmail: adminEmail,
+        description: `Modification de l'utilisateur ${targetUserEmail} (${changeDescription})`,
+        metadata: { targetUserEmail, changes },
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (logError) {
+      console.error("Erreur lors de l'enregistrement du log:", logError);
+    }
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Erreur PATCH user:", error);
@@ -215,11 +264,33 @@ export async function DELETE(request: NextRequest) {
     const auth = adminInstance.auth();
     const db = adminInstance.firestore();
 
+    // Récupérer l'email de l'utilisateur avant suppression pour le log
+    const userDoc = await db.collection("users").doc(uid).get();
+    const deletedUserEmail = userDoc.data()?.email || uid;
+
     // Supprimer de Auth
     await auth.deleteUser(uid);
 
     // Supprimer de Firestore
     await db.collection("users").doc(uid).delete();
+
+    // Logger la suppression
+    const adminUserId = request.headers.get("x-user-id") || "admin";
+    const adminEmail = request.headers.get("x-user-email") || "admin";
+    
+    try {
+      await db.collection("logs").add({
+        level: "warning",
+        action: "user_deleted",
+        userId: adminUserId,
+        userEmail: adminEmail,
+        description: `Suppression de l'utilisateur ${deletedUserEmail}`,
+        metadata: { deletedUserEmail },
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (logError) {
+      console.error("Erreur lors de l'enregistrement du log:", logError);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

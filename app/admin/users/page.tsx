@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { RouteGuard } from "@/components/auth/route-guard";
+import { useAuth } from "@/lib/firebase/use-auth";
 
 interface User {
   uid: string;
@@ -32,6 +33,7 @@ interface User {
 }
 
 export default function UsersManagementPage() {
+  const { user, userData } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -45,6 +47,16 @@ export default function UsersManagementPage() {
     password: "",
     role: "CDC_COMMERCIAL" as "ADMINISTRATEUR" | "CDC_COMMERCIAL",
   });
+
+  // Helper pour créer les headers avec l'ID et l'email de l'admin
+  const getAuthHeaders = () => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (user?.uid) headers["x-user-id"] = user.uid;
+    if (userData?.email) headers["x-user-email"] = userData.email;
+    return headers;
+  };
 
   useEffect(() => {
     loadUsers();
@@ -72,7 +84,7 @@ export default function UsersManagementPage() {
     try {
       const response = await fetch("/api/admin/users", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify(formData),
       });
 
@@ -94,7 +106,7 @@ export default function UsersManagementPage() {
     try {
       const response = await fetch("/api/admin/users", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           uid: user.uid,
           active: !user.active,
@@ -114,7 +126,7 @@ export default function UsersManagementPage() {
     try {
       const response = await fetch("/api/admin/users", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           uid: user.uid,
           role: newRole,
@@ -136,6 +148,7 @@ export default function UsersManagementPage() {
     try {
       const response = await fetch(`/api/admin/users?uid=${selectedUser.uid}`, {
         method: "DELETE",
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) throw new Error("Erreur suppression");
@@ -160,7 +173,7 @@ export default function UsersManagementPage() {
     try {
       const response = await fetch("/api/admin/users", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           uid: selectedUser.uid,
           password: newPassword,

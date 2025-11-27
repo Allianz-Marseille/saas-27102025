@@ -15,6 +15,7 @@ import { fr } from "date-fns/locale";
 import { CalendarIcon, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { updateAct, calculateCommission } from "@/lib/firebase/acts";
+import { logActUpdated } from "@/lib/firebase/logs";
 import { Act } from "@/types";
 import { getCompanies, type Company } from "@/lib/firebase/companies";
 import { Timestamp } from "firebase/firestore";
@@ -156,6 +157,16 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
         }
         
         await updateAct(act.id, updates);
+        
+        // Logger la modification
+        if (user && userData?.email) {
+          try {
+            await logActUpdated(user.uid, userData.email, act.id, clientNom);
+          } catch (logError) {
+            console.error("Erreur lors de l'enregistrement du log:", logError);
+          }
+        }
+        
         toast.success("Acte modifié avec succès");
         onSuccess?.();
         onOpenChange(false);
@@ -204,6 +215,16 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
       }
       
       await updateAct(act.id, updates as Partial<Act>);
+      
+      // Logger la modification
+      if (user && userData?.email) {
+        try {
+          await logActUpdated(user.uid, userData.email, act.id, clientNom);
+        } catch (logError) {
+          console.error("Erreur lors de l'enregistrement du log:", logError);
+        }
+      }
+      
       toast.success("Acte modifié avec succès");
       onSuccess?.();
       onOpenChange(false);

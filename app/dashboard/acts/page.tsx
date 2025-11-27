@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { FileText, Plus, Edit, Trash2, Lock, Unlock, ArrowUpDown, ArrowUp, ArrowDown, Shield, Heart, Stethoscope, PiggyBank, Car, Building2, Filter, X } from "lucide-react";
 import { deleteAct } from "@/lib/firebase/acts";
+import { logActDeleted } from "@/lib/firebase/logs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -110,6 +111,16 @@ export default function ActsPage() {
 
     try {
       await deleteAct(deleteDialog.actId);
+      
+      // Logger la suppression
+      if (user && userData?.email) {
+        try {
+          await logActDeleted(user.uid, userData.email, deleteDialog.actId, deleteDialog.clientName);
+        } catch (logError) {
+          console.error("Erreur lors de l'enregistrement du log:", logError);
+        }
+      }
+      
       toast.success("Acte supprimé avec succès");
       setDeleteDialog({ open: false, actId: null, clientName: "" });
       loadActs();
