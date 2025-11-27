@@ -151,6 +151,11 @@
   50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.8); }
 }
 
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.02); }
+}
+
 .animate-shimmer {
   animation: shimmer 2s infinite;
 }
@@ -181,6 +186,14 @@
 
 .animate-glow {
   animation: glow 2s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+.hover\:scale-102:hover {
+  transform: scale(1.02);
 }
 
 /* Glassmorphism */
