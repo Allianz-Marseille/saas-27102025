@@ -130,10 +130,10 @@ export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetPr
           </motion.div>
         )}
 
-        {/* Top 5 */}
+        {/* Top 3 */}
         <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-muted-foreground mb-3">🏆 Top 5 du mois</h4>
-          {leaderboardData.slice(0, 5).map((user, index) => (
+          <h4 className="text-sm font-semibold text-muted-foreground mb-3">🏆 Top 3 du mois</h4>
+          {leaderboardData.slice(0, 3).map((user, index) => (
             <motion.div
               key={user.name}
               initial={{ opacity: 0, x: -20 }}
