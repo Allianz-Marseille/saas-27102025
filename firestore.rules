@@ -33,7 +33,7 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isCDC();
       allow update: if isCDC() && resource.data.userId == request.auth.uid;
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || (isCDC() && resource.data.userId == request.auth.uid);
     }
     
     // Companies collection
