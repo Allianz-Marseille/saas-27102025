@@ -16,9 +16,13 @@ export interface CommissionRule {
 export const createAct = async (act: any): Promise<Act> => {
   if (!db) throw new Error('Firebase not initialized');
   
+  // Pour les process (M+3, PRETERME_AUTO, PRETERME_IRD), on n'a pas de commission
+  const isProcess = act.kind === "M+3" || act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD";
+  
   // Vérification de l'unicité du numéro de contrat (insensible à la casse) - Protection serveur
+  // SAUF pour les process qui ont tous "-" comme numéro de contrat
   const trimmedContractNumber = act.numeroContrat?.trim();
-  if (trimmedContractNumber) {
+  if (trimmedContractNumber && trimmedContractNumber !== "-" && !isProcess) {
     const alreadyExists = await contractNumberExists(trimmedContractNumber);
     if (alreadyExists) {
       throw new Error('Ce numéro de contrat est déjà enregistré.');
@@ -28,8 +32,6 @@ export const createAct = async (act: any): Promise<Act> => {
   const dateSaisie = new Date();
   const moisKey = dateSaisie.toISOString().slice(0, 7); // YYYY-MM
 
-  // Pour les process (M+3, PRETERME_AUTO, PRETERME_IRD), on n'a pas de commission
-  const isProcess = act.kind === "M+3" || act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD";
   const commissionPotentielle = isProcess ? 0 : calculateCommission(act.contratType, act.primeAnnuelle || 0, act.montantVersement || 0);
 
   // Construire l'objet avec tous les champs définis (les champs undefined ont été filtrés par le composant)
