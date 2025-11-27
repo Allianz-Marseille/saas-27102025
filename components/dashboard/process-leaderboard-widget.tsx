@@ -185,24 +185,16 @@ export function ProcessLeaderboardWidget({ currentUserEmail, kpi }: ProcessLeade
                   {/* Médaille pour le top 3 */}
                   <div className="w-10 flex items-center justify-center">
                     {user.rank === 1 && (
-                      <motion.div
-                        animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                      <motion.span
+                        animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
                         transition={{ duration: 2, repeat: Infinity }}
-                        className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 via-pink-500 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-500/50 border-2 border-pink-300"
+                        className="text-4xl"
                       >
-                        <span className="text-xl font-black text-white drop-shadow-md">1</span>
-                      </motion.div>
+                        🥇
+                      </motion.span>
                     )}
-                    {user.rank === 2 && (
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 via-cyan-500 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-400/50 border-2 border-cyan-300">
-                        <span className="text-lg font-black text-white drop-shadow-md">2</span>
-                      </div>
-                    )}
-                    {user.rank === 3 && (
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 via-green-500 to-lime-500 flex items-center justify-center shadow-lg shadow-green-500/50 border-2 border-green-300">
-                        <span className="text-lg font-black text-white drop-shadow-md">3</span>
-                      </div>
-                    )}
+                    {user.rank === 2 && <span className="text-4xl">🥈</span>}
+                    {user.rank === 3 && <span className="text-4xl">🥉</span>}
                     {user.rank > 3 && (
                       <span className="text-sm font-bold text-muted-foreground">#{user.rank}</span>
                     )}
