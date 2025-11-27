@@ -8,6 +8,7 @@ import { NotificationCenter } from "@/components/dashboard/notification-center";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { logout } from "@/lib/firebase/auth";
+import { logUserLogout } from "@/lib/firebase/logs";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useAuth } from "@/lib/firebase/use-auth";
@@ -45,11 +46,21 @@ const menuItems: SidebarItem[] = [
 export function CommercialSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { userData } = useAuth();
+  const { user, userData } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLogout = async () => {
     try {
+      // Logger la déconnexion avant de se déconnecter
+      if (user && userData?.email) {
+        try {
+          await logUserLogout(user.uid, userData.email);
+        } catch (logError) {
+          console.error("Erreur lors de l'enregistrement du log:", logError);
+          // Ne pas bloquer la déconnexion si le log échoue
+        }
+      }
+      
       await logout();
       toast.success("Déconnexion réussie");
       router.push("/login");

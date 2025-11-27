@@ -8,9 +8,11 @@ import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { logout } from "@/lib/firebase/auth";
+import { logUserLogout } from "@/lib/firebase/logs";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/firebase/use-auth";
 
 export default function AdminLayout({
   children,
@@ -18,10 +20,21 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const { user, userData } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const handleLogout = async () => {
     try {
+      // Logger la déconnexion avant de se déconnecter
+      if (user && userData?.email) {
+        try {
+          await logUserLogout(user.uid, userData.email);
+        } catch (logError) {
+          console.error("Erreur lors de l'enregistrement du log:", logError);
+          // Ne pas bloquer la déconnexion si le log échoue
+        }
+      }
+      
       await logout();
       toast.success("Déconnexion réussie");
       router.push("/login");

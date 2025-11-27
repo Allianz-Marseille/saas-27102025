@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { login, getUserData } from "@/lib/firebase/auth";
+import { logUserLogin } from "@/lib/firebase/logs";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,14 @@ export default function LoginPage() {
       // Récupérer le rôle de l'utilisateur
       if (firebaseUser) {
         const userData = await getUserData(firebaseUser.uid);
+        
+        // Logger la connexion
+        try {
+          await logUserLogin(firebaseUser.uid, data.email);
+        } catch (logError) {
+          console.error("Erreur lors de l'enregistrement du log:", logError);
+          // Ne pas bloquer la connexion si le log échoue
+        }
         
         // Rediriger selon le rôle
         if (userData?.role === ROLES.ADMINISTRATEUR) {
