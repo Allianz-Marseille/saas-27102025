@@ -86,7 +86,7 @@ const ACT_KINDS = [
 ];
 
 export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProps) {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [step, setStep] = useState<1 | 2>(1); // Nouvelle gestion des étapes
