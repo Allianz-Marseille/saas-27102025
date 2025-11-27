@@ -183,6 +183,8 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
   };
   
   const isProcess = kind === "M+3" || kind === "PRETERME_AUTO" || kind === "PRETERME_IRD";
+  const isPreterme = kind === "PRETERME_AUTO" || kind === "PRETERME_IRD";
+  const isM3 = kind === "M+3";
 
   const handleKindSelect = (selectedKind: "AN" | "M+3" | "PRETERME_AUTO" | "PRETERME_IRD") => {
     setKind(selectedKind);
@@ -202,9 +204,9 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
       return;
     }
 
-    // Pour les process, validation simplifiée
-    if (isProcess) {
-      // Validation de la note obligatoire pour les process
+    // Pour M+3 uniquement : validation simplifiée (pas de numéro de contrat)
+    if (isM3) {
+      // Validation de la note obligatoire pour M+3
       if (!note || note.trim().length === 0) {
         toast.error("Une note est obligatoire pour ce type d'acte");
         return;
@@ -221,7 +223,7 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
           dateEffet: new Date(),
         };
         
-        // Ajouter la note seulement si elle est définie
+        // Ajouter la note
         if (note) {
           actData.note = note;
         }
@@ -238,7 +240,63 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
             });
           } catch (logError) {
             console.error("Erreur lors de l'enregistrement du log:", logError);
-            // Ne pas bloquer la création si le log échoue
+          }
+        }
+        
+        toast.success("Acte créé avec succès");
+        resetForm();
+        onSuccess?.();
+        onOpenChange(false);
+      } catch (err) {
+        console.error("Erreur lors de la création de l'acte:", err);
+        toast.error("Erreur lors de la création de l'acte");
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // Pour PRETERME_AUTO et PRETERME_IRD : validation avec numéro de contrat obligatoire
+    if (isPreterme) {
+      const trimmedContractNumber = numeroContrat.trim();
+      
+      // Validation
+      if (!trimmedContractNumber) {
+        toast.error("Le numéro de contrat est obligatoire");
+        setFormErrors({ numeroContrat: "Le numéro de contrat est obligatoire" });
+        return;
+      }
+      
+      if (!note || note.trim().length === 0) {
+        toast.error("Une note est obligatoire pour ce type d'acte");
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const actData: any = {
+          userId: user.uid,
+          kind,
+          clientNom,
+          numeroContrat: trimmedContractNumber,
+          contratType: "-",
+          compagnie: "-",
+          dateEffet: new Date(),
+          note,
+        };
+        
+        await createAct(actData);
+        
+        // Logger la création
+        if (userData?.email) {
+          try {
+            await logActCreated(user.uid, userData.email, {
+              clientNom,
+              kind,
+              contratType: "-",
+            });
+          } catch (logError) {
+            console.error("Erreur lors de l'enregistrement du log:", logError);
           }
         }
         
@@ -472,11 +530,39 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
             />
           </div>
 
+            {/* Numéro de contrat pour PRETERME uniquement */}
+            {isPreterme && (
+              <div className="grid gap-3">
+                <Label htmlFor="numeroContrat" className="text-sm font-semibold flex items-center gap-2">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs">
+                    2
+                  </span>
+                  Numéro de contrat *
+                </Label>
+                <Input
+                  id="numeroContrat"
+                  value={numeroContrat}
+                  onChange={(e) => setNumeroContrat(e.target.value)}
+                  placeholder="Ex: 12345678"
+                  className={cn(
+                    "h-11 border-2 focus:border-blue-500 dark:focus:border-blue-400",
+                    formErrors.numeroContrat && "border-red-500 focus:border-red-500"
+                  )}
+                />
+                {formErrors.numeroContrat && (
+                  <p className="text-xs text-red-500">{formErrors.numeroContrat}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Le même numéro de contrat peut être saisi plusieurs fois (suivi dans le temps).
+                </p>
+              </div>
+            )}
+
             {/* Note obligatoire */}
             <div className="grid gap-3">
               <Label htmlFor="note" className="text-sm font-semibold flex items-center gap-2">
                 <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs">
-                  2
+                  {isPreterme ? "3" : "2"}
                 </span>
                 Note *
                 <span className="ml-auto text-xs font-normal text-amber-600 dark:text-amber-400 flex items-center gap-1">
@@ -488,12 +574,14 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
                 id="note"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Décrivez le contexte de ce process (ex: Bilan effectué, échanges avec le client, opportunités détectées...)"
+                placeholder={isPreterme 
+                  ? "Décrivez le contexte du préterme (ex: Échéance du contrat, opportunités de renégociation...)"
+                  : "Décrivez le contexte de ce bilan (ex: Échanges avec le client, besoins détectés, opportunités...)"}
                 rows={5}
                 className="border-2 focus:border-blue-500 dark:focus:border-blue-400 resize-none"
               />
               <p className="text-xs text-muted-foreground">
-                Cette note permet de garder une trace du suivi client et facilite le pilotage de l'activité.
+                Cette note permet de garder une trace du suivi {isPreterme ? "du contrat" : "client"} et facilite le pilotage de l'activité.
               </p>
             </div>
           </div>
@@ -509,7 +597,7 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
             </Button>
             <Button 
               onClick={handleSubmit} 
-              disabled={isLoading || !clientNom || !note}
+              disabled={isLoading || !clientNom || !note || (isPreterme && !numeroContrat)}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (

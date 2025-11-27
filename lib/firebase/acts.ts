@@ -16,13 +16,18 @@ export interface CommissionRule {
 export const createAct = async (act: any): Promise<Act> => {
   if (!db) throw new Error('Firebase not initialized');
   
-  // Pour les process (M+3, PRETERME_AUTO, PRETERME_IRD), on n'a pas de commission
-  const isProcess = act.kind === "M+3" || act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD";
+  // Identification des types d'actes
+  const isAN = act.kind === "AN";
+  const isPreterme = act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD";
+  const isM3 = act.kind === "M+3";
+  const isProcess = isM3 || isPreterme;
   
-  // Vérification de l'unicité du numéro de contrat (insensible à la casse) - Protection serveur
-  // SAUF pour les process qui ont tous "-" comme numéro de contrat
+  // Vérification de l'unicité du numéro de contrat - UNIQUEMENT pour les AN
+  // AN : Le numéro de contrat DOIT être unique dans toute la base
+  // PRETERME : Le même numéro peut exister plusieurs fois (suivi temporel)
+  // M+3 : Pas de numéro de contrat (utilise "-")
   const trimmedContractNumber = act.numeroContrat?.trim();
-  if (trimmedContractNumber && trimmedContractNumber !== "-" && !isProcess) {
+  if (isAN && trimmedContractNumber) {
     const alreadyExists = await contractNumberExists(trimmedContractNumber);
     if (alreadyExists) {
       throw new Error('Ce numéro de contrat est déjà enregistré.');
