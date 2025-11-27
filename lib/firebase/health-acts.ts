@@ -29,9 +29,9 @@ export const createHealthAct = async (act: Omit<HealthAct, 'id' | 'dateSaisie' |
   const dateSaisie = new Date();
   const moisKey = dateSaisie.toISOString().slice(0, 7); // YYYY-MM
 
-  // Calcul du CA pondéré
+  // Calcul du CA pondéré (arrondi à l'entier)
   const coefficient = HEALTH_ACT_COEFFICIENTS[act.kind] || 1.0;
-  const caPondere = act.caAnnuel * coefficient;
+  const caPondere = Math.round(act.caAnnuel * coefficient);
 
   const actData = {
     userId: act.userId,
@@ -106,7 +106,7 @@ export const updateHealthAct = async (actId: string, updates: Partial<HealthAct>
       const newCaAnnuel = updates.caAnnuel ?? actData.caAnnuel;
       const newKind = updates.kind ?? actData.kind;
       const coefficient = HEALTH_ACT_COEFFICIENTS[newKind] || 1.0;
-      updateData.caPondere = newCaAnnuel * coefficient;
+      updateData.caPondere = Math.round(newCaAnnuel * coefficient);
       updateData.coefficient = coefficient;
     }
   }

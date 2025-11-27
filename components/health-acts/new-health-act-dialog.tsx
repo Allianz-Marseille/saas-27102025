@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import { createHealthAct, HEALTH_ACT_COEFFICIENTS, getHealthActKindLabel } from "@/lib/firebase/health-acts";
 import { useAuth } from "@/lib/firebase/use-auth";
@@ -234,13 +234,10 @@ export function NewHealthActDialog({ open, onOpenChange, onSuccess }: NewHealthA
             <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
               <Label className="text-sm text-muted-foreground">CA pondéré (calculé automatiquement)</Label>
               <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {caPondere.toLocaleString("fr-FR", {
-                  style: "currency",
-                  currency: "EUR",
-                })}
+                {formatCurrency(Math.round(caPondere))}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {caAnnuelNum.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })} × {(coefficient * 100).toFixed(0)}%
+                {formatCurrency(Math.round(caAnnuelNum))} × {(coefficient * 100).toFixed(0)}%
               </p>
             </div>
           )}
