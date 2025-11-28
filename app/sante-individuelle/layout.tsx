@@ -14,7 +14,8 @@ import {
   FileText, 
   User, 
   LogOut,
-  ChevronLeft
+  ChevronLeft,
+  BarChart3
 } from "lucide-react";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { logout } from "@/lib/firebase/auth";
@@ -71,6 +72,11 @@ export default function SanteIndividuelleLayout({
       href: "/sante-individuelle/actes",
       label: "Mes actes",
       icon: FileText,
+    },
+    {
+      href: "/sante-individuelle/comparaison",
+      label: "Comparaison",
+      icon: BarChart3,
     },
     {
       href: "/sante-individuelle/profile",
