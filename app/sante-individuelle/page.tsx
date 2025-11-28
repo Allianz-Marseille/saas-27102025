@@ -57,29 +57,32 @@ function AnimatedCounter({ value, prefix = "", suffix = "" }: { value: number; p
   return <>{prefix}{displayValue.toLocaleString()}{suffix}</>;
 }
 
-// Composant de badge achievement
+// Composant de badge achievement avec tooltip amélioré
 function AchievementBadge({ icon, label, achieved, color, target }: { icon: React.ReactNode; label: string; achieved: boolean; color: string; target: string }) {
   return (
     <div 
       className={`relative group transition-all duration-300 ${achieved ? 'scale-100' : 'scale-90 opacity-50 grayscale'}`}
-      title={`${label} - ${target}${achieved ? ' ✓' : ''}`}
     >
-      <div className={`p-3 rounded-xl ${achieved ? `bg-gradient-to-br ${color} achievement-badge` : 'bg-slate-200 dark:bg-slate-800'} transition-all duration-300 hover:scale-110 relative overflow-hidden`}>
+      <div className={`p-4 rounded-xl ${achieved ? `bg-linear-to-br ${color} achievement-badge` : 'bg-slate-200 dark:bg-slate-800'} transition-all duration-300 hover:scale-110 relative overflow-hidden cursor-help`}>
         <div className={achieved ? 'text-white' : 'text-slate-400'}>
           {icon}
         </div>
-        {/* Tooltip au hover */}
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-50">
-          <div className={`px-3 py-1.5 rounded-lg text-xs font-bold text-white ${achieved ? `bg-gradient-to-r ${color}` : 'bg-slate-700'} shadow-xl`}>
-            <div className="font-black">{label}</div>
-            <div className="text-white/80 text-[10px]">{target}</div>
+        {/* Tooltip amélioré au hover */}
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-[60] scale-90 group-hover:scale-100">
+          <div className={`px-4 py-2 rounded-xl text-xs font-bold text-white ${achieved ? `bg-linear-to-r ${color}` : 'bg-slate-800'} shadow-2xl border-2 ${achieved ? 'border-white/30' : 'border-slate-600'} backdrop-blur-sm`}>
+            <div className="font-black text-sm mb-0.5">{label}</div>
+            <div className="text-white/90 text-[11px] font-semibold">{target}</div>
+            {achieved && <div className="text-white/90 text-[10px] mt-0.5">✓ Débloqué</div>}
+            {!achieved && <div className="text-white/70 text-[10px] mt-0.5">🔒 Verrouillé</div>}
           </div>
+          {/* Flèche du tooltip */}
+          <div className={`absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] ${achieved ? 'border-t-white/30' : 'border-t-slate-600'}`} />
         </div>
       </div>
       {achieved && (
         <div className="absolute -top-1 -right-1 z-10">
-          <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-lg">
-            <Star className="h-3 w-3 text-white fill-white" />
+          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-lg animate-pulse">
+            <Star className="h-3.5 w-3.5 text-white fill-white" />
           </div>
         </div>
       )}
@@ -428,36 +431,67 @@ export default function SanteIndividuellePage() {
                 </div>
               </div>
 
-              {/* Cartes des seuils - Style super héro */}
+              {/* Cartes des seuils - Style super héro avec tooltips */}
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 {[
-                  { seuil: 1, max: 10000, taux: 0, color: "gray", emoji: "🎯" },
-                  { seuil: 2, max: 14000, taux: 2, color: "yellow", emoji: "⚡" },
-                  { seuil: 3, max: 18000, taux: 3, color: "blue", emoji: "🔷" },
-                  { seuil: 4, max: 22000, taux: 4, color: "indigo", emoji: "💎" },
-                  { seuil: 5, max: Infinity, taux: 6, color: "green", emoji: "👑" },
-                ].map(({ seuil, max, taux, color, emoji }) => {
+                  { seuil: 1, max: 10000, taux: 0, color: "gray", emoji: "🎯", label: "Démarrage", description: "0 - 10 000€" },
+                  { seuil: 2, max: 14000, taux: 2, color: "yellow", emoji: "⚡", label: "Progression", description: "10 000€ - 14 000€" },
+                  { seuil: 3, max: 18000, taux: 3, color: "blue", emoji: "🔷", label: "Performance", description: "14 000€ - 18 000€" },
+                  { seuil: 4, max: 22000, taux: 4, color: "indigo", emoji: "💎", label: "Excellence", description: "18 000€ - 22 000€" },
+                  { seuil: 5, max: Infinity, taux: 6, color: "green", emoji: "👑", label: "Champion", description: "≥ 22 000€" },
+                ].map(({ seuil, max, taux, color, emoji, label, description }) => {
                   const isAtteint = kpi.seuilAtteint > seuil || (kpi.seuilAtteint === seuil && kpi.caPondere >= max);
                   const isCurrent = kpi.seuilAtteint === seuil;
 
                   return (
                     <div
                       key={seuil}
-                      className={`group relative p-6 rounded-xl border-2 transition-all duration-300 cursor-pointer overflow-hidden card-3d ${
+                      className={`group relative p-6 rounded-xl border-2 transition-all duration-300 cursor-help overflow-hidden card-3d ${
                         isAtteint
-                          ? `border-${color}-500 bg-gradient-to-br from-${color}-50 to-${color}-100 dark:from-${color}-950/50 dark:to-${color}-900/50 shadow-xl hover:shadow-2xl`
+                          ? `border-${color}-500 bg-linear-to-br from-${color}-50 to-${color}-100 dark:from-${color}-950/50 dark:to-${color}-900/50 shadow-xl hover:shadow-2xl`
                           : isCurrent
-                          ? `border-${color}-500 bg-gradient-to-br from-${color}-50 to-${color}-100 dark:from-${color}-950/30 dark:to-${color}-900/30 shadow-lg hover:shadow-xl neon-border`
-                          : "border-gray-200 dark:border-gray-800 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20 hover:border-gray-300 dark:hover:border-gray-700"
+                          ? `border-${color}-500 bg-linear-to-br from-${color}-50 to-${color}-100 dark:from-${color}-950/30 dark:to-${color}-900/30 shadow-lg hover:shadow-xl neon-border`
+                          : "border-gray-200 dark:border-gray-800 bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20 hover:border-gray-300 dark:hover:border-gray-700"
                       }`}
                     >
+                      {/* Tooltip amélioré */}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-[60] scale-90 group-hover:scale-100">
+                        <div className={`px-4 py-2.5 rounded-xl text-xs font-bold text-white ${
+                          isAtteint || isCurrent 
+                            ? `bg-linear-to-r from-${color}-600 to-${color}-700` 
+                            : 'bg-slate-800'
+                        } shadow-2xl border-2 ${isAtteint || isCurrent ? 'border-white/30' : 'border-slate-600'} backdrop-blur-sm`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-lg">{emoji}</span>
+                            <span className="font-black text-sm">{label}</span>
+                          </div>
+                          <div className="text-white/90 text-[11px] font-semibold mb-1">
+                            CA pondéré : {description}
+                          </div>
+                          <div className="text-white/90 text-[11px] font-semibold">
+                            Commission : <span className="font-black">{taux}%</span>
+                          </div>
+                          {isAtteint && <div className="text-white/90 text-[10px] mt-1 flex items-center gap-1"><span>✓</span> Seuil atteint</div>}
+                          {isCurrent && !isAtteint && <div className="text-white/90 text-[10px] mt-1 flex items-center gap-1"><span>🎯</span> Seuil en cours</div>}
+                          {!isCurrent && !isAtteint && <div className="text-white/70 text-[10px] mt-1 flex items-center gap-1"><span>🔒</span> Non atteint</div>}
+                        </div>
+                        <div className={`absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] ${isAtteint || isCurrent ? 'border-t-white/30' : 'border-t-slate-600'}`} />
+                      </div>
+
                       {isAtteint && (
                         <div className="absolute inset-0 holographic opacity-10" />
                       )}
                       {isAtteint && (
                         <div className="absolute top-2 right-2 z-10">
-                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg achievement-badge">
+                          <div className="w-7 h-7 rounded-full bg-linear-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg achievement-badge animate-pulse">
                             <span className="text-white text-sm font-bold">✓</span>
+                          </div>
+                        </div>
+                      )}
+                      {isCurrent && !isAtteint && (
+                        <div className="absolute top-2 right-2 z-10">
+                          <div className="w-7 h-7 rounded-full bg-linear-to-br from-yellow-400 to-yellow-600 flex items-center justify-center shadow-lg animate-pulse">
+                            <span className="text-white text-sm font-bold">🎯</span>
                           </div>
                         </div>
                       )}
@@ -468,7 +502,7 @@ export default function SanteIndividuellePage() {
                         <p className={`text-xs font-bold mb-2 ${isAtteint || isCurrent ? `text-${color}-600 dark:text-${color}-400` : 'text-muted-foreground'}`}>
                           Seuil {seuil}
                         </p>
-                        <p className={`text-3xl font-black mb-1 ${isAtteint || isCurrent ? `bg-gradient-to-r from-${color}-600 to-${color}-700 bg-clip-text text-transparent` : 'text-foreground'}`}>
+                        <p className={`text-3xl font-black mb-1 ${isAtteint || isCurrent ? `bg-linear-to-r from-${color}-600 to-${color}-700 bg-clip-text text-transparent` : 'text-foreground'}`}>
                           {taux}%
                         </p>
                         <p className="text-xs text-muted-foreground font-bold">
