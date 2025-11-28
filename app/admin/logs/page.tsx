@@ -26,6 +26,8 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -33,6 +35,8 @@ export default function LogsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [levelFilter, setLevelFilter] = useState<LogLevel | "all">("all");
   const [actionFilter, setActionFilter] = useState<LogAction | "all">("all");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [userEmailToRole, setUserEmailToRole] = useState<Map<string, string>>(new Map());
 
   // Charger les logs
   const fetchLogs = async () => {
@@ -52,22 +56,51 @@ export default function LogsPage() {
     }
   };
 
+  // Charger les utilisateurs pour le mapping email → rôle
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        if (!db) return;
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        const mapping = new Map<string, string>();
+        usersSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          mapping.set(data.email, data.role);
+        });
+        setUserEmailToRole(mapping);
+      } catch (error) {
+        console.error("Error loading users:", error);
+      }
+    };
+    loadUsers();
+  }, []);
+
   useEffect(() => {
     fetchLogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [levelFilter, actionFilter]);
 
-  // Filtrer les logs par recherche
+  // Filtrer les logs par recherche et rôle
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
       const searchLower = searchTerm.toLowerCase();
-      return (
+      const matchesSearch = (
         log.description.toLowerCase().includes(searchLower) ||
         log.userEmail.toLowerCase().includes(searchLower) ||
         log.action.toLowerCase().includes(searchLower)
       );
+      
+      // Filtre par rôle
+      if (roleFilter !== "all") {
+        const userRole = userEmailToRole.get(log.userEmail);
+        if (userRole !== roleFilter) {
+          return false;
+        }
+      }
+      
+      return matchesSearch;
     });
-  }, [logs, searchTerm]);
+  }, [logs, searchTerm, roleFilter, userEmailToRole]);
 
   // Statistiques
   const stats = useMemo(() => {
@@ -304,6 +337,19 @@ export default function LogsPage() {
                 <SelectItem value="act_updated">Acte modifié</SelectItem>
                 <SelectItem value="act_deleted">Acte supprimé</SelectItem>
                 <SelectItem value="system_error">Erreur système</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="Rôle" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les rôles</SelectItem>
+                <SelectItem value="CDC_COMMERCIAL">Commerciaux</SelectItem>
+                <SelectItem value="COMMERCIAL_SANTE_INDIVIDUEL">Santé Individuel</SelectItem>
+                <SelectItem value="COMMERCIAL_SANTE_COLLECTIVE">Santé Collectif</SelectItem>
+                <SelectItem value="GESTIONNAIRE_SINISTRE">Sinistre</SelectItem>
+                <SelectItem value="ADMINISTRATEUR">Administrateur</SelectItem>
               </SelectContent>
             </Select>
           </div>

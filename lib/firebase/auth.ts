@@ -19,7 +19,7 @@ export const ROLES = {
 export interface UserData {
   id: string;
   email: string;
-  role: "ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL";
+  role: "ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL" | "COMMERCIAL_SANTE_COLLECTIVE" | "GESTIONNAIRE_SINISTRE";
   active: boolean;
   createdAt: Date;
 }

@@ -1,11 +1,13 @@
 import { UserData } from "@/lib/firebase/auth";
 
-export type UserRole = "ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL";
+export type UserRole = "ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL" | "COMMERCIAL_SANTE_COLLECTIVE" | "GESTIONNAIRE_SINISTRE";
 
 export const ROLES = {
   ADMINISTRATEUR: "ADMINISTRATEUR",
   CDC_COMMERCIAL: "CDC_COMMERCIAL",
   COMMERCIAL_SANTE_INDIVIDUEL: "COMMERCIAL_SANTE_INDIVIDUEL",
+  COMMERCIAL_SANTE_COLLECTIVE: "COMMERCIAL_SANTE_COLLECTIVE",
+  GESTIONNAIRE_SINISTRE: "GESTIONNAIRE_SINISTRE",
 } as const;
 
 /**
@@ -56,6 +58,8 @@ export function getRoleLabel(role: UserRole): string {
     ADMINISTRATEUR: "Administrateur",
     CDC_COMMERCIAL: "CDC Commercial",
     COMMERCIAL_SANTE_INDIVIDUEL: "Commercial Santé Individuel",
+    COMMERCIAL_SANTE_COLLECTIVE: "Commercial Santé Collective",
+    GESTIONNAIRE_SINISTRE: "Gestionnaire Sinistre",
   };
   return labels[role] || role;
 }

@@ -139,32 +139,32 @@ export default function ProfilePage() {
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground font-bold">Rôle</p>
                     <Badge className="mt-1 bg-gradient-to-r from-emerald-500 to-green-500 text-white font-bold shadow-lg">
-                      {userData?.role ? getRoleLabel(userData.role) : "Commercial"}
-                    </Badge>
-                  </div>
+                    {userData?.role ? getRoleLabel(userData.role) : "Commercial"}
+                  </Badge>
                 </div>
+              </div>
 
                 <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-500/10 transition-all duration-300 card-3d">
                   <div className="p-2 bg-blue-500/20 rounded-lg neon-border">
-                    <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  </div>
+                  <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground font-bold">Statut</p>
-                    <Badge 
+                  <Badge 
                       className={`mt-1 font-bold shadow-lg ${
-                        userData?.active 
+                      userData?.active 
                           ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white" 
                           : "bg-gradient-to-r from-red-500 to-red-600 text-white"
-                      }`}
-                    >
+                    }`}
+                  >
                       {userData?.active ? "✓ Actif" : "✗ Inactif"}
-                    </Badge>
-                  </div>
+                  </Badge>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Carte d'informations de domaine */}
+          {/* Carte d'informations de domaine */}
             <Card className="border-0 shadow-2xl glass-morphism overflow-hidden relative card-3d group">
               <div className="absolute inset-0 cyber-grid opacity-10" />
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-500" />
@@ -176,9 +176,9 @@ export default function ProfilePage() {
                   Domaine d'activité
                 </CardTitle>
                 <CardDescription className="font-semibold">
-                  Votre spécialisation
-                </CardDescription>
-              </CardHeader>
+                Votre spécialisation
+              </CardDescription>
+            </CardHeader>
               <CardContent className="relative z-10">
                 <div className="p-6 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-2 border-green-500/50 glass-morphism relative overflow-hidden group">
                   <div className="absolute inset-0 holographic opacity-10 group-hover:opacity-20 transition-opacity" />
@@ -278,8 +278,8 @@ export default function ProfilePage() {
               <div className="p-6 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-2 border-indigo-500/30 text-center">
                 <Sparkles className="h-12 w-12 mx-auto text-indigo-600 dark:text-indigo-400 mb-3" />
                 <p className="text-muted-foreground font-bold">
-                  Les paramètres du profil seront disponibles prochainement.
-                </p>
+                Les paramètres du profil seront disponibles prochainement.
+              </p>
                 <p className="text-sm text-muted-foreground mt-2">
                   Nouvelles fonctionnalités en développement ! 🚀
                 </p>

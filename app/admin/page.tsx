@@ -1,14 +1,238 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { WeatherCard } from "@/components/admin/weather-card";
-import { ActivityOverview } from "@/components/admin/activity-overview";
 import { motion } from "framer-motion";
-import { Sparkles, User } from "lucide-react";
+import { Sparkles, User, Users, Heart, Building2, AlertTriangle, Construction, TrendingUp, FileText, DollarSign } from "lucide-react";
 import { useAuth } from "@/lib/firebase/use-auth";
+import { MonthSelector } from "@/components/dashboard/month-selector";
+import { format } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { formatCurrency } from "@/lib/utils";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
+import { getAllCommercials, type UserData } from "@/lib/firebase/auth";
+import { getActsByMonth } from "@/lib/firebase/acts";
+import { getHealthActsByMonth } from "@/lib/firebase/health-acts";
+import { calculateKPI } from "@/lib/utils/kpi";
+import { calculateHealthKPI } from "@/lib/utils/health-kpi";
+import { toast } from "sonner";
+
+interface RoleSectionProps {
+  title: string;
+  role: "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL" | "COMMERCIAL_SANTE_COLLECTIVE" | "GESTIONNAIRE_SINISTRE";
+  icon: React.ElementType;
+  selectedMonth: string;
+  underConstruction?: boolean;
+  linkHref: string;
+  color: string;
+}
+
+function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction, linkHref, color }: RoleSectionProps) {
+  const [selectedUser, setSelectedUser] = useState<string>("all");
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [kpis, setKPIs] = useState<any>(null);
+
+  useEffect(() => {
+    loadData();
+  }, [selectedMonth, selectedUser, role]);
+
+  const loadData = async () => {
+    if (underConstruction) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (!db) throw new Error("Firebase non initialisé");
+
+      // Charger les utilisateurs du rôle
+      const usersRef = collection(db, "users");
+      const usersQuery = query(usersRef, where("role", "==", role), where("active", "==", true));
+      const usersSnapshot = await getDocs(usersQuery);
+      const usersData = usersSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+      })) as UserData[];
+      setUsers(usersData);
+
+      // Charger les KPIs selon le rôle
+      if (role === "CDC_COMMERCIAL") {
+        // Commerciaux
+        let acts = [];
+        if (selectedUser === "all") {
+          acts = await getActsByMonth(selectedMonth);
+        } else {
+          const allActs = await getActsByMonth(selectedMonth);
+          acts = allActs.filter(act => act.userId === selectedUser);
+        }
+        const calculatedKPIs = calculateKPI(acts);
+        setKPIs({
+          ...calculatedKPIs,
+          nbActes: acts.length,
+          nbUsers: usersData.length,
+        });
+      } else if (role === "COMMERCIAL_SANTE_INDIVIDUEL") {
+        // Santé Individuelle
+        let healthActs = [];
+        for (const user of usersData) {
+          const acts = await getHealthActsByMonth(selectedMonth, user.id);
+          if (selectedUser === "all" || user.id === selectedUser) {
+            healthActs.push(...acts);
+          }
+        }
+        const calculatedKPIs = calculateHealthKPI(healthActs);
+        setKPIs({
+          ...calculatedKPIs,
+          nbActes: healthActs.length,
+          nbUsers: usersData.length,
+        });
+      } else {
+        // Autres rôles (en construction)
+        setKPIs({
+          caTotal: 0,
+          commissionsAcquises: 0,
+          nbActes: 0,
+          nbUsers: usersData.length,
+        });
+      }
+    } catch (error) {
+      console.error("Erreur chargement données:", error);
+      toast.error("Erreur lors du chargement");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (underConstruction) {
+    return (
+      <Card className="border-2 border-dashed">
+        <CardContent className="p-8 text-center">
+          <Construction className={`h-12 w-12 mx-auto mb-4 ${color}`} />
+          <h3 className="text-xl font-bold mb-2">{title}</h3>
+          <p className="text-muted-foreground mb-4">Section en construction</p>
+          <Button asChild variant="outline" size="sm">
+            <Link href={linkHref}>Voir la page →</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border-0 shadow-lg">
+      <CardHeader>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Icon className={`h-5 w-5 ${color}`} />
+              {title}
+            </CardTitle>
+            <CardDescription>Performance globale du mois sélectionné</CardDescription>
+          </div>
+
+          {/* Filtre utilisateur */}
+          {users.length > 0 && (
+            <Select value={selectedUser} onValueChange={setSelectedUser}>
+              <SelectTrigger className="w-[250px]">
+                <SelectValue placeholder="Tous les utilisateurs" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">🌟 Tous les utilisateurs ({users.length})</SelectItem>
+                {users.map(user => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      </CardHeader>
+
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+          </div>
+        ) : (
+          <>
+            {/* KPIs Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 border-blue-200 dark:border-blue-800">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">Utilisateurs</p>
+                      <p className="text-2xl font-bold">{kpis?.nbUsers || 0}</p>
+                    </div>
+                    <Users className="h-8 w-8 text-blue-600 dark:text-blue-400 opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 border-green-200 dark:border-green-800">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">Actes</p>
+                      <p className="text-2xl font-bold">{kpis?.nbActes || 0}</p>
+                    </div>
+                    <FileText className="h-8 w-8 text-green-600 dark:text-green-400 opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 border-purple-200 dark:border-purple-800">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-1">CA Total</p>
+                      <p className="text-2xl font-bold">{formatCurrency(kpis?.caTotal || kpis?.caPondere || 0)}</p>
+                    </div>
+                    <TrendingUp className="h-8 w-8 text-purple-600 dark:text-purple-400 opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950/30 dark:to-yellow-900/30 border-yellow-200 dark:border-yellow-800">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-1">Commissions</p>
+                      <p className="text-2xl font-bold">{formatCurrency(kpis?.commissionsAcquises || 0)}</p>
+                    </div>
+                    <DollarSign className="h-8 w-8 text-yellow-600 dark:text-yellow-400 opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Lien vers page dédiée */}
+            <div className="text-center">
+              <Button asChild variant="outline" className="gap-2">
+                <Link href={linkHref}>
+                  Voir le détail complet →
+                </Link>
+              </Button>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function AdminHome() {
   const { userData } = useAuth();
+  const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), "yyyy-MM"));
+  
   const today = new Date();
   const formattedDate = today.toLocaleDateString('fr-FR', {
     weekday: 'long',
@@ -30,20 +254,18 @@ export default function AdminHome() {
 
   return (
     <div className="space-y-6">
-      {/* Message de bienvenue modernisé */}
+      {/* Message de bienvenue */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
         <Card className="relative overflow-hidden bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-600/20 dark:via-purple-600/20 dark:to-pink-600/20 border-2 border-blue-200/50 dark:border-blue-700/50 shadow-lg">
-          {/* Effets de fond */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 rounded-full blur-3xl" />
           
           <CardContent className="relative z-10 p-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-              {/* Bonjour */}
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <motion.div
@@ -71,7 +293,6 @@ export default function AdminHome() {
                 </div>
               </div>
               
-              {/* Date */}
               <div className="text-center">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500/10 to-amber-500/10 dark:from-orange-600/20 dark:to-amber-600/20 border border-orange-300/50 dark:border-orange-700/50">
                   <span className="text-lg font-semibold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
@@ -80,7 +301,6 @@ export default function AdminHome() {
                 </div>
               </div>
               
-              {/* Météo */}
               <div className="flex justify-center">
                 <div className="p-4 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-blue-200/50 dark:border-blue-700/50 shadow-md">
                   <WeatherCard />
@@ -91,8 +311,53 @@ export default function AdminHome() {
         </Card>
       </motion.div>
 
-      {/* Vue activité */}
-      <ActivityOverview />
+      {/* Navigation mensuelle */}
+      <Card className="border-0 shadow-lg">
+        <CardContent className="pt-6">
+          <MonthSelector selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
+        </CardContent>
+      </Card>
+
+      {/* Sections par rôle */}
+      <div className="space-y-6">
+        <RoleSection
+          title="Commerciaux (CDC)"
+          role="CDC_COMMERCIAL"
+          icon={Users}
+          selectedMonth={selectedMonth}
+          linkHref="/admin/commercial"
+          color="text-blue-600"
+        />
+
+        <RoleSection
+          title="Santé Individuelle"
+          role="COMMERCIAL_SANTE_INDIVIDUEL"
+          icon={Heart}
+          selectedMonth={selectedMonth}
+          linkHref="/admin/sante-individuelle"
+          color="text-pink-600"
+        />
+
+        <RoleSection
+          title="Santé Collective"
+          role="COMMERCIAL_SANTE_COLLECTIVE"
+          icon={Building2}
+          selectedMonth={selectedMonth}
+          linkHref="/admin/sante-collective"
+          color="text-emerald-600"
+          underConstruction
+        />
+
+        <RoleSection
+          title="Sinistre"
+          role="GESTIONNAIRE_SINISTRE"
+          icon={AlertTriangle}
+          selectedMonth={selectedMonth}
+          linkHref="/admin/sinistre"
+          color="text-orange-600"
+          underConstruction
+        />
+      </div>
     </div>
   );
 }

@@ -26,6 +26,18 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMERCIAL_SANTE_INDIVIDUEL';
     }
     
+    // Helper function to check if user is Commercial Santé Collective
+    function isCommercialSanteCollective() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMERCIAL_SANTE_COLLECTIVE';
+    }
+    
+    // Helper function to check if user is Gestionnaire Sinistre
+    function isGestionnaireSinistre() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'GESTIONNAIRE_SINISTRE';
+    }
+    
     // Users collection
     match /users/{userId} {
       allow read: if isAuthenticated();

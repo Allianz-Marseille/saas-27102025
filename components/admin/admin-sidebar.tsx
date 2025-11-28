@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Building2, LogOut, Users, User, ScrollText, ChevronLeft, ChevronRight, Heart } from "lucide-react";
+import { Home, Building2, LogOut, Users, User, ScrollText, ChevronLeft, ChevronRight, Heart, AlertTriangle, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -21,14 +21,35 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
   const navItems = [
     {
       href: "/admin",
-      label: "Accueil",
+      label: "Dashboard",
       icon: Home,
       exact: true,
     },
     {
-      href: "/admin/users",
-      label: "Utilisateurs",
+      href: "/admin/commercial",
+      label: "Commerciaux",
       icon: Users,
+    },
+    {
+      href: "/admin/sante-individuelle",
+      label: "Santé Individuelle",
+      icon: Heart,
+    },
+    {
+      href: "/admin/sante-collective",
+      label: "Santé Collective",
+      icon: Building2,
+    },
+    {
+      href: "/admin/sinistre",
+      label: "Sinistre",
+      icon: AlertTriangle,
+    },
+    {
+      href: "/admin/commissions-agence",
+      label: "Commissions Agence",
+      icon: Coins,
+      separator: true, // Séparateur avant cet item
     },
     {
       href: "/admin/companies",
@@ -36,9 +57,9 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
       icon: Building2,
     },
     {
-      href: "/admin/sante-individuelle",
-      label: "Santé Individuelle",
-      icon: Heart,
+      href: "/admin/users",
+      label: "Utilisateurs",
+      icon: Users,
     },
     {
       href: "/admin/logs",
@@ -111,21 +132,27 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
                 : pathname?.startsWith(item.href);
 
               return (
-                <Link key={item.href} href={item.href}>
-                  <Button
-                    variant="ghost"
-                    className={cn(
-                      "w-full justify-start gap-3 transition-all relative overflow-hidden",
-                      isActive 
-                        ? "bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 text-white font-semibold hover:from-blue-700 hover:via-purple-700 hover:to-blue-700 shadow-md shadow-blue-500/20" 
-                        : "hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30",
-                      isCollapsed && "justify-center px-2"
-                    )}
-                  >
-                    <Icon className="h-5 w-5 shrink-0" />
-                    {!isCollapsed && <span className="font-medium">{item.label}</span>}
-                  </Button>
-                </Link>
+                <div key={item.href}>
+                  {/* Séparateur visuel avant certains items */}
+                  {item.separator && !isCollapsed && (
+                    <div className="my-3 border-t border-muted" />
+                  )}
+                  <Link href={item.href}>
+                    <Button
+                      variant="ghost"
+                      className={cn(
+                        "w-full justify-start gap-3 transition-all relative overflow-hidden",
+                        isActive 
+                          ? "bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 text-white font-semibold hover:from-blue-700 hover:via-purple-700 hover:to-blue-700 shadow-md shadow-blue-500/20" 
+                          : "hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30",
+                        isCollapsed && "justify-center px-2"
+                      )}
+                    >
+                      <Icon className="h-5 w-5 shrink-0" />
+                      {!isCollapsed && <span className="font-medium">{item.label}</span>}
+                    </Button>
+                  </Link>
+                </div>
               );
             })}
           </nav>
