@@ -402,18 +402,29 @@ export default function SanteIndividuellePage() {
                   <div
                     className="h-full bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 transition-all duration-1000 ease-out relative overflow-hidden stat-bar"
                     style={{
-                      width: `${Math.min((kpi.caPondere / 24200) * 100, 100)}%`,
+                      width: `${Math.min((kpi.caPondere / 22000) * 100, 100)}%`,
                     }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
                   </div>
                 </div>
-                <div className="flex justify-between mt-3 text-xs font-bold text-muted-foreground">
-                  <span className="hover:text-green-600 transition-colors cursor-default">0€</span>
-                  <span className="hover:text-green-600 transition-colors cursor-default">10k€</span>
-                  <span className="hover:text-green-600 transition-colors cursor-default">14k€</span>
-                  <span className="hover:text-green-600 transition-colors cursor-default">18k€</span>
-                  <span className="hover:text-green-600 transition-colors cursor-default">22k€</span>
+                {/* Étiquettes positionnées selon les vraies proportions */}
+                <div className="relative mt-3">
+                  <div className="absolute left-0 text-xs font-bold text-muted-foreground hover:text-green-600 transition-colors cursor-default">
+                    0€
+                  </div>
+                  <div className="absolute text-xs font-bold text-muted-foreground hover:text-green-600 transition-colors cursor-default" style={{ left: '45.45%', transform: 'translateX(-50%)' }}>
+                    10k€
+                  </div>
+                  <div className="absolute text-xs font-bold text-muted-foreground hover:text-green-600 transition-colors cursor-default" style={{ left: '63.63%', transform: 'translateX(-50%)' }}>
+                    14k€
+                  </div>
+                  <div className="absolute text-xs font-bold text-muted-foreground hover:text-green-600 transition-colors cursor-default" style={{ left: '81.81%', transform: 'translateX(-50%)' }}>
+                    18k€
+                  </div>
+                  <div className="absolute right-0 text-xs font-bold text-muted-foreground hover:text-green-600 transition-colors cursor-default">
+                    22k€
+                  </div>
                 </div>
               </div>
 
