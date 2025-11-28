@@ -55,6 +55,7 @@ export function NewHealthActDialog({ open, onOpenChange, onSuccess }: NewHealthA
   const [numeroContrat, setNumeroContrat] = useState("");
   const [dateEffet, setDateEffet] = useState<Date>();
   const [caAnnuel, setCaAnnuel] = useState("");
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const handleReset = () => {
     setKind("");
@@ -102,6 +103,24 @@ export function NewHealthActDialog({ open, onOpenChange, onSuccess }: NewHealthA
       .join("");
   };
 
+  // Formate le CA avec séparateur de milliers (entiers uniquement)
+  const formatCA = (value: string): string => {
+    // Retire tous les caractères non numériques
+    const numericValue = value.replace(/\D/g, "");
+    
+    // Si vide, retourner vide
+    if (!numericValue) return "";
+    
+    // Ajoute les séparateurs de milliers
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  };
+
+  // Récupère la valeur numérique du CA (sans espaces)
+  const getNumericCA = (formattedValue: string): number => {
+    const numericValue = formattedValue.replace(/\s/g, "");
+    return numericValue ? parseFloat(numericValue) : 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -130,7 +149,7 @@ export function NewHealthActDialog({ open, onOpenChange, onSuccess }: NewHealthA
       return;
     }
 
-    const caAnnuelNum = parseFloat(caAnnuel);
+    const caAnnuelNum = getNumericCA(caAnnuel);
     if (isNaN(caAnnuelNum) || caAnnuelNum <= 0) {
       toast.error("Veuillez saisir un CA annuel valide");
       return;
@@ -167,7 +186,7 @@ export function NewHealthActDialog({ open, onOpenChange, onSuccess }: NewHealthA
   };
 
   const coefficient = kind ? HEALTH_ACT_COEFFICIENTS[kind] || 1.0 : 0;
-  const caAnnuelNum = parseFloat(caAnnuel) || 0;
+  const caAnnuelNum = getNumericCA(caAnnuel);
   const caPondere = caAnnuelNum * coefficient;
 
   return (
@@ -282,7 +301,7 @@ export function NewHealthActDialog({ open, onOpenChange, onSuccess }: NewHealthA
               <CalendarIcon className="h-4 w-4 text-cyan-600" />
               Date d&apos;effet *
             </Label>
-            <Popover>
+            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -300,7 +319,10 @@ export function NewHealthActDialog({ open, onOpenChange, onSuccess }: NewHealthA
                 <Calendar
                   mode="single"
                   selected={dateEffet}
-                  onSelect={setDateEffet}
+                  onSelect={(date) => {
+                    setDateEffet(date);
+                    setIsCalendarOpen(false); // Fermer automatiquement après sélection
+                  }}
                   locale={fr}
                   initialFocus
                 />
@@ -316,11 +338,11 @@ export function NewHealthActDialog({ open, onOpenChange, onSuccess }: NewHealthA
             </Label>
             <Input
               id="caAnnuel"
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="numeric"
               value={caAnnuel}
-              onChange={(e) => setCaAnnuel(e.target.value)}
-              placeholder="10000"
+              onChange={(e) => setCaAnnuel(formatCA(e.target.value))}
+              placeholder="10 000"
               className="border-2 border-orange-500/30 focus:border-orange-500/70 font-bold text-lg transition-all duration-300"
             />
           </div>
