@@ -64,25 +64,40 @@ export function NewHealthActDialog({ open, onOpenChange, onSuccess }: NewHealthA
     setCaAnnuel("");
   };
 
+  // Capitalise les noms avec gestion des noms composés
   const capitalizeWords = (text: string): string => {
+    if (!text) return text;
+    
+    // Particules à conserver en minuscule (sauf en début)
+    const particules = ["de", "la", "le", "du", "des", "van", "von", "di"];
+    
     return text
-      .split(/(\s+|-|')/)
-      .map((word, index, array) => {
-        if (word === " " || word === "-" || word === "'") {
-          return word;
+      .split(/(\s+|-|')/) // Découpe sur espaces, tirets et apostrophes
+      .map((part, index, array) => {
+        // Conserver les séparateurs tels quels
+        if (part === " " || part === "-" || part === "'") {
+          return part;
         }
         
-        const prevWord = index > 0 ? array[index - 2] : "";
+        // Si vide, retourner tel quel
+        if (part.length === 0) return part;
         
-        if (prevWord.toLowerCase() === "le" || 
-            prevWord.toLowerCase() === "la" || 
-            prevWord.toLowerCase() === "les" ||
-            prevWord.toLowerCase() === "de" ||
-            prevWord.toLowerCase() === "du") {
-          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        // Récupérer le mot précédent (en sautant les séparateurs)
+        let prevWordIndex = index - 2;
+        while (prevWordIndex >= 0 && (array[prevWordIndex] === " " || array[prevWordIndex] === "-" || array[prevWordIndex] === "'")) {
+          prevWordIndex -= 2;
+        }
+        const prevWord = prevWordIndex >= 0 ? array[prevWordIndex] : "";
+        
+        // Première lettre en majuscule
+        const capitalized = part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+        
+        // Si c'est une particule et pas le premier mot, garder en minuscule
+        if (index > 0 && particules.includes(part.toLowerCase())) {
+          return part.toLowerCase();
         }
         
-        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        return capitalized;
       })
       .join("");
   };
@@ -240,7 +255,7 @@ export function NewHealthActDialog({ open, onOpenChange, onSuccess }: NewHealthA
             <Input
               id="clientNom"
               value={clientNom}
-              onChange={(e) => setClientNom(e.target.value)}
+              onChange={(e) => setClientNom(capitalizeWords(e.target.value))}
               placeholder="Jean Dupont"
               className="border-2 border-blue-500/30 focus:border-blue-500/70 font-semibold transition-all duration-300"
             />
