@@ -51,9 +51,10 @@ export default function LoginPage() {
         toast.success("Connexion réussie !");
         
         // Rediriger selon le rôle (le log de connexion sera créé automatiquement par useAuth)
-        if (userData?.role === ROLES.ADMINISTRATEUR) {
+        const userRole = userData?.role;
+        if (userRole === ROLES.ADMINISTRATEUR) {
           router.push("/admin");
-        } else if (userData?.role === ROLES.COMMERCIAL_SANTE_INDIVIDUEL) {
+        } else if (userRole === ROLES.COMMERCIAL_SANTE_INDIVIDUEL) {
           router.push("/sante-individuelle");
         } else {
           router.push("/dashboard");
