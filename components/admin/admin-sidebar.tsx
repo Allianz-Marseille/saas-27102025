@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Building2, LogOut, Users, User, ScrollText, ChevronLeft, ChevronRight } from "lucide-react";
+import { Home, Building2, LogOut, Users, User, ScrollText, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -34,6 +34,11 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
       href: "/admin/companies",
       label: "Compagnies",
       icon: Building2,
+    },
+    {
+      href: "/admin/sante-individuelle",
+      label: "Santé Individuelle",
+      icon: Heart,
     },
     {
       href: "/admin/logs",
