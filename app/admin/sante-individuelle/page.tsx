@@ -26,7 +26,6 @@ interface CommercialData {
     caPondere: number;
     commissionsAcquises: number;
     tauxCommission: number;
-    nbActes: number;
     seuilAtteint: number;
     objectifRestant: number;
     nbAffaireNouvelle: number;
@@ -34,6 +33,7 @@ interface CommercialData {
     nbAdhesionSalarie: number;
     nbCourtToAz: number;
     nbAzToCourtage: number;
+    prochainSeuil: number;
   };
 }
 
@@ -116,7 +116,7 @@ export default function AdminSanteIndividuellePage() {
   // Calculer les totaux globaux
   const totaux = commerciaux.reduce(
     (acc, c) => ({
-      nbActes: acc.nbActes + c.kpis.nbActes,
+      nbActes: acc.nbActes + c.acts.length,
       caTotal: acc.caTotal + c.kpis.caTotal,
       caPondere: acc.caPondere + c.kpis.caPondere,
       commissions: acc.commissions + c.kpis.commissionsAcquises,
@@ -289,7 +289,7 @@ export default function AdminSanteIndividuellePage() {
                           Actes
                         </div>
                         <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                          {commercial.kpis.nbActes}
+                          {commercial.acts.length}
                         </div>
                       </div>
 
@@ -323,7 +323,7 @@ export default function AdminSanteIndividuellePage() {
                     </div>
 
                     {/* Répartition des types d'actes */}
-                    {commercial.kpis.nbActes > 0 && (
+                    {commercial.acts.length > 0 && (
                       <div className="mt-4 pt-4 border-t">
                         <div className="text-xs text-muted-foreground font-semibold mb-2">
                           Répartition par type :
