@@ -45,6 +45,10 @@ export default function AdminSanteIndividuellePage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
+      if (!db) {
+        throw new Error("Firebase non initialisé");
+      }
+
       // 1. Récupérer tous les commerciaux santé individuelle
       const usersRef = collection(db, "users");
       const q = query(usersRef, where("role", "==", "COMMERCIAL_SANTE_INDIVIDUEL"), where("active", "==", true));
