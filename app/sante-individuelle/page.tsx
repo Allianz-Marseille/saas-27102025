@@ -436,7 +436,7 @@ export default function SanteIndividuellePage() {
                 {[
                   { seuil: 1, max: 10000, taux: 0, color: "gray", emoji: "🎯", label: "Démarrage", description: "0 - 10 000€" },
                   { seuil: 2, max: 14000, taux: 2, color: "yellow", emoji: "⚡", label: "Progression", description: "10 000€ - 14 000€" },
-                  { seuil: 3, max: 18000, taux: 3, color: "blue", emoji: "🔷", label: "Performance", description: "14 000€ - 18 000€" },
+                  { seuil: 3, max: 18000, taux: 3, color: "blue", emoji: "🚀", label: "Performance", description: "14 000€ - 18 000€" },
                   { seuil: 4, max: 22000, taux: 4, color: "indigo", emoji: "💎", label: "Excellence", description: "18 000€ - 22 000€" },
                   { seuil: 5, max: Infinity, taux: 6, color: "green", emoji: "👑", label: "Champion", description: "≥ 22 000€" },
                 ].map(({ seuil, max, taux, color, emoji, label, description }) => {
