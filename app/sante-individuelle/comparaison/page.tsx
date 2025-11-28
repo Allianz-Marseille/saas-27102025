@@ -24,8 +24,8 @@ interface MetricConfig {
   label: string;
   icon: React.ReactNode;
   color: string;
-  gradientFrom: string;
-  gradientTo: string;
+  gradientClass: string;
+  chartColor: string;
   format: (value: number) => string;
   category?: 'global' | 'actes';
 }
@@ -36,8 +36,8 @@ const METRICS: MetricConfig[] = [
     label: 'Commissions',
     icon: <DollarSign className="h-4 w-4" />,
     color: 'text-yellow-600 dark:text-yellow-400',
-    gradientFrom: 'from-yellow-500',
-    gradientTo: 'to-orange-500',
+    gradientClass: 'bg-linear-yellow-orange',
+    chartColor: '#eab308',
     format: formatCurrency,
     category: 'global',
   },
@@ -46,8 +46,8 @@ const METRICS: MetricConfig[] = [
     label: 'CA Pondéré',
     icon: <Zap className="h-4 w-4" />,
     color: 'text-purple-600 dark:text-purple-400',
-    gradientFrom: 'from-purple-500',
-    gradientTo: 'to-pink-500',
+    gradientClass: 'bg-linear-purple-pink',
+    chartColor: '#a855f7',
     format: formatCurrency,
     category: 'global',
   },
@@ -56,8 +56,8 @@ const METRICS: MetricConfig[] = [
     label: 'CA Total',
     icon: <TrendingUp className="h-4 w-4" />,
     color: 'text-blue-600 dark:text-blue-400',
-    gradientFrom: 'from-blue-500',
-    gradientTo: 'to-cyan-500',
+    gradientClass: 'bg-linear-blue-cyan',
+    chartColor: '#3b82f6',
     format: formatCurrency,
     category: 'global',
   },
@@ -66,8 +66,8 @@ const METRICS: MetricConfig[] = [
     label: 'Total actes',
     icon: <FileText className="h-4 w-4" />,
     color: 'text-green-600 dark:text-green-400',
-    gradientFrom: 'from-green-500',
-    gradientTo: 'to-emerald-500',
+    gradientClass: 'bg-linear-green-emerald',
+    chartColor: '#10b981',
     format: (v) => v.toFixed(0),
     category: 'global',
   },
@@ -76,8 +76,8 @@ const METRICS: MetricConfig[] = [
     label: 'Affaire Nouvelle',
     icon: <span className="text-xl">🆕</span>,
     color: 'text-blue-600 dark:text-blue-400',
-    gradientFrom: 'from-blue-500',
-    gradientTo: 'to-cyan-500',
+    gradientClass: 'bg-linear-blue-cyan',
+    chartColor: '#3b82f6',
     format: (v) => v.toFixed(0),
     category: 'actes',
   },
@@ -86,8 +86,8 @@ const METRICS: MetricConfig[] = [
     label: 'Révision',
     icon: <span className="text-xl">🔄</span>,
     color: 'text-purple-600 dark:text-purple-400',
-    gradientFrom: 'from-purple-500',
-    gradientTo: 'to-pink-500',
+    gradientClass: 'bg-linear-purple-pink',
+    chartColor: '#a855f7',
     format: (v) => v.toFixed(0),
     category: 'actes',
   },
@@ -96,8 +96,8 @@ const METRICS: MetricConfig[] = [
     label: 'Adhésion salarié',
     icon: <span className="text-xl">👥</span>,
     color: 'text-orange-600 dark:text-orange-400',
-    gradientFrom: 'from-orange-500',
-    gradientTo: 'to-amber-500',
+    gradientClass: 'bg-linear-orange-amber',
+    chartColor: '#f97316',
     format: (v) => v.toFixed(0),
     category: 'actes',
   },
@@ -106,8 +106,8 @@ const METRICS: MetricConfig[] = [
     label: 'COURT → AZ',
     icon: <span className="text-xl">➡️</span>,
     color: 'text-cyan-600 dark:text-cyan-400',
-    gradientFrom: 'from-cyan-500',
-    gradientTo: 'to-teal-500',
+    gradientClass: 'bg-linear-cyan-teal',
+    chartColor: '#06b6d4',
     format: (v) => v.toFixed(0),
     category: 'actes',
   },
@@ -116,8 +116,8 @@ const METRICS: MetricConfig[] = [
     label: 'AZ → courtage',
     icon: <span className="text-xl">⬅️</span>,
     color: 'text-emerald-600 dark:text-emerald-400',
-    gradientFrom: 'from-emerald-500',
-    gradientTo: 'to-green-500',
+    gradientClass: 'bg-linear-emerald-green',
+    chartColor: '#10b981',
     format: (v) => v.toFixed(0),
     category: 'actes',
   },
@@ -316,7 +316,7 @@ export default function ComparaisonPage() {
                       className={cn(
                         "px-4 py-3 rounded-xl font-bold transition-all duration-300 hover:scale-105 border-2 card-3d relative overflow-hidden group",
                         isSelected
-                          ? `bg-linear-to-r ${metric.gradientFrom} ${metric.gradientTo} text-white border-transparent shadow-xl`
+                          ? `${metric.gradientClass} text-white border-transparent shadow-xl`
                           : "bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 hover:border-purple-500/50"
                       )}
                     >
@@ -360,7 +360,7 @@ export default function ComparaisonPage() {
                       className={cn(
                         "px-4 py-3 rounded-xl font-bold transition-all duration-300 hover:scale-105 border-2 card-3d relative overflow-hidden group",
                         isSelected
-                          ? `bg-linear-to-r ${metric.gradientFrom} ${metric.gradientTo} text-white border-transparent shadow-xl`
+                          ? `${metric.gradientClass} text-white border-transparent shadow-xl`
                           : "bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 hover:border-purple-500/50"
                       )}
                     >
@@ -437,21 +437,11 @@ export default function ComparaisonPage() {
                       <defs>
                         {selectedMetrics.map((metricKey) => {
                           const metric = METRICS.find(m => m.key === metricKey)!;
-                          const colorMap: Record<string, { start: string; end: string }> = {
-                            'from-yellow-500': { start: '#eab308', end: '#f59e0b' },
-                            'from-purple-500': { start: '#a855f7', end: '#ec4899' },
-                            'from-blue-500': { start: '#3b82f6', end: '#06b6d4' },
-                            'from-green-500': { start: '#10b981', end: '#059669' },
-                            'from-orange-500': { start: '#f97316', end: '#f59e0b' },
-                            'from-cyan-500': { start: '#06b6d4', end: '#14b8a6' },
-                            'from-emerald-500': { start: '#10b981', end: '#22c55e' },
-                          };
-                          const colors = colorMap[metric.gradientFrom] || { start: '#a855f7', end: '#ec4899' };
                           
                           return (
                             <linearGradient key={metricKey} id={`color${metricKey}`} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={colors.start} stopOpacity={0.8}/>
-                              <stop offset="95%" stopColor={colors.end} stopOpacity={0.1}/>
+                              <stop offset="5%" stopColor={metric.chartColor} stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor={metric.chartColor} stopOpacity={0.1}/>
                             </linearGradient>
                           );
                         })}
@@ -506,26 +496,16 @@ export default function ComparaisonPage() {
                       />
                       {selectedMetrics.map((metricKey) => {
                         const metric = METRICS.find(m => m.key === metricKey)!;
-                        const colorMap: Record<string, string> = {
-                          'from-yellow-500': '#eab308',
-                          'from-purple-500': '#a855f7',
-                          'from-blue-500': '#3b82f6',
-                          'from-green-500': '#10b981',
-                          'from-orange-500': '#f97316',
-                          'from-cyan-500': '#06b6d4',
-                          'from-emerald-500': '#10b981',
-                        };
-                        const color = colorMap[metric.gradientFrom] || '#a855f7';
                         
                         return (
                           <Area
                             key={metricKey}
                             type="monotone"
                             dataKey={metricKey}
-                            stroke={color}
+                            stroke={metric.chartColor}
                             strokeWidth={3}
                             fill={`url(#color${metricKey})`}
-                            dot={{ fill: color, r: 5, strokeWidth: 2, stroke: 'white' }}
+                            dot={{ fill: metric.chartColor, r: 5, strokeWidth: 2, stroke: 'white' }}
                             activeDot={{ r: 7, strokeWidth: 2 }}
                           />
                         );
@@ -545,14 +525,11 @@ export default function ComparaisonPage() {
                     return (
                       <div 
                         key={metricKey}
-                        className={cn(
-                          "p-4 rounded-xl border-2 bg-linear-to-br glass-morphism relative overflow-hidden group card-3d",
-                          `${metric.gradientFrom}/10 ${metric.gradientTo}/10 border-${metric.gradientFrom.split('-')[1]}-500/30`
-                        )}
+                        className="p-4 rounded-xl border-2 bg-linear-to-br from-slate-50/50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/50 border-slate-300/50 dark:border-slate-700/50 glass-morphism relative overflow-hidden group card-3d"
                       >
                         <div className="relative z-10">
                           <div className="flex items-center gap-2 mb-2">
-                            <div className={cn("p-2 rounded-lg", `bg-linear-to-r ${metric.gradientFrom} ${metric.gradientTo}`)}>
+                            <div className={cn("p-2 rounded-lg", metric.gradientClass)}>
                               <div className="text-white">
                                 {metric.icon}
                               </div>
