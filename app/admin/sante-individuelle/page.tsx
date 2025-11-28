@@ -608,10 +608,10 @@ export default function AdminSanteIndividuellePage() {
                   : 100;
                 
                 return (
-                <Card
-                  key={commercial.id}
-                  className="border-2 hover:shadow-lg transition-shadow"
-                >
+                  <Card
+                    key={commercial.id}
+                    className="border-2 hover:shadow-lg transition-shadow"
+                  >
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
@@ -801,7 +801,7 @@ export default function AdminSanteIndividuellePage() {
                       </div>
                     )}
                   </CardContent>
-                </Card>
+                  </Card>
                 );
               })}
             </div>
