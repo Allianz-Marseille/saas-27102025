@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Plus, Edit, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Sparkles, Zap, Trophy } from "lucide-react";
+import { Plus, Edit, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Sparkles, Zap, Trophy, Lock, Unlock } from "lucide-react";
 import { deleteHealthAct, getHealthActKindLabel } from "@/lib/firebase/health-acts";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -19,9 +19,11 @@ import { Timestamp } from "firebase/firestore";
 import { MonthSelector } from "@/components/dashboard/month-selector";
 import { NewHealthActDialog } from "@/components/health-acts/new-health-act-dialog";
 import { calculateHealthKPI } from "@/lib/utils/health-kpi";
+import { isActLocked as checkActLocked } from "@/lib/utils/act-lock";
+import { toDate } from "@/lib/utils/date-helpers";
 
 export default function HealthActsPage() {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const [acts, setActs] = useState<HealthAct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -516,58 +518,92 @@ export default function HealthActsPage() {
                         onSort={handleSortChange}
                         renderIcon={renderSortIcon}
                       />
+                      <th className="text-center p-3 font-black text-sm border-b-2 w-20">Statut</th>
                       <th className="text-center p-3 font-black text-sm border-b-2 w-24">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedActs.map((act, index) => (
-                      <tr
-                        key={act.id}
-                        className="border-b transition-all duration-300 hover:bg-linear-to-r hover:from-green-50/70 hover:to-emerald-50/70 dark:hover:from-green-950/30 dark:hover:to-emerald-950/30 hover:shadow-lg card-3d"
-                        style={{ animationDelay: `${index * 0.05}s` }}
-                      >
-                        <td className="p-3 text-sm text-center font-bold">
-                          {format(act.dateSaisie as Date, "dd/MM/yyyy")}
-                        </td>
-                        <td className="p-3 text-center">
-                          <span className={cn(
-                            "inline-flex px-3 py-1.5 rounded-full text-xs font-black",
-                            getKindBadgeColor(act.kind)
-                          )}>
-                            {getHealthActKindLabel(act.kind)}
-                          </span>
-                        </td>
-                        <td className="p-3 text-sm font-black text-center">{act.clientNom}</td>
-                        <td className="p-3 text-xs text-center text-muted-foreground font-mono font-bold">{act.numeroContrat}</td>
-                        <td className="p-3 text-sm text-center font-bold">{format(act.dateEffet as Date, "dd/MM/yyyy")}</td>
-                        <td className="p-3 text-sm text-center font-bold">{formatCurrency(act.caAnnuel)}</td>
-                        <td className="p-3 text-sm text-center font-black text-blue-600 dark:text-blue-400">
-                          {(act.coefficient * 100).toFixed(0)}%
-                        </td>
-                        <td className="p-3 text-center">
-                          <span className="inline-flex px-4 py-2 rounded-full text-sm font-black bg-linear-to-r from-green-500 to-emerald-500 text-white shadow-xl shadow-green-500/30">
-                            {formatCurrency(act.caPondere)}
-                          </span>
-                        </td>
-                        <td className="p-3 text-center">
-                          <div className="flex gap-2 justify-center">
-                            <button
-                              className="p-2 rounded-lg hover:bg-blue-500/20 transition-all duration-300 hover:scale-110 border-2 border-transparent hover:border-blue-500/50"
-                              title="Modifier"
-                            >
-                              <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteActClick(act.id, act.clientNom)}
-                              className="p-2 rounded-lg hover:bg-red-500/20 transition-all duration-300 hover:scale-110 border-2 border-transparent hover:border-red-500/50"
-                              title="Supprimer"
-                            >
-                              <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {sortedActs.map((act, index) => {
+                      // Vérifier si l'acte est bloqué
+                      const isLocked = checkActLocked(act, userData);
+                      
+                      return (
+                        <tr
+                          key={act.id}
+                          className={cn(
+                            "border-b transition-all duration-300 hover:shadow-lg card-3d",
+                            isLocked 
+                              ? "opacity-60 bg-muted/10" 
+                              : "hover:bg-linear-to-r hover:from-green-50/70 hover:to-emerald-50/70 dark:hover:from-green-950/30 dark:hover:to-emerald-950/30"
+                          )}
+                          style={{ animationDelay: `${index * 0.05}s` }}
+                        >
+                          <td className="p-3 text-sm text-center font-bold">
+                            {format(act.dateSaisie as Date, "dd/MM/yyyy")}
+                          </td>
+                          <td className="p-3 text-center">
+                            <span className={cn(
+                              "inline-flex px-3 py-1.5 rounded-full text-xs font-black",
+                              getKindBadgeColor(act.kind)
+                            )}>
+                              {getHealthActKindLabel(act.kind)}
+                            </span>
+                          </td>
+                          <td className="p-3 text-sm font-black text-center">{act.clientNom}</td>
+                          <td className="p-3 text-xs text-center text-muted-foreground font-mono font-bold">{act.numeroContrat}</td>
+                          <td className="p-3 text-sm text-center font-bold">{format(act.dateEffet as Date, "dd/MM/yyyy")}</td>
+                          <td className="p-3 text-sm text-center font-bold">{formatCurrency(act.caAnnuel)}</td>
+                          <td className="p-3 text-sm text-center font-black text-blue-600 dark:text-blue-400">
+                            {(act.coefficient * 100).toFixed(0)}%
+                          </td>
+                          <td className="p-3 text-center">
+                            <span className="inline-flex px-4 py-2 rounded-full text-sm font-black bg-linear-to-r from-green-500 to-emerald-500 text-white shadow-xl shadow-green-500/30">
+                              {formatCurrency(act.caPondere)}
+                            </span>
+                          </td>
+                          <td className="p-3 text-center">
+                            {isLocked ? (
+                              <div className="flex items-center justify-center" title="Bloqué - Modification après le 15 du mois">
+                                <Lock className="h-5 w-5 text-red-600 dark:text-red-400" />
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-center" title="Ouvert - Modification possible">
+                                <Unlock className="h-5 w-5 text-green-600 dark:text-green-400" />
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-3 text-center">
+                            <div className="flex gap-2 justify-center">
+                              <button
+                                className={cn(
+                                  "p-2 rounded-lg transition-all duration-300 border-2 border-transparent",
+                                  isLocked 
+                                    ? "opacity-30 cursor-not-allowed" 
+                                    : "hover:bg-blue-500/20 hover:scale-110 hover:border-blue-500/50"
+                                )}
+                                disabled={isLocked}
+                                title={isLocked ? "Modification bloquée" : "Modifier"}
+                              >
+                                <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                              </button>
+                              <button
+                                onClick={() => !isLocked && handleDeleteActClick(act.id, act.clientNom)}
+                                className={cn(
+                                  "p-2 rounded-lg transition-all duration-300 border-2 border-transparent",
+                                  isLocked 
+                                    ? "opacity-30 cursor-not-allowed" 
+                                    : "hover:bg-red-500/20 hover:scale-110 hover:border-red-500/50"
+                                )}
+                                disabled={isLocked}
+                                title={isLocked ? "Suppression bloquée" : "Supprimer"}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
