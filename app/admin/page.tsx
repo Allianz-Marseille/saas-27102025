@@ -65,13 +65,7 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
       // Charger les KPIs selon le rôle
       if (role === "CDC_COMMERCIAL") {
         // Commerciaux
-        let acts = [];
-        if (selectedUser === "all") {
-          acts = await getActsByMonth(selectedMonth);
-        } else {
-          const allActs = await getActsByMonth(selectedMonth);
-          acts = allActs.filter(act => act.userId === selectedUser);
-        }
+        const acts = await getActsByMonth(selectedUser === "all" ? null : selectedUser, selectedMonth);
         const calculatedKPIs = calculateKPI(acts);
         setKPIs({
           ...calculatedKPIs,
