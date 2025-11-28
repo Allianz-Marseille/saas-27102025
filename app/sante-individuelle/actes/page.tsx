@@ -491,6 +491,13 @@ export default function HealthActsPage() {
                         renderIcon={renderSortIcon}
                       />
                       <SortableHeader 
+                        label="Compagnie" 
+                        sortKey="compagnie"
+                        sortConfig={sortConfig}
+                        onSort={handleSortChange}
+                        renderIcon={renderSortIcon}
+                      />
+                      <SortableHeader 
                         label="Date d'effet" 
                         sortKey="dateEffet"
                         sortConfig={sortConfig}
@@ -551,6 +558,7 @@ export default function HealthActsPage() {
                           </td>
                           <td className="p-3 text-sm font-black text-center">{act.clientNom}</td>
                           <td className="p-3 text-xs text-center text-muted-foreground font-mono font-bold">{act.numeroContrat}</td>
+                          <td className="p-3 text-sm text-center font-bold">{act.compagnie}</td>
                           <td className="p-3 text-sm text-center font-bold">{format(act.dateEffet as Date, "dd/MM/yyyy")}</td>
                           <td className="p-3 text-sm text-center font-bold">{formatCurrency(act.caAnnuel)}</td>
                           <td className="p-3 text-sm text-center font-black text-blue-600 dark:text-blue-400">
@@ -735,6 +743,7 @@ type SortKey =
   | "dateEffet"
   | "clientNom"
   | "numeroContrat"
+  | "compagnie"
   | "caAnnuel"
   | "coefficient"
   | "caPondere"

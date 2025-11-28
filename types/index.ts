@@ -61,6 +61,7 @@ export interface HealthAct {
   kind: "AFFAIRE_NOUVELLE" | "REVISION" | "ADHESION_SALARIE" | "COURT_TO_AZ" | "AZ_TO_COURTAGE";
   clientNom: string;
   numeroContrat: string;
+  compagnie: string;
   dateEffet: Date | Timestamp;
   dateSaisie: Date | Timestamp;
   caAnnuel: number;

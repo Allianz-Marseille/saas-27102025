@@ -38,6 +38,7 @@ export const createHealthAct = async (act: Omit<HealthAct, 'id' | 'dateSaisie' |
     kind: act.kind,
     clientNom: act.clientNom,
     numeroContrat: act.numeroContrat,
+    compagnie: act.compagnie,
     dateEffet: Timestamp.fromDate(act.dateEffet as Date),
     dateSaisie: Timestamp.fromDate(dateSaisie),
     caAnnuel: act.caAnnuel,

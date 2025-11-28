@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,11 +10,12 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon, Sparkles, Zap, TrendingUp, User, FileText } from "lucide-react";
+import { CalendarIcon, Sparkles, Zap, TrendingUp, User, FileText, Building2 } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import { createHealthAct, HEALTH_ACT_COEFFICIENTS, getHealthActKindLabel } from "@/lib/firebase/health-acts";
 import { useAuth } from "@/lib/firebase/use-auth";
+import { getCompanies, type Company } from "@/lib/firebase/companies";
 
 interface NewHealthActDialogProps {
   open: boolean;
@@ -53,14 +54,50 @@ export function NewHealthActDialog({ open, onOpenChange, onSuccess }: NewHealthA
   const [kind, setKind] = useState<HealthActKind | "">("");
   const [clientNom, setClientNom] = useState("");
   const [numeroContrat, setNumeroContrat] = useState("");
+  const [compagnie, setCompagnie] = useState("");
   const [dateEffet, setDateEffet] = useState<Date>();
   const [caAnnuel, setCaAnnuel] = useState("");
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [companies, setCompanies] = useState<Company[]>([]);
+
+  // Charger les compagnies actives
+  useEffect(() => {
+    const loadCompanies = async () => {
+      try {
+        const companiesData = await getCompanies();
+        const activeCompanies = companiesData.filter(c => c.active);
+        
+        // Trier : Allianz en premier, puis les autres par ordre alphabétique
+        const sortedCompanies = activeCompanies.sort((a, b) => {
+          if (a.name.toLowerCase() === 'allianz') return -1;
+          if (b.name.toLowerCase() === 'allianz') return 1;
+          return a.name.localeCompare(b.name);
+        });
+        
+        setCompanies(sortedCompanies);
+        
+        // Définir Allianz par défaut s'il existe, sinon la première compagnie
+        if (sortedCompanies.length > 0 && !compagnie) {
+          const allianz = sortedCompanies.find(c => c.name.toLowerCase() === 'allianz');
+          setCompagnie(allianz ? allianz.name : sortedCompanies[0].name);
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des compagnies:", error);
+        toast.error("Impossible de charger les compagnies");
+      }
+    };
+    
+    if (open) {
+      loadCompanies();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleReset = () => {
     setKind("");
     setClientNom("");
     setNumeroContrat("");
+    setCompagnie("");
     setDateEffet(undefined);
     setCaAnnuel("");
   };
@@ -144,6 +181,11 @@ export function NewHealthActDialog({ open, onOpenChange, onSuccess }: NewHealthA
       return;
     }
 
+    if (!compagnie) {
+      toast.error("Veuillez sélectionner une compagnie");
+      return;
+    }
+
     if (!dateEffet) {
       toast.error("Veuillez sélectionner la date d'effet");
       return;
@@ -165,6 +207,7 @@ export function NewHealthActDialog({ open, onOpenChange, onSuccess }: NewHealthA
         kind: kind as HealthActKind,
         clientNom: capitalizeWords(clientNom),
         numeroContrat: numeroContrat.trim(),
+        compagnie: compagnie,
         dateEffet,
         caAnnuel: caAnnuelNum,
         coefficient,
@@ -293,6 +336,36 @@ export function NewHealthActDialog({ open, onOpenChange, onSuccess }: NewHealthA
               placeholder="12345678"
               className="border-2 border-purple-500/30 focus:border-purple-500/70 font-mono font-bold transition-all duration-300"
             />
+          </div>
+
+          {/* Compagnie */}
+          <div className="space-y-2">
+            <Label htmlFor="compagnie" className="text-sm font-bold flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-indigo-600" />
+              Compagnie *
+            </Label>
+            <Select value={compagnie} onValueChange={setCompagnie}>
+              <SelectTrigger 
+                id="compagnie"
+                className={cn(
+                  "border-2 font-bold transition-all duration-300",
+                  compagnie ? "border-indigo-500/50 bg-indigo-50/50 dark:bg-indigo-950/20" : ""
+                )}
+              >
+                <SelectValue placeholder="Sélectionnez une compagnie" />
+              </SelectTrigger>
+              <SelectContent className="border-2 border-indigo-500/30">
+                {companies.map((company) => (
+                  <SelectItem 
+                    key={company.id} 
+                    value={company.name}
+                    className="font-bold cursor-pointer"
+                  >
+                    {company.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Date d'effet */}
