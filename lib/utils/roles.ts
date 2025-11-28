@@ -1,10 +1,11 @@
 import { UserData } from "@/lib/firebase/auth";
 
-export type UserRole = "ADMINISTRATEUR" | "CDC_COMMERCIAL";
+export type UserRole = "ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL";
 
 export const ROLES = {
   ADMINISTRATEUR: "ADMINISTRATEUR",
   CDC_COMMERCIAL: "CDC_COMMERCIAL",
+  COMMERCIAL_SANTE_INDIVIDUEL: "COMMERCIAL_SANTE_INDIVIDUEL",
 } as const;
 
 /**
@@ -19,6 +20,13 @@ export function isAdmin(userData: UserData | null): boolean {
  */
 export function isCommercial(userData: UserData | null): boolean {
   return userData?.role === ROLES.CDC_COMMERCIAL && userData?.active === true;
+}
+
+/**
+ * Vérifie si l'utilisateur est un Commercial Santé Individuel
+ */
+export function isCommercialSanteIndividuel(userData: UserData | null): boolean {
+  return userData?.role === ROLES.COMMERCIAL_SANTE_INDIVIDUEL && userData?.active === true;
 }
 
 /**
@@ -47,6 +55,7 @@ export function getRoleLabel(role: UserRole): string {
   const labels = {
     ADMINISTRATEUR: "Administrateur",
     CDC_COMMERCIAL: "CDC Commercial",
+    COMMERCIAL_SANTE_INDIVIDUEL: "Commercial Santé Individuel",
   };
   return labels[role] || role;
 }
@@ -63,4 +72,11 @@ export function canAccessAdmin(userData: UserData | null): boolean {
  */
 export function canAccessDashboard(userData: UserData | null): boolean {
   return isAdmin(userData) || isCommercial(userData);
+}
+
+/**
+ * Vérifie si l'utilisateur peut accéder au dashboard santé individuelle
+ */
+export function canAccessHealthDashboard(userData: UserData | null): boolean {
+  return isAdmin(userData) || isCommercialSanteIndividuel(userData);
 }

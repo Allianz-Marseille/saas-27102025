@@ -6,14 +6,16 @@ import { useAuth } from "@/lib/firebase/use-auth";
 import { 
   canAccessAdmin, 
   canAccessDashboard, 
+  canAccessHealthDashboard,
   isAdmin,
-  isCommercial 
+  isCommercial,
+  isCommercialSanteIndividuel
 } from "@/lib/utils/roles";
 import { toast } from "sonner";
 
 interface RouteGuardProps {
   children: React.ReactNode;
-  allowedRoles?: ("ADMINISTRATEUR" | "CDC_COMMERCIAL")[];
+  allowedRoles?: ("ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL")[];
   requireAuth?: boolean;
 }
 
@@ -64,17 +66,31 @@ export function RouteGuard({
       }
     }
 
+    if (pathname.startsWith("/sante-individuelle")) {
+      if (!canAccessHealthDashboard(userData)) {
+        toast.error("Accès refusé");
+        router.push("/login");
+        return;
+      }
+    }
+
     // Vérifier les rôles spécifiques si définis
     if (allowedRoles && allowedRoles.length > 0) {
       const hasValidRole = allowedRoles.some((role) => {
         if (role === "ADMINISTRATEUR") return isAdmin(userData);
         if (role === "CDC_COMMERCIAL") return isCommercial(userData);
+        if (role === "COMMERCIAL_SANTE_INDIVIDUEL") return isCommercialSanteIndividuel(userData);
         return false;
       });
 
       if (!hasValidRole) {
         toast.error("Vous n'avez pas les droits nécessaires pour accéder à cette page");
-        router.push("/dashboard");
+        // Rediriger vers le dashboard approprié selon le rôle
+        if (isCommercialSanteIndividuel(userData)) {
+          router.push("/sante-individuelle");
+        } else {
+          router.push("/dashboard");
+        }
       }
     }
   }, [user, userData, loading, router, pathname, allowedRoles, requireAuth]);
@@ -107,6 +123,10 @@ export function RouteGuard({
     }
 
     if (pathname.startsWith("/dashboard") && !canAccessDashboard(userData)) {
+      return null;
+    }
+
+    if (pathname.startsWith("/sante-individuelle") && !canAccessHealthDashboard(userData)) {
       return null;
     }
   }
