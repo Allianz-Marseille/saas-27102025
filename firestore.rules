@@ -62,7 +62,7 @@ service cloud.firestore {
     match /health_acts/{actId} {
       allow read: if isAuthenticated();
       allow create: if isCommercialSante();
-      allow update: if isCommercialSante() && resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (isCommercialSante() && resource.data.userId == request.auth.uid);
       allow delete: if isAdmin() || (isCommercialSante() && resource.data.userId == request.auth.uid);
     }
     
