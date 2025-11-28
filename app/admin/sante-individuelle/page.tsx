@@ -11,10 +11,11 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Heart, TrendingUp, DollarSign, FileText, Users, Calendar, Award, Target } from "lucide-react";
+import { Heart, TrendingUp, DollarSign, FileText, Users, Award, Target } from "lucide-react";
 import { calculateHealthKPI } from "@/lib/utils/health-kpi";
 import { HealthAct } from "@/types";
 import { Timestamp } from "firebase/firestore";
+import { MonthSelector } from "@/components/dashboard/month-selector";
 
 interface CommercialData {
   id: string;
@@ -149,16 +150,11 @@ export default function AdminSanteIndividuellePage() {
           </p>
         </div>
 
-        {/* Sélecteur de mois */}
-        <div className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-muted-foreground" />
-          <input
-            type="month"
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-4 py-2 border rounded-lg bg-white dark:bg-slate-900 font-semibold"
-          />
-        </div>
+        {/* Navigation mensuelle */}
+        <MonthSelector 
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
+        />
       </div>
 
       {/* KPIs Globaux */}
