@@ -59,6 +59,7 @@ export default function AdminSanteIndividuellePage() {
   const [filterSeuil, setFilterSeuil] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("caPondere");
   const [showGraphs, setShowGraphs] = useState(true);
+  const [selectedHistoricalMetrics, setSelectedHistoricalMetrics] = useState<string[]>(["caPondere", "commissions"]);
 
   const loadCommercialData = async (monthKey: string, userId: string, userData: any): Promise<CommercialData | null> => {
     if (!db) return null;
@@ -820,38 +821,155 @@ export default function AdminSanteIndividuellePage() {
               Évolution mensuelle de la performance globale
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 font-bold text-sm">Mois</th>
-                    <th className="text-right p-3 font-bold text-sm">Commerciaux</th>
-                    <th className="text-right p-3 font-bold text-sm">Actes</th>
-                    <th className="text-right p-3 font-bold text-sm">CA Pondéré</th>
-                    <th className="text-right p-3 font-bold text-sm">Commissions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {historicalData.map((h) => {
+          <CardContent className="space-y-4">
+            {/* Filtres de sélection des métriques */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={selectedHistoricalMetrics.includes("commerciaux") ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setSelectedHistoricalMetrics(prev => 
+                    prev.includes("commerciaux") 
+                      ? prev.filter(m => m !== "commerciaux")
+                      : [...prev, "commerciaux"]
+                  );
+                }}
+                className="gap-2"
+              >
+                <Users className="h-4 w-4" />
+                Commerciaux
+              </Button>
+              <Button
+                variant={selectedHistoricalMetrics.includes("actes") ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setSelectedHistoricalMetrics(prev => 
+                    prev.includes("actes") 
+                      ? prev.filter(m => m !== "actes")
+                      : [...prev, "actes"]
+                  );
+                }}
+                className="gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                Actes
+              </Button>
+              <Button
+                variant={selectedHistoricalMetrics.includes("caPondere") ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setSelectedHistoricalMetrics(prev => 
+                    prev.includes("caPondere") 
+                      ? prev.filter(m => m !== "caPondere")
+                      : [...prev, "caPondere"]
+                  );
+                }}
+                className="gap-2"
+              >
+                <TrendingUp className="h-4 w-4" />
+                CA Pondéré
+              </Button>
+              <Button
+                variant={selectedHistoricalMetrics.includes("commissions") ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setSelectedHistoricalMetrics(prev => 
+                    prev.includes("commissions") 
+                      ? prev.filter(m => m !== "commissions")
+                      : [...prev, "commissions"]
+                  );
+                }}
+                className="gap-2"
+              >
+                <DollarSign className="h-4 w-4" />
+                Commissions
+              </Button>
+            </div>
+
+            {/* Graphique histogramme */}
+            {selectedHistoricalMetrics.length > 0 ? (
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart 
+                  data={historicalData.map((h) => {
                     const total = h.data.reduce((sum, c) => sum + c.kpis.caPondere, 0);
                     const acts = h.data.reduce((sum, c) => sum + c.acts.length, 0);
                     const commissions = h.data.reduce((sum, c) => sum + c.kpis.commissionsAcquises, 0);
-                    return (
-                      <tr key={h.monthKey} className="border-b hover:bg-slate-50 dark:hover:bg-slate-900/50">
-                        <td className="p-3 font-semibold">{h.month}</td>
-                        <td className="p-3 text-right">{h.data.length}</td>
-                        <td className="p-3 text-right font-bold">{acts}</td>
-                        <td className="p-3 text-right font-bold">{formatCurrency(total)}</td>
-                        <td className="p-3 text-right font-bold text-yellow-600 dark:text-yellow-400">
-                          {formatCurrency(commissions)}
-                        </td>
-                      </tr>
-                    );
+                    return {
+                      mois: h.month,
+                      Commerciaux: h.data.length,
+                      Actes: acts,
+                      "CA Pondéré": total,
+                      Commissions: commissions,
+                    };
                   })}
-                </tbody>
-              </table>
-            </div>
+                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
+                  <XAxis 
+                    dataKey="mois" 
+                    className="text-xs font-bold"
+                    tick={{ fill: 'currentColor', fontSize: 12 }}
+                    stroke="currentColor"
+                    strokeOpacity={0.3}
+                  />
+                  <YAxis 
+                    className="text-xs font-bold"
+                    tick={{ fill: 'currentColor', fontSize: 12 }}
+                    stroke="currentColor"
+                    strokeOpacity={0.3}
+                    tickFormatter={(value) => {
+                      if (selectedHistoricalMetrics.includes("caPondere") || selectedHistoricalMetrics.includes("commissions")) {
+                        return `${(value / 1000).toFixed(0)}k€`;
+                      }
+                      return value.toFixed(0);
+                    }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+                    }}
+                    labelStyle={{ 
+                      fontWeight: 'bold',
+                      marginBottom: '8px',
+                      color: 'hsl(var(--foreground))'
+                    }}
+                    formatter={(value: number, name: string) => {
+                      if (name === "CA Pondéré" || name === "Commissions") {
+                        return [formatCurrency(value), name];
+                      }
+                      return [value, name];
+                    }}
+                  />
+                  <Legend 
+                    wrapperStyle={{
+                      paddingTop: '20px',
+                    }}
+                  />
+                  {selectedHistoricalMetrics.includes("commerciaux") && (
+                    <Bar dataKey="Commerciaux" fill="#3b82f6" name="Commerciaux" />
+                  )}
+                  {selectedHistoricalMetrics.includes("actes") && (
+                    <Bar dataKey="Actes" fill="#10b981" name="Actes" />
+                  )}
+                  {selectedHistoricalMetrics.includes("caPondere") && (
+                    <Bar dataKey="CA Pondéré" fill="#a855f7" name="CA Pondéré" />
+                  )}
+                  {selectedHistoricalMetrics.includes("commissions") && (
+                    <Bar dataKey="Commissions" fill="#eab308" name="Commissions" />
+                  )}
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[350px] text-muted-foreground">
+                <div className="text-center">
+                  <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Sélectionnez au moins une métrique à afficher</p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
