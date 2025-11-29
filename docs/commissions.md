@@ -1,18 +1,18 @@
 # Données Commissions Allianz Marseille
 
-## Année 2025
+## Année 2025 ⚠️ Incomplète (10 mois sur 12)
 
-| Catégorie | Janvier | Février | Mars | Avril | Mai | Juin | Juillet | Août | Septembre | Octobre | Novembre | Décembre | Total |
-|-----------|---------|---------|------|-------|-----|------|---------|------|-----------|---------|----------|----------|-------|
-| **Commissions IARD** | 83 717 | 75 088 | 76 902 | 76 694 | 71 661 | 76 841 | 98 375 | 80 991 | 88 208 | 85 104 | 0 | 0 | 813 581 |
-| **Commissions Vie** | 5 815 | 31 813 | 3 461 | 5 565 | 10 027 | 3 409 | 7 062 | 9 824 | 7 036 | 5 243 | 0 | 0 | 89 255 |
-| **Commissions Courtage** | 6 928 | 6 851 | 4 476 | 4 548 | 5 941 | 4 001 | 4 744 | 11 074 | 4 375 | 4 452 | 0 | 0 | 57 390 |
-| **Profits exceptionnels** | 0 | 0 | 0 | 628 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 628 |
-| **Total commissions** | 96 460 | 113 752 | 84 839 | 87 435 | 87 629 | 84 251 | 110 181 | 101 889 | 99 619 | 94 799 | 0 | 0 | 960 854 |
-| **Charges agence** | 54 376 | 63 488 | 64 301 | 57 102 | 57 209 | 67 596 | 61 143 | 66 702 | 69 611 | 67 483 | 0 | 0 | 629 011 |
-| **Résultat** | 42 084 | 50 264 | 20 538 | 30 333 | 30 420 | 16 655 | 49 038 | 35 187 | 30 008 | 27 316 | 0 | 0 | 331 843 |
-| **Prélèvements Julien** | 18 000 | 13 000 | 13 000 | 14 400 | 12 000 | 18 000 | 15 500 | 17 000 | 20 500 | 17 000 | 0 | 0 | 158 400 |
-| **Prélèvements Jean-Michel** | 18 000 | 13 000 | 13 000 | 14 400 | 12 000 | 18 000 | 15 500 | 17 000 | 20 500 | 17 000 | 0 | 0 | 158 400 |
+| Catégorie | Janvier | Février | Mars | Avril | Mai | Juin | Juillet | Août | Septembre | Octobre | Novembre | Décembre | Total Réel | Total Extrapolé |
+|-----------|---------|---------|------|-------|-----|------|---------|------|-----------|---------|----------|----------|------------|-----------------|
+| **Commissions IARD** | 83 717 | 75 088 | 76 902 | 76 694 | 71 661 | 76 841 | 98 375 | 80 991 | 88 208 | 85 104 | - | - | 813 581 | **976 297** |
+| **Commissions Vie** | 5 815 | 31 813 | 3 461 | 5 565 | 10 027 | 3 409 | 7 062 | 9 824 | 7 036 | 5 243 | - | - | 89 255 | **107 106** |
+| **Commissions Courtage** | 6 928 | 6 851 | 4 476 | 4 548 | 5 941 | 4 001 | 4 744 | 11 074 | 4 375 | 4 452 | - | - | 57 390 | **68 868** |
+| **Profits exceptionnels** | 0 | 0 | 0 | 628 | 0 | 0 | 0 | 0 | 0 | 0 | - | - | 628 | **754** |
+| **Total commissions** | 96 460 | 113 752 | 84 839 | 87 435 | 87 629 | 84 251 | 110 181 | 101 889 | 99 619 | 94 799 | - | - | 960 854 | **1 153 025** |
+| **Charges agence** | 54 376 | 63 488 | 64 301 | 57 102 | 57 209 | 67 596 | 61 143 | 66 702 | 69 611 | 67 483 | - | - | 629 011 | **754 813** |
+| **Résultat** | 42 084 | 50 264 | 20 538 | 30 333 | 30 420 | 16 655 | 49 038 | 35 187 | 30 008 | 27 316 | - | - | 331 843 | **398 212** |
+| **Prélèvements Julien** | 18 000 | 13 000 | 13 000 | 14 400 | 12 000 | 18 000 | 15 500 | 17 000 | 20 500 | 17 000 | - | - | 158 400 | **190 080** |
+| **Prélèvements Jean-Michel** | 18 000 | 13 000 | 13 000 | 14 400 | 12 000 | 18 000 | 15 500 | 17 000 | 20 500 | 17 000 | - | - | 158 400 | **190 080** |
 
 ---
 
@@ -67,6 +67,26 @@
 
 - **Charges agence**: Charges opérationnelles de l'agence (salaires, loyer, frais, etc.)
 - **Prélèvements**: Rémunération des dirigeants (Julien et Jean-Michel)
+
+### Calcul des Totaux
+
+#### Année Complète (12 mois)
+Le **Total** est la **somme réelle** de tous les mois.
+
+**Exemple 2024 (12 mois complets):**
+- Total commissions = 77 170 + 99 903 + ... + 81 380 = **952 496€**
+
+#### Année Incomplète (moins de 12 mois)
+Le **Total Extrapolé** permet de projeter sur une année complète:
+
+**Formule:** `Total Extrapolé = (Somme des mois réels / Nombre de mois) × 12`
+
+**Exemple 2025 (10 mois sur 12):**
+- Somme réelle sur 10 mois = 960 854€
+- Moyenne mensuelle = 960 854 ÷ 10 = 96 085,4€
+- **Total Extrapolé = 96 085,4 × 12 = 1 153 025€**
+
+> 💡 L'extrapolation permet de comparer des années incomplètes avec des années complètes en estimant la performance sur 12 mois.
 
 ### ⚠️ Important
 
