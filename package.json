@@ -15,7 +15,8 @@
     "import:kheira-nov": "ts-node --project tsconfig.scripts.json scripts/import-kheira-november.ts",
     "import:kheira-oct": "ts-node --project tsconfig.scripts.json scripts/import-kheira-october.ts",
     "import:kheira-sep": "ts-node --project tsconfig.scripts.json scripts/import-kheira-september.ts",
-    "import:kheira-jul": "ts-node --project tsconfig.scripts.json scripts/import-kheira-july.ts"
+    "import:kheira-jul": "ts-node --project tsconfig.scripts.json scripts/import-kheira-july.ts",
+    "import:kheira-jun": "ts-node --project tsconfig.scripts.json scripts/import-kheira-june.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
