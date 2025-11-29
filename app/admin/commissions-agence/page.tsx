@@ -27,6 +27,9 @@ export default function CommissionsAgencePage() {
   }>({ open: false, month: 1, data: null });
   
   const [createYearDialog, setCreateYearDialog] = useState(false);
+  
+  // État pour la métrique sélectionnée dans les KPI
+  const [selectedMetric, setSelectedMetric] = useState<'resultat' | 'totalCommissions' | 'chargesAgence' | 'commissionsIARD' | 'commissionsVie' | 'commissionsCourtage'>('resultat');
 
   // Charger les années disponibles
   const loadYears = async () => {
@@ -94,19 +97,48 @@ export default function CommissionsAgencePage() {
   );
 
   const monthsWithData = yearData.filter((d) => d.totalCommissions > 0 || d.chargesAgence > 0).length;
-  const averageMonthly = monthsWithData > 0 ? Math.round(totals.resultat / monthsWithData) : 0;
   
   const extrapolated = extrapolateYear(yearData);
   const isIncomplete = monthsWithData < 12;
 
-  // Meilleur et pire mois
+  // Fonction pour obtenir la valeur de la métrique sélectionnée
+  const getMetricValue = (month: AgencyCommission) => {
+    switch (selectedMetric) {
+      case 'resultat': return month.resultat;
+      case 'totalCommissions': return month.totalCommissions;
+      case 'chargesAgence': return month.chargesAgence;
+      case 'commissionsIARD': return month.commissionsIARD;
+      case 'commissionsVie': return month.commissionsVie;
+      case 'commissionsCourtage': return month.commissionsCourtage;
+      default: return month.resultat;
+    }
+  };
+
+  // KPIs calculés selon la métrique sélectionnée
+  const currentMetricTotal = totals[selectedMetric];
+  const currentMetricExtrapolated = extrapolated[selectedMetric];
+  const averageMonthly = monthsWithData > 0 ? Math.round(currentMetricTotal / monthsWithData) : 0;
+
+  // Meilleur et pire mois pour la métrique sélectionnée
   const monthsWithResults = yearData.filter((d) => d.totalCommissions > 0);
   const bestMonth = monthsWithResults.length > 0 
-    ? monthsWithResults.reduce((max, m) => m.resultat > max.resultat ? m : max)
+    ? monthsWithResults.reduce((max, m) => getMetricValue(m) > getMetricValue(max) ? m : max)
     : null;
   const worstMonth = monthsWithResults.length > 0
-    ? monthsWithResults.reduce((min, m) => m.resultat < min.resultat ? m : min)
+    ? monthsWithResults.reduce((min, m) => getMetricValue(m) < getMetricValue(min) ? m : min)
     : null;
+
+  // Labels et icônes par métrique
+  const metricConfig = {
+    resultat: { label: 'Résultat', icon: CheckCircle, color: 'text-green-600' },
+    totalCommissions: { label: 'Total Commissions', icon: DollarSign, color: 'text-yellow-600' },
+    chargesAgence: { label: 'Charges Agence', icon: Package, color: 'text-red-600' },
+    commissionsIARD: { label: 'IARD', icon: Shield, color: 'text-blue-600' },
+    commissionsVie: { label: 'Vie', icon: Gem, color: 'text-purple-600' },
+    commissionsCourtage: { label: 'Courtage', icon: Handshake, color: 'text-cyan-600' },
+  };
+
+  const currentConfig = metricConfig[selectedMetric];
 
   const rows = [
     { icon: Shield, label: "🛡️ IARD", color: "text-blue-600", bgColor: "bg-blue-50 dark:bg-blue-950/30", getValue: (m: AgencyCommission) => m.commissionsIARD },
@@ -172,90 +204,144 @@ export default function CommissionsAgencePage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* Sélecteur de métrique pour les KPI */}
       {monthsWithData > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-2 shadow-lg hover:shadow-xl transition-all">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-yellow-600" />
-                {isIncomplete ? "Total Extrapolé" : "Total Année"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-black bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
-                {formatCurrencyInteger(isIncomplete ? extrapolated.resultat : totals.resultat)}
+        <div className="space-y-4">
+          <Card className="border-2 bg-gradient-to-r from-purple-50/50 to-blue-50/50 dark:from-purple-950/20 dark:to-blue-950/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-bold text-muted-foreground">Afficher les KPI pour:</span>
+                <Select value={selectedMetric} onValueChange={(v: any) => setSelectedMetric(v)}>
+                  <SelectTrigger className="w-64 font-bold border-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="resultat" className="font-bold">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        ✅ Résultat
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="totalCommissions" className="font-bold">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-yellow-600" />
+                        💰 Total Commissions
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="chargesAgence" className="font-bold">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-red-600" />
+                        📦 Charges Agence
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="commissionsIARD" className="font-bold">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-blue-600" />
+                        🛡️ Commissions IARD
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="commissionsVie" className="font-bold">
+                      <div className="flex items-center gap-2">
+                        <Gem className="h-4 w-4 text-purple-600" />
+                        💎 Commissions Vie
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="commissionsCourtage" className="font-bold">
+                      <div className="flex items-center gap-2">
+                        <Handshake className="h-4 w-4 text-cyan-600" />
+                        🤝 Commissions Courtage
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              {isIncomplete && (
+            </CardContent>
+          </Card>
+
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="border-2 shadow-lg hover:shadow-xl transition-all">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <currentConfig.icon className={cn("h-4 w-4", currentConfig.color)} />
+                  {isIncomplete ? "Total Extrapolé" : "Total Année"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={cn("text-2xl font-black", currentConfig.color)}>
+                  {formatCurrencyInteger(isIncomplete ? currentMetricExtrapolated : currentMetricTotal)}
+                </div>
+                {isIncomplete && (
+                  <p className="text-xs text-muted-foreground mt-1 font-semibold">
+                    Basé sur {monthsWithData} mois
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 shadow-lg hover:shadow-xl transition-all">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-green-600" />
+                  Meilleur Mois
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {bestMonth ? (
+                  <>
+                    <div className="text-2xl font-black text-green-600">
+                      {formatCurrencyInteger(getMetricValue(bestMonth))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 font-semibold">
+                      🏆 {getMonthShortName(bestMonth.month)} {selectedYear}
+                    </p>
+                  </>
+                ) : (
+                  <div className="text-sm text-muted-foreground">Aucune donnée</div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 shadow-lg hover:shadow-xl transition-all">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-orange-600" />
+                  Pire Mois
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {worstMonth ? (
+                  <>
+                    <div className="text-2xl font-black text-orange-600">
+                      {formatCurrencyInteger(getMetricValue(worstMonth))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 font-semibold">
+                      ⚠️ {getMonthShortName(worstMonth.month)} {selectedYear}
+                    </p>
+                  </>
+                ) : (
+                  <div className="text-sm text-muted-foreground">Aucune donnée</div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 shadow-lg hover:shadow-xl transition-all">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-purple-600" />
+                  Moyenne Mensuelle
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-black text-purple-600">
+                  {formatCurrencyInteger(averageMonthly)}
+                </div>
                 <p className="text-xs text-muted-foreground mt-1 font-semibold">
-                  Basé sur {monthsWithData} mois
+                  Sur {monthsWithData} mois
                 </p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 shadow-lg hover:shadow-xl transition-all">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-green-600" />
-                Meilleur Mois
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {bestMonth ? (
-                <>
-                  <div className="text-2xl font-black text-green-600">
-                    {formatCurrencyInteger(bestMonth.resultat)}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 font-semibold">
-                    🏆 {getMonthShortName(bestMonth.month)} {selectedYear}
-                  </p>
-                </>
-              ) : (
-                <div className="text-sm text-muted-foreground">Aucune donnée</div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 shadow-lg hover:shadow-xl transition-all">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-orange-600" />
-                Pire Mois
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {worstMonth ? (
-                <>
-                  <div className="text-2xl font-black text-orange-600">
-                    {formatCurrencyInteger(worstMonth.resultat)}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 font-semibold">
-                    ⚠️ {getMonthShortName(worstMonth.month)} {selectedYear}
-                  </p>
-                </>
-              ) : (
-                <div className="text-sm text-muted-foreground">Aucune donnée</div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 shadow-lg hover:shadow-xl transition-all">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-purple-600" />
-                Moyenne Mensuelle
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-black text-purple-600">
-                {formatCurrencyInteger(averageMonthly)}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1 font-semibold">
-                Sur {monthsWithData} mois
-              </p>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
 
