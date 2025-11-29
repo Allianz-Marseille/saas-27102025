@@ -28,6 +28,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { motion } from "framer-motion";
@@ -281,7 +287,8 @@ export default function UsersManagementPage() {
 
   return (
     <RouteGuard allowedRoles={["ADMINISTRATEUR"]}>
-      <div className="space-y-6">
+      <TooltipProvider>
+        <div className="space-y-6">
         {/* Header animé avec statistiques */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -490,55 +497,82 @@ export default function UsersManagementPage() {
                             </div>
 
                             <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleToggleActive(targetUser)}
-                                title={targetUser.active ? "Désactiver" : "Activer"}
-                                className="flex-1"
-                              >
-                                {targetUser.active ? (
-                                  <UserX className="h-4 w-4" />
-                                ) : (
-                                  <UserCheck className="h-4 w-4" />
-                                )}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedUser(targetUser);
-                                  setNewRole(targetUser.role);
-                                  setIsRoleDialogOpen(true);
-                                }}
-                                title="Changer le rôle"
-                              >
-                                <Shield className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedUser(targetUser);
-                                  setNewPassword("");
-                                  setIsPasswordDialogOpen(true);
-                                }}
-                                title="Réinitialiser le mot de passe"
-                              >
-                                <KeyRound className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedUser(targetUser);
-                                  setIsDeleteDialogOpen(true);
-                                }}
-                                title="Supprimer"
-                                className="text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleToggleActive(targetUser)}
+                                    className="flex-1"
+                                  >
+                                    {targetUser.active ? (
+                                      <UserX className="h-4 w-4" />
+                                    ) : (
+                                      <UserCheck className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{targetUser.active ? "Désactiver l'utilisateur" : "Activer l'utilisateur"}</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedUser(targetUser);
+                                      setNewRole(targetUser.role);
+                                      setIsRoleDialogOpen(true);
+                                    }}
+                                  >
+                                    <Shield className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Changer le rôle</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedUser(targetUser);
+                                      setNewPassword("");
+                                      setIsPasswordDialogOpen(true);
+                                    }}
+                                  >
+                                    <KeyRound className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Réinitialiser le mot de passe</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedUser(targetUser);
+                                      setIsDeleteDialogOpen(true);
+                                    }}
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Supprimer l'utilisateur</p>
+                                </TooltipContent>
+                              </Tooltip>
                             </div>
                           </CardContent>
                         </Card>
@@ -718,7 +752,8 @@ export default function UsersManagementPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+        </div>
+      </TooltipProvider>
     </RouteGuard>
   );
 }

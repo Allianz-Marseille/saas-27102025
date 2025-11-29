@@ -12,6 +12,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 import { getCompanies, createCompany, updateCompany, deleteCompany, type Company, isSystemCompany } from "@/lib/firebase/companies";
 import { motion } from "framer-motion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function CompaniesManagement() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -262,7 +268,7 @@ export function CompaniesManagement() {
   }
 
   return (
-    <>
+    <TooltipProvider>
       <div className="space-y-6">
         {/* Header animé avec statistiques */}
         <motion.div
@@ -494,31 +500,52 @@ export function CompaniesManagement() {
                             </div>
 
                             <div className="flex items-center gap-2">
-                              <Button
-                                variant={company.active ? "outline" : "default"}
-                                size="sm"
-                                onClick={() => handleToggleActive(company)}
-                                className="flex-1"
-                              >
-                                {company.active ? "Désactiver" : "Activer"}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleOpenEditDialog(company)}
-                                title="Modifier"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleOpenDeleteDialog(company.id)}
-                                title="Supprimer"
-                                className="text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant={company.active ? "outline" : "default"}
+                                    size="sm"
+                                    onClick={() => handleToggleActive(company)}
+                                    className="flex-1"
+                                  >
+                                    {company.active ? "Désactiver" : "Activer"}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{company.active ? "Désactiver la compagnie" : "Activer la compagnie"}</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleOpenEditDialog(company)}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Modifier le nom</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleOpenDeleteDialog(company.id)}
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Supprimer la compagnie</p>
+                                </TooltipContent>
+                              </Tooltip>
                             </div>
                           </CardContent>
                         </Card>
@@ -531,6 +558,7 @@ export function CompaniesManagement() {
           </div>
         )}
       </div>
+      </TooltipProvider>
 
       {/* Dialog d'ajout */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
