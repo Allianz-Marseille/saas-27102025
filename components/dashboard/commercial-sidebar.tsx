@@ -76,6 +76,7 @@ export function CommercialSidebar() {
           "flex flex-col h-screen border-r transition-all duration-300 relative",
           "bg-gradient-to-b from-white via-blue-50/30 to-purple-50/30",
           "dark:from-slate-950 dark:via-blue-950/10 dark:to-purple-950/10",
+          "hidden lg:flex", // Masquer sur mobile/tablette
         isCollapsed ? "w-16" : "w-64"
       )}
     >
@@ -224,11 +225,11 @@ export function CommercialSidebar() {
       </div>
     </aside>
 
-    {/* Bouton flottant pour rouvrir la sidebar quand elle est collapsed */}
+    {/* Bouton flottant pour rouvrir la sidebar quand elle est collapsed - Desktop uniquement */}
     {isCollapsed && (
       <button
         onClick={() => setIsCollapsed(false)}
-        className="fixed left-16 top-1/2 -translate-y-1/2 z-50 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-r-xl shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-110 group"
+        className="hidden lg:flex fixed left-16 top-1/2 -translate-y-1/2 z-50 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-r-xl shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-110 group"
         title="Ouvrir le menu"
       >
         <ChevronLeft className="h-5 w-5 rotate-180 group-hover:translate-x-1 transition-transform" />
@@ -237,11 +238,11 @@ export function CommercialSidebar() {
       </button>
     )}
 
-    {/* Bouton flottant pour fermer la sidebar quand elle est ouverte */}
+    {/* Bouton flottant pour fermer la sidebar quand elle est ouverte - Desktop uniquement */}
     {!isCollapsed && (
       <button
         onClick={() => setIsCollapsed(true)}
-        className="fixed left-64 top-1/2 -translate-y-1/2 z-50 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 rounded-r-xl shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 hover:scale-110 group"
+        className="hidden lg:flex fixed left-64 top-1/2 -translate-y-1/2 z-50 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 rounded-r-xl shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 hover:scale-110 group"
         title="Fermer le menu"
       >
         <ChevronLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
