@@ -602,10 +602,10 @@ export default function CommissionsAgencePage() {
                         {getMonthShortName(month)}
                       </th>
                     ))}
-                    <th className="px-4 py-3 text-right font-black text-sm bg-muted">
+                    <th className="px-4 py-3 text-center font-black text-sm bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/40 dark:to-orange-900/40 border-l-4 border-yellow-500">
                       {isIncomplete ? "Extrapolé" : "Total"}
                     </th>
-                    <th className="px-4 py-3 text-right font-black text-sm bg-muted">
+                    <th className="px-4 py-3 text-center font-black text-sm bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40 border-l-2 border-purple-400">
                       Moyenne
                     </th>
                   </tr>
@@ -655,7 +655,8 @@ export default function CommissionsAgencePage() {
                         })}
                         <td
                           className={cn(
-                            "px-4 py-3 text-right font-mono font-black text-lg border-l-2 bg-muted/50",
+                            "px-4 py-3 text-center font-mono font-black text-lg border-l-4 border-yellow-500",
+                            "bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/30 dark:to-orange-950/30",
                             row.isTotal && "text-yellow-700 dark:text-yellow-400",
                             row.isResult && (isIncomplete && !row.isInfo ? extrapolatedValue : rowTotal) >= 0 
                               ? "text-green-700 dark:text-green-400" 
@@ -666,7 +667,8 @@ export default function CommissionsAgencePage() {
                         </td>
                         <td
                           className={cn(
-                            "px-4 py-3 text-right font-mono font-bold text-base border-l bg-muted/30",
+                            "px-4 py-3 text-center font-mono font-black text-base border-l-2 border-purple-400",
+                            "bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30",
                             row.isTotal && "text-yellow-600 dark:text-yellow-500",
                             row.isResult && averageValue >= 0 
                               ? "text-green-600 dark:text-green-500" 
