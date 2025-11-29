@@ -118,7 +118,6 @@ export default function DashboardPage() {
           {/* Leaderboard CA */}
         <LeaderboardWidget 
           currentUserEmail={userData?.email}
-          kpi={kpi}
         />
 
           {/* Leaderboard Process */}

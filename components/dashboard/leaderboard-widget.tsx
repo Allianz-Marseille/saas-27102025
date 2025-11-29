@@ -6,38 +6,41 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
 import { cn, formatCurrency } from "@/lib/utils";
-import { getAllCommercialsKPI } from "@/lib/firebase/acts";
+import { getLeaderboard } from "@/lib/firebase/leaderboard";
 import { format } from "date-fns";
 
 interface LeaderboardWidgetProps {
   currentUserEmail?: string;
-  kpi?: {
-    caMensuel: number;
-    commissionsPotentielles: number;
-  };
 }
 
-export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetProps) {
-  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+interface LeaderboardUser {
+  name: string;
+  commissions: number;
+  avatar: string;
+  isCurrentUser: boolean;
+  rank: number;
+  trend: number;
+}
+
+export function LeaderboardWidget({ currentUserEmail }: LeaderboardWidgetProps) {
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadLeaderboard = async () => {
       try {
         const currentMonth = format(new Date(), "yyyy-MM");
-        const commercialsKPI = await getAllCommercialsKPI(currentMonth);
+        const leaderboardEntries = await getLeaderboard(currentMonth);
 
-  // Trier par commissions décroissantes et attribuer les rangs
-        const sorted = commercialsKPI
-    .sort((a, b) => b.commissions - a.commissions)
-    .map((user, index) => ({
-            name: user.firstName,
-            commissions: user.commissions,
-            avatar: user.firstName[0].toUpperCase(),
-            isCurrentUser: user.email === currentUserEmail,
-            rank: index + 1,
-            trend: 0 // Peut être calculé en comparant avec le mois précédent
-          }));
+        // Les données sont déjà triées par commissions décroissantes
+        const sorted = leaderboardEntries.map((entry, index) => ({
+          name: entry.firstName,
+          commissions: entry.commissions,
+          avatar: entry.firstName[0].toUpperCase(),
+          isCurrentUser: entry.email === currentUserEmail,
+          rank: index + 1,
+          trend: 0 // Peut être calculé en comparant avec le mois précédent
+        }));
         
         setLeaderboardData(sorted);
       } catch (error) {

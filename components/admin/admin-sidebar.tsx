@@ -73,6 +73,7 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
       <aside className={cn(
         "border-r h-screen fixed left-0 top-0 z-40 transition-all duration-300",
         "bg-gradient-to-b from-white via-blue-50/30 to-purple-50/30 dark:from-slate-950 dark:via-blue-950/10 dark:to-purple-950/10",
+        "hidden lg:block", // Masquer sur mobile/tablette
         isCollapsed ? "w-16" : "w-64"
       )}>
         <div className="flex flex-col h-full">
@@ -208,22 +209,22 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
         </div>
       </aside>
 
-      {/* Bouton flottant pour ouvrir la sidebar */}
+      {/* Bouton flottant pour ouvrir la sidebar - Desktop uniquement */}
       {isCollapsed && (
         <button
           onClick={() => onCollapsedChange(false)}
-          className="fixed left-16 top-1/2 -translate-y-1/2 z-50 h-12 w-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-r-lg shadow-lg transition-all duration-300 flex items-center justify-center group"
+          className="hidden lg:flex fixed left-16 top-1/2 -translate-y-1/2 z-50 h-12 w-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-r-lg shadow-lg transition-all duration-300 items-center justify-center group"
           aria-label="Ouvrir la sidebar"
         >
           <ChevronRight className="h-4 w-4 group-hover:scale-110 transition-transform" />
         </button>
       )}
 
-      {/* Bouton flottant pour fermer la sidebar */}
+      {/* Bouton flottant pour fermer la sidebar - Desktop uniquement */}
       {!isCollapsed && (
         <button
           onClick={() => onCollapsedChange(true)}
-          className="fixed left-64 top-1/2 -translate-y-1/2 z-50 h-12 w-6 bg-gradient-to-r from-violet-600 to-rose-600 hover:from-violet-700 hover:to-rose-700 text-white rounded-r-lg shadow-lg transition-all duration-300 flex items-center justify-center group"
+          className="hidden lg:flex fixed left-64 top-1/2 -translate-y-1/2 z-50 h-12 w-6 bg-gradient-to-r from-violet-600 to-rose-600 hover:from-violet-700 hover:to-rose-700 text-white rounded-r-lg shadow-lg transition-all duration-300 items-center justify-center group"
           aria-label="Fermer la sidebar"
         >
           <ChevronLeft className="h-4 w-4 group-hover:scale-110 transition-transform" />
