@@ -11,14 +11,19 @@ import { format } from "date-fns";
 
 interface LeaderboardWidgetProps {
   currentUserEmail?: string;
-  kpi?: {
-    caMensuel: number;
-    commissionsPotentielles: number;
-  };
 }
 
-export function LeaderboardWidget({ currentUserEmail, kpi }: LeaderboardWidgetProps) {
-  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+interface LeaderboardUser {
+  name: string;
+  commissions: number;
+  avatar: string;
+  isCurrentUser: boolean;
+  rank: number;
+  trend: number;
+}
+
+export function LeaderboardWidget({ currentUserEmail }: LeaderboardWidgetProps) {
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

@@ -101,7 +101,7 @@ export default function AdminLayout({
       await logout();
       toast.success("Déconnexion réussie");
       router.push("/login");
-    } catch (error) {
+    } catch {
       toast.error("Erreur lors de la déconnexion");
     }
   };

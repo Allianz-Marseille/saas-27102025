@@ -295,7 +295,7 @@ export function CompaniesManagement() {
                     Gestion des compagnies
                   </h2>
                   <p className="text-muted-foreground">
-                    Gérez les compagnies d'assurance pour la saisie des actes
+                    Gérez les compagnies d&apos;assurance pour la saisie des actes
                   </p>
                 </div>
 
@@ -374,7 +374,7 @@ export function CompaniesManagement() {
                 </motion.div>
                 <h3 className="text-2xl font-bold mb-2">Aucune compagnie enregistrée</h3>
                 <p className="text-muted-foreground mb-6">
-                  Commencez par ajouter votre première compagnie d'assurance
+                  Commencez par ajouter votre première compagnie d&apos;assurance
                 </p>
                 <Button 
                   onClick={() => setIsAddDialogOpen(true)}
@@ -565,7 +565,7 @@ export function CompaniesManagement() {
           <DialogHeader>
             <DialogTitle>Ajouter une compagnie</DialogTitle>
             <DialogDescription>
-              Ajoutez une nouvelle compagnie d'assurance qui sera disponible lors de la saisie des actes.
+              Ajoutez une nouvelle compagnie d&apos;assurance qui sera disponible lors de la saisie des actes.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

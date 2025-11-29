@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 
 interface NavItem {
   href: string;
