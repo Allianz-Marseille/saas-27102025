@@ -157,8 +157,121 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
           </div>
         ) : (
           <>
-            {/* KPIs Grid - Ligne 1 : Compteurs */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            {/* KPIs pour Santé Individuelle */}
+            {role === "COMMERCIAL_SANTE_INDIVIDUEL" ? (
+              <>
+                {/* Ligne 1 : Compteurs d'actes */}
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+                  <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30 border-emerald-200 dark:border-emerald-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Affaires Nouvelles</p>
+                          <p className="text-2xl font-bold">{kpis?.nbAffaireNouvelle || 0}</p>
+                        </div>
+                        <Sparkles className="h-8 w-8 text-emerald-600 dark:text-emerald-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 border-blue-200 dark:border-blue-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">Révisions</p>
+                          <p className="text-2xl font-bold">{kpis?.nbRevision || 0}</p>
+                        </div>
+                        <FileText className="h-8 w-8 text-blue-600 dark:text-blue-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 border-purple-200 dark:border-purple-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-1">Adhésions Salarié</p>
+                          <p className="text-2xl font-bold">{kpis?.nbAdhesionSalarie || 0}</p>
+                        </div>
+                        <Users className="h-8 w-8 text-purple-600 dark:text-purple-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/30 dark:to-orange-900/30 border-orange-200 dark:border-orange-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-orange-600 dark:text-orange-400 mb-1">Courtage → AZ</p>
+                          <p className="text-2xl font-bold">{kpis?.nbCourtToAz || 0}</p>
+                        </div>
+                        <TrendingUp className="h-8 w-8 text-orange-600 dark:text-orange-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-950/30 dark:to-cyan-900/30 border-cyan-200 dark:border-cyan-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-cyan-600 dark:text-cyan-400 mb-1">AZ → Courtage</p>
+                          <p className="text-2xl font-bold">{kpis?.nbAzToCourtage || 0}</p>
+                        </div>
+                        <TrendingUp className="h-8 w-8 text-cyan-600 dark:text-cyan-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Ligne 2 : CA */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/30 dark:to-indigo-900/30 border-indigo-200 dark:border-indigo-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="w-full">
+                          <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 mb-1">CA Brut</p>
+                          <p className="text-2xl font-bold">{formatCurrency(kpis?.caTotal || 0)}</p>
+                        </div>
+                        <DollarSign className="h-8 w-8 text-indigo-600 dark:text-indigo-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-violet-50 to-violet-100 dark:from-violet-950/30 dark:to-violet-900/30 border-violet-200 dark:border-violet-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="w-full">
+                          <p className="text-xs font-medium text-violet-600 dark:text-violet-400 mb-1">CA Pondéré</p>
+                          <p className="text-2xl font-bold">{formatCurrency(kpis?.caPondere || 0)}</p>
+                        </div>
+                        <TrendingUp className="h-8 w-8 text-violet-600 dark:text-violet-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Ligne 3 : Commissions */}
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
+                  <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950/30 dark:to-yellow-900/30 border-yellow-200 dark:border-yellow-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="w-full">
+                          <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-1">Commissions Débloquées</p>
+                          <p className="text-2xl font-bold">{formatCurrency(kpis?.commissionsAcquises || 0)}</p>
+                          <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-1">
+                            Seuil {kpis?.seuilAtteint || 1} - Taux : {kpis?.tauxCommission || 0}%
+                          </p>
+                        </div>
+                        <DollarSign className="h-8 w-8 text-yellow-600 dark:text-yellow-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* KPIs Grid - Ligne 1 : Compteurs pour CDC */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 border-blue-200 dark:border-blue-800">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -298,6 +411,8 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
                 </CardContent>
               </Card>
             </div>
+              </>
+            )}
 
             {/* Lien vers page dédiée */}
             <div className="text-center">
