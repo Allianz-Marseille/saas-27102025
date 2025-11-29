@@ -29,7 +29,7 @@ export default function CommissionsAgencePage() {
   const [createYearDialog, setCreateYearDialog] = useState(false);
   
   // État pour la métrique sélectionnée dans les KPI
-  const [selectedMetric, setSelectedMetric] = useState<'resultat' | 'totalCommissions' | 'chargesAgence' | 'commissionsIARD' | 'commissionsVie' | 'commissionsCourtage'>('resultat');
+  const [selectedMetric, setSelectedMetric] = useState<'resultat' | 'totalCommissions' | 'chargesAgence' | 'commissionsIARD' | 'commissionsVie' | 'commissionsCourtage'>('totalCommissions');
 
   // Charger les années disponibles
   const loadYears = async () => {
