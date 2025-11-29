@@ -13,7 +13,8 @@
     "init-companies": "ts-node --project tsconfig.scripts.json scripts/init-companies.ts",
     "migrate-ird-pro-commissions": "ts-node --project tsconfig.scripts.json scripts/migrate-ird-pro-commissions.ts",
     "import:kheira-nov": "ts-node --project tsconfig.scripts.json scripts/import-kheira-november.ts",
-    "import:kheira-oct": "ts-node --project tsconfig.scripts.json scripts/import-kheira-october.ts"
+    "import:kheira-oct": "ts-node --project tsconfig.scripts.json scripts/import-kheira-october.ts",
+    "import:kheira-sep": "ts-node --project tsconfig.scripts.json scripts/import-kheira-september.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
