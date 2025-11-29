@@ -1,16 +1,11 @@
-import * as admin from 'firebase-admin';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
-import serviceAccountJson from '../saas-27102025-firebase-adminsdk-fbsvc-e5024f4d7c.json';
+import { adminDb } from '../lib/firebase/admin-config';
 
 // Charger les variables d'environnement
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccountJson as admin.ServiceAccount),
-});
-
-const db = admin.firestore();
+const db = adminDb;
 
 interface ActInfo {
   id: string;
