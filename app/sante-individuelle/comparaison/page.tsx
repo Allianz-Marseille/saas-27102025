@@ -283,90 +283,6 @@ export default function ComparaisonPage() {
       </header>
 
       <div className="container mx-auto px-6 py-6 relative z-10">
-        {/* KPI Principal - Commissions Moyennes */}
-        {!isLoading && monthsData.length > 0 && (
-          <div className="mb-8 relative">
-            {/* Effet de fond lumineux */}
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 via-orange-500/20 to-yellow-500/20 blur-3xl animate-pulse-slow" />
-            
-            <Card className="border-0 shadow-2xl glass-morphism overflow-hidden relative">
-              <div className="absolute inset-0 holographic opacity-30" />
-              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-yellow-500 via-orange-500 to-yellow-500 shadow-lg shadow-yellow-500/50 animate-gradient" />
-              
-              <CardContent className="py-12 relative z-10">
-                <div className="text-center space-y-6">
-                  {/* Badge "Moyenne 6 mois" */}
-                  <div className="flex justify-center">
-                    <Badge className="px-6 py-2 text-sm font-black bg-gradient-to-r from-yellow-600 to-orange-600 text-white border-0 shadow-xl shadow-yellow-500/30 neon-border">
-                      <BarChart3 className="h-4 w-4 mr-2" />
-                      MOYENNE SUR 6 MOIS
-                    </Badge>
-                  </div>
-
-                  {/* Icône centrale */}
-                  <div className="flex justify-center">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 blur-2xl opacity-50 animate-pulse" />
-                      <div className="relative bg-gradient-to-br from-yellow-500 to-orange-600 p-6 rounded-3xl shadow-2xl shadow-yellow-500/50 neon-border card-3d">
-                        <DollarSign className="h-16 w-16 text-white" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Montant des commissions */}
-                  <div>
-                    <div className="text-7xl md:text-8xl font-black bg-gradient-to-r from-yellow-600 via-orange-600 to-yellow-600 bg-clip-text text-transparent animate-gradient neon-text mb-2">
-                      {formatCurrency(monthsData.reduce((sum, month) => sum + month.commissionsAcquises, 0) / monthsData.length)}
-                    </div>
-                    <p className="text-xl font-bold text-muted-foreground">
-                      Commissions moyennes par mois
-                    </p>
-                  </div>
-
-                  {/* Détails */}
-                  <div className="flex justify-center gap-8 pt-6 border-t border-yellow-200/30 dark:border-yellow-800/30">
-                    <div className="text-center">
-                      <div className="text-3xl font-black text-yellow-600 dark:text-yellow-400">
-                        {formatCurrency(monthsData.reduce((sum, month) => sum + month.commissionsAcquises, 0))}
-                      </div>
-                      <p className="text-sm text-muted-foreground font-bold mt-1">Total sur 6 mois</p>
-                    </div>
-                    <div className="h-16 w-px bg-gradient-to-b from-transparent via-yellow-500 to-transparent" />
-                    <div className="text-center">
-                      <div className="text-3xl font-black text-orange-600 dark:text-orange-400">
-                        {(() => {
-                          const trend = calculateTrend('commissionsAcquises');
-                          return (
-                            <div className="flex items-center justify-center gap-2">
-                              {trend.isPositive ? (
-                                <TrendingUp className="h-8 w-8 text-green-600" />
-                              ) : (
-                                <TrendingDown className="h-8 w-8 text-red-600" />
-                              )}
-                              <span className={cn(trend.isPositive ? "text-green-600" : "text-red-600")}>
-                                {trend.value.toFixed(1)}%
-                              </span>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                      <p className="text-sm text-muted-foreground font-bold mt-1">vs mois dernier</p>
-                    </div>
-                  </div>
-
-                  {/* Info bulle explicative */}
-                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border-2 border-blue-200 dark:border-blue-800">
-                    <p className="text-sm text-blue-800 dark:text-blue-200 font-semibold">
-                      💡 <span className="font-black">Comment c'est calculé ?</span> Les commissions sont calculées selon votre CA pondéré mensuel :
-                      0-10k€ = 0% | 10-14k€ = 2% | 14-18k€ = 3% | 18-22k€ = 4% | +22k€ = 6%
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
         {/* Sélection des métriques */}
         <Card className="mb-6 border-0 shadow-2xl glass-morphism overflow-hidden relative">
           <div className="absolute inset-0 cyber-grid opacity-10" />
@@ -598,49 +514,83 @@ export default function ComparaisonPage() {
                   </ResponsiveContainer>
                 </div>
 
-                {/* Statistiques globales */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-purple-200/30 dark:border-purple-800/30">
-                  {selectedMetrics.map((metricKey) => {
-                    const metric = METRICS.find(m => m.key === metricKey)!;
-                    const total = monthsData.reduce((sum, month) => sum + month[metricKey], 0);
-                    const average = total / monthsData.length;
-                    const trend = calculateTrend(metricKey);
+                {/* Statistiques globales - Moyennes sur 6 mois */}
+                <div className="mt-8 pt-6 border-t border-purple-200/30 dark:border-purple-800/30">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-1 bg-gradient-to-b from-purple-500 to-pink-600 rounded-full neon-border" />
+                      <div>
+                        <h3 className="text-lg font-black flex items-center gap-2">
+                          <Activity className="h-5 w-5 text-purple-500" />
+                          Moyennes sur 6 mois
+                        </h3>
+                        <p className="text-sm text-muted-foreground font-semibold">
+                          Indicateurs moyens calculés sur la période
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0 shadow-lg font-black">
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      6 MOIS
+                    </Badge>
+                  </div>
 
-                    return (
-                      <div 
-                        key={metricKey}
-                        className="p-4 rounded-xl border-2 bg-linear-to-br from-slate-50/50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/50 border-slate-300/50 dark:border-slate-700/50 glass-morphism relative overflow-hidden group card-3d"
-                      >
-                        <div className="relative z-10">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className={cn("p-2 rounded-lg", metric.gradientClass)}>
-                              <div className="text-white">
-                                {metric.icon}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {selectedMetrics.map((metricKey) => {
+                      const metric = METRICS.find(m => m.key === metricKey)!;
+                      const total = monthsData.reduce((sum, month) => sum + month[metricKey], 0);
+                      const average = total / monthsData.length;
+                      const trend = calculateTrend(metricKey);
+
+                      return (
+                        <div 
+                          key={metricKey}
+                          className="p-4 rounded-xl border-2 bg-linear-to-br from-slate-50/50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/50 border-slate-300/50 dark:border-slate-700/50 glass-morphism relative overflow-hidden group card-3d"
+                        >
+                          <div className="relative z-10">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className={cn("p-2 rounded-lg", metric.gradientClass)}>
+                                <div className="text-white">
+                                  {metric.icon}
+                                </div>
+                              </div>
+                              <div className="flex-1">
+                                <span className="text-xs font-bold text-muted-foreground block">{metric.label}</span>
+                                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-black">MOYENNE</span>
                               </div>
                             </div>
-                            <span className="text-xs font-bold text-muted-foreground">{metric.label}</span>
-                          </div>
-                          <div className={cn("text-2xl font-black mb-1", metric.color)}>
-                            {metric.format(average)}
-                          </div>
-                          <div className="flex items-center gap-1 text-xs">
-                            {trend.isPositive ? (
-                              <TrendingUp className="h-3 w-3 text-green-600" />
-                            ) : (
-                              <TrendingDown className="h-3 w-3 text-red-600" />
-                            )}
-                            <span className={cn(
-                              "font-bold",
-                              trend.isPositive ? "text-green-600" : "text-red-600"
-                            )}>
-                              {trend.isPositive ? '+' : '-'}{trend.value.toFixed(1)}%
-                            </span>
-                            <span className="text-muted-foreground ml-1">vs mois dernier</span>
+                            <div className={cn("text-2xl font-black mb-1", metric.color)}>
+                              {metric.format(average)}
+                            </div>
+                            <div className="flex items-center gap-1 text-xs">
+                              {trend.isPositive ? (
+                                <TrendingUp className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <TrendingDown className="h-3 w-3 text-red-600" />
+                              )}
+                              <span className={cn(
+                                "font-bold",
+                                trend.isPositive ? "text-green-600" : "text-red-600"
+                              )}>
+                                {trend.isPositive ? '+' : '-'}{trend.value.toFixed(1)}%
+                              </span>
+                              <span className="text-muted-foreground ml-1">vs mois dernier</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+
+                  {/* Info explicative grille de rémunération (uniquement si commissions sélectionnées) */}
+                  {selectedMetrics.includes('commissionsAcquises') && (
+                    <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border-2 border-blue-200 dark:border-blue-800">
+                      <p className="text-sm text-blue-800 dark:text-blue-200 font-semibold">
+                        💡 <span className="font-black">Grille de rémunération:</span> Les commissions sont calculées selon votre CA pondéré mensuel :
+                        <span className="font-black"> 0-10k€ = 0% | 10-14k€ = 2% | 14-18k€ = 3% | 18-22k€ = 4% | +22k€ = 6%</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
