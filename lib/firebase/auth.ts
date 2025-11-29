@@ -5,6 +5,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc, getDocs, collection } from "firebase/firestore";
 import { auth, db } from "./config";
+import { isEmailDomainAllowed, getInvalidDomainErrorMessage } from "@/lib/config/auth-config";
 
 export interface UserRole {
   ADMINISTRATEUR: "ADMINISTRATEUR";
@@ -24,14 +25,11 @@ export interface UserData {
   createdAt: Date;
 }
 
-const ALLOWED_DOMAINS = ["@allianz-nogaro.fr"];
-
 export const login = async (email: string, password: string) => {
   if (!auth) throw new Error('Firebase not initialized');
   
-  const isValidDomain = ALLOWED_DOMAINS.some(domain => email.endsWith(domain));
-  if (!isValidDomain) {
-    throw new Error(`Email doit se terminer par ${ALLOWED_DOMAINS.join(' ou ')}`);
+  if (!isEmailDomainAllowed(email)) {
+    throw new Error(getInvalidDomainErrorMessage());
   }
 
   const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -45,9 +43,8 @@ export const register = async (
 ) => {
   if (!auth || !db) throw new Error('Firebase not initialized');
   
-  const isValidDomain = ALLOWED_DOMAINS.some(domain => email.endsWith(domain));
-  if (!isValidDomain) {
-    throw new Error(`Email doit se terminer par ${ALLOWED_DOMAINS.join(' ou ')}`);
+  if (!isEmailDomainAllowed(email)) {
+    throw new Error(getInvalidDomainErrorMessage());
   }
 
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
