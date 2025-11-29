@@ -517,18 +517,27 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
 
           {/* Onglets de navigation */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-gradient-to-r from-blue-50 via-purple-50/50 to-indigo-50 dark:from-blue-950/40 dark:via-purple-950/20 dark:to-indigo-950/40 p-1 h-12">
-              <TabsTrigger value="tableau" className="flex items-center gap-2">
-                <Table className="h-4 w-4" />
-                Tableau
+            <TabsList className="grid w-full grid-cols-3 bg-muted/30 p-2 h-auto gap-2 rounded-xl border-2 border-blue-200/50 dark:border-blue-800/50">
+              <TabsTrigger 
+                value="tableau" 
+                className="flex items-center justify-center gap-2 h-14 text-base font-bold rounded-lg transition-all data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 hover:bg-muted/70"
+              >
+                <Table className="h-5 w-5" />
+                <span>Tableau</span>
               </TabsTrigger>
-              <TabsTrigger value="classement" className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                Classement
+              <TabsTrigger 
+                value="classement" 
+                className="flex items-center justify-center gap-2 h-14 text-base font-bold rounded-lg transition-all data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 hover:bg-muted/70"
+              >
+                <TrendingUp className="h-5 w-5" />
+                <span>Classement</span>
               </TabsTrigger>
-              <TabsTrigger value="classement-produit" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Classement / Produit
+              <TabsTrigger 
+                value="classement-produit" 
+                className="flex items-center justify-center gap-2 h-14 text-base font-bold rounded-lg transition-all data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 hover:bg-muted/70"
+              >
+                <BarChart3 className="h-5 w-5" />
+                <span>Classement / Produit</span>
               </TabsTrigger>
             </TabsList>
 
