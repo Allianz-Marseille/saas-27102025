@@ -90,8 +90,8 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
       } else {
         // Autres rôles (en construction)
         setKPIs({
-          caTotal: 0,
-          commissionsAcquises: 0,
+          caMensuel: 0,
+          commissionsPotentielles: 0,
           nbActes: 0,
           nbUsers: usersData.length,
         });
@@ -188,7 +188,7 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-1">CA Total</p>
-                      <p className="text-2xl font-bold">{formatCurrency(kpis?.caTotal || kpis?.caPondere || 0)}</p>
+                      <p className="text-2xl font-bold">{formatCurrency(kpis?.caMensuel || kpis?.caTotal || kpis?.caPondere || 0)}</p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-purple-600 dark:text-purple-400 opacity-50" />
                   </div>
@@ -200,7 +200,7 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-1">Commissions</p>
-                      <p className="text-2xl font-bold">{formatCurrency(kpis?.commissionsAcquises || 0)}</p>
+                      <p className="text-2xl font-bold">{formatCurrency(kpis?.commissionsPotentielles || kpis?.commissionsAcquises || 0)}</p>
                     </div>
                     <DollarSign className="h-8 w-8 text-yellow-600 dark:text-yellow-400 opacity-50" />
                   </div>
