@@ -158,6 +158,83 @@ export default function CommissionsAgencePage() {
 
   const currentConfig = metricConfig[selectedMetric];
 
+  // Composant de tooltip personnalisé pour le graphique
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload || payload.length === 0) return null;
+
+    // Trier les données par année décroissante (plus récente en haut)
+    const sortedPayload = [...payload].sort((a, b) => {
+      const yearA = parseInt(a.name);
+      const yearB = parseInt(b.name);
+      return yearB - yearA;
+    });
+
+    return (
+      <div className="bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-xl">
+        <p className="font-black text-sm mb-2 text-gray-900 dark:text-gray-100">{label}</p>
+        <div className="space-y-1.5">
+          {sortedPayload.map((entry: any, index: number) => {
+            const value = entry.value;
+            const year = entry.name;
+            const color = entry.stroke;
+
+            // Calculer le pourcentage par rapport à l'année précédente
+            let percentChange = null;
+            if (index < sortedPayload.length - 1) {
+              const previousValue = sortedPayload[index + 1].value;
+              if (previousValue && previousValue !== 0 && value !== null) {
+                percentChange = ((value - previousValue) / previousValue) * 100;
+              }
+            }
+
+            return (
+              <div key={year} className="space-y-0.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: color }}
+                    />
+                    <span className="font-bold text-xs text-gray-700 dark:text-gray-300">
+                      {year}
+                    </span>
+                  </div>
+                  <span className="font-black text-sm" style={{ color }}>
+                    {value !== null ? formatCurrencyInteger(value) : '—'}
+                  </span>
+                </div>
+                {percentChange !== null && (
+                  <div className="pl-5 text-xs font-semibold flex items-center gap-1">
+                    {percentChange > 0 ? (
+                      <>
+                        <TrendingUp className="h-3 w-3 text-green-600" />
+                        <span className="text-green-600">
+                          +{percentChange.toFixed(1)}%
+                        </span>
+                      </>
+                    ) : percentChange < 0 ? (
+                      <>
+                        <TrendingDown className="h-3 w-3 text-red-600" />
+                        <span className="text-red-600">
+                          {percentChange.toFixed(1)}%
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-gray-500">0%</span>
+                    )}
+                    <span className="text-gray-500 text-xs">
+                      vs {sortedPayload[index + 1].name}
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   // Préparer les données pour le graphique de comparaison
   const comparisonData = Array.from({ length: 12 }, (_, i) => {
     const month = i + 1;
@@ -524,15 +601,7 @@ export default function CommissionsAgencePage() {
                       style={{ fontSize: '12px', fontWeight: 'bold' }}
                       tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
                     />
-                    <Tooltip 
-                      formatter={(value: any) => formatCurrencyInteger(value)}
-                      contentStyle={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '8px',
-                        fontWeight: 'bold'
-                      }}
-                    />
+                    <Tooltip content={<CustomTooltip />} />
                     <Legend 
                       wrapperStyle={{ fontWeight: 'bold', paddingTop: '20px' }}
                     />
