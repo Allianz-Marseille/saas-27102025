@@ -15,6 +15,8 @@ import { CalendarIcon, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { updateHealthAct, getHealthActKindLabel } from "@/lib/firebase/health-acts";
 import { HealthAct } from "@/types";
+import { db } from "@/lib/firebase/config";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { getCompanies, type Company } from "@/lib/firebase/companies";
 import { Timestamp } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
@@ -132,7 +134,7 @@ export function EditHealthActDialog({ open, onOpenChange, act, onSuccess }: Edit
       return;
     }
 
-    if (!kind || !compagnie || !dateEffet || caAnnuel === undefined) {
+    if (!numeroContrat || !kind || !compagnie || !dateEffet || caAnnuel === undefined) {
       toast.error("Veuillez remplir tous les champs obligatoires");
       return;
     }
@@ -142,10 +144,45 @@ export function EditHealthActDialog({ open, onOpenChange, act, onSuccess }: Edit
       return;
     }
 
+    // Vérification de l'unicité du numéro de contrat pour les Affaires Nouvelles
+    // UNIQUEMENT si le numéro a changé
+    const trimmedContractNumber = numeroContrat.trim();
+    const originalContractNumber = act.numeroContrat?.trim();
+    
+    if (kind === "AFFAIRE_NOUVELLE" && trimmedContractNumber !== originalContractNumber) {
+      setIsLoading(true);
+      try {
+        // Vérifier si le nouveau numéro existe déjà
+        if (!db) {
+          toast.error("Erreur de connexion à la base de données");
+          setIsLoading(false);
+          return;
+        }
+
+        const q = query(collection(db, "health_acts"), where("numeroContrat", "==", trimmedContractNumber));
+        const snapshot = await getDocs(q);
+        
+        // Vérifier si le numéro existe déjà (en excluant l'acte actuel)
+        const existsInOtherAct = snapshot.docs.some(doc => doc.id !== act.id);
+        
+        if (existsInOtherAct) {
+          toast.error("Ce numéro de contrat est déjà utilisé par un autre acte");
+          setIsLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error("Erreur lors de la vérification du numéro de contrat:", error);
+        toast.error("Erreur lors de la vérification du numéro de contrat");
+        setIsLoading(false);
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
       const updates: Partial<HealthAct> = {
         clientNom,
+        numeroContrat: trimmedContractNumber,
         kind: kind as HealthAct["kind"],
         compagnie,
         dateEffet,
@@ -194,19 +231,20 @@ export function EditHealthActDialog({ open, onOpenChange, act, onSuccess }: Edit
             />
           </div>
 
-          {/* Numéro de contrat (lecture seule) */}
+          {/* Numéro de contrat */}
           <div className="grid gap-2">
-            <Label htmlFor="numeroContrat">Numéro de contrat</Label>
+            <Label htmlFor="numeroContrat">Numéro de contrat *</Label>
             <Input
               id="numeroContrat"
               value={numeroContrat}
-              disabled
-              className="bg-muted"
-              title="Le numéro de contrat ne peut pas être modifié"
+              onChange={(e) => setNumeroContrat(e.target.value)}
+              placeholder="Ex: 123456789"
             />
-            <p className="text-xs text-muted-foreground">
-              Le numéro de contrat ne peut pas être modifié
-            </p>
+            {kind === "AFFAIRE_NOUVELLE" && (
+              <p className="text-xs text-muted-foreground">
+                Pour les Affaires Nouvelles, le numéro doit être unique
+              </p>
+            )}
           </div>
 
           {/* Type d'acte */}
