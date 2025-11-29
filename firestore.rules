@@ -96,6 +96,15 @@ service cloud.firestore {
       allow update: if isAdmin(); // Seuls les admins peuvent mettre à jour (via script)
       allow delete: if isAdmin(); // Seuls les admins peuvent supprimer
     }
+    
+    // Agency commissions collection
+    // Données sensibles de l'agence - accès réservé aux administrateurs uniquement
+    match /agency_commissions/{commissionId} {
+      allow read: if isAdmin(); // Seuls les admins peuvent lire
+      allow create: if isAdmin(); // Seuls les admins peuvent créer
+      allow update: if isAdmin(); // Seuls les admins peuvent mettre à jour
+      allow delete: if isAdmin(); // Seuls les admins peuvent supprimer
+    }
   }
 }
 

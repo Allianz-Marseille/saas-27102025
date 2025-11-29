@@ -85,3 +85,23 @@ export interface HealthKPI {
   prochainSeuil: number;
 }
 
+// Types pour Commissions Agence
+export interface AgencyCommission {
+  id: string;
+  year: number;
+  month: number; // 1-12
+  commissionsIARD: number;
+  commissionsVie: number;
+  commissionsCourtage: number;
+  profitsExceptionnels: number;
+  totalCommissions: number; // Calculé: IARD + Vie + Courtage + Profits
+  chargesAgence: number;
+  resultat: number; // Calculé: Total - Charges
+  prelevementsJulien: number;
+  prelevementsJeanMichel: number;
+  createdAt: Date | Timestamp;
+  updatedAt: Date | Timestamp;
+  createdBy: string;
+  lastUpdatedBy: string;
+}
+
