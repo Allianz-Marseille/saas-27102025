@@ -65,8 +65,15 @@
 
 ### Autres Informations
 
-- **Charges agence**: Charges opérationnelles de l'agence
+- **Charges agence**: Charges opérationnelles de l'agence (salaires, loyer, frais, etc.)
 - **Prélèvements**: Rémunération des dirigeants (Julien et Jean-Michel)
+
+### ⚠️ Important
+
+Les **prélèvements** (Julien et Jean-Michel) sont des informations de suivi uniquement. 
+- **Ils ne sont PAS inclus dans les "Charges agence"**
+- Ce sont des retraits effectués sur le "Résultat" déjà calculé
+- Ils représentent la rémunération des dirigeants prélevée sur les bénéfices
 
 ---
 
