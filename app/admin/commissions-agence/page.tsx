@@ -605,6 +605,9 @@ export default function CommissionsAgencePage() {
                     <th className="px-4 py-3 text-right font-black text-sm bg-muted">
                       {isIncomplete ? "Extrapolé" : "Total"}
                     </th>
+                    <th className="px-4 py-3 text-right font-black text-sm bg-muted">
+                      Moyenne
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -613,6 +616,9 @@ export default function CommissionsAgencePage() {
                     const extrapolatedValue = isIncomplete && !row.isInfo
                       ? Math.round((rowTotal / monthsWithData) * 12)
                       : rowTotal;
+                    
+                    // Calcul de la moyenne mensuelle
+                    const averageValue = Math.round((isIncomplete && !row.isInfo ? extrapolatedValue : rowTotal) / 12);
 
                     return (
                       <tr
@@ -657,6 +663,17 @@ export default function CommissionsAgencePage() {
                           )}
                         >
                           {formatThousands(isIncomplete && !row.isInfo ? extrapolatedValue : rowTotal)}
+                        </td>
+                        <td
+                          className={cn(
+                            "px-4 py-3 text-right font-mono font-bold text-base border-l bg-muted/30",
+                            row.isTotal && "text-yellow-600 dark:text-yellow-500",
+                            row.isResult && averageValue >= 0 
+                              ? "text-green-600 dark:text-green-500" 
+                              : row.isResult && "text-red-600 dark:text-red-500"
+                          )}
+                        >
+                          {formatThousands(averageValue)}
                         </td>
                       </tr>
                     );
