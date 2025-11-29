@@ -558,7 +558,6 @@ export function CompaniesManagement() {
           </div>
         )}
       </div>
-      </TooltipProvider>
 
       {/* Dialog d'ajout */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -660,6 +659,6 @@ export function CompaniesManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </TooltipProvider>
   );
 }
