@@ -3,11 +3,12 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, FileText as FileTextIcon, Lock, Unlock, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Filter, X, Shield, Heart, Stethoscope, PiggyBank, Car, DollarSign, FileText, ClipboardCheck, Building2, Scale, Target, Coins } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText as FileTextIcon, Lock, Unlock, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Filter, X, Shield, Heart, Stethoscope, PiggyBank, Car, DollarSign, FileText, ClipboardCheck, Building2, Scale, Target, Coins, Table, TrendingUp, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { KPICard } from "@/components/dashboard/kpi-card";
 import { calculateKPI } from "@/lib/utils/kpi";
 import { formatCurrency, cn } from "@/lib/utils";
@@ -147,6 +148,7 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
     type: null,
     value: null,
   });
+  const [activeTab, setActiveTab] = useState<string>("tableau");
 
   // Charger les commerciaux
   useEffect(() => {
@@ -513,7 +515,25 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
           {/* Séparateur */}
           <div className="border-t border-blue-200 dark:border-blue-800" />
 
-          {/* Tableau des actes */}
+          {/* Onglets de navigation */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 bg-gradient-to-r from-blue-50 via-purple-50/50 to-indigo-50 dark:from-blue-950/40 dark:via-purple-950/20 dark:to-indigo-950/40 p-1 h-12">
+              <TabsTrigger value="tableau" className="flex items-center gap-2">
+                <Table className="h-4 w-4" />
+                Tableau
+              </TabsTrigger>
+              <TabsTrigger value="classement" className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Classement
+              </TabsTrigger>
+              <TabsTrigger value="classement-produit" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Classement / Produit
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Contenu : Tableau des actes */}
+            <TabsContent value="tableau" className="mt-6">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -903,14 +923,20 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
               </TooltipProvider>
             )}
           </div>
+            </TabsContent>
+
+            {/* Contenu : Classement des commerciaux */}
+            <TabsContent value="classement" className="mt-6">
+              <CommercialsRanking monthKey={selectedMonth} />
+            </TabsContent>
+
+            {/* Contenu : Classement par type de contrat */}
+            <TabsContent value="classement-produit" className="mt-6">
+              <ContractTypeRanking monthKey={selectedMonth} />
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
-
-      {/* Section 2 : Classement des commerciaux */}
-      <CommercialsRanking monthKey={selectedMonth} />
-      
-      {/* Section 3 : Classement par type de contrat */}
-      <ContractTypeRanking monthKey={selectedMonth} />
 
       <Dialog
         open={noteDialog.open}
