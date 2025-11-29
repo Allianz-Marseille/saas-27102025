@@ -1,15 +1,13 @@
 import * as admin from 'firebase-admin';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import serviceAccountJson from '../saas-27102025-firebase-adminsdk-fbsvc-e5024f4d7c.json';
 
 // Charger les variables d'environnement
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
-// Initialiser Firebase Admin
-const serviceAccount = require('../saas-27102025-firebase-adminsdk-fbsvc-e5024f4d7c.json');
-
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: admin.credential.cert(serviceAccountJson as admin.ServiceAccount),
 });
 
 const db = admin.firestore();
@@ -58,7 +56,7 @@ async function checkDuplicateContracts() {
     });
     
     // Trouver les doublons
-    const duplicates = Array.from(contractMap.entries()).filter(([_, acts]) => acts.length > 1);
+    const duplicates = Array.from(contractMap.entries()).filter(([, acts]) => acts.length > 1);
     
     // Afficher les résultats
     if (duplicates.length === 0) {
