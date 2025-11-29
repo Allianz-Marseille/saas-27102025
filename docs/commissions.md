@@ -48,15 +48,24 @@
 
 ---
 
-## Notes
+## Notes et Définitions
+
+### Composantes des Commissions
 
 - **Commissions IARD**: Commissions sur les contrats IARD (Incendie, Accidents et Risques Divers)
 - **Commissions Vie**: Commissions sur les contrats d'assurance vie
 - **Commissions Courtage**: Commissions de courtage
 - **Profits exceptionnels**: Revenus exceptionnels hors commissions récurrentes
-- **Total commissions**: Somme de toutes les commissions
+
+### Champs Calculés
+
+- **Total commissions** = `Commissions IARD` + `Commissions Vie` + `Commissions Courtage` + `Profits exceptionnels`
+
+- **Résultat** = `Total commissions` - `Charges agence`
+
+### Autres Informations
+
 - **Charges agence**: Charges opérationnelles de l'agence
-- **Résultat**: Total commissions - Charges agence
 - **Prélèvements**: Rémunération des dirigeants (Julien et Jean-Michel)
 
 ---
