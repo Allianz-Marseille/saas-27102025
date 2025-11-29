@@ -6,6 +6,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "./config";
 import { UserData } from "./auth";
 import { logUserLogin } from "./logs";
+import { retryAsync, isFirebaseRetryableError } from "@/lib/utils/retry";
 
 export interface AuthState {
   user: FirebaseUser | null;
@@ -57,15 +58,39 @@ export function useAuth(): AuthState {
               createdAt,
             });
 
-            // Logger la connexion (une seule fois par session)
+            // Logger la connexion (une seule fois par session) avec retry automatique
             if (!hasLoggedLogin.current && data.email) {
               hasLoggedLogin.current = true;
-              try {
-                await logUserLogin(firebaseUser.uid, data.email);
-                console.log("✅ Log de connexion enregistré pour:", data.email);
-              } catch (logError) {
-                console.error("❌ Erreur lors de l'enregistrement du log de connexion:", logError);
-              }
+              
+              // Utiliser retryAsync pour gérer les échecs réseau temporaires
+              await retryAsync(
+                () => logUserLogin(firebaseUser.uid, data.email),
+                {
+                  maxAttempts: 3,
+                  initialDelay: 1000,
+                  backoffFactor: 2,
+                  shouldRetry: isFirebaseRetryableError,
+                  onRetry: (attempt, error) => {
+                    console.warn(
+                      `⚠️ Échec de l'enregistrement du log (tentative ${attempt}/3):`,
+                      error instanceof Error ? error.message : error
+                    );
+                  },
+                }
+              )
+                .then(() => {
+                  console.log("✅ Log de connexion enregistré pour:", data.email);
+                })
+                .catch((logError) => {
+                  // Après 3 tentatives, l'erreur est définitive
+                  console.error(
+                    "❌ Échec définitif de l'enregistrement du log de connexion après 3 tentatives:",
+                    logError instanceof Error ? logError.message : logError
+                  );
+                  console.error(
+                    "   Ceci peut indiquer un problème de connexion réseau ou de configuration Firestore."
+                  );
+                });
             }
           } else {
             setUserData(null);

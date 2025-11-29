@@ -207,7 +207,13 @@ export const contractNumberExists = async (numeroContrat: string): Promise<boole
 
 /**
  * Récupère les KPI de tous les commerciaux pour un mois donné
- * Utilisé pour les leaderboards
+ * 
+ * @deprecated Utiliser la collection leaderboard via lib/firebase/leaderboard.ts à la place.
+ * Cette fonction est conservée pour rétrocompatibilité mais sera supprimée dans une future version.
+ * 
+ * Migration recommandée:
+ * - Pour les classements: utiliser getProcessLeaderboard() ou getLeaderboard()
+ * - Exécuter scripts/generate-leaderboard.ts pour générer les données agrégées
  */
 export async function getAllCommercialsKPI(monthKey: string): Promise<{
   userId: string;

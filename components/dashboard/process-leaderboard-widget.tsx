@@ -7,7 +7,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { KPI } from "@/types";
-import { getAllCommercialsKPI } from "@/lib/firebase/acts";
+import { getProcessLeaderboard } from "@/lib/firebase/leaderboard";
 import { format } from "date-fns";
 
 interface ProcessLeaderboardWidgetProps {
@@ -45,25 +45,27 @@ export function ProcessLeaderboardWidget({ currentUserEmail, kpi }: ProcessLeade
     const loadLeaderboard = async () => {
       try {
         const currentMonthKey = format(new Date(), "yyyy-MM");
-        const commercialsKPI = await getAllCommercialsKPI(currentMonthKey);
+        
+        // Utiliser la collection leaderboard au lieu de getAllCommercialsKPI
+        const leaderboardEntries = await getProcessLeaderboard(currentMonthKey);
         
         // Calculer la moyenne par jour pour chaque commercial
-        const withAvgPerDay = commercialsKPI.map(user => ({
-          name: user.firstName,
-          process: user.process,
-          avatar: user.firstName[0].toUpperCase(),
-          isCurrentUser: user.email === currentUserEmail,
-          avgPerDay: workingDays > 0 ? (user.process / workingDays) : 0,
+        const withAvgPerDay = leaderboardEntries.map(entry => ({
+          name: entry.firstName,
+          process: entry.process,
+          avatar: entry.firstName[0].toUpperCase(),
+          isCurrentUser: entry.email === currentUserEmail,
+          avgPerDay: workingDays > 0 ? (entry.process / workingDays) : 0,
           trend: 0 // Peut être calculé en comparant avec le mois précédent
         }));
 
         // Trier par nombre de process décroissants et attribuer les rangs
         const sorted = withAvgPerDay
-    .sort((a, b) => b.process - a.process)
-    .map((user, index) => ({
-      ...user,
-      rank: index + 1
-    }));
+          .sort((a, b) => b.process - a.process)
+          .map((user, index) => ({
+            ...user,
+            rank: index + 1
+          }));
 
         setLeaderboardData(sorted);
       } catch (error) {

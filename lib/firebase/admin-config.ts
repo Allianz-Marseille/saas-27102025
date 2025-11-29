@@ -1,0 +1,96 @@
+/**
+ * Configuration Firebase Admin SDK pour les opérations côté serveur
+ * 
+ * Ce module initialise Firebase Admin SDK pour une utilisation dans :
+ * - Server Actions
+ * - API Routes
+ * - Scripts Node.js
+ * 
+ * NE PAS UTILISER côté client ! Pour le client, utilisez lib/firebase/config.ts
+ * 
+ * Usage:
+ * ```typescript
+ * import { adminAuth, adminDb } from '@/lib/firebase/admin-config';
+ * 
+ * // Dans une Server Action ou API Route
+ * const users = await adminAuth.listUsers();
+ * const doc = await adminDb.collection('users').doc(userId).get();
+ * ```
+ */
+
+import admin from "firebase-admin";
+
+/**
+ * Initialise Firebase Admin SDK de manière paresseuse
+ * Utilise les variables d'environnement (Vercel) ou le fichier local (dev)
+ */
+function initializeFirebaseAdmin() {
+  if (admin.apps.length > 0) {
+    return admin.apps[0];
+  }
+
+  let serviceAccount: admin.ServiceAccount;
+
+  // Production : utiliser les variables d'environnement (Vercel)
+  if (
+    process.env.FIREBASE_PROJECT_ID &&
+    process.env.FIREBASE_PRIVATE_KEY &&
+    process.env.FIREBASE_CLIENT_EMAIL
+  ) {
+    serviceAccount = {
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    };
+  } else {
+    // Développement local : charger le fichier JSON
+    try {
+      const fs = require("fs");
+      const path = require("path");
+
+      const jsonPath = path.join(
+        process.cwd(),
+        "saas-27102025-firebase-adminsdk-fbsvc-e5024f4d7c.json"
+      );
+      const jsonData = fs.readFileSync(jsonPath, "utf8");
+      serviceAccount = JSON.parse(jsonData);
+    } catch (error) {
+      console.error("Firebase Admin credentials missing:", error);
+      throw new Error(
+        "Firebase Admin credentials are missing. Check environment variables or local JSON file."
+      );
+    }
+  }
+
+  return admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+}
+
+// Initialiser l'app
+const app = initializeFirebaseAdmin();
+
+/**
+ * Instance Firebase Auth côté serveur
+ * Utilisez ceci pour gérer les utilisateurs depuis le serveur
+ */
+export const adminAuth = admin.auth(app);
+
+/**
+ * Instance Firestore côté serveur
+ * Utilisez ceci pour accéder à Firestore depuis le serveur
+ */
+export const adminDb = admin.firestore(app);
+
+/**
+ * Instance FieldValue pour les opérations Firestore
+ */
+export const FieldValue = admin.firestore.FieldValue;
+
+/**
+ * Instance Timestamp pour les opérations Firestore
+ */
+export const Timestamp = admin.firestore.Timestamp;
+
+export default app;
+

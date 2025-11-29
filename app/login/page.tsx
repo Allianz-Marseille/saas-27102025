@@ -16,11 +16,12 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Image from "next/image";
 import { ROLES } from "@/lib/utils/roles";
+import { isEmailDomainAllowed, getInvalidDomainErrorMessage, ALLOWED_EMAIL_DOMAINS } from "@/lib/config/auth-config";
 
 const loginSchema = z.object({
   email: z.string().email("Email invalide").refine(
-    (email) => email.endsWith("@allianz-nogaro.fr"),
-    "L'email doit se terminer par @allianz-nogaro.fr"
+    (email) => isEmailDomainAllowed(email),
+    getInvalidDomainErrorMessage()
   ),
   password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
 });
@@ -115,7 +116,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="vous@allianz-nogaro.fr"
+                  placeholder={`vous${ALLOWED_EMAIL_DOMAINS[0]}`}
                   {...registerField("email")}
                   disabled={isLoading}
                 />
