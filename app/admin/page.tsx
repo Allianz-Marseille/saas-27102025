@@ -157,8 +157,8 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
           </div>
         ) : (
           <>
-            {/* KPIs Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            {/* KPIs Grid - Ligne 1 : Compteurs */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 border-blue-200 dark:border-blue-800">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -175,7 +175,7 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">Actes</p>
+                      <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">Total Actes</p>
                       <p className="text-2xl font-bold">{kpis?.nbActes || 0}</p>
                     </div>
                     <FileText className="h-8 w-8 text-green-600 dark:text-green-400 opacity-50" />
@@ -183,26 +183,117 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 border-purple-200 dark:border-purple-800">
+              <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30 border-emerald-200 dark:border-emerald-800">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-1">CA Total</p>
-                      <p className="text-2xl font-bold">{formatCurrency(kpis?.caMensuel || kpis?.caTotal || kpis?.caPondere || 0)}</p>
+                      <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Apports Nouveaux (AN)</p>
+                      <p className="text-2xl font-bold">{kpis?.nbContrats || 0}</p>
                     </div>
-                    <TrendingUp className="h-8 w-8 text-purple-600 dark:text-purple-400 opacity-50" />
+                    <Sparkles className="h-8 w-8 text-emerald-600 dark:text-emerald-400 opacity-50" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950/30 dark:to-yellow-900/30 border-yellow-200 dark:border-yellow-800">
+              <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/30 dark:to-orange-900/30 border-orange-200 dark:border-orange-800">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-1">Commissions</p>
+                      <p className="text-xs font-medium text-orange-600 dark:text-orange-400 mb-1">Process</p>
+                      <p className="text-2xl font-bold">{kpis?.nbProcess || 0}</p>
+                      <p className="text-xs text-orange-500 dark:text-orange-400 mt-0.5">M+3, Préterme Auto/IRD</p>
+                    </div>
+                    <TrendingUp className="h-8 w-8 text-orange-600 dark:text-orange-400 opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* KPIs Grid - Ligne 2 : CA et Ventilation */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 border-purple-200 dark:border-purple-800">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="w-full">
+                      <p className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-1">CA Total</p>
+                      <p className="text-2xl font-bold">{formatCurrency(kpis?.caMensuel || kpis?.caTotal || kpis?.caPondere || 0)}</p>
+                    </div>
+                    <DollarSign className="h-8 w-8 text-purple-600 dark:text-purple-400 opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/30 dark:to-indigo-900/30 border-indigo-200 dark:border-indigo-800">
+                <CardContent className="p-4">
+                  <div>
+                    <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 mb-1">CA Auto/Moto</p>
+                    <p className="text-xl font-bold">{formatCurrency(kpis?.caAuto || 0)}</p>
+                    <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-0.5">{kpis?.nbContratsAuto || 0} contrats</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-950/30 dark:to-cyan-900/30 border-cyan-200 dark:border-cyan-800">
+                <CardContent className="p-4">
+                  <div>
+                    <p className="text-xs font-medium text-cyan-600 dark:text-cyan-400 mb-1">CA Autres</p>
+                    <p className="text-xl font-bold">{formatCurrency(kpis?.caAutres || 0)}</p>
+                    <p className="text-xs text-cyan-500 dark:text-cyan-400 mt-0.5">{kpis?.nbContratsAutres || 0} contrats</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* KPIs Grid - Ligne 3 : Commissions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950/30 dark:to-yellow-900/30 border-yellow-200 dark:border-yellow-800">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="w-full">
+                      <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-1">Commissions Potentielles</p>
                       <p className="text-2xl font-bold">{formatCurrency(kpis?.commissionsPotentielles || kpis?.commissionsAcquises || 0)}</p>
+                      {role === "CDC_COMMERCIAL" && (
+                        <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-1">
+                          Seuil : 200 € minimum
+                        </p>
+                      )}
                     </div>
                     <DollarSign className="h-8 w-8 text-yellow-600 dark:text-yellow-400 opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className={`bg-gradient-to-br ${
+                kpis?.commissionValidee 
+                  ? 'from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 border-green-200 dark:border-green-800' 
+                  : 'from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30 border-red-200 dark:border-red-800'
+              }`}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="w-full">
+                      <p className={`text-xs font-medium mb-1 ${
+                        kpis?.commissionValidee 
+                          ? 'text-green-600 dark:text-green-400' 
+                          : 'text-red-600 dark:text-red-400'
+                      }`}>
+                        Commissions Réelles
+                      </p>
+                      <p className="text-2xl font-bold">{formatCurrency(kpis?.commissionsReelles || 0)}</p>
+                      {role === "CDC_COMMERCIAL" && (
+                        <p className={`text-xs mt-1 ${
+                          kpis?.commissionValidee 
+                            ? 'text-green-600 dark:text-green-500' 
+                            : 'text-red-600 dark:text-red-500'
+                        }`}>
+                          {kpis?.commissionValidee ? '✓ Objectifs validés' : '✗ Objectifs non validés'}
+                        </p>
+                      )}
+                    </div>
+                    {kpis?.commissionValidee ? (
+                      <Sparkles className="h-8 w-8 text-green-600 dark:text-green-400 opacity-50" />
+                    ) : (
+                      <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400 opacity-50" />
+                    )}
                   </div>
                 </CardContent>
               </Card>
