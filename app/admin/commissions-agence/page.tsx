@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Coins, Plus, TrendingUp, TrendingDown, Trophy, AlertTriangle, Shield, Gem, Handshake, Star, DollarSign, Package, CheckCircle, User, Sparkles } from "lucide-react";
+import { Coins, Plus, TrendingUp, TrendingDown, Trophy, AlertTriangle, Shield, Gem, Handshake, Star, DollarSign, Package, CheckCircle, User, Sparkles, LineChart as LineChartIcon } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { getAvailableYears, getYearCommissions } from "@/lib/firebase/agency-commissions";
 import { AgencyCommission } from "@/types";
 import { formatCurrencyInteger, formatThousands, getMonthShortName, extrapolateYear } from "@/lib/utils/commission-calculator";
@@ -30,6 +31,11 @@ export default function CommissionsAgencePage() {
   
   // État pour la métrique sélectionnée dans les KPI
   const [selectedMetric, setSelectedMetric] = useState<'resultat' | 'totalCommissions' | 'chargesAgence' | 'commissionsIARD' | 'commissionsVie' | 'commissionsCourtage'>('totalCommissions');
+  
+  // États pour la comparaison multi-années
+  const [selectedYearsForComparison, setSelectedYearsForComparison] = useState<number[]>([]);
+  const [comparisonMetric, setComparisonMetric] = useState<'resultat' | 'totalCommissions' | 'chargesAgence' | 'commissionsIARD' | 'commissionsVie' | 'commissionsCourtage'>('totalCommissions');
+  const [allYearsData, setAllYearsData] = useState<Record<number, AgencyCommission[]>>({});
 
   // Charger les années disponibles
   const loadYears = async () => {
@@ -40,7 +46,19 @@ export default function CommissionsAgencePage() {
       // Par défaut: année la plus récente
       const latestYear = Math.max(...years);
       setSelectedYear(latestYear);
+      
+      // Sélectionner par défaut les 2 dernières années pour la comparaison
+      const defaultYears = years.slice(0, Math.min(2, years.length));
+      setSelectedYearsForComparison(defaultYears);
     }
+    
+    // Charger toutes les données des années pour la comparaison
+    const allData: Record<number, AgencyCommission[]> = {};
+    for (const year of years) {
+      const data = await getYearCommissions(year);
+      allData[year] = data;
+    }
+    setAllYearsData(allData);
   };
 
   // Charger les données de l'année sélectionnée
@@ -139,6 +157,42 @@ export default function CommissionsAgencePage() {
   };
 
   const currentConfig = metricConfig[selectedMetric];
+
+  // Préparer les données pour le graphique de comparaison
+  const comparisonData = Array.from({ length: 12 }, (_, i) => {
+    const month = i + 1;
+    const dataPoint: any = {
+      month: getMonthShortName(month),
+      monthNumber: month,
+    };
+
+    selectedYearsForComparison.forEach((year) => {
+      const yearData = allYearsData[year] || [];
+      const monthData = yearData.find((d) => d.month === month);
+      
+      if (monthData) {
+        dataPoint[`year${year}`] = monthData[comparisonMetric];
+      } else {
+        dataPoint[`year${year}`] = null;
+      }
+    });
+
+    return dataPoint;
+  });
+
+  // Couleurs pour les courbes (4 couleurs différentes)
+  const yearColors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b']; // blue, purple, green, orange
+
+  const toggleYearSelection = (year: number) => {
+    if (selectedYearsForComparison.includes(year)) {
+      setSelectedYearsForComparison(selectedYearsForComparison.filter((y) => y !== year));
+    } else {
+      // Limiter à 4 années maximum pour la lisibilité
+      if (selectedYearsForComparison.length < 4) {
+        setSelectedYearsForComparison([...selectedYearsForComparison, year].sort((a, b) => b - a));
+      }
+    }
+  };
 
   const rows = [
     { icon: Shield, label: "🛡️ IARD", color: "text-blue-600", bgColor: "bg-blue-50 dark:bg-blue-950/30", getValue: (m: AgencyCommission) => m.commissionsIARD },
@@ -307,8 +361,8 @@ export default function CommissionsAgencePage() {
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-orange-600" />
                   Pire Mois
-                </CardTitle>
-              </CardHeader>
+          </CardTitle>
+        </CardHeader>
               <CardContent>
                 {worstMonth ? (
                   <>
@@ -345,6 +399,171 @@ export default function CommissionsAgencePage() {
         </div>
       )}
 
+      {/* Section de comparaison multi-années */}
+      {availableYears.length > 1 && (
+        <Card className="border-2 shadow-2xl overflow-hidden bg-gradient-to-br from-purple-50/50 via-blue-50/50 to-cyan-50/50 dark:from-purple-950/20 dark:via-blue-950/20 dark:to-cyan-950/20">
+          <CardHeader className="border-b-2 bg-gradient-to-r from-purple-100/80 to-blue-100/80 dark:from-purple-950/40 dark:to-blue-950/40">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 font-black text-xl">
+                <LineChartIcon className="h-6 w-6 text-purple-600" />
+                Évolution Annuelle
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-6">
+            {/* Sélecteurs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Sélection des années */}
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-muted-foreground">
+                  Sélectionner les années à comparer (max 4):
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {availableYears.map((year, index) => {
+                    const isSelected = selectedYearsForComparison.includes(year);
+                    const colorClass = yearColors[selectedYearsForComparison.indexOf(year)] || yearColors[0];
+                    
+                    return (
+                      <Button
+                        key={year}
+                        variant={isSelected ? "default" : "outline"}
+                        onClick={() => toggleYearSelection(year)}
+                        disabled={!isSelected && selectedYearsForComparison.length >= 4}
+                        className={cn(
+                          "font-bold transition-all",
+                          isSelected && "shadow-lg scale-105"
+                        )}
+                        style={isSelected ? { backgroundColor: colorClass, borderColor: colorClass } : undefined}
+                      >
+                        {year}
+                        {year === new Date().getFullYear() && (
+                          <Badge variant="secondary" className="ml-2 text-xs bg-white/20">
+                            Actuelle
+                          </Badge>
+                        )}
+                      </Button>
+                    );
+                  })}
+                </div>
+                {selectedYearsForComparison.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic">
+                    Sélectionnez au moins une année pour afficher le graphique
+                  </p>
+                )}
+                {selectedYearsForComparison.length >= 4 && (
+                  <p className="text-xs text-orange-600 font-semibold">
+                    Maximum 4 années atteint
+                  </p>
+                )}
+              </div>
+
+              {/* Sélection de la métrique */}
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-muted-foreground">
+                  Métrique à comparer:
+                </label>
+                <Select value={comparisonMetric} onValueChange={(v: any) => setComparisonMetric(v)}>
+                  <SelectTrigger className="w-full font-bold border-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="totalCommissions" className="font-bold">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-yellow-600" />
+                        💰 Total Commissions
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="resultat" className="font-bold">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        ✅ Résultat
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="chargesAgence" className="font-bold">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-red-600" />
+                        📦 Charges Agence
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="commissionsIARD" className="font-bold">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-blue-600" />
+                        🛡️ Commissions IARD
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="commissionsVie" className="font-bold">
+                      <div className="flex items-center gap-2">
+                        <Gem className="h-4 w-4 text-purple-600" />
+                        💎 Commissions Vie
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="commissionsCourtage" className="font-bold">
+                      <div className="flex items-center gap-2">
+                        <Handshake className="h-4 w-4 text-cyan-600" />
+                        🤝 Commissions Courtage
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Graphique */}
+            {selectedYearsForComparison.length > 0 ? (
+              <div className="p-6 bg-white dark:bg-gray-950 rounded-xl border-2 shadow-inner">
+                <ResponsiveContainer width="100%" height={400}>
+                  <LineChart data={comparisonData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="month" 
+                      stroke="#6b7280"
+                      style={{ fontSize: '12px', fontWeight: 'bold' }}
+                    />
+                    <YAxis 
+                      stroke="#6b7280"
+                      style={{ fontSize: '12px', fontWeight: 'bold' }}
+                      tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip 
+                      formatter={(value: any) => formatCurrencyInteger(value)}
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontWeight: 'bold'
+                      }}
+                    />
+                    <Legend 
+                      wrapperStyle={{ fontWeight: 'bold', paddingTop: '20px' }}
+                    />
+                    {selectedYearsForComparison.map((year, index) => (
+                      <Line
+                        key={year}
+                        type="monotone"
+                        dataKey={`year${year}`}
+                        name={year.toString()}
+                        stroke={yearColors[index]}
+                        strokeWidth={3}
+                        dot={{ r: 5, fill: yearColors[index] }}
+                        activeDot={{ r: 7 }}
+                        connectNulls={false}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="p-12 text-center bg-white dark:bg-gray-950 rounded-xl border-2 border-dashed">
+                <LineChartIcon className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                <p className="text-muted-foreground font-semibold">
+                  Sélectionnez au moins une année pour afficher le graphique
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Tableau principal */}
       <Card className="border-2 shadow-2xl overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 border-b-2">
@@ -370,8 +589,8 @@ export default function CommissionsAgencePage() {
               >
                 <Plus className="h-4 w-4" />
                 Créer cette année
-              </Button>
-            </div>
+            </Button>
+          </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
