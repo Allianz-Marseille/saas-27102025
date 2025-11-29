@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/firebase/use-auth";
 import { Timestamp } from "firebase/firestore";
 import { MonthSelector } from "@/components/dashboard/month-selector";
 import { NewHealthActDialog } from "@/components/health-acts/new-health-act-dialog";
+import { EditHealthActDialog } from "@/components/health-acts/edit-health-act-dialog";
 import { calculateHealthKPI } from "@/lib/utils/health-kpi";
 import { isActLocked as checkActLocked } from "@/lib/utils/act-lock";
 import { toDate } from "@/lib/utils/date-helpers";
@@ -34,6 +35,10 @@ export default function HealthActsPage() {
     open: false,
     actId: null,
     clientName: "",
+  });
+  const [editDialog, setEditDialog] = useState<{ open: boolean; act: HealthAct | null }>({
+    open: false,
+    act: null,
   });
   const [sortConfig, setSortConfig] = useState<SortState>({
     key: "dateSaisie",
@@ -99,6 +104,10 @@ export default function HealthActsPage() {
       console.error("Erreur lors de la suppression:", error);
       toast.error("Erreur lors de la suppression de l'acte");
     }
+  };
+
+  const handleEditActClick = (act: HealthAct) => {
+    setEditDialog({ open: true, act });
   };
 
   const sortedActs = useMemo(() => {
@@ -292,6 +301,14 @@ export default function HealthActsPage() {
         <NewHealthActDialog 
           open={isDialogOpen} 
           onOpenChange={setIsDialogOpen}
+          onSuccess={loadActs}
+        />
+
+        {/* Dialog Modifier Acte */}
+        <EditHealthActDialog
+          open={editDialog.open}
+          onOpenChange={(open) => setEditDialog({ open, act: null })}
+          act={editDialog.act}
           onSuccess={loadActs}
         />
 
@@ -583,6 +600,7 @@ export default function HealthActsPage() {
                           <td className="p-3 text-center">
                             <div className="flex gap-2 justify-center">
                               <button
+                                onClick={() => !isLocked && handleEditActClick(act)}
                                 className={cn(
                                   "p-2 rounded-lg transition-all duration-300 border-2 border-transparent",
                                   isLocked 
