@@ -167,58 +167,136 @@ export function ContractTypeRanking({ monthKey }: ContractTypeRankingProps) {
             Aucune donnée pour ce type de contrat ce mois-ci
           </p>
         ) : (
-          <div className="space-y-4">
-            <div className="bg-muted/50 p-3 rounded-lg mb-4">
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="font-semibold">Type :</span> {getContractTypeLabel(selectedContractType)}
+          <div className="space-y-6">
+            {/* Header avec effet wow */}
+            <div className="relative overflow-hidden rounded-2xl border-2 border-purple-200/50 dark:border-purple-800/50 bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 dark:from-purple-950/40 dark:via-pink-950/20 dark:to-purple-950/40 p-8 shadow-2xl">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-300/20 to-pink-300/20 rounded-full blur-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-pink-300/20 to-purple-300/20 rounded-full blur-3xl"></div>
+              
+              <div className="relative z-10">
+                {/* Type de contrat */}
+                <div className="text-center mb-6">
+                  <p className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-2">Type de contrat sélectionné</p>
+                  <h2 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent animate-pulse">
+                    {getContractTypeLabel(selectedContractType)}
+                  </h2>
                 </div>
-                <div>
-                  <span className="font-semibold">Total contrats :</span> {rankings.reduce((sum, r) => sum + r.nbContrats, 0)}
-                </div>
-                <div>
-                  <span className="font-semibold">CA total :</span> {formatCurrency(rankings.reduce((sum, r) => sum + r.caTotal, 0))}
+                
+                {/* Statistiques en grand */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                  {/* Total contrats */}
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl blur opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                    <div className="relative bg-white dark:bg-slate-900 rounded-2xl p-6 border-2 border-blue-200 dark:border-blue-800 shadow-xl">
+                      <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2">Total contrats</p>
+                      <p className="text-5xl md:text-6xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                        {rankings.reduce((sum, r) => sum + r.nbContrats, 0)}
+                      </p>
+                      <div className="mt-3 h-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"></div>
+                    </div>
+                  </div>
+                  
+                  {/* CA total */}
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-500 rounded-2xl blur opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                    <div className="relative bg-white dark:bg-slate-900 rounded-2xl p-6 border-2 border-emerald-200 dark:border-emerald-800 shadow-xl">
+                      <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2">CA total</p>
+                      <p className="text-4xl md:text-5xl font-black bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                        {formatCurrency(rankings.reduce((sum, r) => sum + r.caTotal, 0))}
+                      </p>
+                      <div className="mt-3 h-2 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full"></div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
             
-            <div className="space-y-3">
-              {rankings.map((commercial, index) => (
-                <div key={commercial.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold">
-                        #{index + 1}
+            {/* Classement des commerciaux */}
+            <div className="space-y-4">
+              {rankings.map((commercial, index) => {
+                const isTop3 = index < 3;
+                const medalColors = [
+                  "from-yellow-400 to-amber-500", // Or
+                  "from-gray-300 to-slate-400", // Argent
+                  "from-orange-400 to-amber-600", // Bronze
+                ];
+                
+                return (
+                  <div 
+                    key={commercial.id} 
+                    className={`relative overflow-hidden rounded-xl border-2 p-5 transition-all hover:scale-102 hover:shadow-2xl ${
+                      isTop3 
+                        ? "border-yellow-300 dark:border-yellow-700 bg-gradient-to-r from-yellow-50/50 via-white to-yellow-50/50 dark:from-yellow-950/20 dark:via-slate-900 dark:to-yellow-950/20 shadow-xl" 
+                        : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-md hover:border-purple-300 dark:hover:border-purple-700"
+                    }`}
+                  >
+                    {/* Effet de brillance pour le top 3 */}
+                    {isTop3 && (
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-yellow-300/10 to-transparent rounded-full blur-2xl"></div>
+                    )}
+                    
+                    <div className="relative z-10 flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-4">
+                        {/* Badge de position */}
+                        <div className={`flex items-center justify-center w-14 h-14 rounded-full font-black text-xl shadow-lg ${
+                          isTop3 
+                            ? `bg-gradient-to-br ${medalColors[index]} text-white border-2 border-white dark:border-slate-800` 
+                            : "bg-gradient-to-br from-purple-500 to-pink-500 text-white"
+                        }`}>
+                          #{index + 1}
+                        </div>
+                        
+                        <div>
+                          <p className="font-bold text-lg">{commercial.email}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${
+                              isTop3 
+                                ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md" 
+                                : "bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300"
+                            }`}>
+                              {commercial.nbContrats} contrat{commercial.nbContrats > 1 ? "s" : ""}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">{commercial.email}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {commercial.nbContrats} contrat{commercial.nbContrats > 1 ? "s" : ""}
+                      
+                      <div className="text-right">
+                        <p className={`font-black text-2xl ${
+                          isTop3 
+                            ? "bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent" 
+                            : "text-foreground"
+                        }`}>
+                          {formatCurrency(commercial.caTotal)}
+                        </p>
+                        <p className="text-sm font-semibold text-muted-foreground mt-1">
+                          {formatCurrency(commercial.commissions)} commissions
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold">{formatCurrency(commercial.caTotal)}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatCurrency(commercial.commissions)} commissions
-                      </p>
+                    
+                    {/* Barre de progression améliorée */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs font-semibold text-muted-foreground">
+                        <span>Progression</span>
+                        <span className="text-purple-600 dark:text-purple-400">{commercial.percentage.toFixed(1)}%</span>
+                      </div>
+                      <div className="relative h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
+                        <div 
+                          className={`h-full transition-all duration-500 ${
+                            isTop3 
+                              ? "bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-500 shadow-lg" 
+                              : getBarColor(index, rankings.length)
+                          }`}
+                          style={{ width: `${commercial.percentage}%` }}
+                        />
+                        {isTop3 && (
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Progression</span>
-                      <span>{commercial.percentage.toFixed(1)}%</span>
-                    </div>
-                    <div className="relative h-2 bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full transition-all ${getBarColor(index, rankings.length)}`}
-                        style={{ width: `${commercial.percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
