@@ -58,6 +58,7 @@ interface LeaderboardData {
   ca: number;
   actsCount: number;
   lastUpdated: FirebaseFirestore.Timestamp;
+  [key: string]: any; // Index signature pour compatibilité avec UpdateData
 }
 
 /**

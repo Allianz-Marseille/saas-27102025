@@ -68,19 +68,19 @@ function initializeFirebaseAdmin() {
 }
 
 // Initialiser l'app
-const app = initializeFirebaseAdmin();
+initializeFirebaseAdmin();
 
 /**
  * Instance Firebase Auth côté serveur
  * Utilisez ceci pour gérer les utilisateurs depuis le serveur
  */
-export const adminAuth = admin.auth(app);
+export const adminAuth = admin.auth();
 
 /**
  * Instance Firestore côté serveur
  * Utilisez ceci pour accéder à Firestore depuis le serveur
  */
-export const adminDb = admin.firestore(app);
+export const adminDb = admin.firestore();
 
 /**
  * Instance FieldValue pour les opérations Firestore
@@ -92,5 +92,5 @@ export const FieldValue = admin.firestore.FieldValue;
  */
 export const Timestamp = admin.firestore.Timestamp;
 
-export default app;
+export { admin };
 
