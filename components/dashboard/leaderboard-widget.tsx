@@ -38,9 +38,9 @@ export function LeaderboardWidget({ currentUserEmail }: LeaderboardWidgetProps) 
           commissions: entry.commissions,
           avatar: entry.firstName[0].toUpperCase(),
           isCurrentUser: entry.email === currentUserEmail,
-          rank: index + 1,
-          trend: 0 // Peut être calculé en comparant avec le mois précédent
-        }));
+            rank: index + 1,
+            trend: 0 // Peut être calculé en comparant avec le mois précédent
+          }));
         
         setLeaderboardData(sorted);
       } catch (error) {
