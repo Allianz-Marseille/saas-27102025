@@ -10,7 +10,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-      <header className="border-b bg-white dark:bg-slate-950 sticky top-0 z-10 shadow-md">
+      <header className="border-b bg-white dark:bg-slate-950 sticky top-16 lg:top-0 z-10 shadow-md">
         <div className="container mx-auto px-6 py-4">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">Mon profil</h1>
         </div>

@@ -24,7 +24,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Header Gaming */}
-      <header className="border-b bg-white/95 dark:bg-slate-950/95 backdrop-blur-md sticky top-0 z-50 shadow-md supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:dark:bg-slate-950/80 energy-border">
+      <header className="border-b bg-white/95 dark:bg-slate-950/95 backdrop-blur-md sticky top-16 lg:top-0 z-50 shadow-md supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:dark:bg-slate-950/80 energy-border">
         <div className="container mx-auto px-6 py-4 relative">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-green-600 bg-clip-text text-transparent neon-text flex items-center gap-2">
             <User className="h-6 w-6 text-green-500" />

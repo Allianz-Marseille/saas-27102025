@@ -78,7 +78,7 @@ export default function DashboardPage() {
       <ProcessDisclaimerModal />
       
       {/* Header */}
-      <header className="border-b bg-white dark:bg-slate-950 sticky top-0 z-10 shadow-md">
+      <header className="border-b bg-white dark:bg-slate-950 sticky top-16 lg:top-0 z-10 shadow-md">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>

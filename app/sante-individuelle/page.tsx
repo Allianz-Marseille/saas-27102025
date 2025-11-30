@@ -181,7 +181,7 @@ export default function SanteIndividuellePage() {
       </div>
 
       {/* Header */}
-      <header className="border-b bg-white/95 dark:bg-slate-950/95 backdrop-blur-md sticky top-0 z-50 shadow-md supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:dark:bg-slate-950/80 energy-border">
+      <header className="border-b bg-white/95 dark:bg-slate-950/95 backdrop-blur-md sticky top-16 lg:top-0 z-50 shadow-md supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:dark:bg-slate-950/80 energy-border">
         <div className="container mx-auto px-6 py-4 relative">
           <div className="flex items-center justify-between mb-4">
             <div>
