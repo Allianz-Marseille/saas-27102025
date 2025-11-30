@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { WeatherCard } from "@/components/admin/weather-card";
 import { motion } from "framer-motion";
@@ -14,12 +14,13 @@ import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { getAllCommercials, type UserData } from "@/lib/firebase/auth";
+import { type UserData } from "@/lib/firebase/auth";
 import { getActsByMonth } from "@/lib/firebase/acts";
 import { getHealthActsByMonth } from "@/lib/firebase/health-acts";
 import { calculateKPI } from "@/lib/utils/kpi";
 import { calculateHealthKPI } from "@/lib/utils/health-kpi";
 import { toast } from "sonner";
+import type { KPI, HealthKPI, HealthAct } from "@/types";
 
 interface RoleSectionProps {
   title: string;
@@ -35,13 +36,35 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
   const [selectedUser, setSelectedUser] = useState<string>("all");
   const [users, setUsers] = useState<UserData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [kpis, setKPIs] = useState<any>(null);
+  type KPIData = (KPI | HealthKPI) & { 
+    nbActes?: number; 
+    nbUsers?: number;
+    // Propriétés de HealthKPI (optionnelles pour compatibilité)
+    nbAffaireNouvelle?: number;
+    nbRevision?: number;
+    nbAdhesionSalarie?: number;
+    nbCourtToAz?: number;
+    nbAzToCourtage?: number;
+    caTotal?: number;
+    caPondere?: number;
+    commissionsAcquises?: number;
+    seuilAtteint?: number;
+    tauxCommission?: number;
+    // Propriétés de KPI (optionnelles pour compatibilité)
+    caMensuel?: number;
+    caAuto?: number;
+    caAutres?: number;
+    nbContrats?: number;
+    nbContratsAuto?: number;
+    nbContratsAutres?: number;
+    nbProcess?: number;
+    commissionsPotentielles?: number;
+    commissionsReelles?: number;
+    commissionValidee?: boolean;
+  };
+  const [kpis, setKPIs] = useState<KPIData | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [selectedMonth, selectedUser, role]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (underConstruction) {
       setIsLoading(false);
       return;
@@ -74,7 +97,7 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
         });
       } else if (role === "COMMERCIAL_SANTE_INDIVIDUEL") {
         // Santé Individuelle
-        let healthActs = [];
+        const healthActs: HealthAct[] = [];
         for (const user of usersData) {
           const acts = await getHealthActsByMonth(user.id, selectedMonth);
           if (selectedUser === "all" || user.id === selectedUser) {
@@ -94,7 +117,7 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
           commissionsPotentielles: 0,
           nbActes: 0,
           nbUsers: usersData.length,
-        });
+        } as KPI & { nbActes: number; nbUsers: number });
       }
     } catch (error) {
       console.error("Erreur chargement données:", error);
@@ -102,7 +125,12 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedMonth, selectedUser, role, underConstruction]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
 
   if (underConstruction) {
     return (
