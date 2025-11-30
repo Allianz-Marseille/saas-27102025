@@ -76,7 +76,7 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
         // Santé Individuelle
         let healthActs = [];
         for (const user of usersData) {
-          const acts = await getHealthActsByMonth(selectedMonth, user.id);
+          const acts = await getHealthActsByMonth(user.id, selectedMonth);
           if (selectedUser === "all" || user.id === selectedUser) {
             healthActs.push(...acts);
           }

@@ -67,8 +67,8 @@ export default function AdminSanteIndividuellePage() {
     const actsRef = collection(db, "health_acts");
     const actsQuery = query(
       actsRef,
-      where("commercialId", "==", userId),
-      where("monthKey", "==", monthKey)
+      where("userId", "==", userId),
+      where("moisKey", "==", monthKey)
     );
     const actsSnapshot = await getDocs(actsQuery);
 
