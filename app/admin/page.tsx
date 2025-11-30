@@ -98,12 +98,25 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
       } else if (role === "COMMERCIAL_SANTE_INDIVIDUEL") {
         // Santé Individuelle
         const healthActs: HealthAct[] = [];
-        for (const user of usersData) {
-          const acts = await getHealthActsByMonth(user.id, selectedMonth);
-          if (selectedUser === "all" || user.id === selectedUser) {
-            healthActs.push(...acts);
+        
+        // Charger les actes pour tous les utilisateurs ou pour l'utilisateur sélectionné
+        const usersToProcess = selectedUser === "all" 
+          ? usersData 
+          : usersData.filter(user => user.id === selectedUser);
+        
+        // Charger les actes pour chaque utilisateur
+        for (const user of usersToProcess) {
+          try {
+            const acts = await getHealthActsByMonth(user.id, selectedMonth);
+            if (acts && acts.length > 0) {
+              healthActs.push(...acts);
+            }
+          } catch (error) {
+            console.error(`Erreur lors du chargement des actes pour ${user.email}:`, error);
           }
         }
+        
+        // Calculer les KPIs même si aucun acte n'est trouvé (pour afficher 0)
         const calculatedKPIs = calculateHealthKPI(healthActs);
         setKPIs({
           ...calculatedKPIs,
