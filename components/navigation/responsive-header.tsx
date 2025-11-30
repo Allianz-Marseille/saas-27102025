@@ -27,7 +27,7 @@ export function ResponsiveHeader({
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 z-30 lg:left-64 shadow-sm">
+    <header className="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 z-30 shadow-sm lg:hidden">
       <div className="h-full px-4 flex items-center justify-between gap-4">
         {/* Burger + Logo */}
         <div className="flex items-center gap-3">
