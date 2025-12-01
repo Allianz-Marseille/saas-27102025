@@ -768,6 +768,7 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
                     <tbody>
                       {sortedActs.map((act) => {
                         const isProcess = act.kind === "M+3" || act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD";
+                        const isM3 = act.kind === "M+3";
                         const isLocked = checkActLocked(act, userData);
                         const commercialEmail = commercialEmailById.get(act.userId) ?? "Commercial inconnu";
                         
@@ -837,10 +838,10 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
                                 </td>
                                 <td className="p-4 text-sm font-semibold text-center align-middle">{act.clientNom}</td>
                                 <td className="p-4 text-sm text-center align-middle">
-                                  {isProcess ? (
+                                  {isM3 ? (
                                     <span className="text-muted-foreground">-</span>
                                   ) : (
-                                    <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{act.numeroContrat}</span>
+                                    <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{act.numeroContrat || "-"}</span>
                                   )}
                                 </td>
                                 <td className="p-4 text-center align-middle">

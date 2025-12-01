@@ -643,6 +643,7 @@ export default function ActsPage() {
                   <tbody>
                     {sortedActs.map((act) => {
                       const isProcess = act.kind === "M+3" || act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD";
+                      const isM3 = act.kind === "M+3";
                       const isLocked = checkActLocked(act, userData);
                       
                       return (
@@ -679,7 +680,7 @@ export default function ActsPage() {
                             </span>
                           </td>
                           <td className="p-3 text-sm font-semibold text-center align-middle">{act.clientNom}</td>
-                          <td className="p-3 text-xs text-center align-middle text-muted-foreground font-mono">{isProcess ? "-" : act.numeroContrat}</td>
+                          <td className="p-3 text-xs text-center align-middle text-muted-foreground font-mono">{isM3 ? "-" : (act.numeroContrat || "-")}</td>
                           <td className="p-3 text-center align-middle">
                             {isProcess ? (
                               <span className="text-muted-foreground">-</span>
