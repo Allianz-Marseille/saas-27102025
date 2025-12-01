@@ -10,13 +10,13 @@ Ce document décrit le comportement des modales de modification des actes selon 
 Acte complet avec toutes les informations contractuelles.
 
 ### M+3
-Acte de suivi (process) sans numéro de contrat.
+Acte de suivi (process) sans numéro de contrat. Suivi du processus d'appel téléphonique client avec validation par tags.
 
 ### PRETERME_AUTO
-Préterme Auto avec numéro de contrat obligatoire.
+Préterme Auto avec numéro de contrat obligatoire. Suivi du processus d'appel téléphonique client avec validation par tags.
 
 ### PRETERME_IRD
-Préterme IRD avec numéro de contrat obligatoire.
+Préterme IRD avec numéro de contrat obligatoire. Suivi du processus d'appel téléphonique client avec validation par tags.
 
 ---
 
@@ -44,12 +44,14 @@ Préterme IRD avec numéro de contrat obligatoire.
 **Pour M+3 :**
 - ✅ Nom du client
 - ✅ Note
+- ✅ **Tags de suivi d'appel** (workflow d'appel téléphonique)
 - ❌ Numéro de contrat (non applicable)
 
 **Pour PRETERME_AUTO / PRETERME_IRD :**
 - ✅ Nom du client
 - ✅ Note
 - ✅ **Numéro de contrat** (modifiable par les commerciaux avant le 15)
+- ✅ **Tags de suivi d'appel** (workflow d'appel téléphonique)
 
 ---
 
@@ -74,12 +76,14 @@ Préterme IRD avec numéro de contrat obligatoire.
 **Pour M+3 :**
 - ✅ Nom du client
 - ✅ Note
+- ✅ **Tags de suivi d'appel** (workflow d'appel téléphonique)
 - ❌ Numéro de contrat (non applicable)
 
 **Pour PRETERME_AUTO / PRETERME_IRD :**
 - ✅ Nom du client
 - ✅ **Numéro de contrat** (modifiable uniquement par les admins)
 - ✅ Note
+- ✅ **Tags de suivi d'appel** (workflow d'appel téléphonique)
 
 ---
 
@@ -109,10 +113,308 @@ Préterme IRD avec numéro de contrat obligatoire.
 - Nom du client : ✅ Obligatoire
 - Note : ✅ Obligatoire
 - Numéro de contrat : ✅ Obligatoire (modifiable uniquement par les admins)
+- Tags de suivi : Optionnels (workflow progressif)
 
 **Pour M+3 :**
 - Nom du client : ✅ Obligatoire
 - Note : Optionnelle
+- Tags de suivi : Optionnels (workflow progressif)
+
+---
+
+## Workflow de suivi M+3 - Appel téléphonique
+
+### Vue d'ensemble
+
+Pour les actes de type **M+3**, un système de tags permet de suivre le processus d'appel téléphonique au client. Le workflow est séquentiel et conditionnel.
+
+### Étapes du workflow
+
+Le processus suit un chemin logique avec des validations par tags :
+
+#### Étape 1 : Appel téléphonique
+- **Tag disponible** : `appelTelephonique`
+- **Valeurs possibles** : `OK` / `KO`
+- **Description** : Indique si le client a été joint au téléphone
+- **Comportement** :
+  - Si `KO` → Le processus s'arrête ici (client non joint)
+  - Si `OK` → Passage à l'étape suivante
+
+#### Étape 2 : Mise à jour fiche Lagoon
+- **Tag disponible** : `miseAJourFicheLagoon`
+- **Valeurs possibles** : `OK` / `KO`
+- **Condition d'accès** : Uniquement si `appelTelephonique = OK`
+- **Description** : Indique si la fiche client a été mise à jour dans Lagoon
+- **Comportement** :
+  - Si `KO` → Le processus s'arrête ici (fiche non mise à jour)
+  - Si `OK` → Passage à l'étape suivante
+
+#### Étape 3 : Bilan effectué
+- **Tag disponible** : `bilanEffectue`
+- **Valeurs possibles** : `OK` / `KO`
+- **Condition d'accès** : Uniquement si `miseAJourFicheLagoon = OK`
+- **Description** : Indique si un bilan a pu être réalisé avec le client
+- **Comportement** :
+  - Si `KO` → Le processus s'arrête ici (bilan non effectué)
+  - Si `OK` → Processus complété avec succès
+
+### Interface utilisateur
+
+#### Affichage des tags dans la modale
+
+Dans la modale de modification d'un acte M+3, les tags sont affichés sous forme de **badges cliquables** :
+
+1. **Badge "Appel téléphonique"**
+   - Toujours visible
+   - États possibles :
+     - Non défini : Badge gris avec texte "Appel téléphonique" + icône téléphone
+     - OK : Badge vert avec texte "Appel téléphonique : OK"
+     - KO : Badge rouge avec texte "Appel téléphonique : KO"
+
+2. **Badge "Mise à jour fiche Lagoon"**
+   - Visible uniquement si `appelTelephonique = OK`
+   - États possibles :
+     - Non défini : Badge gris avec texte "Mise à jour fiche Lagoon" + icône document
+     - OK : Badge vert avec texte "Mise à jour fiche Lagoon : OK"
+     - KO : Badge rouge avec texte "Mise à jour fiche Lagoon : KO"
+
+3. **Badge "Bilan effectué"**
+   - Visible uniquement si `miseAJourFicheLagoon = OK`
+   - États possibles :
+     - Non défini : Badge gris avec texte "Bilan effectué" + icône check
+     - OK : Badge vert avec texte "Bilan effectué : OK"
+     - KO : Badge rouge avec texte "Bilan effectué : KO"
+
+#### Interaction avec les tags
+
+- **Clic sur un badge** : Ouvre un menu contextuel ou un sélecteur pour choisir entre `OK` et `KO`
+- **Validation** : Le tag est mis à jour immédiatement dans la base de données
+- **Affichage conditionnel** : Les étapes suivantes n'apparaissent que si l'étape précédente est à `OK`
+
+### Règles de validation
+
+1. **Séquence obligatoire** : Les étapes doivent être validées dans l'ordre
+2. **Pas de retour en arrière** : Une fois une étape validée, elle ne peut pas être modifiée (sauf par un administrateur)
+3. **Arrêt du processus** : Si une étape est marquée `KO`, les étapes suivantes ne sont pas accessibles
+4. **Réinitialisation** : Seuls les administrateurs peuvent réinitialiser les tags
+
+### Exemples de workflows
+
+#### Workflow complet (succès)
+```
+1. Appel téléphonique : OK ✅
+2. Mise à jour fiche Lagoon : OK ✅
+3. Bilan effectué : OK ✅
+→ Processus complété
+```
+
+#### Workflow interrompu (client non joint)
+```
+1. Appel téléphonique : KO ❌
+→ Processus arrêté
+```
+
+#### Workflow interrompu (fiche non mise à jour)
+```
+1. Appel téléphonique : OK ✅
+2. Mise à jour fiche Lagoon : KO ❌
+→ Processus arrêté
+```
+
+#### Workflow interrompu (bilan non effectué)
+```
+1. Appel téléphonique : OK ✅
+2. Mise à jour fiche Lagoon : OK ✅
+3. Bilan effectué : KO ❌
+→ Processus arrêté
+```
+
+### Permissions par rôle
+
+#### Commerciaux
+- ✅ Peuvent définir les tags dans l'ordre du workflow
+- ✅ Peuvent marquer une étape comme `OK` ou `KO`
+- ❌ Ne peuvent pas modifier une étape déjà validée
+- ❌ Ne peuvent pas réinitialiser les tags
+
+#### Administrateurs
+- ✅ Peuvent définir les tags dans l'ordre du workflow
+- ✅ Peuvent marquer une étape comme `OK` ou `KO`
+- ✅ Peuvent modifier une étape déjà validée
+- ✅ Peuvent réinitialiser tous les tags
+- ✅ Peuvent accéder à toutes les étapes indépendamment de l'état précédent
+
+### Stockage des données
+
+Les tags sont stockés dans l'objet acte avec la structure suivante :
+
+```typescript
+{
+  // ... autres champs de l'acte
+  m3Suivi?: {
+    appelTelephonique?: "OK" | "KO";
+    miseAJourFicheLagoon?: "OK" | "KO";
+    bilanEffectue?: "OK" | "KO";
+  };
+}
+```
+
+### Historique et logs
+
+- Chaque modification de tag est enregistrée dans le système de logs
+- L'historique des changements de tags est traçable
+- Les logs incluent : utilisateur, date/heure, tag modifié, ancienne valeur, nouvelle valeur
+
+---
+
+## Workflow de suivi PRETERME - Appel téléphonique
+
+### Vue d'ensemble
+
+Pour les actes de type **PRETERME_AUTO** et **PRETERME_IRD**, un système de tags permet de suivre le processus d'appel téléphonique au client. Le workflow est identique à celui des M+3 et suit un chemin logique avec des validations par tags.
+
+### Étapes du workflow
+
+Le processus suit un chemin logique avec des validations par tags :
+
+#### Étape 1 : Appel téléphonique
+- **Tag disponible** : `appelTelephonique`
+- **Valeurs possibles** : `OK` / `KO`
+- **Description** : Indique si le client a été joint au téléphone
+- **Comportement** :
+  - Si `KO` → Le processus s'arrête ici (client non joint)
+  - Si `OK` → Passage à l'étape suivante
+
+#### Étape 2 : Mise à jour fiche Lagoon
+- **Tag disponible** : `miseAJourFicheLagoon`
+- **Valeurs possibles** : `OK` / `KO`
+- **Condition d'accès** : Uniquement si `appelTelephonique = OK`
+- **Description** : Indique si la fiche client a été mise à jour dans Lagoon
+- **Comportement** :
+  - Si `KO` → Le processus s'arrête ici (fiche non mise à jour)
+  - Si `OK` → Passage à l'étape suivante
+
+#### Étape 3 : Bilan effectué
+- **Tag disponible** : `bilanEffectue`
+- **Valeurs possibles** : `OK` / `KO`
+- **Condition d'accès** : Uniquement si `miseAJourFicheLagoon = OK`
+- **Description** : Indique si un bilan a pu être réalisé avec le client
+- **Comportement** :
+  - Si `KO` → Le processus s'arrête ici (bilan non effectué)
+  - Si `OK` → Processus complété avec succès
+
+### Interface utilisateur
+
+#### Affichage des tags dans la modale
+
+Dans la modale de modification d'un acte PRETERME, les tags sont affichés sous forme de **badges cliquables** :
+
+1. **Badge "Appel téléphonique"**
+   - Toujours visible
+   - États possibles :
+     - Non défini : Badge gris avec texte "Appel téléphonique" + icône téléphone
+     - OK : Badge vert avec texte "Appel téléphonique : OK"
+     - KO : Badge rouge avec texte "Appel téléphonique : KO"
+
+2. **Badge "Mise à jour fiche Lagoon"**
+   - Visible uniquement si `appelTelephonique = OK`
+   - États possibles :
+     - Non défini : Badge gris avec texte "Mise à jour fiche Lagoon" + icône document
+     - OK : Badge vert avec texte "Mise à jour fiche Lagoon : OK"
+     - KO : Badge rouge avec texte "Mise à jour fiche Lagoon : KO"
+
+3. **Badge "Bilan effectué"**
+   - Visible uniquement si `miseAJourFicheLagoon = OK`
+   - États possibles :
+     - Non défini : Badge gris avec texte "Bilan effectué" + icône check
+     - OK : Badge vert avec texte "Bilan effectué : OK"
+     - KO : Badge rouge avec texte "Bilan effectué : KO"
+
+#### Interaction avec les tags
+
+- **Clic sur un badge** : Ouvre un menu contextuel ou un sélecteur pour choisir entre `OK` et `KO`
+- **Validation** : Le tag est mis à jour immédiatement dans la base de données
+- **Affichage conditionnel** : Les étapes suivantes n'apparaissent que si l'étape précédente est à `OK`
+
+### Règles de validation
+
+1. **Séquence obligatoire** : Les étapes doivent être validées dans l'ordre
+2. **Pas de retour en arrière** : Une fois une étape validée, elle ne peut pas être modifiée (sauf par un administrateur)
+3. **Arrêt du processus** : Si une étape est marquée `KO`, les étapes suivantes ne sont pas accessibles
+4. **Réinitialisation** : Seuls les administrateurs peuvent réinitialiser les tags
+
+### Exemples de workflows
+
+#### Workflow complet (succès)
+```
+1. Appel téléphonique : OK ✅
+2. Mise à jour fiche Lagoon : OK ✅
+3. Bilan effectué : OK ✅
+→ Processus complété
+```
+
+#### Workflow interrompu (client non joint)
+```
+1. Appel téléphonique : KO ❌
+→ Processus arrêté
+```
+
+#### Workflow interrompu (fiche non mise à jour)
+```
+1. Appel téléphonique : OK ✅
+2. Mise à jour fiche Lagoon : KO ❌
+→ Processus arrêté
+```
+
+#### Workflow interrompu (bilan non effectué)
+```
+1. Appel téléphonique : OK ✅
+2. Mise à jour fiche Lagoon : OK ✅
+3. Bilan effectué : KO ❌
+→ Processus arrêté
+```
+
+### Permissions par rôle
+
+#### Commerciaux
+- ✅ Peuvent définir les tags dans l'ordre du workflow
+- ✅ Peuvent marquer une étape comme `OK` ou `KO`
+- ❌ Ne peuvent pas modifier une étape déjà validée
+- ❌ Ne peuvent pas réinitialiser les tags
+
+#### Administrateurs
+- ✅ Peuvent définir les tags dans l'ordre du workflow
+- ✅ Peuvent marquer une étape comme `OK` ou `KO`
+- ✅ Peuvent modifier une étape déjà validée
+- ✅ Peuvent réinitialiser tous les tags
+- ✅ Peuvent accéder à toutes les étapes indépendamment de l'état précédent
+
+### Stockage des données
+
+Les tags sont stockés dans l'objet acte avec la structure suivante :
+
+```typescript
+{
+  // ... autres champs de l'acte
+  pretermeSuivi?: {
+    appelTelephonique?: "OK" | "KO";
+    miseAJourFicheLagoon?: "OK" | "KO";
+    bilanEffectue?: "OK" | "KO";
+  };
+}
+```
+
+### Historique et logs
+
+- Chaque modification de tag est enregistrée dans le système de logs
+- L'historique des changements de tags est traçable
+- Les logs incluent : utilisateur, date/heure, tag modifié, ancienne valeur, nouvelle valeur
+
+### Différences avec M+3
+
+- **Numéro de contrat** : Les prétermes ont un numéro de contrat obligatoire (contrairement aux M+3)
+- **Structure de stockage** : Les tags sont stockés dans `pretermeSuivi` au lieu de `m3Suivi`
+- **Workflow identique** : Le processus de suivi d'appel est exactement le même
 
 ---
 
@@ -208,6 +510,10 @@ Les administrateurs peuvent modifier n'importe quel acte, les commerciaux unique
 - ✅ Implémentation des restrictions temporelles pour les commerciaux
 - ✅ Vérification d'unicité du numéro de contrat pour les AN
 - ✅ Désactivation des champs pour les commerciaux après le 15 du mois suivant
+
+### À venir
+- 🔄 Workflow de suivi M+3 avec tags d'appel téléphonique (appelTelephonique, miseAJourFicheLagoon, bilanEffectue)
+- 🔄 Workflow de suivi PRETERME (AUTO et IRD) avec tags d'appel téléphonique (appelTelephonique, miseAJourFicheLagoon, bilanEffectue)
 
 ---
 
