@@ -140,12 +140,12 @@ Les **tags de suivi d'appel téléphonique** sont disponibles dans **deux contex
 
 1. **Modale de saisie (création)** : Lors de la création d'un nouvel acte
    - Les tags peuvent être définis dès la création de l'acte
-   - Disponible pour : AN, M+3, PRETERME_AUTO, PRETERME_IRD
+   - Disponible pour : M+3, PRETERME_AUTO, PRETERME_IRD
    - Permet de suivre le workflow dès le début
 
 2. **Modale de modification** : Lors de l'édition d'un acte existant
    - Les tags peuvent être mis à jour ou complétés
-   - Disponible pour : AN, M+3, PRETERME_AUTO, PRETERME_IRD
+   - Disponible pour : M+3, PRETERME_AUTO, PRETERME_IRD
    - Permet de continuer ou modifier le workflow en cours
 
 ### Comportement identique
@@ -157,84 +157,6 @@ Le comportement des tags est **identique** dans les deux modales :
 - Même structure de stockage
 
 ---
-
-## Workflow de suivi AN - Appel téléphonique
-
-### Vue d'ensemble
-
-Pour les actes de type **AN** (Apport Nouveau), un système de tags permet de suivre le processus d'appel téléphonique au client. Le workflow est identique à celui des M+3 et PRETERME.
-
-### Étapes du workflow
-
-Le processus suit un chemin logique avec des validations par tags :
-
-#### Étape 1 : Appel téléphonique
-- **Tag disponible** : `appelTelephonique`
-- **Valeurs possibles** : `OK` / `KO`
-- **Description** : Indique si le client a été joint au téléphone
-- **Comportement** :
-  - Si `KO` → Le processus s'arrête ici (client non joint)
-  - Si `OK` → Passage à l'étape suivante
-
-#### Étape 2 : Mise à jour fiche Lagoon
-- **Tag disponible** : `miseAJourFicheLagoon`
-- **Valeurs possibles** : `OK` / `KO`
-- **Condition d'accès** : Uniquement si `appelTelephonique = OK`
-- **Description** : Indique si la fiche client a été mise à jour dans Lagoon
-- **Comportement** :
-  - Si `KO` → Le processus s'arrête ici (fiche non mise à jour)
-  - Si `OK` → Passage à l'étape suivante
-
-#### Étape 3 : Bilan effectué
-- **Tag disponible** : `bilanEffectue`
-- **Valeurs possibles** : `OK` / `KO`
-- **Condition d'accès** : Uniquement si `miseAJourFicheLagoon = OK`
-- **Description** : Indique si un bilan a pu être réalisé avec le client
-- **Comportement** :
-  - Si `KO` → Le processus s'arrête ici (bilan non effectué)
-  - Si `OK` → Processus complété avec succès
-
-### Interface utilisateur
-
-#### Affichage des tags dans la modale
-
-Dans la modale de **saisie** (création) et de **modification** d'un acte AN, les tags sont affichés sous forme de **badges cliquables** :
-
-1. **Badge "Appel téléphonique"**
-   - Toujours visible
-   - États possibles :
-     - Non défini : Badge gris avec texte "Appel téléphonique" + icône téléphone
-     - OK : Badge vert avec texte "Appel téléphonique : OK"
-     - KO : Badge rouge avec texte "Appel téléphonique : KO"
-
-2. **Badge "Mise à jour fiche Lagoon"**
-   - Visible uniquement si `appelTelephonique = OK`
-   - États possibles :
-     - Non défini : Badge gris avec texte "Mise à jour fiche Lagoon" + icône document
-     - OK : Badge vert avec texte "Mise à jour fiche Lagoon : OK"
-     - KO : Badge rouge avec texte "Mise à jour fiche Lagoon : KO"
-
-3. **Badge "Bilan effectué"**
-   - Visible uniquement si `miseAJourFicheLagoon = OK`
-   - États possibles :
-     - Non défini : Badge gris avec texte "Bilan effectué" + icône check
-     - OK : Badge vert avec texte "Bilan effectué : OK"
-     - KO : Badge rouge avec texte "Bilan effectué : KO"
-
-### Stockage des données
-
-Les tags sont stockés dans l'objet acte avec la structure suivante :
-
-```typescript
-{
-  // ... autres champs de l'acte
-  anSuivi?: {
-    appelTelephonique?: "OK" | "KO";
-    miseAJourFicheLagoon?: "OK" | "KO";
-    bilanEffectue?: "OK" | "KO";
-  };
-}
-```
 
 ---
 
@@ -629,9 +551,8 @@ Les administrateurs peuvent modifier n'importe quel acte, les commerciaux unique
 - ✅ Désactivation des champs pour les commerciaux après le 15 du mois suivant
 
 ### À venir
-- 🔄 Implémentation du workflow de suivi AN avec tags d'appel téléphonique (appelTelephonique, miseAJourFicheLagoon, bilanEffectue) - Disponible en saisie et modification
-- 🔄 Implémentation du workflow de suivi M+3 avec tags d'appel téléphonique (appelTelephonique, miseAJourFicheLagoon, bilanEffectue) - Disponible en saisie et modification
-- 🔄 Implémentation du workflow de suivi PRETERME (AUTO et IRD) avec tags d'appel téléphonique (appelTelephonique, miseAJourFicheLagoon, bilanEffectue) - Disponible en saisie et modification
+- ✅ Workflow de suivi M+3 avec tags d'appel téléphonique (appelTelephonique, miseAJourFicheLagoon, bilanEffectue) - Disponible en saisie et modification
+- ✅ Workflow de suivi PRETERME (AUTO et IRD) avec tags d'appel téléphonique (appelTelephonique, miseAJourFicheLagoon, bilanEffectue) - Disponible en saisie et modification
 
 ---
 
