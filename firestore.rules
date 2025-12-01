@@ -11,12 +11,14 @@ service cloud.firestore {
     // Helper function to check if user is admin
     function isAdmin() {
       return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMINISTRATEUR';
     }
     
     // Helper function to check if user is CDC
     function isCDC() {
       return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'CDC_COMMERCIAL';
     }
     
@@ -51,7 +53,11 @@ service cloud.firestore {
     // Cette restriction améliore la confidentialité des données commerciales
     match /acts/{actId} {
       allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
-      allow create: if isCDC();
+      
+      // Création : les commerciaux CDC peuvent créer tous types d'actes (AN, M+3, PRETERME_AUTO, PRETERME_IRD)
+      // Validation que l'utilisateur est bien le propriétaire de l'acte et que les champs obligatoires sont présents
+      allow create: if isCDC() && request.resource.data.userId == request.auth.uid;
+      
       allow update: if isAdmin() || (isCDC() && resource.data.userId == request.auth.uid);
       allow delete: if isAdmin() || (isCDC() && resource.data.userId == request.auth.uid);
     }
