@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { isActLocked as checkActLocked } from "@/lib/utils/act-lock";
 import { isAdmin } from "@/lib/utils/roles";
-import { SuiviTags } from "./suivi-tags";
+import { SuiviTags, validateSuiviTags } from "./suivi-tags";
 import { ActSuivi } from "@/types";
 
 interface EditActDialogProps {
@@ -166,6 +166,18 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
 
     // Pour les process, validation simplifiée
     if (isProcess) {
+      // Validation des tags de suivi obligatoires pour les process
+      if (!suivi || typeof suivi !== 'object' || Object.keys(suivi).length === 0) {
+        toast.error("Les tags de suivi sont obligatoires pour les process");
+        return;
+      }
+      
+      const suiviValidation = validateSuiviTags(suivi);
+      if (!suiviValidation.isValid) {
+        toast.error(`Tags de suivi incomplets : ${suiviValidation.missingTags.join(", ")}`);
+        return;
+      }
+      
       setIsLoading(true);
       try {
         const updates: Record<string, unknown> = {
@@ -187,13 +199,11 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
           updates.note = note;
         }
         
-        // Ajouter les tags de suivi pour M+3 et PRETERME
-        if (suivi && Object.keys(suivi).length > 0) {
-          if (act.kind === "M+3") {
-            updates.m3Suivi = suivi;
-          } else if (isPreterme) {
-            updates.pretermeSuivi = suivi;
-          }
+        // Ajouter les tags de suivi (obligatoires pour M+3 et PRETERME)
+        if (act.kind === "M+3") {
+          updates.m3Suivi = suivi;
+        } else if (isPreterme) {
+          updates.pretermeSuivi = suivi;
         }
         
         await updateAct(act.id, updates);
@@ -388,7 +398,15 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Annuler
             </Button>
-            <Button onClick={handleSubmit} disabled={isLoading || !canEdit} className="bg-[#00529B] hover:bg-[#003d73]">
+            <Button 
+              onClick={handleSubmit} 
+              disabled={
+                isLoading || 
+                !canEdit || 
+                (isProcess && !validateSuiviTags(suivi).isValid)
+              } 
+              className="bg-[#00529B] hover:bg-[#003d73]"
+            >
               {isLoading ? "Modification..." : "Enregistrer"}
             </Button>
           </DialogFooter>

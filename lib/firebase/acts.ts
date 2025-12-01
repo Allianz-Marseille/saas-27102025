@@ -75,13 +75,21 @@ export const createAct = async (act: any): Promise<Act> => {
     actData.note = act.note;
   }
 
-  // Ajouter les tags de suivi s'ils existent (uniquement pour M+3 et PRETERME, pas pour AN)
-  if (act.m3Suivi !== undefined) {
+  // Ajouter les tags de suivi (obligatoires pour M+3 et PRETERME, pas pour AN)
+  if (isM3) {
+    // Pour M+3, les tags sont obligatoires
+    if (!act.m3Suivi || typeof act.m3Suivi !== 'object' || Object.keys(act.m3Suivi).length === 0) {
+      throw new Error('Les tags de suivi sont obligatoires pour les actes M+3.');
+    }
     actData.m3Suivi = act.m3Suivi;
-  }
-  if (act.pretermeSuivi !== undefined) {
+  } else if (isPreterme) {
+    // Pour PRETERME, les tags sont obligatoires
+    if (!act.pretermeSuivi || typeof act.pretermeSuivi !== 'object' || Object.keys(act.pretermeSuivi).length === 0) {
+      throw new Error('Les tags de suivi sont obligatoires pour les prétermes.');
+    }
     actData.pretermeSuivi = act.pretermeSuivi;
   }
+  // Pour AN, pas de tags de suivi
 
   const docRef = await addDoc(collection(db, "acts"), actData);
 

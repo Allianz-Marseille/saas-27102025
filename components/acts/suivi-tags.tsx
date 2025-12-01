@@ -21,9 +21,46 @@ interface SuiviTagsProps {
   userData: UserData | null;
   disabled?: boolean;
   isCreation?: boolean; // Si true, permet aux commerciaux de modifier/réinitialiser les tags
+  showRequired?: boolean; // Si true, affiche les indicateurs de champs obligatoires
 }
 
-export function SuiviTags({ suivi, onSuiviChange, userData, disabled = false, isCreation = false }: SuiviTagsProps) {
+// Fonction de validation des tags obligatoires
+export function validateSuiviTags(suivi: ActSuivi | undefined): { isValid: boolean; missingTags: string[] } {
+  const missingTags: string[] = [];
+  
+  // appelTelephonique est toujours obligatoire
+  if (!suivi?.appelTelephonique) {
+    missingTags.push("Appel téléphonique");
+    return { isValid: false, missingTags };
+  }
+  
+  // Si appelTelephonique = OK, miseAJourFicheLagoon est obligatoire
+  if (suivi.appelTelephonique === "OK" && !suivi.miseAJourFicheLagoon) {
+    missingTags.push("Mise à jour fiche Lagoon");
+    return { isValid: false, missingTags };
+  }
+  
+  // Si miseAJourFicheLagoon = OK, bilanEffectue est obligatoire
+  if (suivi.miseAJourFicheLagoon === "OK" && !suivi.bilanEffectue) {
+    missingTags.push("Bilan effectué");
+    return { isValid: false, missingTags };
+  }
+  
+  // Si un tag est KO, smsMailCoordonnees est obligatoire
+  const hasKO = 
+    suivi.appelTelephonique === "KO" || 
+    suivi.miseAJourFicheLagoon === "KO" || 
+    suivi.bilanEffectue === "KO";
+  
+  if (hasKO && !suivi.smsMailCoordonnees) {
+    missingTags.push("SMS / Mail avec mes coordonnées ?");
+    return { isValid: false, missingTags };
+  }
+  
+  return { isValid: true, missingTags: [] };
+}
+
+export function SuiviTags({ suivi, onSuiviChange, userData, disabled = false, isCreation = false, showRequired = true }: SuiviTagsProps) {
   const userIsAdmin = isAdmin(userData);
   const [openPopover, setOpenPopover] = useState<string | null>(null);
 
@@ -66,6 +103,21 @@ export function SuiviTags({ suivi, onSuiviChange, userData, disabled = false, is
     setOpenPopover(null);
   };
 
+  // Fonction pour déterminer si un tag est obligatoire
+  const isTagRequired = (tag: keyof ActSuivi): boolean => {
+    if (tag === "appelTelephonique") return true;
+    if (tag === "miseAJourFicheLagoon" && suivi?.appelTelephonique === "OK") return true;
+    if (tag === "bilanEffectue" && suivi?.miseAJourFicheLagoon === "OK") return true;
+    if (tag === "smsMailCoordonnees") {
+      const hasKO = 
+        suivi?.appelTelephonique === "KO" || 
+        suivi?.miseAJourFicheLagoon === "KO" || 
+        suivi?.bilanEffectue === "KO";
+      return hasKO || false;
+    }
+    return false;
+  };
+
   const getTagBadge = (
     tag: keyof ActSuivi,
     label: string,
@@ -77,6 +129,7 @@ export function SuiviTags({ suivi, onSuiviChange, userData, disabled = false, is
 
     const value = suivi?.[tag];
     const Icon = icon;
+    const required = isTagRequired(tag) && showRequired;
 
     let badgeVariant: "default" | "secondary" | "destructive" | "outline" = "outline";
     let badgeClassName = "";
@@ -122,12 +175,14 @@ export function SuiviTags({ suivi, onSuiviChange, userData, disabled = false, is
               className={cn(
                 "inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium cursor-pointer transition-all hover:scale-105",
                 badgeClassName,
-                isDisabled && "cursor-not-allowed"
+                isDisabled && "cursor-not-allowed",
+                required && !value && "ring-2 ring-amber-500 ring-offset-2"
               )}
             >
               <Icon className="h-4 w-4" />
               <span>
                 {label}
+                {required && !value && <span className="text-amber-600 dark:text-amber-400 ml-1">*</span>}
                 {displayValue && ` : ${displayValue}`}
               </span>
             </Badge>
@@ -185,9 +240,24 @@ export function SuiviTags({ suivi, onSuiviChange, userData, disabled = false, is
     suivi?.miseAJourFicheLagoon === "KO" || 
     suivi?.bilanEffectue === "KO";
 
+  // Validation pour afficher les erreurs
+  const validation = validateSuiviTags(suivi);
+
   return (
     <div className="space-y-3">
-      <Label className="text-sm font-semibold">Suivi d'appel téléphonique</Label>
+      <Label className="text-sm font-semibold">
+        Suivi d'appel téléphonique *
+        {showRequired && (
+          <span className="text-xs font-normal text-muted-foreground ml-2">
+            (Tous les tags sont obligatoires)
+          </span>
+        )}
+      </Label>
+      {showRequired && !validation.isValid && suivi && (
+        <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 p-2 rounded border border-amber-200 dark:border-amber-800">
+          <strong>Tags manquants :</strong> {validation.missingTags.join(", ")}
+        </div>
+      )}
       <div className="flex flex-wrap gap-2">
         {getTagBadge(
           "appelTelephonique",

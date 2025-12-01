@@ -20,7 +20,8 @@
     "import:kheira-jun": "ts-node --project tsconfig.scripts.json scripts/import-kheira-june.ts",
     "import:kheira-may": "ts-node --project tsconfig.scripts.json scripts/import-kheira-may.ts",
     "import:commissions": "ts-node --project tsconfig.scripts.json scripts/import-commissions-from-md.ts",
-    "import:commissions-2023": "ts-node --project tsconfig.scripts.json scripts/import-commissions-2023.ts"
+    "import:commissions-2023": "ts-node --project tsconfig.scripts.json scripts/import-commissions-2023.ts",
+    "get-user-info": "ts-node --project tsconfig.scripts.json scripts/get-user-info.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

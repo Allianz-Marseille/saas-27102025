@@ -19,7 +19,7 @@ import { logActCreated } from "@/lib/firebase/logs";
 import { Act, ActSuivi } from "@/types";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { getCompanies, type Company } from "@/lib/firebase/companies";
-import { SuiviTags } from "./suivi-tags";
+import { SuiviTags, validateSuiviTags } from "./suivi-tags";
 
 interface NewActDialogProps {
   open: boolean;
@@ -214,6 +214,19 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
         toast.error("Une note est obligatoire pour ce type d'acte");
         return;
       }
+      
+      // Validation des tags de suivi obligatoires pour M+3
+      if (!suivi || typeof suivi !== 'object' || Object.keys(suivi).length === 0) {
+        toast.error("Les tags de suivi sont obligatoires pour les actes M+3");
+        return;
+      }
+      
+      const suiviValidation = validateSuiviTags(suivi);
+      if (!suiviValidation.isValid) {
+        toast.error(`Tags de suivi incomplets : ${suiviValidation.missingTags.join(", ")}`);
+        return;
+      }
+      
       setIsLoading(true);
       try {
         const actData: any = {
@@ -224,16 +237,12 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
           contratType: "-",
           compagnie: "-",
           dateEffet: new Date(),
+          m3Suivi: suivi, // Tags obligatoires pour M+3
         };
         
         // Ajouter la note
         if (note) {
           actData.note = note;
-        }
-        
-        // Ajouter les tags de suivi pour M+3 uniquement
-        if (suivi && Object.keys(suivi).length > 0) {
-          actData.m3Suivi = suivi;
         }
         
         await createAct(actData);
@@ -279,6 +288,18 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
         toast.error("Une note est obligatoire pour ce type d'acte");
         return;
       }
+      
+      // Validation des tags de suivi obligatoires pour PRETERME
+      if (!suivi || typeof suivi !== 'object' || Object.keys(suivi).length === 0) {
+        toast.error("Les tags de suivi sont obligatoires pour les prétermes");
+        return;
+      }
+      
+      const suiviValidation = validateSuiviTags(suivi);
+      if (!suiviValidation.isValid) {
+        toast.error(`Tags de suivi incomplets : ${suiviValidation.missingTags.join(", ")}`);
+        return;
+      }
 
       setIsLoading(true);
       try {
@@ -291,12 +312,8 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
           compagnie: "-",
           dateEffet: new Date(),
           note,
+          pretermeSuivi: suivi, // Tags obligatoires pour PRETERME
         };
-        
-        // Ajouter les tags de suivi pour PRETERME
-        if (suivi && Object.keys(suivi).length > 0) {
-          actData.pretermeSuivi = suivi;
-        }
         
         await createAct(actData);
         
@@ -621,7 +638,13 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
             </Button>
             <Button 
               onClick={handleSubmit} 
-              disabled={isLoading || !clientNom || !note || (isPreterme && !numeroContrat.trim())}
+              disabled={
+                isLoading || 
+                !clientNom || 
+                !note || 
+                (isPreterme && !numeroContrat.trim()) ||
+                !validateSuiviTags(suivi).isValid
+              }
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
