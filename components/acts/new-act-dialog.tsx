@@ -260,10 +260,10 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
     if (isPreterme) {
       const trimmedContractNumber = numeroContrat.trim();
       
-      // Validation
-      if (!trimmedContractNumber) {
-        toast.error("Le numéro de contrat est obligatoire");
-        setFormErrors({ numeroContrat: "Le numéro de contrat est obligatoire" });
+      // Validation stricte : le numéro de contrat ne peut pas être vide, "-", ou uniquement des espaces
+      if (!trimmedContractNumber || trimmedContractNumber === "" || trimmedContractNumber === "-") {
+        toast.error("Le numéro de contrat est obligatoire pour les prétermes");
+        setFormErrors({ numeroContrat: "Le numéro de contrat est obligatoire pour les prétermes" });
         return;
       }
       
@@ -553,7 +553,7 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
                   <p className="text-xs text-red-500">{formErrors.numeroContrat}</p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Le même numéro de contrat peut être saisi plusieurs fois (suivi dans le temps).
+                  Le même numéro de contrat peut être saisi plusieurs fois pour suivre les révisions dans le temps (ex: révision en 2022, 2023, 2024, etc.).
                 </p>
               </div>
             )}
@@ -597,7 +597,7 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
             </Button>
             <Button 
               onClick={handleSubmit} 
-              disabled={isLoading || !clientNom || !note || (isPreterme && !numeroContrat)}
+              disabled={isLoading || !clientNom || !note || (isPreterme && !numeroContrat.trim())}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (

@@ -27,6 +27,15 @@ export const createAct = async (act: any): Promise<Act> => {
   // PRETERME : Le même numéro peut exister plusieurs fois (suivi temporel)
   // M+3 : Pas de numéro de contrat (utilise "-")
   const trimmedContractNumber = act.numeroContrat?.trim();
+  
+  // Validation : Pour les prétermes, le numéro de contrat est obligatoire
+  if (isPreterme) {
+    if (!trimmedContractNumber || trimmedContractNumber === "" || trimmedContractNumber === "-") {
+      throw new Error('Le numéro de contrat est obligatoire pour les prétermes.');
+    }
+  }
+  
+  // Vérification d'unicité uniquement pour les AN
   if (isAN && trimmedContractNumber) {
     const alreadyExists = await contractNumberExists(trimmedContractNumber);
     if (alreadyExists) {

@@ -921,7 +921,7 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
                               </tr>
                             </TooltipTrigger>
                             <TooltipContent side="right">
-                              <p className="text-sm font-medium">{commercialEmail}</p>
+                              <p className="text-sm font-medium">Saisi par : {commercialEmail}</p>
                             </TooltipContent>
                           </Tooltip>
                         );
