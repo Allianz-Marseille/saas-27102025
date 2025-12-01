@@ -214,23 +214,28 @@ export const getActById = async (actId: string): Promise<Act | null> => {
 };
 
 export const contractNumberExists = async (numeroContrat: string): Promise<boolean> => {
-  if (!db) return false;
+  // Utiliser l'API route qui utilise Firebase Admin SDK
+  // pour avoir accès à tous les actes (contourne les règles Firestore)
+  try {
+    const response = await fetch("/api/acts/check-contract", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ numeroContrat }),
+    });
 
-  const normalizedNumber = numeroContrat.trim().toLowerCase();
-  if (!normalizedNumber) {
+    if (!response.ok) {
+      console.error("Erreur API check-contract:", response.statusText);
+      return false;
+    }
+
+    const data = await response.json();
+    return data.exists === true;
+  } catch (error) {
+    console.error("Erreur lors de la vérification du numéro de contrat:", error);
     return false;
   }
-
-  // Récupérer tous les actes pour comparer en minuscules (Firestore ne supporte pas les comparaisons case-insensitive)
-  const q = query(collection(db, "acts"));
-  const snapshot = await getDocs(q);
-  
-  // Vérifier si un numéro de contrat existe (comparaison insensible à la casse)
-  return snapshot.docs.some((doc) => {
-    const actData = doc.data();
-    const existingNumber = actData.numeroContrat?.trim().toLowerCase();
-    return existingNumber === normalizedNumber;
-  });
 };
 
 /**
