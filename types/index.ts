@@ -8,6 +8,13 @@ export interface User {
   createdAt: Date;
 }
 
+export interface ActSuivi {
+  appelTelephonique?: "OK" | "KO";
+  miseAJourFicheLagoon?: "OK" | "KO";
+  bilanEffectue?: "OK" | "KO";
+  smsMailCoordonnees?: "OK" | "KO"; // Tag complémentaire affiché à chaque KO
+}
+
 export interface Act {
   id: string;
   userId: string;
@@ -24,6 +31,10 @@ export interface Act {
   commissionReelle?: number;
   moisKey: string;
   note?: string;
+  // Tags de suivi d'appel téléphonique
+  anSuivi?: ActSuivi;
+  m3Suivi?: ActSuivi;
+  pretermeSuivi?: ActSuivi;
 }
 
 export interface Company {

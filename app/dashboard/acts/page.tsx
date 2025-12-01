@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { FileText, Plus, Edit, Trash2, Lock, Unlock, ArrowUpDown, ArrowUp, ArrowDown, Shield, Heart, Stethoscope, PiggyBank, Car, Building2, Filter, X } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, Lock, Unlock, ArrowUpDown, ArrowUp, ArrowDown, Shield, Heart, Stethoscope, PiggyBank, Car, Building2, Filter, X, CheckCircle2, Target } from "lucide-react";
 import { deleteAct } from "@/lib/firebase/acts";
 import { logActDeleted } from "@/lib/firebase/logs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -142,6 +142,23 @@ export default function ActsPage() {
   const handleEditSuccess = () => {
     loadActs();
   };
+
+  // Calcul du KPI Bilan sur Process
+  const processKPI = useMemo(() => {
+    const processActs = acts.filter(act => 
+      act.kind === "M+3" || act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD"
+    );
+    
+    const bilansEffectues = processActs.filter(act => {
+      if (act.kind === "M+3" && act.m3Suivi?.bilanEffectue === "OK") return true;
+      if ((act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD") && act.pretermeSuivi?.bilanEffectue === "OK") return true;
+      return false;
+    }).length;
+    
+    const nbProcess = processActs.length;
+    
+    return { bilansEffectues, nbProcess };
+  }, [acts]);
 
   const sortedActs = useMemo(() => {
     if (acts.length === 0) {
@@ -427,6 +444,67 @@ export default function ActsPage() {
           </CardContent>
         </Card>
 
+        {/* KPI Bilan sur Process */}
+        {processKPI.nbProcess > 0 && (
+          <Card className="mb-6 overflow-hidden border-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50/50 via-purple-50/50 to-pink-50/50 dark:from-blue-950/20 dark:via-purple-950/20 dark:to-pink-950/20 shadow-lg hover:shadow-xl transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
+                      <Target className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        Taux de réalisation des bilans
+                      </CardTitle>
+                      <CardDescription className="text-xs mt-0.5">
+                        Suivi des process M+3, PRETERME_AUTO et PRETERME_IRD
+                      </CardDescription>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 flex items-end gap-6">
+                    <div className="flex items-baseline gap-2">
+                      <div className="text-5xl font-bold bg-gradient-to-br from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
+                        {processKPI.bilansEffectues}
+                      </div>
+                      <div className="text-lg font-medium text-muted-foreground mb-1">
+                        / {processKPI.nbProcess}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        <span className="text-sm font-medium text-foreground">
+                          {processKPI.nbProcess > 0 
+                            ? Math.round((processKPI.bilansEffectues / processKPI.nbProcess) * 100) 
+                            : 0}% de bilans réalisés
+                        </span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 transition-all duration-500 ease-out rounded-full"
+                          style={{ 
+                            width: `${processKPI.nbProcess > 0 ? (processKPI.bilansEffectues / processKPI.nbProcess) * 100 : 0}%` 
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="ml-6 flex flex-col items-center justify-center p-4 rounded-xl bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 border border-purple-200 dark:border-purple-700">
+                  <Target className="h-8 w-8 text-purple-600 dark:text-purple-400 mb-2" />
+                  <div className="text-xs font-medium text-purple-700 dark:text-purple-300 text-center">
+                    Process<br />suivis
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Tableau des actes */}
         <Card>
           <CardHeader>
@@ -643,6 +721,7 @@ export default function ActsPage() {
                   <tbody>
                     {sortedActs.map((act) => {
                       const isProcess = act.kind === "M+3" || act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD";
+                      const isM3 = act.kind === "M+3";
                       const isLocked = checkActLocked(act, userData);
                       
                       return (
@@ -679,7 +758,7 @@ export default function ActsPage() {
                             </span>
                           </td>
                           <td className="p-3 text-sm font-semibold text-center align-middle">{act.clientNom}</td>
-                          <td className="p-3 text-xs text-center align-middle text-muted-foreground font-mono">{isProcess ? "-" : act.numeroContrat}</td>
+                          <td className="p-3 text-xs text-center align-middle text-muted-foreground font-mono">{isM3 ? "-" : (act.numeroContrat || "-")}</td>
                           <td className="p-3 text-center align-middle">
                             {isProcess ? (
                               <span className="text-muted-foreground">-</span>

@@ -75,6 +75,14 @@ export const createAct = async (act: any): Promise<Act> => {
     actData.note = act.note;
   }
 
+  // Ajouter les tags de suivi s'ils existent (uniquement pour M+3 et PRETERME, pas pour AN)
+  if (act.m3Suivi !== undefined) {
+    actData.m3Suivi = act.m3Suivi;
+  }
+  if (act.pretermeSuivi !== undefined) {
+    actData.pretermeSuivi = act.pretermeSuivi;
+  }
+
   const docRef = await addDoc(collection(db, "acts"), actData);
 
   return {
@@ -181,6 +189,9 @@ export const updateAct = async (actId: string, updates: Record<string, unknown>)
       updateData[key] = value;
     }
   });
+  
+  // Les tags de suivi sont déjà inclus dans updates via anSuivi, m3Suivi, pretermeSuivi
+  // Ils seront automatiquement ajoutés à updateData par la boucle ci-dessus
   
   await updateDoc(actRef, updateData);
 };
