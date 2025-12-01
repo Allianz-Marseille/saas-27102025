@@ -52,7 +52,7 @@ service cloud.firestore {
     match /acts/{actId} {
       allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow create: if isCDC();
-      allow update: if isCDC() && resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (isCDC() && resource.data.userId == request.auth.uid);
       allow delete: if isAdmin() || (isCDC() && resource.data.userId == request.auth.uid);
     }
     

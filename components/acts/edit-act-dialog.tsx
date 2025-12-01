@@ -22,6 +22,7 @@ import { Timestamp } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { isActLocked as checkActLocked } from "@/lib/utils/act-lock";
+import { isAdmin } from "@/lib/utils/roles";
 
 interface EditActDialogProps {
   open: boolean;
@@ -134,6 +135,11 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
   }, [open, act]);
 
   const isProcess = act?.kind === "M+3" || act?.kind === "PRETERME_AUTO" || act?.kind === "PRETERME_IRD";
+  const isPreterme = act?.kind === "PRETERME_AUTO" || act?.kind === "PRETERME_IRD";
+  const userIsAdmin = isAdmin(userData);
+  const isLocked = checkActLocked(act, userData);
+  // Les admins peuvent toujours modifier, même si l'acte est bloqué
+  const canEdit = userIsAdmin || !isLocked;
 
   const handleSubmit = async () => {
     if (!act) return;
@@ -151,6 +157,17 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
         const updates: Record<string, unknown> = {
           clientNom,
         };
+        
+        // Les admins peuvent modifier le numéro de contrat pour les prétermes
+        if (userIsAdmin && isPreterme && numeroContrat !== undefined) {
+          const trimmedContractNumber = numeroContrat.trim();
+          if (!trimmedContractNumber || trimmedContractNumber === "" || trimmedContractNumber === "-") {
+            toast.error("Le numéro de contrat est obligatoire pour les prétermes");
+            setIsLoading(false);
+            return;
+          }
+          updates.numeroContrat = trimmedContractNumber;
+        }
         
         if (note !== undefined) {
           updates.note = note;
@@ -187,6 +204,24 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
 
     setIsLoading(true);
     try {
+      // Vérification d'unicité du numéro de contrat pour les AN si l'admin modifie le numéro
+      if (userIsAdmin && numeroContrat !== undefined) {
+        const trimmedContractNumber = numeroContrat.trim();
+        const originalContractNumber = act.numeroContrat?.trim();
+        
+        // Si le numéro a changé, vérifier l'unicité
+        if (trimmedContractNumber !== originalContractNumber && trimmedContractNumber) {
+          const { contractNumberExists } = await import("@/lib/firebase/acts");
+          const alreadyExists = await contractNumberExists(trimmedContractNumber);
+          
+          if (alreadyExists) {
+            toast.error("Ce numéro de contrat est déjà enregistré");
+            setIsLoading(false);
+            return;
+          }
+        }
+      }
+      
       // Recalculer la commission si nécessaire
       const newCommission = calculateCommission(
         contratType,
@@ -201,6 +236,11 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
         dateEffet,
         commissionPotentielle: newCommission,
       };
+      
+      // Les admins peuvent modifier le numéro de contrat pour les AN
+      if (userIsAdmin && numeroContrat !== undefined) {
+        updates.numeroContrat = numeroContrat.trim();
+      }
       
       if (primeAnnuelle !== undefined) {
         updates.primeAnnuelle = primeAnnuelle;
@@ -273,8 +313,26 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
                 value={clientNom}
                 onChange={(e) => handleClientNomChange(e.target.value)}
                 placeholder="Ex: Dupont Jean-Pierre"
+                disabled={!canEdit}
+                className={!canEdit ? "bg-muted" : ""}
               />
             </div>
+
+            {/* Numéro de contrat (modifiable par admin uniquement pour les prétermes) */}
+            {userIsAdmin && isPreterme && (
+              <div className="grid gap-2">
+                <Label htmlFor="numeroContrat">Numéro de contrat *</Label>
+                <Input
+                  id="numeroContrat"
+                  value={numeroContrat}
+                  onChange={(e) => setNumeroContrat(e.target.value)}
+                  placeholder="Ex: ABC123456"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Modifiable uniquement par les administrateurs
+                </p>
+              </div>
+            )}
 
             {/* Note */}
             <div className="grid gap-2">
@@ -285,6 +343,8 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Ajoutez une note (optionnel)"
                 rows={4}
+                disabled={!canEdit}
+                className={!canEdit ? "bg-muted" : ""}
               />
             </div>
           </div>
@@ -293,7 +353,7 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Annuler
             </Button>
-            <Button onClick={handleSubmit} disabled={isLoading} className="bg-[#00529B] hover:bg-[#003d73]">
+            <Button onClick={handleSubmit} disabled={isLoading || !canEdit} className="bg-[#00529B] hover:bg-[#003d73]">
               {isLoading ? "Modification..." : "Enregistrer"}
             </Button>
           </DialogFooter>
@@ -333,29 +393,39 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
               value={clientNom}
               onChange={(e) => handleClientNomChange(e.target.value)}
               placeholder="Ex: Dupont Jean-Pierre"
+              disabled={!canEdit}
+              className={!canEdit ? "bg-muted" : ""}
             />
           </div>
 
-          {/* Numéro de contrat (lecture seule) */}
+          {/* Numéro de contrat (modifiable par admin uniquement) */}
           <div className="grid gap-2">
             <Label htmlFor="numeroContrat">Numéro de contrat</Label>
             <Input
               id="numeroContrat"
               value={numeroContrat}
-              disabled
-              className="bg-muted"
-              title="Le numéro de contrat ne peut pas être modifié"
+              disabled={!userIsAdmin}
+              className={userIsAdmin ? "" : "bg-muted"}
+              onChange={(e) => setNumeroContrat(e.target.value)}
+              placeholder="Ex: ABC123456"
             />
-            <p className="text-xs text-muted-foreground">
-              Le numéro de contrat ne peut pas être modifié
-            </p>
+            {!userIsAdmin && (
+              <p className="text-xs text-muted-foreground">
+                Le numéro de contrat ne peut pas être modifié par les commerciaux
+              </p>
+            )}
+            {userIsAdmin && (
+              <p className="text-xs text-muted-foreground">
+                Modifiable uniquement par les administrateurs
+              </p>
+            )}
           </div>
 
           {/* Type de contrat */}
           <div className="grid gap-2">
             <Label htmlFor="contratType">Type de contrat *</Label>
-            <Select value={contratType} onValueChange={setContratType}>
-              <SelectTrigger id="contratType">
+            <Select value={contratType} onValueChange={setContratType} disabled={!canEdit}>
+              <SelectTrigger id="contratType" className={!canEdit ? "bg-muted" : ""}>
                 <SelectValue placeholder="Sélectionnez un type de contrat" />
               </SelectTrigger>
               <SelectContent>
@@ -371,8 +441,8 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
           {/* Compagnie */}
           <div className="grid gap-2">
             <Label htmlFor="compagnie">Compagnie *</Label>
-            <Select value={compagnie} onValueChange={setCompagnie}>
-              <SelectTrigger id="compagnie">
+            <Select value={compagnie} onValueChange={setCompagnie} disabled={!canEdit}>
+              <SelectTrigger id="compagnie" className={!canEdit ? "bg-muted" : ""}>
                 <SelectValue placeholder="Sélectionnez une compagnie" />
               </SelectTrigger>
               <SelectContent>
@@ -392,9 +462,11 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
+                  disabled={!canEdit}
                   className={cn(
                     "w-full justify-start text-left font-normal",
-                    !dateEffet && "text-muted-foreground"
+                    !dateEffet && "text-muted-foreground",
+                    !canEdit && "bg-muted"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
@@ -426,6 +498,8 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
                 value={primeAnnuelle || ""}
                 onChange={(e) => setPrimeAnnuelle(e.target.value ? parseFloat(e.target.value) : undefined)}
                 placeholder="Ex: 500.00"
+                disabled={!canEdit}
+                className={!canEdit ? "bg-muted" : ""}
               />
             </div>
           )}
@@ -441,6 +515,8 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
                 value={montantVersement || ""}
                 onChange={(e) => setMontantVersement(e.target.value ? parseFloat(e.target.value) : undefined)}
                 placeholder="Ex: 1000.00"
+                disabled={!canEdit}
+                className={!canEdit ? "bg-muted" : ""}
               />
             </div>
           )}
@@ -454,6 +530,8 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
               onChange={(e) => setNote(e.target.value)}
               placeholder="Ajoutez une note (optionnel)"
               rows={3}
+              disabled={!canEdit}
+              className={!canEdit ? "bg-muted" : ""}
             />
           </div>
         </div>
@@ -462,7 +540,7 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} disabled={isLoading} className="bg-[#00529B] hover:bg-[#003d73]">
+          <Button onClick={handleSubmit} disabled={isLoading || !canEdit} className="bg-[#00529B] hover:bg-[#003d73]">
             {isLoading ? "Modification..." : "Enregistrer"}
           </Button>
         </DialogFooter>
@@ -470,4 +548,5 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
     </Dialog>
   );
 }
+
 
