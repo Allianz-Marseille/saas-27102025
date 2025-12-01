@@ -16,9 +16,10 @@ import { CalendarIcon, ArrowLeft, Plus, FileText, Clock, AlertCircle, CheckCircl
 import { toast } from "sonner";
 import { contractNumberExists, createAct } from "@/lib/firebase/acts";
 import { logActCreated } from "@/lib/firebase/logs";
-import { Act } from "@/types";
+import { Act, ActSuivi } from "@/types";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { getCompanies, type Company } from "@/lib/firebase/companies";
+import { SuiviTags } from "./suivi-tags";
 
 interface NewActDialogProps {
   open: boolean;
@@ -132,6 +133,7 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
   const [primeAnnuelle, setPrimeAnnuelle] = useState<number | undefined>();
   const [montantVersement, setMontantVersement] = useState<number | undefined>();
   const [formErrors, setFormErrors] = useState<{ numeroContrat?: string }>({});
+  const [suivi, setSuivi] = useState<ActSuivi | undefined>(undefined);
 
   // Charger les compagnies actives
   useEffect(() => {
@@ -180,6 +182,7 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
     setDateEffet(undefined);
     setPrimeAnnuelle(undefined);
     setMontantVersement(undefined);
+    setSuivi(undefined);
   };
   
   const isProcess = kind === "M+3" || kind === "PRETERME_AUTO" || kind === "PRETERME_IRD";
@@ -226,6 +229,11 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
         // Ajouter la note
         if (note) {
           actData.note = note;
+        }
+        
+        // Ajouter les tags de suivi pour M+3 uniquement
+        if (suivi && Object.keys(suivi).length > 0) {
+          actData.m3Suivi = suivi;
         }
         
         await createAct(actData);
@@ -284,6 +292,11 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
           dateEffet: new Date(),
           note,
         };
+        
+        // Ajouter les tags de suivi pour PRETERME
+        if (suivi && Object.keys(suivi).length > 0) {
+          actData.pretermeSuivi = suivi;
+        }
         
         await createAct(actData);
         
@@ -366,6 +379,9 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
       if (note) {
         actData.note = note;
       }
+      
+      // Les tags de suivi ne sont pas disponibles pour AN
+      // (uniquement pour M+3, PRETERME_AUTO, PRETERME_IRD)
       
       await createAct(actData);
       
@@ -584,6 +600,14 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
                 Cette note permet de garder une trace du suivi {isPreterme ? "du contrat" : "client"} et facilite le pilotage de l'activité.
               </p>
             </div>
+
+            {/* Tags de suivi d'appel téléphonique - Uniquement pour M+3 et PRETERME */}
+            <SuiviTags
+              suivi={suivi}
+              onSuiviChange={setSuivi}
+              userData={userData}
+              isCreation={true}
+            />
           </div>
 
           <DialogFooter className="border-t pt-6 gap-3">
@@ -809,6 +833,8 @@ export function NewActDialog({ open, onOpenChange, onSuccess }: NewActDialogProp
               className="border-2 focus:border-blue-500 dark:focus:border-blue-400 resize-none"
             />
           </div>
+
+          {/* Les tags de suivi ne sont pas disponibles pour AN */}
         </div>
 
         <DialogFooter className="border-t pt-6 gap-3">

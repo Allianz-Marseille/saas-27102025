@@ -23,6 +23,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { isActLocked as checkActLocked } from "@/lib/utils/act-lock";
 import { isAdmin } from "@/lib/utils/roles";
+import { SuiviTags } from "./suivi-tags";
+import { ActSuivi } from "@/types";
 
 interface EditActDialogProps {
   open: boolean;
@@ -57,6 +59,7 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
   const [dateEffetOpen, setDateEffetOpen] = useState(false);
   const [primeAnnuelle, setPrimeAnnuelle] = useState<number | undefined>();
   const [montantVersement, setMontantVersement] = useState<number | undefined>();
+  const [suivi, setSuivi] = useState<ActSuivi | undefined>(undefined);
 
   // Fonction pour mettre la première lettre en majuscule
   const formatClientName = (name: string) => {
@@ -131,11 +134,22 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
       
       setPrimeAnnuelle(act.primeAnnuelle);
       setMontantVersement(act.montantVersement);
+      
+      // Charger les tags de suivi selon le type d'acte (uniquement M+3 et PRETERME)
+      if (act.kind === "M+3" && act.m3Suivi) {
+        setSuivi(act.m3Suivi);
+      } else if ((act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD") && act.pretermeSuivi) {
+        setSuivi(act.pretermeSuivi);
+      } else {
+        setSuivi(undefined);
+      }
     }
   }, [open, act]);
 
   const isProcess = act?.kind === "M+3" || act?.kind === "PRETERME_AUTO" || act?.kind === "PRETERME_IRD";
   const isPreterme = act?.kind === "PRETERME_AUTO" || act?.kind === "PRETERME_IRD";
+  const isM3 = act?.kind === "M+3";
+  const isAN = act?.kind === "AN";
   const userIsAdmin = isAdmin(userData);
   const isLocked = checkActLocked(act, userData);
   // Les admins peuvent toujours modifier, même si l'acte est bloqué
@@ -171,6 +185,15 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
         
         if (note !== undefined) {
           updates.note = note;
+        }
+        
+        // Ajouter les tags de suivi pour M+3 et PRETERME
+        if (suivi && Object.keys(suivi).length > 0) {
+          if (act.kind === "M+3") {
+            updates.m3Suivi = suivi;
+          } else if (isPreterme) {
+            updates.pretermeSuivi = suivi;
+          }
         }
         
         await updateAct(act.id, updates);
@@ -253,6 +276,9 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
       if (note !== undefined) {
         updates.note = note;
       }
+      
+      // Les tags de suivi ne sont pas disponibles pour AN
+      // (uniquement pour M+3, PRETERME_AUTO, PRETERME_IRD)
       
       await updateAct(act.id, updates as Partial<Act>);
       
@@ -347,6 +373,15 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
                 className={!canEdit ? "bg-muted" : ""}
               />
             </div>
+
+            {/* Tags de suivi d'appel téléphonique - Uniquement pour M+3 et PRETERME */}
+            <SuiviTags
+              suivi={suivi}
+              onSuiviChange={setSuivi}
+              userData={userData}
+              disabled={!canEdit}
+              isCreation={false}
+            />
           </div>
 
           <DialogFooter>
@@ -415,9 +450,9 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
               </p>
             )}
             {userIsAdmin && (
-              <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
                 Modifiable uniquement par les administrateurs
-              </p>
+            </p>
             )}
           </div>
 
@@ -534,6 +569,17 @@ export function EditActDialog({ open, onOpenChange, act, onSuccess }: EditActDia
               className={!canEdit ? "bg-muted" : ""}
             />
           </div>
+
+          {/* Tags de suivi d'appel téléphonique - Uniquement pour M+3 et PRETERME (pas pour AN) */}
+          {!isAN && (
+            <SuiviTags
+              suivi={suivi}
+              onSuiviChange={setSuivi}
+              userData={userData}
+              disabled={!canEdit}
+              isCreation={false}
+            />
+          )}
         </div>
 
         <DialogFooter>

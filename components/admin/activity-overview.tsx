@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, FileText as FileTextIcon, Lock, Unlock, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Filter, X, Shield, Heart, Stethoscope, PiggyBank, Car, DollarSign, FileText, ClipboardCheck, Building2, Scale, Target, Coins, Table, TrendingUp, BarChart3 } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText as FileTextIcon, Lock, Unlock, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Filter, X, Shield, Heart, Stethoscope, PiggyBank, Car, DollarSign, FileText, ClipboardCheck, Building2, Scale, Target, Coins, Table, TrendingUp, BarChart3, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -144,7 +144,7 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
     key: "dateSaisie",
     direction: "desc",
   });
-  const [activeFilter, setActiveFilter] = useState<{ type: 'kind' | 'contractType' | null; value: string | null }>({
+  const [activeFilter, setActiveFilter] = useState<{ type: 'kind' | 'contractType' | 'bilanEffectue' | null; value: string | null }>({
     type: null,
     value: null,
   });
@@ -216,6 +216,23 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
   const kpi = calculateKPI(actsForKPI as any);
   const timelineDays = useMemo(() => generateTimeline(selectedMonth, acts), [selectedMonth, acts]);
 
+  // Calcul du KPI Bilan sur Process
+  const processKPI = useMemo(() => {
+    const processActs = acts.filter(act => 
+      act.kind === "M+3" || act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD"
+    );
+    
+    const bilansEffectues = processActs.filter(act => {
+      if (act.kind === "M+3" && act.m3Suivi?.bilanEffectue === "OK") return true;
+      if ((act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD") && act.pretermeSuivi?.bilanEffectue === "OK") return true;
+      return false;
+    }).length;
+    
+    const nbProcess = processActs.length;
+    
+    return { bilansEffectues, nbProcess };
+  }, [acts]);
+
   useEffect(() => {
     const container = timelineContainerRef.current;
     if (!container) return;
@@ -248,12 +265,27 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
       return [];
     }
 
-    // Filtrage (mutuellement exclusif : soit par kind, soit par contractType)
+    // Filtrage
     let filteredActs = [...acts];
     if (activeFilter.type === 'kind' && activeFilter.value) {
       filteredActs = filteredActs.filter(act => act.kind === activeFilter.value);
     } else if (activeFilter.type === 'contractType' && activeFilter.value) {
       filteredActs = filteredActs.filter(act => act.contratType === activeFilter.value);
+    } else if (activeFilter.type === 'bilanEffectue' && activeFilter.value) {
+      // Filtrer par bilan effectué (Oui/Non)
+      filteredActs = filteredActs.filter(act => {
+        const isProcess = act.kind === "M+3" || act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD";
+        if (!isProcess) return false; // Seulement les process
+        
+        let bilanEffectue = false;
+        if (act.kind === "M+3" && act.m3Suivi?.bilanEffectue === "OK") {
+          bilanEffectue = true;
+        } else if ((act.kind === "PRETERME_AUTO" || act.kind === "PRETERME_IRD") && act.pretermeSuivi?.bilanEffectue === "OK") {
+          bilanEffectue = true;
+        }
+        
+        return activeFilter.value === "oui" ? bilanEffectue : !bilanEffectue;
+      });
     }
 
     // Tri
@@ -544,6 +576,72 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
             {/* Contenu : Tableau des actes */}
             <TabsContent value="tableau" className="mt-6">
           <div>
+            {/* KPI Bilan sur Process */}
+            {processKPI.nbProcess > 0 && (
+              <Card className="mb-6 overflow-hidden border-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50/50 via-purple-50/50 to-pink-50/50 dark:from-blue-950/20 dark:via-purple-950/20 dark:to-pink-950/20 shadow-lg hover:shadow-xl transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
+                          <Target className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                            Taux de réalisation des bilans
+                            {selectedCommercial !== "all" && (
+                              <span className="ml-2 text-xs font-normal normal-case">
+                                - {commerciaux.find(c => c.id === selectedCommercial)?.email || "Commercial"}
+                              </span>
+                            )}
+                          </CardTitle>
+                          <CardDescription className="text-xs mt-0.5">
+                            Suivi des process M+3, PRETERME_AUTO et PRETERME_IRD
+                          </CardDescription>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4 flex items-end gap-6">
+                        <div className="flex items-baseline gap-2">
+                          <div className="text-5xl font-bold bg-gradient-to-br from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
+                            {processKPI.bilansEffectues}
+                          </div>
+                          <div className="text-lg font-medium text-muted-foreground mb-1">
+                            / {processKPI.nbProcess}
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                            <span className="text-sm font-medium text-foreground">
+                              {processKPI.nbProcess > 0 
+                                ? Math.round((processKPI.bilansEffectues / processKPI.nbProcess) * 100) 
+                                : 0}% de bilans réalisés
+                            </span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 transition-all duration-500 ease-out rounded-full"
+                              style={{ 
+                                width: `${processKPI.nbProcess > 0 ? (processKPI.bilansEffectues / processKPI.nbProcess) * 100 : 0}%` 
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="ml-6 flex flex-col items-center justify-center p-4 rounded-xl bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 border border-purple-200 dark:border-purple-700">
+                      <Target className="h-8 w-8 text-purple-600 dark:text-purple-400 mb-2" />
+                      <div className="text-xs font-medium text-purple-700 dark:text-purple-300 text-center">
+                        Process<br />suivis
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
@@ -595,6 +693,37 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
                         {kind}
                       </button>
                     ))}
+                  </div>
+                  
+                  {/* Séparateur */}
+                  <div className="h-4 w-px bg-border" />
+                  
+                  {/* Filtre par bilan effectué */}
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={() => setActiveFilter({ type: 'bilanEffectue', value: 'oui' })}
+                      className={cn(
+                        "px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1",
+                        activeFilter.type === 'bilanEffectue' && activeFilter.value === 'oui'
+                          ? "bg-green-500 text-white shadow-md ring-2 ring-white dark:ring-slate-800"
+                          : "bg-muted hover:bg-muted/70"
+                      )}
+                    >
+                      <CheckCircle2 className="h-3 w-3" />
+                      Bilan effectué (Oui)
+                    </button>
+                    <button
+                      onClick={() => setActiveFilter({ type: 'bilanEffectue', value: 'non' })}
+                      className={cn(
+                        "px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1",
+                        activeFilter.type === 'bilanEffectue' && activeFilter.value === 'non'
+                          ? "bg-orange-500 text-white shadow-md ring-2 ring-white dark:ring-slate-800"
+                          : "bg-muted hover:bg-muted/70"
+                      )}
+                    >
+                      <X className="h-3 w-3" />
+                      Bilan effectué (Non)
+                    </button>
                   </div>
                   
                   {/* Séparateur */}

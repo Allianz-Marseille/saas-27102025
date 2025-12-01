@@ -1,8 +1,16 @@
-# Modales de Modification des Actes - Commerciaux
+# Modales de Saisie et Modification des Actes - Commerciaux
 
 ## Vue d'ensemble
 
-Ce document décrit le comportement des modales de modification des actes selon le type d'acte (AN, M+3, PRETERME_AUTO, PRETERME_IRD) et le rôle de l'utilisateur (Commercial vs Administrateur).
+Ce document décrit le comportement des modales de **saisie (création)** et de **modification** des actes selon le type d'acte (AN, M+3, PRETERME_AUTO, PRETERME_IRD) et le rôle de l'utilisateur (Commercial vs Administrateur).
+
+### Portée des fonctionnalités
+
+Les fonctionnalités décrites dans ce document s'appliquent aux **modales de saisie** (création d'un nouvel acte) et aux **modales de modification** (édition d'un acte existant) pour les types d'actes suivants :
+- ✅ **AN** (Apport Nouveau)
+- ✅ **M+3**
+- ✅ **PRETERME_AUTO**
+- ✅ **PRETERME_IRD**
 
 ## Types d'actes
 
@@ -40,6 +48,7 @@ Préterme IRD avec numéro de contrat obligatoire. Suivi du processus d'appel t�
 - ✅ Montant versé (pour VIE_PU)
 - ✅ Note
 - ✅ **Numéro de contrat** (modifiable par les commerciaux avant le 15)
+- ✅ **Tags de suivi d'appel** (workflow d'appel téléphonique) - Disponible en saisie et modification
 
 **Pour M+3 :**
 - ✅ Nom du client
@@ -51,7 +60,7 @@ Préterme IRD avec numéro de contrat obligatoire. Suivi du processus d'appel t�
 - ✅ Nom du client
 - ✅ Note
 - ✅ **Numéro de contrat** (modifiable par les commerciaux avant le 15)
-- ✅ **Tags de suivi d'appel** (workflow d'appel téléphonique)
+- ✅ **Tags de suivi d'appel** (workflow d'appel téléphonique) - Disponible en saisie et modification
 
 ---
 
@@ -72,6 +81,7 @@ Préterme IRD avec numéro de contrat obligatoire. Suivi du processus d'appel t�
 - ✅ Prime annuelle
 - ✅ Montant versé (pour VIE_PU)
 - ✅ Note
+- ✅ **Tags de suivi d'appel** (workflow d'appel téléphonique) - Disponible en saisie et modification
 
 **Pour M+3 :**
 - ✅ Nom du client
@@ -83,7 +93,7 @@ Préterme IRD avec numéro de contrat obligatoire. Suivi du processus d'appel t�
 - ✅ Nom du client
 - ✅ **Numéro de contrat** (modifiable uniquement par les admins)
 - ✅ Note
-- ✅ **Tags de suivi d'appel** (workflow d'appel téléphonique)
+- ✅ **Tags de suivi d'appel** (workflow d'appel téléphonique) - Disponible en saisie et modification
 
 ---
 
@@ -113,12 +123,40 @@ Préterme IRD avec numéro de contrat obligatoire. Suivi du processus d'appel t�
 - Nom du client : ✅ Obligatoire
 - Note : ✅ Obligatoire
 - Numéro de contrat : ✅ Obligatoire (modifiable uniquement par les admins)
-- Tags de suivi : Optionnels (workflow progressif)
+- Tags de suivi : Optionnels (workflow progressif) - Disponible en saisie et modification
 
 **Pour M+3 :**
 - Nom du client : ✅ Obligatoire
 - Note : Optionnelle
-- Tags de suivi : Optionnels (workflow progressif)
+- Tags de suivi : Optionnels (workflow progressif) - Disponible en saisie et modification
+
+---
+
+## Modales de saisie (création) vs Modification
+
+### Disponibilité des tags de suivi
+
+Les **tags de suivi d'appel téléphonique** sont disponibles dans **deux contextes** :
+
+1. **Modale de saisie (création)** : Lors de la création d'un nouvel acte
+   - Les tags peuvent être définis dès la création de l'acte
+   - Disponible pour : M+3, PRETERME_AUTO, PRETERME_IRD
+   - Permet de suivre le workflow dès le début
+
+2. **Modale de modification** : Lors de l'édition d'un acte existant
+   - Les tags peuvent être mis à jour ou complétés
+   - Disponible pour : M+3, PRETERME_AUTO, PRETERME_IRD
+   - Permet de continuer ou modifier le workflow en cours
+
+### Comportement identique
+
+Le comportement des tags est **identique** dans les deux modales :
+- Même affichage conditionnel (étapes suivantes visibles uniquement si étape précédente = OK)
+- Mêmes règles de validation
+- Mêmes permissions par rôle
+- Même structure de stockage
+
+---
 
 ---
 
@@ -162,7 +200,7 @@ Le processus suit un chemin logique avec des validations par tags :
 
 #### Affichage des tags dans la modale
 
-Dans la modale de modification d'un acte M+3, les tags sont affichés sous forme de **badges cliquables** :
+Dans la modale de **saisie** (création) et de **modification** d'un acte M+3, les tags sont affichés sous forme de **badges cliquables** :
 
 1. **Badge "Appel téléphonique"**
    - Toujours visible
@@ -307,7 +345,7 @@ Le processus suit un chemin logique avec des validations par tags :
 
 #### Affichage des tags dans la modale
 
-Dans la modale de modification d'un acte PRETERME, les tags sont affichés sous forme de **badges cliquables** :
+Dans la modale de **saisie** (création) et de **modification** d'un acte PRETERME, les tags sont affichés sous forme de **badges cliquables** :
 
 1. **Badge "Appel téléphonique"**
    - Toujours visible
@@ -454,7 +492,8 @@ Modifiable uniquement par les administrateurs
 
 ### Fichiers concernés
 
-- `components/acts/edit-act-dialog.tsx` : Composant principal de la modale
+- `components/acts/new-act-dialog.tsx` : Composant principal de la modale de saisie (création)
+- `components/acts/edit-act-dialog.tsx` : Composant principal de la modale de modification
 - `lib/utils/act-lock.ts` : Fonction de vérification du blocage temporel
 - `lib/utils/roles.ts` : Fonction de vérification du rôle administrateur
 - `firestore.rules` : Règles de sécurité Firestore
@@ -512,8 +551,8 @@ Les administrateurs peuvent modifier n'importe quel acte, les commerciaux unique
 - ✅ Désactivation des champs pour les commerciaux après le 15 du mois suivant
 
 ### À venir
-- 🔄 Workflow de suivi M+3 avec tags d'appel téléphonique (appelTelephonique, miseAJourFicheLagoon, bilanEffectue)
-- 🔄 Workflow de suivi PRETERME (AUTO et IRD) avec tags d'appel téléphonique (appelTelephonique, miseAJourFicheLagoon, bilanEffectue)
+- ✅ Workflow de suivi M+3 avec tags d'appel téléphonique (appelTelephonique, miseAJourFicheLagoon, bilanEffectue) - Disponible en saisie et modification
+- ✅ Workflow de suivi PRETERME (AUTO et IRD) avec tags d'appel téléphonique (appelTelephonique, miseAJourFicheLagoon, bilanEffectue) - Disponible en saisie et modification
 
 ---
 
