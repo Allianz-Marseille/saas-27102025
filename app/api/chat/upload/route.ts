@@ -85,11 +85,14 @@ export async function POST(request: NextRequest) {
 
     // Vérifier que le bucket Firebase Storage est configuré
     if (!ragConfig.storage.bucket) {
+      console.error("[Upload] NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET n'est pas configurée");
       return NextResponse.json(
-        { error: "Configuration Firebase Storage manquante. NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET n'est pas configurée." },
+        { error: "Configuration Firebase Storage manquante. NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET n'est pas configurée dans Vercel." },
         { status: 500 }
       );
     }
+    
+    console.log(`[Upload] Bucket configuré: ${ragConfig.storage.bucket}`);
 
     // Générer un ID unique pour le document
     const documentId = uuidv4();
