@@ -183,13 +183,6 @@ export function FloatingChatButton() {
             <span className="absolute -inset-1 rounded-full bg-gradient-to-br from-emerald-500 via-cyan-500 to-blue-600 blur-md opacity-80 group-hover:opacity-100 transition-opacity" />
           </>
         )}
-        
-        {/* Badge "Nouveau" ou notification */}
-        {!isOpen && (
-          <div className="absolute -top-1 -right-1 h-6 w-6 bg-gradient-to-br from-orange-500 to-red-500 rounded-full border-3 border-white dark:border-slate-800 flex items-center justify-center animate-bounce shadow-lg">
-            <Sparkles className="h-3.5 w-3.5 text-white" />
-          </div>
-        )}
       </button>
 
       {/* Fenêtre du chatbot */}
