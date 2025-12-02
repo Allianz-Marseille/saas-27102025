@@ -1,136 +1,119 @@
-# 📚 Documentation du Projet Allianz SaaS
+# SaaS Agence - Allianz Marseille
 
-Bienvenue dans la documentation du projet Allianz SaaS. Ce document répertorie tous les guides et documentations disponibles.
+Application Next.js 15 pour la gestion complète de votre agence : actes commerciaux, commissions et indicateurs.
 
-## 📖 Table des matières
+## 📋 Fonctionnalités
 
-### 🏗️ [Architecture de l'application](./ARCHITECTURE.md)
-**Description :** Vue d'ensemble de l'architecture technique du projet  
-**Contenu :**
-- Structure du projet
-- Authentification
-- Données Firestore
-- Sécurité
-- Déploiement
+- ✅ Authentification Firebase avec restriction de domaine `@allianz-marseille.fr`
+- ✅ Deux rôles : `ADMINISTRATEUR` et `CDC_COMMERCIAL`
+- ✅ Dashboard CDC avec KPI en temps réel
+- ✅ Timeline visuelle des actes (samedi=orange, dimanche=rouge)
+- ✅ Calcul automatique des commissions
+- ✅ Mode clair/sombre automatique avec next-themes
+- ✅ Design responsive mobile-first
+- ✅ Animations GSAP et transitions Framer Motion
 
-**Audience :** Développeurs, chefs de projet
+## 🛠️ Stack Technique
 
----
+- **Next.js 15** (App Router)
+- **TypeScript**
+- **Tailwind CSS v4**
+- **Firebase** (Auth + Firestore)
+- **shadcn/ui** (composants)
+- **GSAP** (animations)
+- **Framer Motion** (transitions)
+- **React Hook Form** + **Zod** (validation)
+- **next-themes** (mode sombre)
 
-### 🔐 [Gestion des Rôles Utilisateur](./ROLES.md)
-**Description :** Documentation complète du système RBAC (Role-Based Access Control)  
-**Contenu :**
-- Rôles disponibles (ADMINISTRATEUR, CDC_COMMERCIAL)
-- Architecture d'implémentation
-- Protection des routes
-- Utilisation pratique
-- Règles de sécurité
-- Guide d'ajout d'un nouveau rôle
+## 📦 Installation
 
-**Audience :** Développeurs
+```bash
+# Cloner le projet
+git clone <repo>
 
----
+# Installer les dépendances
+npm install
 
-### 📊 [Dashboard Commercial CDC](./DASHBOARD_COMMERCIAL.md)
-**Description :** Documentation exhaustive du dashboard commercial  
-**Contenu :**
-- 10 KPIs détaillés avec calculs
-- Critères de validation des commissions
-- Gestion des actes commerciaux
-- Types d'actes et contrats disponibles
-- Timeline du mois
-- Interface utilisateur
-- État actuel et prochaines étapes
+# Configurer Firebase
+cp .env.local.example .env.local
+# Éditer .env.local avec vos credentials Firebase
 
-**Audience :** Développeurs, CDC commerciaux, administrateurs
+# Démarrer le serveur de développement
+npm run dev
+```
 
----
+Ouvrez [http://localhost:3000](http://localhost:3000) dans votre navigateur.
 
-### 👥 [Configuration Manuelle des Utilisateurs](./MANUAL_USER_SETUP.md)
-**Description :** Guide pour créer manuellement les documents utilisateurs dans Firestore  
-**Contenu :**
-- Récupération des UID Firebase Auth
-- Création des documents Firestore
-- Structure des données utilisateur
-- Liste des utilisateurs avec leurs rôles
+## 🔥 Configuration Firebase
 
-**Audience :** Administrateurs
+1. Créez un projet Firebase
+2. Activez Authentication (Email/Password)
+3. Créez une base Firestore
+4. Configurez les Security Rules (voir `firestore.rules`)
+5. Ajoutez vos credentials dans `.env.local`
 
----
+### Collections Firestore
 
-### 🔄 [Synchronisation des Utilisateurs](./USER_SYNC.md)
-**Description :** Guide pour utiliser le script de synchronisation automatique  
-**Contenu :**
-- Prérequis
-- Installation de Firebase Admin SDK
-- Utilisation du script
-- Configuration des rôles
-- Résultat et vérification
-- Dépannage
+- `users` - Profils utilisateurs avec rôle
+- `acts` - Actes commerciaux
+- `companies` - Compagnies d'assurance
+- `commissionRules` - Règles de calcul des commissions
 
-**Audience :** Développeurs, administrateurs
+## 💰 Règles de Commissions
 
----
+| Type          | Montant ou formule                                  |
+| ------------- | --------------------------------------------------- |
+| AUTO_MOTO     | 10 €                                                |
+| IRD_PART      | 20 €                                                |
+| IRD_PRO       | 20 € + 10 €/tranche de 1 000 € > 999 €             |
+| PJ             | 30 €                                                |
+| GAV            | 40 €                                                |
+| NOP_50_EUR    | 10 €                                                |
+| SANTE_PREV    | 50 €                                                |
+| VIE_PP        | 50 €                                                |
+| VIE_PU        | 1% du montant versé                                 |
 
-## 🚀 Démarrage rapide
+## 📊 KPI Calculés
 
-### Nouveau développeur ?
+- **CA Mensuel** : Total des primes + versements
+- **CA Auto** vs **CA Autres**
+- **Ratio** : `(autres / auto) × 100` (ou 100% si 0 auto)
+- **Nb Process** : Nombre de contrats
+- **Commissions Potentielles** : Calculées automatiquement
+- **Commissions Réelles** : Si validation OK (≥200€, ≥15 process, ≥100%)
 
-1. Lisez [Architecture.md](./ARCHITECTURE.md) pour comprendre la structure
-2. Consultez [ROLES.md](./ROLES.md) pour comprendre le système d'authentification
-3. Voyez [DASHBOARD_COMMERCIAL.md](./DASHBOARD_COMMERCIAL.md) pour les fonctionnalités
+## 🎨 Pages
 
-### Configuration utilisateurs ?
+- `/` - Homepage avec hero animé (GSAP)
+- `/login` - Connexion avec validation email et toggles dev
+- `/dashboard` - Dashboard CDC avec KPI, timeline et tableau
+- `/admin` - Dashboard admin (utilisateurs, compagnies, règles)
 
-1. Pour un setup manuel : [MANUAL_USER_SETUP.md](./MANUAL_USER_SETUP.md)
-2. Pour un setup automatique : [USER_SYNC.md](./USER_SYNC.md)
+## 🧪 Mode Dev
 
-### Comprendre le dashboard ?
+Des boutons de connexion rapide sont disponibles en mode développement :
+- "Connexion ADMIN (dev)" → `/admin`
+- "Connexion CDC (dev)" → `/dashboard`
 
-Consultez [DASHBOARD_COMMERCIAL.md](./DASHBOARD_COMMERCIAL.md) pour tous les détails
+⚠️ À retirer en production !
 
-## 📋 Résumé des fonctionnalités
+## 📝 Scripts
 
-### ✅ Implémenté
+```bash
+npm run dev      # Développement
+npm run build    # Build production
+npm run start    # Serveur production
+npm run lint     # Linter ESLint
+```
 
-- [x] Authentification Firebase
-- [x] Système RBAC (2 rôles)
-- [x] Dashboard commercial avec 10 KPIs
-- [x] Création d'actes commerciaux
-- [x] Timeline du mois
-- [x] Protection des routes
-- [x] Interface responsive
-- [x] Thème sombre/clair
+## 🔒 Sécurité
 
-### 🚧 En cours
+- Validation du domaine email côté client et serveur
+- Firebase Security Rules pour Firestore
+- Validation Zod sur tous les formulaires
+- Variables d'environnement pour les credentials Firebase
 
-- [ ] Intégration Firestore complète
-- [ ] Chargement des actes depuis Firestore
-- [ ] Filtrage par mois
+## 📄 Licence
 
-### 📅 À venir
-
-- [ ] Édition/Suppression d'actes
-- [ ] Export des données
-- [ ] Graphiques d'évolution
-- [ ] Tableau de bord administrateur complet
-
-## 🛠️ Technologies
-
-- **Framework :** Next.js 16 (App Router)
-- **UI :** React 19, TypeScript, Tailwind CSS v4
-- **Composants :** Radix UI, shadcn/ui
-- **Backend :** Firebase (Authentication + Firestore)
-- **Formulaires :** React Hook Form + Zod
-- **Dates :** date-fns
-- **Notifications :** Sonner
-
-## 📞 Contact
-
-Pour toute question sur la documentation ou le projet, consultez les fichiers individuels mentionnés ci-dessus.
-
-## 📝 Notes
-
-- Tous les documents sont en français
-- Les exemples de code sont en TypeScript
-- Les chemins de fichiers sont relatifs à la racine du projet
+Allianz Marseille © 2025
+# Test sync Vercel
