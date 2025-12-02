@@ -92,5 +92,11 @@ export const FieldValue = admin.firestore.FieldValue;
  */
 export const Timestamp = admin.firestore.Timestamp;
 
+/**
+ * Instance Firebase Storage côté serveur
+ * Utilisez ceci pour gérer les fichiers depuis le serveur
+ */
+export const adminStorage = admin.storage();
+
 export { admin };
 
