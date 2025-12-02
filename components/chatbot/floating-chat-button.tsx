@@ -175,11 +175,10 @@ export function FloatingChatButton() {
         <Card 
           className={cn(
             "w-96 h-[600px]",
-            "shadow-2xl border-2 border-transparent",
+            "shadow-2xl border-2 border-blue-200 dark:border-blue-800",
             "transition-all duration-300 animate-in slide-in-from-bottom-4 fade-in",
             "flex flex-col overflow-hidden",
-            "bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30",
-            "dark:from-slate-900 dark:via-blue-950/20 dark:to-purple-950/20"
+            "bg-white dark:bg-slate-900"
           )}
           style={{
             position: 'fixed',
@@ -224,7 +223,7 @@ export function FloatingChatButton() {
           </div>
 
           {/* Corps du chat avec fond amélioré */}
-          <div className="flex-1 p-4 overflow-y-auto">
+          <div className="flex-1 p-4 overflow-y-auto bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
             <div className="space-y-4">
               {/* Message de bienvenue si pas de messages */}
               {messages.length === 0 && (
@@ -307,7 +306,7 @@ export function FloatingChatButton() {
           </div>
 
           {/* Zone de saisie moderne */}
-          <div className="p-4 border-t bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+          <div className="p-4 border-t bg-white dark:bg-slate-900">
             <div className="flex gap-2">
               <div className="flex-1 relative">
                 <input
