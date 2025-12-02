@@ -249,18 +249,22 @@ export function validateFile(
   const { maxSizePDF, maxSizeImage, allowedPDFTypes, allowedImageTypes } =
     ragConfig.files;
 
+  // Cast en readonly string[] pour permettre l'utilisation de .includes()
+  const pdfTypes = allowedPDFTypes as readonly string[];
+  const imageTypes = allowedImageTypes as readonly string[];
+
   // Vérifier le type MIME
-  if (fileType === "pdf" && !allowedPDFTypes.includes(file.type)) {
+  if (fileType === "pdf" && !pdfTypes.includes(file.type)) {
     return {
       valid: false,
-      error: `Type de fichier non autorisé. Types autorisés: ${allowedPDFTypes.join(", ")}`,
+      error: `Type de fichier non autorisé. Types autorisés: ${pdfTypes.join(", ")}`,
     };
   }
 
-  if (fileType === "image" && !allowedImageTypes.includes(file.type)) {
+  if (fileType === "image" && !imageTypes.includes(file.type)) {
     return {
       valid: false,
-      error: `Type de fichier non autorisé. Types autorisés: ${allowedImageTypes.join(", ")}`,
+      error: `Type de fichier non autorisé. Types autorisés: ${imageTypes.join(", ")}`,
     };
   }
 
