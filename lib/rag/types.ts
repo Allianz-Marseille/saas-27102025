@@ -37,6 +37,7 @@ export interface DocumentChunk {
   metadata?: {
     pageNumber?: number; // Pour les PDFs
     section?: string; // Section du document
+    ocrConfidence?: number; // Score de confiance OCR (si image)
   };
 }
 
