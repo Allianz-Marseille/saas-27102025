@@ -99,36 +99,71 @@ export async function POST(request: NextRequest) {
 
     try {
       // 1. Uploader vers Firebase Storage
+      console.log(`[Upload] Préparation upload vers Firebase Storage: ${ragConfig.storage.bucket}`);
       const buffer = Buffer.from(await file.arrayBuffer());
       const bucket = adminStorage.bucket(ragConfig.storage.bucket);
       
       // Vérifier que le bucket existe et est accessible
       try {
-        await bucket.exists();
+        const [exists] = await bucket.exists();
+        if (!exists) {
+          console.error(`[Upload] Bucket ${ragConfig.storage.bucket} n'existe pas`);
+          return NextResponse.json(
+            { error: `Le bucket Firebase Storage "${ragConfig.storage.bucket}" n'existe pas. Vérifiez la configuration.` },
+            { status: 500 }
+          );
+        }
+        console.log(`[Upload] Bucket ${ragConfig.storage.bucket} vérifié`);
       } catch (bucketError) {
-        console.error("Erreur accès bucket Firebase Storage:", bucketError);
+        console.error("[Upload] Erreur vérification bucket Firebase Storage:", bucketError);
+        const errorMessage = bucketError instanceof Error ? bucketError.message : "Erreur inconnue";
+        
+        // Vérifier si c'est une erreur de permissions
+        if (errorMessage.includes("permission") || errorMessage.includes("Permission") || errorMessage.includes("403")) {
+          return NextResponse.json(
+            { error: "Permissions insuffisantes pour accéder au bucket Firebase Storage. Vérifiez les permissions du service account." },
+            { status: 500 }
+          );
+        }
+        
         return NextResponse.json(
-          { error: "Impossible d'accéder au bucket Firebase Storage. Vérifiez la configuration." },
+          { error: `Impossible d'accéder au bucket Firebase Storage: ${errorMessage}` },
           { status: 500 }
         );
       }
       
       const fileRef = bucket.file(storagePath);
+      console.log(`[Upload] Upload du fichier vers ${storagePath}...`);
 
-      await fileRef.save(buffer, {
-        metadata: {
-          contentType: file.type,
+      try {
+        await fileRef.save(buffer, {
           metadata: {
-            originalName: file.name,
-            uploadedBy: decodedToken.uid,
-            uploadedAt: new Date().toISOString(),
+            contentType: file.type,
+            metadata: {
+              originalName: file.name,
+              uploadedBy: decodedToken.uid,
+              uploadedAt: new Date().toISOString(),
+            },
           },
-        },
-      });
+        });
+        console.log(`[Upload] Fichier uploadé avec succès`);
+      } catch (saveError) {
+        console.error("[Upload] Erreur lors de l'upload du fichier:", saveError);
+        const errorMessage = saveError instanceof Error ? saveError.message : "Erreur inconnue";
+        throw new Error(`Erreur lors de l'upload vers Firebase Storage: ${errorMessage}`);
+      }
 
       // Rendre le fichier public (ou utiliser signed URL selon vos besoins)
-      await fileRef.makePublic();
+      try {
+        await fileRef.makePublic();
+        console.log(`[Upload] Fichier rendu public`);
+      } catch (publicError) {
+        console.warn("[Upload] Impossible de rendre le fichier public:", publicError);
+        // Continuer même si makePublic échoue, on peut utiliser signed URLs
+      }
+      
       const fileUrl = `https://storage.googleapis.com/${ragConfig.storage.bucket}/${storagePath}`;
+      console.log(`[Upload] URL du fichier: ${fileUrl}`);
 
       // 2. Extraire le texte (PDF ou OCR pour images)
       console.log(`[Upload] Début extraction texte pour ${file.name} (type: ${fileType})`);
