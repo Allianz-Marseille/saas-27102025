@@ -66,7 +66,7 @@ export async function generateResponse(
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
 
   // Construire le prompt système selon le contexte
-  let systemPrompt = ragConfig.systemPrompt;
+  let systemPrompt: string;
   
   if (contexts.length === 0) {
     // Mode IA classique : pas de documents RAG disponibles
