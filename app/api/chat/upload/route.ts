@@ -214,6 +214,15 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error("Erreur lors du traitement du fichier:", error);
       
+      // Log détaillé pour debugging
+      if (error instanceof Error) {
+        console.error("Message d'erreur:", error.message);
+        console.error("Stack:", error.stack);
+        console.error("Nom du fichier:", file.name);
+        console.error("Type de fichier:", file.type);
+        console.error("Taille:", file.size);
+      }
+      
       // Nettoyer en cas d'erreur : supprimer le fichier de Storage si uploadé
       try {
         const bucket = adminStorage.bucket(ragConfig.storage.bucket);
@@ -225,10 +234,27 @@ export async function POST(request: NextRequest) {
         // Ignorer
       }
 
+      // Message d'erreur plus détaillé pour l'utilisateur
+      let errorMessage = "Erreur lors du traitement du fichier";
+      let errorDetails = error instanceof Error ? error.message : "Erreur inconnue";
+      
+      // Messages d'erreur spécifiques selon le type d'erreur
+      if (errorDetails.includes("QDRANT") || errorDetails.includes("Qdrant")) {
+        errorMessage = "Erreur de connexion à Qdrant. Vérifiez la configuration.";
+      } else if (errorDetails.includes("OPENAI") || errorDetails.includes("OpenAI")) {
+        errorMessage = "Erreur de connexion à OpenAI. Vérifiez la configuration.";
+      } else if (errorDetails.includes("Storage") || errorDetails.includes("bucket")) {
+        errorMessage = "Erreur de stockage Firebase. Vérifiez la configuration.";
+      } else if (errorDetails.includes("pdf-parse") || errorDetails.includes("PDF")) {
+        errorMessage = "Erreur lors de l'extraction du texte du PDF. Le fichier est peut-être corrompu.";
+      } else if (errorDetails.includes("OCR") || errorDetails.includes("Tesseract")) {
+        errorMessage = "Erreur lors de l'extraction OCR. Vérifiez la configuration.";
+      }
+
       return NextResponse.json(
         {
-          error: "Erreur lors du traitement du fichier",
-          details: error instanceof Error ? error.message : "Erreur inconnue",
+          error: errorMessage,
+          details: errorDetails,
         },
         { status: 500 }
       );
