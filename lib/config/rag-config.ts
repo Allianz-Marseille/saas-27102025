@@ -87,6 +87,10 @@ export function validateRagConfig(): { valid: boolean; errors: string[] } {
     errors.push("OPENAI_API_KEY est requis");
   }
 
+  if (!ragConfig.storage.bucket) {
+    errors.push("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET est requis pour stocker les PDFs");
+  }
+
   return {
     valid: errors.length === 0,
     errors,

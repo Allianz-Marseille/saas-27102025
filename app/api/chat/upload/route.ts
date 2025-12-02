@@ -69,6 +69,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Vérifier que le bucket Firebase Storage est configuré
+    if (!ragConfig.storage.bucket) {
+      return NextResponse.json(
+        { error: "Configuration Firebase Storage manquante. NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET n'est pas configurée." },
+        { status: 500 }
+      );
+    }
+
     // Générer un ID unique pour le document
     const documentId = uuidv4();
     const fileExtension = file.name.split(".").pop() || "";
@@ -79,6 +87,18 @@ export async function POST(request: NextRequest) {
       // 1. Uploader vers Firebase Storage
       const buffer = Buffer.from(await file.arrayBuffer());
       const bucket = adminStorage.bucket(ragConfig.storage.bucket);
+      
+      // Vérifier que le bucket existe et est accessible
+      try {
+        await bucket.exists();
+      } catch (bucketError) {
+        console.error("Erreur accès bucket Firebase Storage:", bucketError);
+        return NextResponse.json(
+          { error: "Impossible d'accéder au bucket Firebase Storage. Vérifiez la configuration." },
+          { status: 500 }
+        );
+      }
+      
       const fileRef = bucket.file(storagePath);
 
       await fileRef.save(buffer, {
