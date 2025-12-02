@@ -57,7 +57,7 @@ export function FloatingChatButton() {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={cn(
-          "fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-2xl",
+          "h-16 w-16 rounded-full shadow-2xl",
           "bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500",
           "hover:scale-110 hover:shadow-blue-500/50",
           "transition-all duration-300 ease-out",
@@ -65,7 +65,12 @@ export function FloatingChatButton() {
           "border-4 border-white dark:border-slate-800",
           isOpen && "scale-95"
         )}
-        style={{ zIndex: 9999 }}
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          zIndex: 9999,
+        }}
         aria-label={isOpen ? "Fermer le chatbot" : "Ouvrir le chatbot"}
       >
         {/* Effet de brillance animé */}
@@ -103,14 +108,19 @@ export function FloatingChatButton() {
       {isOpen && (
         <Card 
           className={cn(
-            "fixed bottom-24 right-6 w-96 h-[600px]",
+            "w-96 h-[600px]",
             "shadow-2xl border-2 border-transparent",
             "transition-all duration-300 animate-in slide-in-from-bottom-4 fade-in",
             "flex flex-col overflow-hidden",
             "bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30",
             "dark:from-slate-900 dark:via-blue-950/20 dark:to-purple-950/20"
           )}
-          style={{ zIndex: 9998 }}
+          style={{
+            position: 'fixed',
+            bottom: '104px',
+            right: '24px',
+            zIndex: 9998,
+          }}
         >
           {/* En-tête moderne avec dégradé */}
           <div className="relative p-4 border-b bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 overflow-hidden">
