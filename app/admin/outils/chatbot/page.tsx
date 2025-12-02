@@ -1,12 +1,19 @@
 "use client";
 
-import { MessageSquare, Upload, FileText, Trash2, Download, ChevronRight, Sparkles, Home } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MessageSquare, Upload, FileText, ChevronRight, Sparkles, Home } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { PdfUploadDialog } from "@/components/chatbot/pdf-upload-dialog";
+import { PdfList } from "@/components/chatbot/pdf-list";
+import { useAuth } from "@/lib/firebase/use-auth";
 
 export default function ChatbotManagementPage() {
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { user } = useAuth();
   return (
     <div className="container mx-auto py-8 px-4 space-y-8">
       {/* Breadcrumb */}
@@ -49,7 +56,7 @@ export default function ChatbotManagementPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold" id="documents-count">-</div>
             <p className="text-xs text-muted-foreground mt-1">
               PDFs et images
             </p>
@@ -63,7 +70,7 @@ export default function ChatbotManagementPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold" id="chunks-count">-</div>
             <p className="text-xs text-muted-foreground mt-1">
               Segments de texte
             </p>
@@ -125,40 +132,7 @@ export default function ChatbotManagementPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {/* Exemple de document (vide pour l'instant) */}
-            <div className="text-center py-12 text-muted-foreground">
-              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-sm">Aucun document indexé pour le moment</p>
-              <p className="text-xs mt-2">
-                Commencez par importer des documents ci-dessus
-              </p>
-            </div>
-            
-            {/* Template pour afficher les documents une fois implémenté */}
-            {/* <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="font-medium">Document exemple.pdf</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="secondary" className="text-xs">PDF</Badge>
-                    <span className="text-xs text-muted-foreground">1.2 MB • 15 chunks</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm">
-                  <Download className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div> */}
-          </div>
+          <PdfList key={refreshKey} onRefresh={() => setRefreshKey((k) => k + 1)} />
         </CardContent>
       </Card>
 
@@ -223,6 +197,20 @@ export default function ChatbotManagementPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog d'upload */}
+      <PdfUploadDialog
+        open={uploadDialogOpen}
+        onOpenChange={setUploadDialogOpen}
+        onSuccess={() => {
+          setRefreshKey((k) => k + 1);
+          // Mettre à jour les statistiques
+          setTimeout(() => {
+            const event = new CustomEvent("refresh-stats");
+            window.dispatchEvent(event);
+          }, 1000);
+        }}
+      />
     </div>
   );
 }
