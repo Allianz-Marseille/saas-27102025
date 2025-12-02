@@ -104,19 +104,14 @@ export default function ChatbotManagementPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="border-2 border-dashed rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer">
-            <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-sm font-medium mb-2">
-              Glissez-déposez vos fichiers ici ou cliquez pour parcourir
-            </p>
-            <p className="text-xs text-muted-foreground mb-4">
-              PDFs jusqu&apos;à 10MB, Images jusqu&apos;à 5MB
-            </p>
-            <Button variant="outline" size="sm">
-              <FileText className="h-4 w-4 mr-2" />
-              Sélectionner des fichiers
-            </Button>
-          </div>
+          <Button
+            onClick={() => setUploadDialogOpen(true)}
+            className="w-full"
+            size="lg"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Importer des documents
+          </Button>
         </CardContent>
       </Card>
 
