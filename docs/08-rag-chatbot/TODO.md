@@ -3,27 +3,27 @@
 ## Phase 1 : Composants UI du chatbot
 
 ### Composants de base
-- [ ] Créer `components/chatbot/chat-message.tsx`
-  - [ ] Affichage messages user et assistant
-  - [ ] Formatage markdown avec react-markdown
-  - [ ] Styles aérés (paragraphes espacés, listes, titres)
-  - [ ] Bouton copier avec animation check
-  - [ ] Indicateur de sources (badges)
-  - [ ] Animations d'apparition (fade-in + slide)
+- [x] Créer `components/chatbot/chat-message.tsx`
+  - [x] Affichage messages user et assistant
+  - [x] Formatage markdown avec react-markdown
+  - [x] Styles aérés (paragraphes espacés, listes, titres)
+  - [x] Bouton copier avec animation check
+  - [x] Indicateur de sources (badges)
+  - [x] Animations d'apparition (fade-in + slide)
 
-- [ ] Créer `components/chatbot/chat-input.tsx`
-  - [ ] Input avec glassmorphism
-  - [ ] Bouton d'envoi avec gradient
-  - [ ] Support Enter pour envoyer
-  - [ ] Auto-select après réponse (useEffect + focus)
-  - [ ] Validation visuelle
-  - [ ] Loading state
+- [x] Créer `components/chatbot/chat-input.tsx`
+  - [x] Input avec glassmorphism
+  - [x] Bouton d'envoi avec gradient
+  - [x] Support Enter pour envoyer
+  - [x] Auto-select après réponse (useEffect + focus)
+  - [x] Validation visuelle
+  - [x] Loading state
 
-- [ ] Refactoriser `components/chatbot/floating-chat-button.tsx`
-  - [ ] Utiliser les nouveaux composants chat-message et chat-input
-  - [ ] Intégrer le formatage markdown
-  - [ ] Ajouter le bouton copier
-  - [ ] Implémenter l'auto-select de l'input
+- [x] Refactoriser `components/chatbot/floating-chat-button.tsx`
+  - [x] Utiliser les nouveaux composants chat-message et chat-input
+  - [x] Intégrer le formatage markdown
+  - [x] Ajouter le bouton copier
+  - [x] Implémenter l'auto-select de l'input
 
 ## Phase 2 : Upload et gestion des documents
 
@@ -105,7 +105,7 @@
   npm install react-markdown remark-gfm
   ```
   - [x] react-markdown déjà installé (v10.1.0)
-  - [ ] remark-gfm à installer
+  - [x] remark-gfm installé
 
 ### Styles et fonctionnalités
 - [ ] Styles markdown personnalisés
