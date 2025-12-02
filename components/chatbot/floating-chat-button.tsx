@@ -1,11 +1,13 @@
 "use client";
 
-import { X, Sparkles, Send } from "lucide-react";
+import { X, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/lib/firebase/use-auth";
+import { ChatMessage } from "./chat-message";
+import { ChatInput } from "./chat-input";
 
 // Composant SVG personnalisé pour le bot avec un visage souriant
 function BotFaceIcon({ className }: { className?: string }) {
@@ -49,6 +51,7 @@ function BotFaceIcon({ className }: { className?: string }) {
 interface Message {
   role: "user" | "assistant";
   content: string;
+  sources?: string[];
 }
 
 export function FloatingChatButton() {
@@ -57,6 +60,7 @@ export function FloatingChatButton() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [lastResponseTime, setLastResponseTime] = useState<number | undefined>(undefined);
   const { user } = useAuth();
 
   const handleSendMessage = async () => {
@@ -100,9 +104,11 @@ export function FloatingChatButton() {
       const assistantMessage: Message = {
         role: "assistant",
         content: data.message || "Désolé, je n'ai pas pu générer de réponse.",
+        sources: data.sources || [],
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+      setLastResponseTime(Date.now());
     } catch (error) {
       console.error("Erreur:", error);
       let errorText = "Désolé, une erreur s'est produite. Veuillez réessayer.";
@@ -123,15 +129,9 @@ export function FloatingChatButton() {
         content: errorText,
       };
       setMessages((prev) => [...prev, errorMessage]);
+      setLastResponseTime(Date.now());
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
     }
   };
 
@@ -266,38 +266,12 @@ export function FloatingChatButton() {
 
               {/* Messages de conversation */}
               {messages.map((message, index) => (
-                <div
+                <ChatMessage
                   key={index}
-                  className={cn(
-                    "flex gap-3 animate-in slide-in-from-left-4 fade-in duration-500",
-                    message.role === "user" && "flex-row-reverse"
-                  )}
-                >
-                  {message.role === "assistant" && (
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shrink-0">
-                      <BotFaceIcon className="h-8 w-8" />
-                    </div>
-                  )}
-                  {message.role === "user" && (
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center shadow-lg shrink-0 text-white font-bold">
-                      {user?.email?.charAt(0).toUpperCase() || "U"}
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <div
-                      className={cn(
-                        "rounded-2xl p-4 shadow-md",
-                        message.role === "assistant"
-                          ? "bg-white dark:bg-slate-800 rounded-tl-none border border-blue-100 dark:border-blue-900"
-                          : "bg-gradient-to-r from-blue-500 to-purple-500 rounded-tr-none text-white"
-                      )}
-                    >
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                        {message.content}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                  message={message}
+                  userInitial={user?.email?.charAt(0).toUpperCase() || "U"}
+                  BotIcon={BotFaceIcon}
+                />
               ))}
 
               {/* Message de chargement */}
@@ -321,32 +295,15 @@ export function FloatingChatButton() {
           </div>
 
           {/* Zone de saisie moderne */}
-          <div className="p-4 border-t bg-white dark:bg-slate-900">
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  placeholder="💬 Posez votre question..."
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  disabled={isLoading}
-                  className="w-full px-4 py-3 pr-10 border-2 border-gray-200 dark:border-gray-700 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all bg-white dark:bg-slate-800"
-                />
-                <button
-                  onClick={handleSendMessage}
-                  disabled={isLoading || !inputValue.trim()}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-md hover:shadow-lg transition-all hover:scale-110 ring-2 ring-emerald-300/30"
-                >
-                  <Send className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            <div className="flex items-center justify-center gap-1 mt-2">
-              <span className="text-[10px] text-muted-foreground">Propulsé par</span>
-              <span className="text-[10px] font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">Allianz AI</span>
-            </div>
-          </div>
+          <ChatInput
+            value={inputValue}
+            onChange={setInputValue}
+            onSend={handleSendMessage}
+            isLoading={isLoading}
+            disabled={!user}
+            autoFocusAfterResponse={true}
+            lastResponseTime={lastResponseTime}
+          />
         </Card>
       )}
     </>
