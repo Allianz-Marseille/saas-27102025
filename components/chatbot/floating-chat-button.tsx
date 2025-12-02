@@ -52,6 +52,8 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   sources?: string[];
+  imageUrl?: string;
+  imageText?: string; // Texte extrait de l'image via OCR
 }
 
 export function FloatingChatButton() {
@@ -61,28 +63,76 @@ export function FloatingChatButton() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [lastResponseTime, setLastResponseTime] = useState<number | undefined>(undefined);
+  const [pastedImage, setPastedImage] = useState<File | null>(null);
   const { user } = useAuth();
 
+  const handleImagePaste = async (imageFile: File) => {
+    setPastedImage(imageFile);
+  };
+
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || !user) return;
+    if ((!inputValue.trim() && !pastedImage) || !user) return;
 
-    const userMessage: Message = {
-      role: "user",
-      content: inputValue.trim(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInputValue("");
     setIsLoading(true);
 
     try {
+      let imageText = "";
+      let imageUrl = "";
+
+      // Si une image est collée, l'analyser d'abord
+      if (pastedImage) {
+        try {
+          const formData = new FormData();
+          formData.append("image", pastedImage);
+
+          const token = await user.getIdToken();
+          const imageResponse = await fetch("/api/chat/analyze-image", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          });
+
+          if (imageResponse.ok) {
+            const imageData = await imageResponse.json();
+            imageText = imageData.text || "";
+            imageUrl = imageData.imageUrl || "";
+          } else {
+            console.error("Erreur analyse image:", await imageResponse.json());
+          }
+        } catch (error) {
+          console.error("Erreur lors de l'analyse de l'image:", error);
+        }
+      }
+
+      // Construire le message utilisateur
+      let messageContent = inputValue.trim();
+      if (imageText) {
+        messageContent = messageContent 
+          ? `${messageContent}\n\n[Image analysée: ${imageText}]`
+          : `[Image analysée: ${imageText}]`;
+      }
+
+      const userMessage: Message = {
+        role: "user",
+        content: messageContent,
+        imageUrl: imageUrl || (pastedImage ? URL.createObjectURL(pastedImage) : undefined),
+        imageText: imageText || undefined,
+      };
+
+      setMessages((prev) => [...prev, userMessage]);
+      setInputValue("");
+      setPastedImage(null);
+
+      // Envoyer la requête au chatbot
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          query: userMessage.content,
+          query: messageContent,
           conversationHistory: messages,
           userId: user.uid,
         }),
@@ -299,6 +349,7 @@ export function FloatingChatButton() {
             value={inputValue}
             onChange={setInputValue}
             onSend={handleSendMessage}
+            onImagePaste={handleImagePaste}
             isLoading={isLoading}
             disabled={!user}
             autoFocusAfterResponse={true}

@@ -11,6 +11,8 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   sources?: string[];
+  imageUrl?: string;
+  imageText?: string;
 }
 
 interface ChatMessageProps {
@@ -85,9 +87,27 @@ export function ChatMessage({ message, userInitial, BotIcon }: ChatMessageProps)
 
           {/* Contenu du message */}
           {isUser ? (
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">
-              {message.content}
-            </p>
+            <div className="space-y-2">
+              {/* Image si présente */}
+              {message.imageUrl && (
+                <div className="relative">
+                  <img
+                    src={message.imageUrl}
+                    alt="Image envoyée"
+                    className="max-w-xs rounded-lg border-2 border-blue-300 dark:border-blue-700"
+                  />
+                  {message.imageText && (
+                    <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
+                      <p className="font-medium mb-1">Texte extrait :</p>
+                      <p className="text-muted-foreground">{message.imageText}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                {message.content}
+              </p>
+            </div>
           ) : (
             <div className="prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown
