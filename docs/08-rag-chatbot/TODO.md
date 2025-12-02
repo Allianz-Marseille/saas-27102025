@@ -28,12 +28,12 @@
 ## Phase 2 : Upload et gestion des documents
 
 ### Traitement des fichiers
-- [ ] Compléter `lib/rag/pdf-processor.ts`
-  - [ ] Vérifier extractTextFromPDF fonctionne
-  - [ ] Implémenter extractTextFromImage avec Tesseract.js
-  - [ ] Implémenter chunkText avec overlap
-  - [ ] Pipeline complet processPDFForIndexing
-  - [ ] Pipeline complet processImageForIndexing
+- [x] Compléter `lib/rag/pdf-processor.ts`
+  - [x] Vérifier extractTextFromPDF fonctionne
+  - [x] Implémenter extractTextFromImage avec Tesseract.js
+  - [x] Implémenter chunkText avec overlap
+  - [x] Pipeline complet processPDFForIndexing
+  - [x] Pipeline complet processImageForIndexing
 
 ### Composants admin
 - [ ] Créer `components/chatbot/pdf-upload-dialog.tsx`
@@ -53,6 +53,8 @@
 
 ### API Routes
 - [ ] Compléter `app/api/chat/upload/route.ts`
+  - [x] Vérification authentification admin
+  - [x] Récupération du fichier
   - [ ] Upload vers Firebase Storage
   - [ ] Appel à pdf-processor selon type
   - [ ] Génération embeddings
@@ -61,6 +63,7 @@
   - [ ] Gestion erreurs complète
 
 - [ ] Compléter `app/api/chat/documents/route.ts`
+  - [x] Vérification authentification admin
   - [ ] Récupération depuis Firestore
   - [ ] Formatage des données
   - [ ] Filtrage par admin
@@ -97,10 +100,12 @@
 ## Phase 5 : Formatage et UX
 
 ### Dépendances
-- [ ] Installer react-markdown
+- [x] Installer react-markdown
   ```bash
   npm install react-markdown remark-gfm
   ```
+  - [x] react-markdown déjà installé (v10.1.0)
+  - [ ] remark-gfm à installer
 
 ### Styles et fonctionnalités
 - [ ] Styles markdown personnalisés
@@ -154,11 +159,13 @@
 
 ### ✅ Déjà fait
 - Infrastructure de base : qdrant-client, embeddings, pdf-processor, chat-service, types
-- Bulle flottante fonctionnelle (floating-chat-button.tsx)
+- pdf-processor.ts complet : extraction PDF, OCR images, chunking avec overlap
+- Bulle flottante fonctionnelle (floating-chat-button.tsx) - mais tout dans un seul fichier
 - API /api/chat simplifiée (OpenAI direct, sans RAG complet)
 - Pages /admin/outils et /dashboard/outils
-- Dépendances installées (@qdrant/js, pdf-parse, tesseract.js)
+- Dépendances installées (@qdrant/js, pdf-parse, tesseract.js, react-markdown)
 - Configuration rag-config.ts
+- API routes upload et documents : structure de base avec auth admin (TODOs à compléter)
 
 ### 🔄 En cours
 - Aucun
