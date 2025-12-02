@@ -131,22 +131,31 @@ export async function POST(request: NextRequest) {
       const fileUrl = `https://storage.googleapis.com/${ragConfig.storage.bucket}/${storagePath}`;
 
       // 2. Extraire le texte (PDF ou OCR pour images)
+      console.log(`[Upload] Début extraction texte pour ${file.name} (type: ${fileType})`);
       let chunks;
       let ocrResult;
       let imageType: "png" | "jpg" | "jpeg" | "webp" | undefined;
 
-      if (fileType === "pdf") {
-        chunks = await processPDFForIndexing(buffer, documentId);
-      } else {
-        // Image
-        const detectedImageType = getImageTypeFromMimeType(file.type);
-        if (!detectedImageType) {
-          throw new Error("Type d'image non reconnu");
+      try {
+        if (fileType === "pdf") {
+          chunks = await processPDFForIndexing(buffer, documentId);
+          console.log(`[Upload] PDF traité: ${chunks.length} chunks générés`);
+        } else {
+          // Image
+          const detectedImageType = getImageTypeFromMimeType(file.type);
+          if (!detectedImageType) {
+            throw new Error("Type d'image non reconnu");
+          }
+          imageType = detectedImageType;
+          const result = await processImageForIndexing(buffer, documentId, imageType);
+          chunks = result.chunks;
+          ocrResult = result.ocrResult;
+          console.log(`[Upload] Image traitée: ${chunks.length} chunks générés (OCR confiance: ${ocrResult?.confidence})`);
         }
-        imageType = detectedImageType;
-        const result = await processImageForIndexing(buffer, documentId, imageType);
-        chunks = result.chunks;
-        ocrResult = result.ocrResult;
+      } catch (extractError) {
+        console.error(`[Upload] Erreur extraction texte:`, extractError);
+        await fileRef.delete().catch(() => {});
+        throw new Error(`Erreur lors de l'extraction du texte: ${extractError instanceof Error ? extractError.message : "Erreur inconnue"}`);
       }
 
       if (!chunks || chunks.length === 0) {
@@ -159,11 +168,28 @@ export async function POST(request: NextRequest) {
       }
 
       // 3. Générer les embeddings pour tous les chunks
-      const chunkTexts = chunks.map((chunk) => chunk.text);
-      const embeddings = await generateEmbeddingsBatch(chunkTexts);
+      console.log(`[Upload] Génération embeddings pour ${chunks.length} chunks...`);
+      let embeddings: number[][];
+      try {
+        const chunkTexts = chunks.map((chunk) => chunk.text);
+        embeddings = await generateEmbeddingsBatch(chunkTexts);
+        console.log(`[Upload] ${embeddings.length} embeddings générés`);
+      } catch (embeddingError) {
+        console.error(`[Upload] Erreur génération embeddings:`, embeddingError);
+        await fileRef.delete().catch(() => {});
+        throw new Error(`Erreur lors de la génération des embeddings: ${embeddingError instanceof Error ? embeddingError.message : "Erreur inconnue"}`);
+      }
 
       // 4. Créer la collection Qdrant si elle n'existe pas
-      await createCollectionIfNotExists();
+      console.log(`[Upload] Vérification collection Qdrant...`);
+      try {
+        await createCollectionIfNotExists();
+        console.log(`[Upload] Collection Qdrant prête`);
+      } catch (qdrantError) {
+        console.error(`[Upload] Erreur Qdrant:`, qdrantError);
+        await fileRef.delete().catch(() => {});
+        throw new Error(`Erreur de connexion à Qdrant: ${qdrantError instanceof Error ? qdrantError.message : "Erreur inconnue"}`);
+      }
 
       // 5. Préparer les points pour Qdrant
       const points: QdrantPoint[] = chunks.map((chunk, index) => ({
@@ -180,7 +206,15 @@ export async function POST(request: NextRequest) {
       }));
 
       // 6. Indexer dans Qdrant
-      await upsertVectors(points);
+      console.log(`[Upload] Indexation ${points.length} points dans Qdrant...`);
+      try {
+        await upsertVectors(points);
+        console.log(`[Upload] Points indexés avec succès`);
+      } catch (indexError) {
+        console.error(`[Upload] Erreur indexation Qdrant:`, indexError);
+        await fileRef.delete().catch(() => {});
+        throw new Error(`Erreur lors de l'indexation dans Qdrant: ${indexError instanceof Error ? indexError.message : "Erreur inconnue"}`);
+      }
 
       // 7. Sauvegarder les métadonnées dans Firestore
       const documentData = {
