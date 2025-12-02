@@ -75,15 +75,17 @@
 
 ## Phase 3 : Intégration RAG complète
 
-- [ ] Activer le RAG dans `app/api/chat/route.ts`
-  - [ ] Utiliser chat-service au lieu d'OpenAI direct
-  - [ ] Gérer l'historique de conversation
-  - [ ] Formatage des réponses avec prompt système
+- [x] Activer le RAG dans `app/api/chat/route.ts`
+  - [x] Utiliser chat-service au lieu d'OpenAI direct
+  - [x] Gérer l'historique de conversation
+  - [x] Formatage des réponses avec prompt système
 
-- [ ] Améliorer `lib/rag/chat-service.ts`
-  - [ ] Activer la recherche vectorielle (ne plus retourner [] en cas d'erreur)
-  - [ ] Gérer les cas sans documents (fallback intelligent)
-  - [ ] Prompt système pour formatage aéré
+- [x] Améliorer `lib/rag/chat-service.ts`
+  - [x] Activer la recherche vectorielle (retourne [] en cas d'erreur pour fallback)
+  - [x] Gérer les cas sans documents (fallback intelligent avec IA classique)
+  - [x] Prompt système pour formatage aéré
+  - [x] Prompt spécialisé assurances pour mode fallback
+  - [x] Système hybride : RAG si documents disponibles, IA classique sinon
 
 - [ ] Créer collection Firestore `rag_documents`
   - [ ] Schéma complet avec tous les champs
