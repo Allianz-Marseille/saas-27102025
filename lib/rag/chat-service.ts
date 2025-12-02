@@ -42,7 +42,8 @@ export async function searchRelevantContexts(
     return results;
   } catch (error) {
     console.error("Erreur lors de la recherche de contextes:", error);
-    throw error;
+    // Retourner un tableau vide au lieu de throw pour permettre le fonctionnement sans RAG
+    return [];
   }
 }
 
@@ -119,15 +120,15 @@ export async function chat(params: {
   const { query, conversationHistory, userId } = params;
 
   try {
-    // Rechercher les contextes pertinents
+    // Rechercher les contextes pertinents (retourne [] si erreur)
     const searchResults = await searchRelevantContexts(query);
 
-    // Générer la réponse
+    // Générer la réponse (avec ou sans contexte)
     const message = await generateResponse(query, searchResults, conversationHistory);
 
     // Extraire les IDs des documents utilisés
     const sources = Array.from(
-      new Set(searchResults.map((result) => result.documentId))
+      new Set(searchResults.map((result) => result.documentId).filter(Boolean))
     );
 
     return {
@@ -136,11 +137,58 @@ export async function chat(params: {
       searchResults,
       metadata: {
         model: ragConfig.openai.chatModel,
+        hasContext: searchResults.length > 0,
       },
     };
   } catch (error) {
     console.error("Erreur dans le service de chat RAG:", error);
-    throw error;
+    
+    // En cas d'erreur, essayer de répondre sans RAG
+    try {
+      const client = getOpenAIClient();
+      const messages: any[] = [
+        {
+          role: "system",
+          content: "Tu es un assistant virtuel pour Allianz. Réponds de manière professionnelle et courtoise. Note : La base de connaissances n'est pas encore configurée, réponds avec tes connaissances générales.",
+        },
+      ];
+
+      if (conversationHistory && conversationHistory.length > 0) {
+        const recentHistory = conversationHistory.slice(-10);
+        for (const msg of recentHistory) {
+          messages.push({
+            role: msg.role === "user" ? "user" : "assistant",
+            content: msg.content,
+          });
+        }
+      }
+
+      messages.push({
+        role: "user",
+        content: query,
+      });
+
+      const response = await client.chat.completions.create({
+        model: ragConfig.openai.chatModel,
+        messages,
+        temperature: 0.7,
+        max_tokens: 1000,
+      });
+
+      return {
+        message: response.choices[0]?.message?.content || "Désolé, je ne peux pas répondre pour le moment.",
+        sources: [],
+        searchResults: [],
+        metadata: {
+          model: ragConfig.openai.chatModel,
+          hasContext: false,
+          fallbackMode: true,
+        },
+      };
+    } catch (fallbackError) {
+      console.error("Erreur même en mode fallback:", fallbackError);
+      throw new Error("Le service de chat est temporairement indisponible. Veuillez réessayer.");
+    }
   }
 }
 
