@@ -87,10 +87,33 @@ Note : La base de connaissances RAG sera bientôt activée pour te donner accès
     });
   } catch (error) {
     console.error("Erreur API chat:", error);
+    
+    // Log détaillé pour le debugging
+    if (error instanceof Error) {
+      console.error("Message d'erreur:", error.message);
+      console.error("Stack:", error.stack);
+    }
+    
+    // Message d'erreur plus informatif
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : "Erreur inconnue";
+    
+    // Vérifier si c'est une erreur OpenAI
+    if (errorMessage.includes("API key") || errorMessage.includes("401")) {
+      return NextResponse.json(
+        {
+          error: "Configuration OpenAI invalide. Vérifiez votre clé API.",
+          details: "OPENAI_API_KEY manquante ou invalide",
+        },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
       {
         error: "Erreur lors du traitement de la requête",
-        details: error instanceof Error ? error.message : "Erreur inconnue",
+        details: errorMessage,
       },
       { status: 500 }
     );
