@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
 
 export const dynamic = "force-dynamic";
 
@@ -23,16 +22,36 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier la clé API OpenAI
-    if (!process.env.OPENAI_API_KEY) {
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    if (!openaiApiKey) {
+      console.error("OPENAI_API_KEY manquante dans les variables d'environnement");
       return NextResponse.json(
-        { error: "Configuration OpenAI manquante" },
+        { 
+          error: "Configuration OpenAI manquante",
+          details: "OPENAI_API_KEY n'est pas configurée. Veuillez l'ajouter dans les variables d'environnement Vercel."
+        },
+        { status: 500 }
+      );
+    }
+
+    // Import dynamique d'OpenAI pour éviter les erreurs de build
+    let OpenAI;
+    try {
+      OpenAI = (await import("openai")).default;
+    } catch (importError) {
+      console.error("Erreur import OpenAI:", importError);
+      return NextResponse.json(
+        { 
+          error: "Erreur d'import du module OpenAI",
+          details: importError instanceof Error ? importError.message : "Erreur inconnue"
+        },
         { status: 500 }
       );
     }
 
     // Initialiser OpenAI
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: openaiApiKey,
     });
 
     // Construire les messages pour OpenAI
