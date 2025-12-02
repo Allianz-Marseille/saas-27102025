@@ -125,10 +125,11 @@ export async function POST(request: NextRequest) {
         chunks = await processPDFForIndexing(buffer, documentId);
       } else {
         // Image
-        imageType = getImageTypeFromMimeType(file.type);
-        if (!imageType) {
+        const detectedImageType = getImageTypeFromMimeType(file.type);
+        if (!detectedImageType) {
           throw new Error("Type d'image non reconnu");
         }
+        imageType = detectedImageType;
         const result = await processImageForIndexing(buffer, documentId, imageType);
         chunks = result.chunks;
         ocrResult = result.ocrResult;
