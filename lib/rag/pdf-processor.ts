@@ -16,7 +16,9 @@ export async function extractTextFromPDF(
   try {
     // Import dynamique pour pdf-parse (pas d'export default en ESM)
     const pdfParse = await import("pdf-parse");
-    const data = await pdfParse.default(buffer);
+    // En ESM, la fonction peut être dans default ou directement dans le module
+    const parseFunction = pdfParse.default || pdfParse;
+    const data = await parseFunction(buffer);
     return data.text;
   } catch (error) {
     console.error("Erreur lors de l'extraction du texte PDF:", error);
