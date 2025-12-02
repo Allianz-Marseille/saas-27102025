@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/firebase/auth";
+import { adminAuth } from "@/lib/firebase/admin-config";
 import { extractTextFromImage, getImageTypeFromMimeType } from "@/lib/rag/pdf-processor";
 import { ragConfig } from "@/lib/config/rag-config";
 import { adminStorage } from "@/lib/firebase/admin-config";
@@ -20,16 +20,13 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.split("Bearer ")[1];
     
-    // Note: On utilise auth (client-side) pour vérifier le token, pas adminAuth
-    // car tous les utilisateurs authentifiés peuvent analyser des images
+    // Vérifier le token avec adminAuth (tous les utilisateurs authentifiés peuvent analyser)
     let decodedToken;
     try {
-      // Pour l'instant, on accepte le token sans vérification stricte côté serveur
-      // Dans un environnement de production, vous devriez vérifier le token avec adminAuth
-      decodedToken = { uid: "user" }; // Placeholder
+      decodedToken = await adminAuth.verifyIdToken(token);
     } catch (error) {
       return NextResponse.json(
-        { error: "Token invalide" },
+        { error: "Token invalide ou expiré" },
         { status: 401 }
       );
     }
