@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { chat } from "@/lib/rag/chat-service";
 
 export const dynamic = "force-dynamic";
 
@@ -21,89 +22,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier la clé API OpenAI
-    const openaiApiKey = process.env.OPENAI_API_KEY;
-    if (!openaiApiKey) {
-      console.error("OPENAI_API_KEY manquante dans les variables d'environnement");
-      return NextResponse.json(
-        { 
-          error: "Configuration OpenAI manquante",
-          details: "OPENAI_API_KEY n'est pas configurée. Veuillez l'ajouter dans les variables d'environnement Vercel."
-        },
-        { status: 500 }
-      );
-    }
-
-    // Import dynamique d'OpenAI pour éviter les erreurs de build
-    let OpenAI;
-    try {
-      OpenAI = (await import("openai")).default;
-    } catch (importError) {
-      console.error("Erreur import OpenAI:", importError);
-      return NextResponse.json(
-        { 
-          error: "Erreur d'import du module OpenAI",
-          details: importError instanceof Error ? importError.message : "Erreur inconnue"
-        },
-        { status: 500 }
-      );
-    }
-
-    // Initialiser OpenAI
-    const openai = new OpenAI({
-      apiKey: openaiApiKey,
+    // Utiliser le service RAG qui gère automatiquement :
+    // - Mode RAG si documents disponibles
+    // - Mode IA classique (fallback) si pas de documents, avec connaissances assurances
+    const response = await chat({
+      query,
+      conversationHistory: conversationHistory || [],
+      userId,
     });
 
-    // Construire les messages pour OpenAI
-    const messages: any[] = [
-      {
-        role: "system",
-        content: `Tu es l'assistant virtuel d'Allianz Marseille. Tu aides les commerciaux et administrateurs de l'agence avec leurs questions.
-
-Sois professionnel, courtois et précis dans tes réponses. Si tu ne connais pas une information spécifique à l'agence, dis-le clairement.
-
-Note : La base de connaissances RAG sera bientôt activée pour te donner accès aux documents de l'agence.`,
-      },
-    ];
-
-    // Ajouter l'historique de conversation (limité aux 10 derniers messages)
-    if (conversationHistory && conversationHistory.length > 0) {
-      const recentHistory = conversationHistory.slice(-10);
-      for (const msg of recentHistory) {
-        messages.push({
-          role: msg.role === "user" ? "user" : "assistant",
-          content: msg.content,
-        });
-      }
-    }
-
-    // Ajouter la question actuelle
-    messages.push({
-      role: "user",
-      content: query,
-    });
-
-    // Appel à OpenAI
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages,
-      temperature: 0.7,
-      max_tokens: 1000,
-    });
-
-    const responseMessage = completion.choices[0]?.message?.content || 
-      "Désolé, je n'ai pas pu générer de réponse.";
-
-    return NextResponse.json({
-      message: responseMessage,
-      sources: [],
-      searchResults: [],
-      metadata: {
-        model: "gpt-4o",
-        hasContext: false,
-        fallbackMode: true,
-      },
-    });
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Erreur API chat:", error);
     

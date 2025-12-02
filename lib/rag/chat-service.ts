@@ -65,10 +65,40 @@ export async function generateResponse(
   // Construire les messages pour OpenAI
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
 
+  // Construire le prompt système selon le contexte
+  let systemPrompt = ragConfig.systemPrompt;
+  
+  if (contexts.length === 0) {
+    // Mode IA classique : pas de documents RAG disponibles
+    systemPrompt = `Vous êtes l'assistant virtuel d'Allianz Marseille, une agence d'assurances. Vous aidez les commerciaux et administrateurs avec leurs questions professionnelles.
+
+CONTEXTE :
+- Vous travaillez dans le domaine des assurances (auto, habitation, santé, prévoyance, vie, etc.)
+- Vous connaissez les produits Allianz et les spécificités du secteur de l'assurance
+- La base de connaissances spécifique de l'agence n'est pas encore configurée, mais vous pouvez répondre avec vos connaissances générales sur les assurances
+- Vous pouvez répondre aux questions sur : les types de contrats, les garanties, les sinistres, les commissions, la réglementation, les produits d'assurance, etc.
+
+STYLE DE RÉPONSES :
+- Aérées : utilisez des paragraphes courts (2-3 phrases) avec des sauts de ligne entre chaque
+- Structurées : utilisez des titres markdown (##, ###) et des listes à puces pour organiser l'information
+- Complètes : donnez des réponses exhaustives avec des exemples concrets du domaine de l'assurance
+- Pédagogiques : utilisez un ton accessible, des explications progressives
+- Professionnel : utilisez le vocabulaire approprié du secteur de l'assurance
+
+IMPORTANT : Si la question concerne des informations spécifiques à l'agence (procédures internes, documents particuliers, etc.), indiquez clairement que ces informations nécessitent l'indexation de documents dans la base de connaissances.
+
+Répondez uniquement en français, sauf demande contraire.`;
+  } else {
+    // Mode RAG : documents disponibles
+    systemPrompt = `${ragConfig.systemPrompt}
+
+IMPORTANT : Vous avez accès à une base de connaissances avec des documents spécifiques de l'agence. Utilisez ces informations en priorité pour répondre aux questions. Si le contexte fourni ne contient pas d'information pertinente, vous pouvez compléter avec vos connaissances générales sur les assurances, mais indiquez clairement la source de vos informations.`;
+  }
+
   // Ajouter le prompt système
   messages.push({
     role: "system",
-    content: ragConfig.systemPrompt,
+    content: systemPrompt,
   });
 
   // Ajouter l'historique de conversation (limité aux 10 derniers messages)
@@ -149,7 +179,21 @@ export async function chat(params: {
       const messages: any[] = [
         {
           role: "system",
-          content: "Tu es un assistant virtuel pour Allianz. Réponds de manière professionnelle et courtoise. Note : La base de connaissances n'est pas encore configurée, réponds avec tes connaissances générales.",
+          content: `Vous êtes l'assistant virtuel d'Allianz Marseille, une agence d'assurances. Vous aidez les commerciaux et administrateurs avec leurs questions professionnelles.
+
+CONTEXTE :
+- Vous travaillez dans le domaine des assurances (auto, habitation, santé, prévoyance, vie, etc.)
+- Vous connaissez les produits Allianz et les spécificités du secteur de l'assurance
+- La base de connaissances spécifique de l'agence n'est pas encore configurée, mais vous pouvez répondre avec vos connaissances générales sur les assurances
+- Vous pouvez répondre aux questions sur : les types de contrats, les garanties, les sinistres, les commissions, la réglementation, les produits d'assurance, etc.
+
+STYLE DE RÉPONSES :
+- Aérées : utilisez des paragraphes courts (2-3 phrases) avec des sauts de ligne entre chaque
+- Structurées : utilisez des titres markdown (##, ###) et des listes à puces
+- Complètes : donnez des réponses exhaustives avec des exemples concrets du domaine de l'assurance
+- Professionnel : utilisez le vocabulaire approprié du secteur de l'assurance
+
+Répondez uniquement en français, sauf demande contraire.`,
         },
       ];
 
