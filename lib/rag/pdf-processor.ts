@@ -209,11 +209,11 @@ export async function processImageForIndexing(
  */
 export function getFileTypeFromMimeType(mimeType: string): FileType | null {
   if (ragConfig.files.allowedPDFTypes.includes(mimeType)) {
-    return "pdf";
+    return "pdf" as FileType;
   }
 
   if (ragConfig.files.allowedImageTypes.includes(mimeType)) {
-    return "image";
+    return "image" as FileType;
   }
 
   return null;
