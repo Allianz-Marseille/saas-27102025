@@ -109,10 +109,9 @@ export function ChatMessage({ message, userInitial, BotIcon }: ChatMessageProps)
               </p>
             </div>
           ) : (
-            <div className="prose prose-sm dark:prose-invert max-w-none">
+            <div className="prose prose-sm dark:prose-invert max-w-none markdown-content">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
-                className="markdown-content"
                 components={{
                   p: ({ children }) => (
                     <p className="mb-4 text-sm leading-relaxed last:mb-0">
