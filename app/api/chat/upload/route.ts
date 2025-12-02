@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuth } from "firebase-admin/auth";
-import { adminApp } from "@/lib/firebase/admin";
+import { adminAuth } from "@/lib/firebase/admin-config";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +15,10 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split("Bearer ")[1];
-    const decodedToken = await getAuth(adminApp).verifyIdToken(token);
+    const decodedToken = await adminAuth.verifyIdToken(token);
     
     // Vérifier que l'utilisateur est admin
-    const userRecord = await getAuth(adminApp).getUser(decodedToken.uid);
+    const userRecord = await adminAuth.getUser(decodedToken.uid);
     const customClaims = userRecord.customClaims;
     
     if (customClaims?.role !== "ADMINISTRATEUR") {
