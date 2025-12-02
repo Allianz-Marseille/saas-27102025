@@ -2,7 +2,7 @@
  * Service pour extraire le texte des PDFs et images, et créer les chunks
  */
 
-import pdf from "pdf-parse";
+// pdf-parse n'a pas d'export par défaut en ESM, utiliser import dynamique
 import { createWorker } from "tesseract.js";
 import { ragConfig } from "@/lib/config/rag-config";
 import type { DocumentChunk, OCRResult, FileType } from "./types";
