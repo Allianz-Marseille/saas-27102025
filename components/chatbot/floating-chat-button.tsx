@@ -85,22 +85,42 @@ export function FloatingChatButton() {
       });
 
       if (!response.ok) {
-        throw new Error("Erreur lors de l'envoi du message");
+        const errorData = await response.json().catch(() => ({}));
+        const errorDetails = errorData.details || errorData.error || "Erreur lors de l'envoi du message";
+        throw new Error(errorDetails);
       }
 
       const data = await response.json();
       
+      // Vérifier si la réponse contient une erreur
+      if (data.error) {
+        throw new Error(data.details || data.error);
+      }
+      
       const assistantMessage: Message = {
         role: "assistant",
-        content: data.message,
+        content: data.message || "Désolé, je n'ai pas pu générer de réponse.",
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Erreur:", error);
+      let errorText = "Désolé, une erreur s'est produite. Veuillez réessayer.";
+      
+      if (error instanceof Error) {
+        // Messages d'erreur plus spécifiques
+        if (error.message.includes("Configuration OpenAI") || error.message.includes("API key")) {
+          errorText = "⚠️ Configuration OpenAI manquante. Veuillez contacter l'administrateur.";
+        } else if (error.message.includes("401") || error.message.includes("Unauthorized")) {
+          errorText = "🔑 Clé API OpenAI invalide. Veuillez contacter l'administrateur.";
+        } else {
+          errorText = `❌ ${error.message}`;
+        }
+      }
+      
       const errorMessage: Message = {
         role: "assistant",
-        content: "Désolé, une erreur s'est produite. Veuillez réessayer.",
+        content: errorText,
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
