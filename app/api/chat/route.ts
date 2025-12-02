@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chat } from "@/lib/rag/chat-service";
+import OpenAI from "openai";
 
 export const dynamic = "force-dynamic";
 
@@ -22,14 +22,69 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Appel au service de chat RAG
-    const response = await chat({
-      query,
-      conversationHistory: conversationHistory || [],
-      userId,
+    // Vérifier la clé API OpenAI
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: "Configuration OpenAI manquante" },
+        { status: 500 }
+      );
+    }
+
+    // Initialiser OpenAI
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
     });
 
-    return NextResponse.json(response);
+    // Construire les messages pour OpenAI
+    const messages: any[] = [
+      {
+        role: "system",
+        content: `Tu es l'assistant virtuel d'Allianz Marseille. Tu aides les commerciaux et administrateurs de l'agence avec leurs questions.
+
+Sois professionnel, courtois et précis dans tes réponses. Si tu ne connais pas une information spécifique à l'agence, dis-le clairement.
+
+Note : La base de connaissances RAG sera bientôt activée pour te donner accès aux documents de l'agence.`,
+      },
+    ];
+
+    // Ajouter l'historique de conversation (limité aux 10 derniers messages)
+    if (conversationHistory && conversationHistory.length > 0) {
+      const recentHistory = conversationHistory.slice(-10);
+      for (const msg of recentHistory) {
+        messages.push({
+          role: msg.role === "user" ? "user" : "assistant",
+          content: msg.content,
+        });
+      }
+    }
+
+    // Ajouter la question actuelle
+    messages.push({
+      role: "user",
+      content: query,
+    });
+
+    // Appel à OpenAI
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages,
+      temperature: 0.7,
+      max_tokens: 1000,
+    });
+
+    const responseMessage = completion.choices[0]?.message?.content || 
+      "Désolé, je n'ai pas pu générer de réponse.";
+
+    return NextResponse.json({
+      message: responseMessage,
+      sources: [],
+      searchResults: [],
+      metadata: {
+        model: "gpt-4o",
+        hasContext: false,
+        fallbackMode: true,
+      },
+    });
   } catch (error) {
     console.error("Erreur API chat:", error);
     return NextResponse.json(
