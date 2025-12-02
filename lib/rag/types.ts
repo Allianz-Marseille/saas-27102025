@@ -95,6 +95,8 @@ export interface ChatResponse {
     model?: string;
     tokensUsed?: number;
     responseTime?: number;
+    hasContext?: boolean;
+    fallbackMode?: boolean;
   };
 }
 
