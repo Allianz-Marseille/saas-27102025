@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminAuth } from "@/lib/firebase/admin-config";
+import { adminAuth, adminDb } from "@/lib/firebase/admin-config";
 
 export const dynamic = "force-dynamic";
 
@@ -28,11 +28,32 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // TODO: Récupérer la liste des documents depuis Firestore
-    // Pour l'instant, retourner une liste vide
+    // Récupérer la liste des documents depuis Firestore
+    const documentsSnapshot = await adminDb
+      .collection("rag_documents")
+      .orderBy("uploadedAt", "desc")
+      .get();
+
+    const documents = documentsSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        filename: data.filename,
+        fileType: data.fileType,
+        imageType: data.imageType,
+        uploadedBy: data.uploadedBy,
+        uploadedAt: data.uploadedAt,
+        fileUrl: data.fileUrl,
+        fileSize: data.fileSize,
+        chunkCount: data.chunkCount || 0,
+        ocrConfidence: data.ocrConfidence,
+        metadata: data.metadata || {},
+      };
+    });
+
     return NextResponse.json({
-      documents: [],
-      total: 0,
+      documents,
+      total: documents.length,
     });
   } catch (error) {
     console.error("Erreur API documents:", error);
