@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Vérifier l'authentification
@@ -33,6 +33,8 @@ export async function DELETE(
       );
     }
 
+    // Dans Next.js 16, params est une Promise
+    const params = await context.params;
     const documentId = params.id;
 
     if (!documentId) {
