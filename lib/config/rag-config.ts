@@ -33,8 +33,8 @@ export const ragConfig = {
   files: {
     maxSizePDF: 10 * 1024 * 1024, // 10MB en bytes
     maxSizeImage: 5 * 1024 * 1024, // 5MB en bytes
-    allowedImageTypes: ["image/png", "image/jpeg", "image/jpg", "image/webp"],
-    allowedPDFTypes: ["application/pdf"],
+    allowedImageTypes: ["image/png", "image/jpeg", "image/jpg", "image/webp"] as const,
+    allowedPDFTypes: ["application/pdf"] as const,
     maxFilesPerUser: 50, // Limite de fichiers par admin
   },
 

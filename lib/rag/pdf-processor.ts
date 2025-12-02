@@ -208,12 +208,16 @@ export async function processImageForIndexing(
  * Détermine le type de fichier à partir du MIME type
  */
 export function getFileTypeFromMimeType(mimeType: string): FileType | null {
-  if (ragConfig.files.allowedPDFTypes.includes(mimeType)) {
-    return "pdf" as FileType;
+  // Utiliser une vérification explicite pour éviter les problèmes de type avec readonly arrays
+  const pdfTypes = ragConfig.files.allowedPDFTypes as readonly string[];
+  const imageTypes = ragConfig.files.allowedImageTypes as readonly string[];
+  
+  if (pdfTypes.includes(mimeType)) {
+    return "pdf";
   }
 
-  if (ragConfig.files.allowedImageTypes.includes(mimeType)) {
-    return "image" as FileType;
+  if (imageTypes.includes(mimeType)) {
+    return "image";
   }
 
   return null;
