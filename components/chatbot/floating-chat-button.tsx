@@ -144,11 +144,12 @@ export function FloatingChatButton() {
         onMouseLeave={() => setIsHovered(false)}
         className={cn(
           "h-16 w-16 rounded-full shadow-2xl",
-          "bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500",
-          "hover:scale-110 hover:shadow-blue-500/50",
+          "bg-gradient-to-br from-emerald-500 via-cyan-500 to-blue-600",
+          "hover:scale-110 hover:shadow-emerald-500/60",
           "transition-all duration-300 ease-out",
           "group relative overflow-hidden",
           "border-4 border-white dark:border-slate-800",
+          "ring-4 ring-emerald-400/30",
           isOpen && "scale-95"
         )}
         style={{
@@ -156,6 +157,7 @@ export function FloatingChatButton() {
           bottom: '24px',
           right: '24px',
           zIndex: 9999,
+          boxShadow: '0 20px 25px -5px rgba(16, 185, 129, 0.3), 0 10px 10px -5px rgba(16, 185, 129, 0.2)',
         }}
         aria-label={isOpen ? "Fermer le chatbot" : "Ouvrir le chatbot"}
       >
@@ -177,15 +179,15 @@ export function FloatingChatButton() {
         {/* Effet de pulsation quand fermé */}
         {!isOpen && (
           <>
-            <span className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-40" />
-            <span className="absolute -inset-1 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 blur-md opacity-75 group-hover:opacity-100 transition-opacity" />
+            <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
+            <span className="absolute -inset-1 rounded-full bg-gradient-to-br from-emerald-500 via-cyan-500 to-blue-600 blur-md opacity-80 group-hover:opacity-100 transition-opacity" />
           </>
         )}
         
         {/* Badge "Nouveau" ou notification */}
         {!isOpen && (
-          <div className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full border-2 border-white dark:border-slate-800 flex items-center justify-center animate-bounce">
-            <Sparkles className="h-3 w-3 text-white" />
+          <div className="absolute -top-1 -right-1 h-6 w-6 bg-gradient-to-br from-orange-500 to-red-500 rounded-full border-3 border-white dark:border-slate-800 flex items-center justify-center animate-bounce shadow-lg">
+            <Sparkles className="h-3.5 w-3.5 text-white" />
           </div>
         )}
       </button>
@@ -208,17 +210,17 @@ export function FloatingChatButton() {
           }}
         >
           {/* En-tête moderne avec dégradé */}
-          <div className="relative p-4 border-b bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 overflow-hidden">
+          <div className="relative p-4 border-b bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-600 overflow-hidden">
             {/* Effet de brillance animé */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] animate-shimmer" />
             
             <div className="relative flex items-center justify-between text-white">
               <div className="flex items-center gap-3">
                 {/* Avatar du bot avec visage */}
-                <div className="h-10 w-10 rounded-full bg-white shadow-lg flex items-center justify-center relative">
+                <div className="h-10 w-10 rounded-full bg-white shadow-lg flex items-center justify-center relative ring-2 ring-emerald-300">
                   <BotFaceIcon className="h-8 w-8" />
                   {/* Indicateur "en ligne" */}
-                  <span className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-400 border-2 border-white rounded-full animate-pulse" />
+                  <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-emerald-400 border-2 border-white rounded-full animate-pulse shadow-lg" />
                 </div>
                 <div>
                   <h3 className="font-bold text-lg flex items-center gap-2">
@@ -307,10 +309,10 @@ export function FloatingChatButton() {
 
               {/* Message de chargement */}
               {isLoading && (
-                <div className="flex gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shrink-0">
-                    <BotFaceIcon className="h-8 w-8" />
-                  </div>
+              <div className="flex gap-3">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500 via-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shrink-0 ring-2 ring-emerald-300/50">
+                  <BotFaceIcon className="h-8 w-8" />
+                </div>
                   <div className="flex-1">
                     <div className="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-none p-4 shadow-md border border-blue-100 dark:border-blue-900">
                       <div className="flex gap-1">
@@ -341,7 +343,7 @@ export function FloatingChatButton() {
                 <button
                   onClick={handleSendMessage}
                   disabled={isLoading || !inputValue.trim()}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-md hover:shadow-lg transition-all hover:scale-110"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-md hover:shadow-lg transition-all hover:scale-110 ring-2 ring-emerald-300/30"
                 >
                   <Send className="h-4 w-4" />
                 </button>
@@ -349,7 +351,7 @@ export function FloatingChatButton() {
             </div>
             <div className="flex items-center justify-center gap-1 mt-2">
               <span className="text-[10px] text-muted-foreground">Propulsé par</span>
-              <span className="text-[10px] font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Allianz AI</span>
+              <span className="text-[10px] font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">Allianz AI</span>
             </div>
           </div>
         </Card>
