@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Building2, LogOut, Users, User, ScrollText, ChevronLeft, ChevronRight, Heart, AlertTriangle, Coins } from "lucide-react";
+import { Home, Building2, LogOut, Users, User, ScrollText, ChevronLeft, ChevronRight, Heart, AlertTriangle, Coins, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -65,6 +65,12 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
       href: "/admin/logs",
       label: "Journal des logs",
       icon: ScrollText,
+    },
+    {
+      href: "/admin/outils",
+      label: "Outils",
+      icon: MessageSquare,
+      separator: true, // Séparateur avant cet item
     },
   ];
 
