@@ -22,11 +22,25 @@ export async function DELETE(
     const token = authHeader.split("Bearer ")[1];
     const decodedToken = await adminAuth.verifyIdToken(token);
     
-    // Vérifier que l'utilisateur est admin
-    const userRecord = await adminAuth.getUser(decodedToken.uid);
-    const customClaims = userRecord.customClaims;
+    // Vérifier que l'utilisateur est admin (rôle stocké dans Firestore, pas customClaims)
+    const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
     
-    if (customClaims?.role !== "ADMINISTRATEUR") {
+    if (!userDoc.exists) {
+      return NextResponse.json(
+        { error: "Utilisateur non trouvé" },
+        { status: 404 }
+      );
+    }
+
+    const userData = userDoc.data();
+    if (!userData?.active) {
+      return NextResponse.json(
+        { error: "Compte désactivé" },
+        { status: 403 }
+      );
+    }
+
+    if (userData?.role !== "ADMINISTRATEUR") {
       return NextResponse.json(
         { error: "Accès refusé. Réservé aux administrateurs." },
         { status: 403 }
