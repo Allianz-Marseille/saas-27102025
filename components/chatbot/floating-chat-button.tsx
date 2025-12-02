@@ -1,8 +1,7 @@
 "use client";
 
 import { X, Sparkles } from "lucide-react";
-import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
@@ -49,16 +48,8 @@ function BotFaceIcon({ className }: { className?: string }) {
 export function FloatingChatButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
-
-  if (!mounted) return null;
-
-  const content = (
+  return (
     <>
       {/* Bouton flottant avec visage de bot */}
       <button
@@ -223,7 +214,5 @@ export function FloatingChatButton() {
       )}
     </>
   );
-
-  return createPortal(content, document.body);
 }
 
