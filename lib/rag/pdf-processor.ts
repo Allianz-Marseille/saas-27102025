@@ -57,7 +57,7 @@ export async function extractTextFromImage(
       return {
         text: imageData.data.text,
         confidence,
-        language: imageData.data.language,
+        language, // Utiliser le langage de configuration
         metadata: {
           words: imageData.data.words?.length || 0,
           lines: imageData.data.lines?.length || 0,
