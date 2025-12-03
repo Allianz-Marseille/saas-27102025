@@ -6,10 +6,7 @@ import { createWorker } from "tesseract.js";
 import { ragConfig } from "@/lib/config/rag-config";
 import type { DocumentChunk, OCRResult, FileType } from "./types";
 
-// Import de pdf-parse - import statique pour éviter les problèmes serverless
-import pdfParse from "pdf-parse/lib/pdf-parse.js";
-
-// Polyfill pour DOMMatrix dans l'environnement serverless
+// Polyfill pour DOMMatrix dans l'environnement serverless (nécessaire pour pdf-parse)
 if (typeof globalThis !== 'undefined' && typeof (globalThis as any).DOMMatrix === 'undefined') {
   (globalThis as any).DOMMatrix = class DOMMatrix {
     constructor() {
@@ -18,8 +15,18 @@ if (typeof globalThis !== 'undefined' && typeof (globalThis as any).DOMMatrix ==
   };
 }
 
+// Import dynamique de pdf-parse
 async function getPdfParse(): Promise<any> {
-  return pdfParse;
+  try {
+    const pdfParse = await import("pdf-parse");
+    // pdf-parse peut être dans default ou directement exporté
+    return (pdfParse as any).default || pdfParse;
+  } catch (error) {
+    console.error("[PDF] Erreur import pdf-parse:", error);
+    throw new Error(
+      `Impossible de charger le module pdf-parse: ${error instanceof Error ? error.message : "Erreur inconnue"}`
+    );
+  }
 }
 
 /**
