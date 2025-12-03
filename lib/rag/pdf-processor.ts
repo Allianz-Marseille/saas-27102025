@@ -15,12 +15,38 @@ if (typeof globalThis !== 'undefined' && typeof (globalThis as any).DOMMatrix ==
   };
 }
 
-// Import dynamique de pdf-parse
+// Import dynamique de pdf-parse avec cache
+let pdfParseFunction: any = null;
+
 async function getPdfParse(): Promise<any> {
+  if (pdfParseFunction) {
+    return pdfParseFunction;
+  }
+
   try {
     const pdfParse = await import("pdf-parse");
-    // pdf-parse peut être dans default ou directement exporté
-    return (pdfParse as any).default || pdfParse;
+    
+    // pdf-parse exporte soit une fonction directe, soit un objet avec default
+    if (typeof pdfParse === "function") {
+      pdfParseFunction = pdfParse;
+    } else if (typeof (pdfParse as any).default === "function") {
+      pdfParseFunction = (pdfParse as any).default;
+    } else {
+      // Dernier recours : chercher une fonction dans l'objet
+      const keys = Object.keys(pdfParse);
+      for (const key of keys) {
+        if (typeof (pdfParse as any)[key] === "function") {
+          pdfParseFunction = (pdfParse as any)[key];
+          break;
+        }
+      }
+    }
+    
+    if (!pdfParseFunction || typeof pdfParseFunction !== "function") {
+      throw new Error("pdf-parse n'a pas exporté de fonction valide");
+    }
+    
+    return pdfParseFunction;
   } catch (error) {
     console.error("[PDF] Erreur import pdf-parse:", error);
     throw new Error(
