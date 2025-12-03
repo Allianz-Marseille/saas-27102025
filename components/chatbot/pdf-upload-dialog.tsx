@@ -517,7 +517,7 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
               onClick={handleUploadAll}
               disabled={files.some((f) => {
                 const progress = uploadProgress.get(f.name);
-                return progress?.status === "uploading" || progress?.status === "processing";
+                return progress && progress.status !== "success" && progress.status !== "error";
               })}
               className="min-w-[160px] bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all"
             >
