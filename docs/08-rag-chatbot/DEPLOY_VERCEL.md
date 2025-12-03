@@ -1,28 +1,89 @@
 # Déploiement Vercel - Variables d'environnement Google Cloud
 
+> **Note :** Nous utilisons des variables séparées au lieu d'une seule variable Base64 pour éviter les problèmes de troncature sur Vercel.
+
 ## Variables à ajouter sur Vercel
 
 Allez sur : **https://vercel.com/votre-projet/settings/environment-variables**
 
-### 1. GOOGLE_APPLICATION_CREDENTIALS_BASE64
+### Étape 1 : Supprimer l'ancienne variable (si elle existe)
 
-```
-GOOGLE_APPLICATION_CREDENTIALS_BASE64=ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAiZ2VuLWxhbmctY2xpZW50LTAwMzA1ODQ2NTIiLAogICJwcml2YXRlX2tleV9pZCI6ICI3NDdjM2MyOWNjYWUwMDhhZmIzZDA1NjE2ZDlkNjU3M2UzZTIxN2VlIiwKICAicHJpdmF0ZV9rZXkiOiAiLS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tXG5NSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUM0c0pLVjdDcXZuVVE5XG5ML0N1NFBCMWg4Vmd6VUVBYWxhdVJCd0Q1bUxnMy9DcjNKTjRyNHZKWW9HdmJTdlM1WGNyOHlZTEhOaDBXOXhZXG4rbnEvOXgxY3ZsdG9LLzZ4MmtvaUhsdUpCaE5vZUZZUzlKR2N5NUpZWUhuS1RvK1MxZVNhYy9pWXhVS0pHaCtiXG5Vd0grQ3d4MEZLZXI2YWc0L09QckJaS3ZwVWRsRUVQbkhkU0dCNENRMWJCbW5PNzVDRklQNWZQQ0xkQytnczFKXG4wT0t3elQ2c2d3bEJxaWQyenY5bjZvWC92dXNiSHl1OW1LR3M2S01JQ3gyY3p5cnVvTDJsbzFkczFsdXBPSlpIXG40MXA3S0xETkNHWGxQUm9uRU9DK0lNVHoxMGQvUVF4UHBKajVDVWVtTCtoUkdWbjNKamdwWHMvMVZJdXR6MEJaXG5IV0ZpekRQeEFnTUJBQUVDZ2dFQURMdjZBM1hTOUtSZ2srSjJFeXpGejZqQ29udk1oMUdOcy9yVXZxMFlOTDZrXG5Hc2w4N3BXV0N4YnNiN0xVa25oSmFRR2RKaWVCUWphaVFRMVdRTjJ5UzlhQk9YUE5IaWk1czFRS0JpN2gwREo1XG41dGt2b0JMR1BxczZRb2w3cTBsdHQzdVhFTHVMTEtaZE53bTRhYktMMDRZb0VIbXVKRzNGYmt0R1U2K085bWdVXG5KQVRWZGlGb0tPempRK2RvR3drVCt4dXlJTGtCWW9OTTgydVVTYTQxdDBxaHR4WVp4VzBDWjR2NDRRcG5hWitnXG4yaUpYNGpHM2RKRmdKamluS1RuaXkrVGZ6Q0NOUjZWVHpFMjhESlZoNWg0ZmZmMnpuK25VMnVyQ1k5S0RrZ3JjXG5kQmRPeUxaZVNNaXg4dVdyMHRxbjhObnBhcmZQZytwNmdnV1d2WmpRZFFLQmdRRDdyaFNNMFBYUGwvNFBWNm9oXG56R1lBNktCYmpsV1c5WHNaL0FpQTQxVW5tRjhobW5LM2VzcTRaUStWczJQMkdOSkJ5ZFZ1UFI1a1U0eDkyRENyXG5mMnRWdXA1bkhhaE5qTTBBVWRXM05hdVQxdlV3WFVMU1VQNUErQ2pjTzgyanBIMENFbFR3MFltcWQvUG5pS3RQXG5kL1pFRVFEamp1WXJtUGNYSzAxUG8vSjBMUUtCZ1FDNzNDQ0Y1bVNTZGJkMEpQMm1ZblUvcmZ0M0VMSzZ5R0haXG43YlpGQ1YyTjNZeTU5dWpCTlgxQlJabG80aEtkTWc1MG0vdG1SODAxODBMcDh3NnRWSDZBUDYxaWsvY0pUR25OXG43VDN0c2Z1WGNkVDRRVEZ3azhiNk5KcmFnakhRSUNRYitYdWdaRWRDUG9KVENhRm1BUDZKRjN1akJ3QXZ2bVI2XG41cEQ4VlpuRlZRS0JnR2YxeFZsUmEyZ2YwWHNHN0NqZjVIYVZvTCtROEx2VmxNN3I4NXRCekVmNXdib0FzVWdtXG4rWnZuYXVPY1lUc2pqNTVMUDlVMGU5eFhRcDRzOGhXMUlXSWRIeGRiQWMxZXpzTkdDbkNPUTl4aW00OHB4dE5YXG5UMThJNHQvdCtBaVRobXVYcE95QXNVdndGcGphTkdFMEhVNktjNEtMNFhtNnlyNFFUZlFLdGJqVkFvR0JBTGJnXG5CVEVVSlZlR0RMNmR1K2FhOWpTMWM1Um14dmFaVnRoRlZpaENnN1kwdEdmYitwMExLeEc5WlNmNjI4LzNDS2R2XG5xUDNhYStSWEdRNlJzL243eE9Hb0cydFpTeVRjSkN0NUJjNDhjd1RzcFR1K2l4aGlZMUx5bnNTVDlWWDcwK3IvXG5wTjl3ZndYM3YvcUI1NEphK1c0UFZDWlNERlp0NjNiUXVOZExwVk81QW9HQURlVUk4OGRHdGEwaDFRaWxJSk5ZXG5VZ1ZXcHdRWGYxbnNKa0wycEdoSjlpRDMvYzJGMURSV1Znci9zMERrUkEzVnR5aldBOWU0R0tiS3BmbmlFYy9kXG5jYjlGbjB3dFJnc21CY2ZPZ3NhVGY4Z3cvMXF6RTFGbWtJL1NCYWM1UkF2K3NmQWtEdU1IT01tZ1d6eDZpTmNwXG5rZmJ2emhUdFlkWUFmbjV2UTZpbzFLRT1cbi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS1cbiIsCiAgImNsaWVudF9lbWFpbCI6ICJhbGxpYW56LXJhZy1zZXJ2aWNlQGdlbi1sYW5nLWNsaWVudC0wMDMwNTg0NjUyLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwKICAiY2xpZW50X2lkIjogIjExMjM1OTE4NzM2MDQ3MzE4MDQyNCIsCiAgImF1dGhfdXJpIjogImh0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbS9vL29hdXRoMi9hdXRoIiwKICAidG9rZW5fdXJpIjogImh0dHBzOi8vb2F1dGgyLmdvb2dsZWFwaXMuY29tL3Rva2VuIiwKICAiYXV0aF9wcm92aWRlcl94NTA5X2NlcnRfdXJsIjogImh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL29hdXRoMi92MS9jZXJ0cyIsCiAgImNsaWVudF94NTA5X2NlcnRfdXJsIjogImh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL3JvYm90L3YxL21ldGFkYXRhL3g1MDkvYWxsaWFuei1yYWctc2VydmljZSU0MGdlbi1sYW5nLWNsaWVudC0wMDMwNTg0NjUyLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwKICAidW5pdmVyc2VfZG9tYWluIjogImdvb2dsZWFwaXMuY29tIgp9Cg==
-```
+Si vous aviez déjà configuré `GOOGLE_APPLICATION_CREDENTIALS_BASE64`, **supprimez-la** avant de continuer.
 
-### 2. GOOGLE_CLOUD_PROJECT
+### Étape 2 : Ajouter les nouvelles variables
+
+#### 1. GOOGLE_CLOUD_PROJECT
 
 ```
 GOOGLE_CLOUD_PROJECT=gen-lang-client-0030584652
 ```
 
-### 3. GOOGLE_DOCUMENT_AI_PROCESSOR_ID
+#### 2. GOOGLE_PRIVATE_KEY_ID
+
+```
+GOOGLE_PRIVATE_KEY_ID=747c3c29ccae008afb3d05616d9d6573e3e217ee
+```
+
+#### 3. GOOGLE_PRIVATE_KEY
+
+**Important :** Copiez la clé EN ENTIER, avec les retours à la ligne.
+
+```
+-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC4sJKV7CqvnUQ9
+L/Cu4PB1h8VgzUEAalauRBwD5mLg3/Cr3JN4r4vJYoGvbSvS5Xcr8yYLHNh0W9xY
++nq/9x1cvltoK/6x2koiHluJBhNoeFYS9JGcy5JYYHnKTo+S1eSac/iYxUKJGh+b
+UwH+Cwx0FKer6ag4/OPrBZKvpUdlEEPnHdSGB4CQ1bBmnO75CFIP5fPCLdC+gs1J
+0OKwzT6sgwlBqid2zv9n6oX/vusbHyu9mKGs6KMICx2czyruoL2lo1ds1lupOJZH
+41p7KLDNCGXlPRonEOC+IMTz10d/QQxPpJj5CUemL+hRGVn3JjgpXs/1VIutz0BZ
+HWFizDPxAgMBAAECggEADLv6A3XS9KRgk+J2EyzFz6jConvMh1GNs/rUvq0YNL6k
+Gsl87pWWCxbsb7LUknhJaQGdJieBQjaiQQ1WQN2yS9aBOXPNHii5s1QKBi7h0DJ5
+5tkvoBLGPqs6Qol7q0ltt3uXELuLLKZdNwm4abKL04YoEHmuJG3FbktGU6+O9mgU
+JATVdiFoKOzjQ+doGwkT+xuyILkBYoNM82uUSa41t0qhtxYZxW0CZ4v44QpnaZ+g
+2iJX4jG3dJFgJjinKTniy+TfzCCNR6VTzE28DJVh5h4fff2zn+nU2urCY9KDkgrc
+dBdOyLZeSMix8uWr0tqn8NnparfPg+p6ggWWvZjQdQKBgQD7rhSM0PXPl/4PV6oh
+zGYA6KBbjlWW9XsZ/AiA41UnmF8hmnK3esq4ZQ+Vs2P2GNJBydVuPR5kU4x92DCr
+f2tVup5nHahNjM0AUdW3NauT1vUwXULSUP5A+CjcO82jpH0CElTw0Ymqd/PniKtP
+d/ZEEQDjjuYrmPcXK01Po/J0LQKBgQC73CCF5mSSdbd0JP2mYnU/rft3ELK6yGHZ
+7bZFCV2N3Yy59ujBNX1BRZlo4hKdMg50m/tmR80180Lp8w6tVH6AP61ik/cJTGnN
+7T3tsfuXcdT4QTFwk8b6NJragjHQICQb+XugZEdCPoJTCaFmAP6JF3ujBwAvvmR6
+5pD8VZnFVQKBgGf1xVlRa2gf0XsG7Cjf5HaVoL+Q8LvVlM7r85tBzEf5wboAsUgm
++ZvnauOcYTsjj55LP9U0e9xXQp4s8hW1IWIdHxdbAc1ezsNGCnCOQ9xim48pxtNX
+T18I4t/t+AiThmuXpOyAsUvwFpjaNGE0HU6Kc4KL4Xm6yr4QTfQKtbjVAoGBALbg
+BTEUJVeGDL6du+aa9jS1c5RmxvaZVthFVihCg7Y0tGfb+p0LKxG9ZSf628/3CKdv
+qP3aa+RXGQ6Rs/n7xOGoG2tZSyTcJCt5Bc48cwTspTu+ixhiY1LynsST9VX70+r/
+pN9wfwX3v/qB54Ja+W4PVCZSDFZt63bQuNdLpVO5AoGADeUI88dGta0h1QilIJNY
+UgVWpwQXf1nsJkL2pGhJ9iD3/c2F1DRWVgr/s0DkRA3VtyjWA9e4GKbKpfniEc/d
+cb9Fn0wtRgsmBcfOgsaTf8gw/1qzE1FmkI/SBac5RAv+sfAkDuMHOMmgWzx6iNcp
+kfbvzhTtYdYAfn5vQ6io1KE=
+-----END PRIVATE KEY-----
+```
+
+#### 4. GOOGLE_CLIENT_EMAIL
+
+```
+GOOGLE_CLIENT_EMAIL=allianz-rag-service@gen-lang-client-0030584652.iam.gserviceaccount.com
+```
+
+#### 5. GOOGLE_CLIENT_ID
+
+```
+GOOGLE_CLIENT_ID=112359187360473180424
+```
+
+#### 6. GOOGLE_CLIENT_CERT_URL
+
+```
+GOOGLE_CLIENT_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/allianz-rag-service%40gen-lang-client-0030584652.iam.gserviceaccount.com
+```
+
+#### 7. GOOGLE_DOCUMENT_AI_PROCESSOR_ID
 
 ```
 GOOGLE_DOCUMENT_AI_PROCESSOR_ID=4a2fd5a9ffae6d21
 ```
 
-### 4. GOOGLE_DOCUMENT_AI_LOCATION
+#### 8. GOOGLE_DOCUMENT_AI_LOCATION
 
 ```
 GOOGLE_DOCUMENT_AI_LOCATION=eu
@@ -37,10 +98,11 @@ GOOGLE_DOCUMENT_AI_LOCATION=eu
 
 2. **Pour chaque variable :**
    - Cliquez sur "Add New"
-   - **Name:** Copiez le nom exact (ex: `GOOGLE_APPLICATION_CREDENTIALS_BASE64`)
+   - **Name:** Copiez le nom exact (ex: `GOOGLE_CLOUD_PROJECT`)
    - **Value:** Collez la valeur correspondante
    - **Environments:** Sélectionnez **Production, Preview, Development**
    - Cliquez sur "Save"
+   - **Important pour `GOOGLE_PRIVATE_KEY` :** Vérifiez que les retours à la ligne sont préservés
 
 3. **Redéployez l'application :**
    - Allez dans l'onglet "Deployments"
@@ -84,9 +146,13 @@ ou
 
 ## Troubleshooting
 
-### Erreur "GOOGLE_APPLICATION_CREDENTIALS_BASE64 est requis"
+### Erreur "Credentials Google Cloud manquants"
 
-➡️ Vérifiez que la variable est bien ajoutée sur Vercel et redéployez.
+➡️ Vérifiez que vous avez bien ajouté les 8 variables sur Vercel et redéployez.
+
+### Erreur "Credentials Google Cloud incomplets"
+
+➡️ Vérifiez particulièrement `GOOGLE_PRIVATE_KEY` - elle doit contenir la clé complète avec `-----BEGIN PRIVATE KEY-----` et `-----END PRIVATE KEY-----`.
 
 ### Erreur "Impossible d'extraire le texte du PDF"
 
