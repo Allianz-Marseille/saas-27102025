@@ -8,93 +8,17 @@ import type { DocumentChunk, OCRResult, FileType } from "./types";
 
 /**
  * Extrait le texte d'un fichier PDF
+ * TEMPORAIREMENT DÉSACTIVÉ - En attente d'une solution serverless fiable
+ * Les images avec OCR sont fonctionnelles et recommandées pour le moment
  */
 export async function extractTextFromPDF(
   buffer: Buffer
 ): Promise<string> {
-  const startTime = Date.now();
-  
-  try {
-    console.log(`[PDF] Début extraction avec pdfjs-dist (taille: ${(buffer.length / 1024).toFixed(2)} KB)`);
-    
-    // Import dynamique de pdfjs-dist pour éviter l'évaluation au build time
-    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    
-    // Configuration pour environnement serverless
-    if (typeof window === 'undefined') {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-    }
-    
-    // Charger le document PDF avec pdfjs-dist
-    const loadingTask = pdfjsLib.getDocument({
-      data: new Uint8Array(buffer),
-      useSystemFonts: true,
-      disableFontFace: true,
-      standardFontDataUrl: undefined, // Désactiver le chargement de polices en serverless
-    });
-    
-    const pdfDocument = await loadingTask.promise;
-    const numPages = pdfDocument.numPages;
-    
-    console.log(`[PDF] Document chargé - ${numPages} pages`);
-    
-    if (numPages === 0) {
-      throw new Error("Le PDF ne contient aucune page");
-    }
-    
-    // Extraire le texte de toutes les pages en parallèle
-    const textPromises: Promise<string>[] = [];
-    
-    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-      textPromises.push(
-        pdfDocument.getPage(pageNum).then(async (page) => {
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items
-            .map((item: any) => {
-              // item.str contient le texte, item.hasEOL indique une fin de ligne
-              const text = item.str || '';
-              return text;
-            })
-            .filter(text => text.trim().length > 0)
-            .join(' ');
-          return pageText;
-        })
-      );
-    }
-    
-    const pagesText = await Promise.all(textPromises);
-    const fullText = pagesText
-      .filter(text => text.trim().length > 0)
-      .join('\n\n');
-    
-    const extractionTime = Date.now() - startTime;
-    console.log(`[PDF] Extraction réussie en ${extractionTime}ms - ${numPages} pages, ${fullText.length} caractères`);
-    
-    // Vérifier que du texte a été extrait
-    if (!fullText || fullText.trim().length === 0) {
-      throw new Error(
-        "Aucun texte trouvé dans le PDF. Il s'agit peut-être d'un PDF scanné (image). Essayez de le convertir avec OCR."
-      );
-    }
-
-    return fullText;
-  } catch (error) {
-    const extractionTime = Date.now() - startTime;
-    console.error(`[PDF] Erreur après ${extractionTime}ms:`, error);
-    
-    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
-    
-    // Gestion d'erreurs spécifiques
-    if (errorMessage.includes("password") || errorMessage.includes("encrypted")) {
-      throw new Error("Le PDF est protégé par mot de passe");
-    }
-    
-    if (errorMessage.includes("Invalid PDF")) {
-      throw new Error("Le fichier PDF est invalide ou corrompu");
-    }
-    
-    throw new Error(`Erreur extraction PDF: ${errorMessage}`);
-  }
+  throw new Error(
+    "L'extraction de PDF est temporairement désactivée. " +
+    "Veuillez convertir votre PDF en images (PNG, JPG) et utiliser l'upload d'images avec OCR. " +
+    "Les PDFs seront réactivés prochainement avec une solution API externe (AWS Textract ou Google Document AI)."
+  );
 }
 
 /**
@@ -338,12 +262,13 @@ export async function processImageForIndexing(
  */
 export function getFileTypeFromMimeType(mimeType: string): FileType | null {
   // Utiliser une vérification explicite pour éviter les problèmes de type avec readonly arrays
-  const pdfTypes = ragConfig.files.allowedPDFTypes as readonly string[];
+  // const pdfTypes = ragConfig.files.allowedPDFTypes as readonly string[];
   const imageTypes = ragConfig.files.allowedImageTypes as readonly string[];
   
-  if (pdfTypes.includes(mimeType)) {
-    return "pdf";
-  }
+  // PDFs temporairement désactivés
+  // if (pdfTypes.includes(mimeType)) {
+  //   return "pdf";
+  // }
 
   if (imageTypes.includes(mimeType)) {
     return "image";

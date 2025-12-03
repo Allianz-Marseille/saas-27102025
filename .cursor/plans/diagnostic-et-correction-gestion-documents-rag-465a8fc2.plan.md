@@ -114,6 +114,51 @@ Créer un guide `SETUP_RAG_COMPLETE.md` avec :
 
 ### To-dos
 
+- [x] Améliorer la fonctionnalité de copie - ajouter bouton pour copier toute la conversation
+- [x] Améliorer le feedback utilisateur pour le collage d'image - ajouter toast et meilleure UX
+- [x] Ajouter fonctionnalité pour exporter/télécharger la conversation en format texte
+- [ ] Corriger l'import de pdf-parse dans pdf-processor.ts - utiliser import statique et ajouter validation PDF
+- [ ] Améliorer la gestion d'erreurs dans pdf-processor.ts - distinguer erreurs récupérables/fatales, messages spécifiques
+- [ ] Ajouter validation préalable dans upload route - vérifier config Qdrant/OpenAI/Storage avant traitement
+- [ ] Améliorer gestion erreurs upload route - rollback complet, messages spécifiques, retry mechanism
+- [ ] Ajouter logs structurés dans upload route - ID trace, métriques, contexte erreurs
+- [ ] Améliorer robustesse suppression - vérifications préalables, rollback si erreur partielle
+- [ ] Améliorer client Qdrant - vérification santé, retry avec backoff, logs détaillés
+- [ ] Créer script diagnose-rag-system.ts pour vérifier toute la chaîne RAG
+- [ ] Améliorer UI upload dialog - messages erreurs spécifiques, progression détaillée, métriques
+- [ ] Nettoyer package.json - supprimer pdf-parse complètement
+- [ ] Nettoyer pdf-processor.ts - supprimer code pdf-parse obsolète
+- [ ] Corriger configuration pdfjs-dist pour serverless
+- [ ] Vérifier fonctionnement Tesseract.js
+- [ ] Créer script test-rag-upload.ts
+- [ ] Créer documentation SETUP_RAG_COMPLETE.md
+- [ ] Tester upload PDF et image en local
+- [ ] Déployer et tester en production
+- [x] 
+- [x] 
+- [x] 
+- [x] 
+- [x] 
+- [x] 
+- [x] 
+- [x] 
+- [ ] Corriger l'import de pdf-parse dans pdf-processor.ts - utiliser import statique et ajouter validation PDF
+- [ ] Améliorer la gestion d'erreurs dans pdf-processor.ts - distinguer erreurs récupérables/fatales, messages spécifiques
+- [ ] Ajouter validation préalable dans upload route - vérifier config Qdrant/OpenAI/Storage avant traitement
+- [ ] Améliorer gestion erreurs upload route - rollback complet, messages spécifiques, retry mechanism
+- [ ] Ajouter logs structurés dans upload route - ID trace, métriques, contexte erreurs
+- [ ] Améliorer robustesse suppression - vérifications préalables, rollback si erreur partielle
+- [ ] Améliorer client Qdrant - vérification santé, retry avec backoff, logs détaillés
+- [ ] Créer script diagnose-rag-system.ts pour vérifier toute la chaîne RAG
+- [ ] Améliorer UI upload dialog - messages erreurs spécifiques, progression détaillée, métriques
+- [ ] Nettoyer package.json - supprimer pdf-parse complètement
+- [ ] Nettoyer pdf-processor.ts - supprimer code pdf-parse obsolète
+- [ ] Corriger configuration pdfjs-dist pour serverless
+- [ ] Vérifier fonctionnement Tesseract.js
+- [ ] Créer script test-rag-upload.ts
+- [ ] Créer documentation SETUP_RAG_COMPLETE.md
+- [ ] Tester upload PDF et image en local
+- [ ] Déployer et tester en production
 - [ ] Corriger l'import de pdf-parse dans pdf-processor.ts - utiliser import statique et ajouter validation PDF
 - [ ] Améliorer la gestion d'erreurs dans pdf-processor.ts - distinguer erreurs récupérables/fatales, messages spécifiques
 - [ ] Ajouter validation préalable dans upload route - vérifier config Qdrant/OpenAI/Storage avant traitement
