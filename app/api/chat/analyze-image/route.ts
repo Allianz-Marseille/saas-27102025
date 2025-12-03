@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebase/admin-config";
-import { extractTextFromImage, getImageTypeFromMimeType } from "@/lib/rag/pdf-processor";
+import { getImageTypeFromMimeType } from "@/lib/rag/pdf-processor";
 import { ragConfig } from "@/lib/config/rag-config";
 import { adminStorage } from "@/lib/firebase/admin-config";
 import { v4 as uuidv4 } from "uuid";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,7 +65,8 @@ export async function POST(request: NextRequest) {
     // Convertir l'image en buffer
     const buffer = Buffer.from(await imageFile.arrayBuffer());
 
-    // Extraire le texte avec OCR
+    // Extraire le texte avec OCR (lazy load pour éviter les problèmes de build)
+    const { extractTextFromImage } = await import("@/lib/rag/pdf-processor");
     const ocrResult = await extractTextFromImage(buffer, imageType);
 
     // Optionnel : sauvegarder l'image dans Firebase Storage pour référence
