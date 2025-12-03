@@ -469,15 +469,5 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-  } catch (error) {
-    console.error("Erreur API upload:", error);
-    return NextResponse.json(
-      {
-        error: "Erreur lors de l'upload",
-        details: error instanceof Error ? error.message : "Erreur inconnue",
-      },
-      { status: 500 }
-    );
-  }
 }
 
