@@ -1,47 +1,17 @@
 /**
  * Service pour extraire le texte des PDFs et images, et créer les chunks
+ * Utilise pdfjs-dist pour les PDFs et tesseract.js pour l'OCR
  */
 
 import { createWorker } from "tesseract.js";
 import { ragConfig } from "@/lib/config/rag-config";
 import type { DocumentChunk, OCRResult, FileType } from "./types";
-import * as pdfjsLib from "pdfjs-dist";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 
-// Configuration de pdfjs-dist pour l'environnement serverless
+// Configuration de pdfjs-dist pour l'environnement Node.js serverless
+// Important : utiliser le legacy build qui fonctionne mieux en Node.js
 if (typeof window === 'undefined') {
-  // En environnement Node.js (serverless), désactiver le worker
   pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-}
-
-/**
- * Valide la structure d'un PDF avant extraction
- */
-function validatePDFStructure(buffer: Buffer): { valid: boolean; error?: string } {
-  try {
-    // Vérifier que le buffer commence par le header PDF (%PDF)
-    const header = buffer.subarray(0, 4).toString("ascii");
-    if (header !== "%PDF") {
-      return {
-        valid: false,
-        error: "Le fichier ne semble pas être un PDF valide (header manquant)",
-      };
-    }
-
-    // Vérifier la taille minimale (un PDF doit avoir au moins quelques centaines d'octets)
-    if (buffer.length < 100) {
-      return {
-        valid: false,
-        error: "Le fichier PDF est trop petit pour être valide",
-      };
-    }
-
-    return { valid: true };
-  } catch (error) {
-    return {
-      valid: false,
-      error: `Erreur lors de la validation du PDF: ${error instanceof Error ? error.message : "Erreur inconnue"}`,
-    };
-  }
 }
 
 /**
@@ -53,20 +23,14 @@ export async function extractTextFromPDF(
   const startTime = Date.now();
   
   try {
-    // 1. Valider la structure du PDF
-    console.log(`[PDF] Validation de la structure (taille: ${buffer.length} bytes)`);
-    const validation = validatePDFStructure(buffer);
-    if (!validation.valid) {
-      throw new Error(validation.error || "PDF invalide");
-    }
-
-    // 2. Extraire le texte avec pdfjs-dist
-    console.log(`[PDF] Début extraction avec pdfjs-dist...`);
+    console.log(`[PDF] Début extraction avec pdfjs-dist (taille: ${(buffer.length / 1024).toFixed(2)} KB)`);
     
+    // Charger le document PDF avec pdfjs-dist
     const loadingTask = pdfjsLib.getDocument({
       data: new Uint8Array(buffer),
       useSystemFonts: true,
       disableFontFace: true,
+      standardFontDataUrl: undefined, // Désactiver le chargement de polices en serverless
     });
     
     const pdfDocument = await loadingTask.promise;
@@ -74,30 +38,42 @@ export async function extractTextFromPDF(
     
     console.log(`[PDF] Document chargé - ${numPages} pages`);
     
-    // Extraire le texte de toutes les pages
+    if (numPages === 0) {
+      throw new Error("Le PDF ne contient aucune page");
+    }
+    
+    // Extraire le texte de toutes les pages en parallèle
     const textPromises: Promise<string>[] = [];
     
     for (let pageNum = 1; pageNum <= numPages; pageNum++) {
       textPromises.push(
         pdfDocument.getPage(pageNum).then(async (page) => {
           const textContent = await page.getTextContent();
-          return textContent.items
-            .map((item: any) => item.str || '')
+          const pageText = textContent.items
+            .map((item: any) => {
+              // item.str contient le texte, item.hasEOL indique une fin de ligne
+              const text = item.str || '';
+              return text;
+            })
+            .filter(text => text.trim().length > 0)
             .join(' ');
+          return pageText;
         })
       );
     }
     
     const pagesText = await Promise.all(textPromises);
-    const fullText = pagesText.join('\n\n');
+    const fullText = pagesText
+      .filter(text => text.trim().length > 0)
+      .join('\n\n');
     
     const extractionTime = Date.now() - startTime;
     console.log(`[PDF] Extraction réussie en ${extractionTime}ms - ${numPages} pages, ${fullText.length} caractères`);
     
-    // 3. Vérifier que du texte a été extrait
+    // Vérifier que du texte a été extrait
     if (!fullText || fullText.trim().length === 0) {
       throw new Error(
-        "Aucun texte n'a pu être extrait du PDF. Le fichier pourrait être une image scannée ou un PDF vide."
+        "Aucun texte trouvé dans le PDF. Il s'agit peut-être d'un PDF scanné (image). Essayez de le convertir avec OCR."
       );
     }
 
@@ -106,32 +82,18 @@ export async function extractTextFromPDF(
     const extractionTime = Date.now() - startTime;
     console.error(`[PDF] Erreur après ${extractionTime}ms:`, error);
     
-    // Distinguer les erreurs récupérables des erreurs fatales
     const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
     
-    // Erreurs récupérables (ne pas supprimer le fichier)
-    if (
-      errorMessage.includes("mot de passe") ||
-      errorMessage.includes("protégé") ||
-      errorMessage.includes("crypté") ||
-      errorMessage.includes("scanné")
-    ) {
-      throw new Error(`PDF non traitable: ${errorMessage}`);
+    // Gestion d'erreurs spécifiques
+    if (errorMessage.includes("password") || errorMessage.includes("encrypted")) {
+      throw new Error("Le PDF est protégé par mot de passe");
     }
     
-    // Erreurs fatales (fichier corrompu)
-    if (
-      errorMessage.includes("corrompu") ||
-      errorMessage.includes("invalide") ||
-      errorMessage.includes("header")
-    ) {
-      throw new Error(`PDF corrompu: ${errorMessage}`);
+    if (errorMessage.includes("Invalid PDF")) {
+      throw new Error("Le fichier PDF est invalide ou corrompu");
     }
     
-    // Erreur générique
-    throw new Error(
-      `Erreur lors de l'extraction du texte du PDF: ${errorMessage}`
-    );
+    throw new Error(`Erreur extraction PDF: ${errorMessage}`);
   }
 }
 
