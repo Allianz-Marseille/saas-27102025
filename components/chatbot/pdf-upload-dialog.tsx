@@ -314,7 +314,7 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[95vh] flex flex-col p-0 gap-0">
+      <DialogContent className="!max-w-4xl !w-[calc(100vw-2rem)] sm:!w-[90vw] lg:!w-[85vw] xl:!w-[80vw] !max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
           <DialogTitle className="flex items-center gap-3 text-xl">
             <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg">
@@ -329,7 +329,7 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-6 space-y-6 min-h-0 flex-shrink">
           {/* Zone de drag & drop */}
           <div
             onDragOver={handleDragOver}
@@ -389,7 +389,7 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
                   <span>Fichier{files.length > 1 ? "s" : ""} sélectionné{files.length > 1 ? "s" : ""}</span>
                 </h3>
               </div>
-              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+              <div className="space-y-3 max-h-[350px] overflow-y-auto overflow-x-hidden pr-2">
                 {files.map((file, index) => {
                   const progress = uploadProgress.get(file.name);
                   const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
