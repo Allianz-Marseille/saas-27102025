@@ -217,7 +217,17 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
         clearInterval(progressInterval);
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error || errorData.details || "Erreur lors de l'upload";
+        const errorDetails = errorData.details || "";
         const traceId = errorData.traceId;
+        
+        // Afficher l'erreur complète dans la console pour debugging
+        console.error("Erreur upload:", {
+          status: response.status,
+          error: errorMessage,
+          details: errorDetails,
+          traceId,
+          fullResponse: errorData,
+        });
         
         // Messages d'erreur plus spécifiques
         let userFriendlyMessage = errorMessage;
@@ -235,8 +245,8 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
         
         updateProgress(fileName, "error", 0, undefined, { traceId });
         toast.error(userFriendlyMessage, {
-          description: traceId ? `ID de trace: ${traceId}` : undefined,
-          duration: 5000,
+          description: errorDetails ? `Détails: ${errorDetails}` : (traceId ? `ID de trace: ${traceId}` : undefined),
+          duration: 8000,
         });
         return;
       }
