@@ -5,67 +5,12 @@
 import { createWorker } from "tesseract.js";
 import { ragConfig } from "@/lib/config/rag-config";
 import type { DocumentChunk, OCRResult, FileType } from "./types";
+import * as pdfjsLib from "pdfjs-dist";
 
-// Polyfill pour DOMMatrix dans l'environnement serverless (nécessaire pour pdf-parse)
-if (typeof globalThis !== 'undefined') {
-  if (typeof (globalThis as any).DOMMatrix === 'undefined') {
-    // Polyfill complet pour DOMMatrix
-    (globalThis as any).DOMMatrix = function DOMMatrix() {
-      this.a = 1; this.b = 0; this.c = 0; this.d = 1; this.e = 0; this.f = 0;
-      this.m11 = 1; this.m12 = 0; this.m13 = 0; this.m14 = 0;
-      this.m21 = 0; this.m22 = 1; this.m23 = 0; this.m24 = 0;
-      this.m31 = 0; this.m32 = 0; this.m33 = 1; this.m34 = 0;
-      this.m41 = 0; this.m42 = 0; this.m43 = 0; this.m44 = 1;
-    };
-    (globalThis as any).DOMMatrix.prototype = Object.create(null);
-  }
-  
-  // Désactiver les warnings canvas-related dans pdf-parse
-  if (typeof (globalThis as any).DOMPoint === 'undefined') {
-    (globalThis as any).DOMPoint = function DOMPoint() {
-      this.x = 0; this.y = 0; this.z = 0; this.w = 1;
-    };
-  }
-}
-
-// Import dynamique de pdf-parse avec cache
-let pdfParseFunction: any = null;
-
-async function getPdfParse(): Promise<any> {
-  if (pdfParseFunction) {
-    return pdfParseFunction;
-  }
-
-  try {
-    const pdfParse = await import("pdf-parse");
-    
-    // pdf-parse exporte soit une fonction directe, soit un objet avec default
-    if (typeof pdfParse === "function") {
-      pdfParseFunction = pdfParse;
-    } else if (typeof (pdfParse as any).default === "function") {
-      pdfParseFunction = (pdfParse as any).default;
-    } else {
-      // Dernier recours : chercher une fonction dans l'objet
-      const keys = Object.keys(pdfParse);
-      for (const key of keys) {
-        if (typeof (pdfParse as any)[key] === "function") {
-          pdfParseFunction = (pdfParse as any)[key];
-          break;
-        }
-      }
-    }
-    
-    if (!pdfParseFunction || typeof pdfParseFunction !== "function") {
-      throw new Error("pdf-parse n'a pas exporté de fonction valide");
-    }
-    
-    return pdfParseFunction;
-  } catch (error) {
-    console.error("[PDF] Erreur import pdf-parse:", error);
-    throw new Error(
-      `Impossible de charger le module pdf-parse: ${error instanceof Error ? error.message : "Erreur inconnue"}`
-    );
-  }
+// Configuration de pdfjs-dist pour l'environnement serverless
+if (typeof window === 'undefined') {
+  // En environnement Node.js (serverless), désactiver le worker
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '';
 }
 
 /**
@@ -115,35 +60,48 @@ export async function extractTextFromPDF(
       throw new Error(validation.error || "PDF invalide");
     }
 
-    // 2. Extraire le texte avec pdf-parse
-    console.log(`[PDF] Début extraction texte...`);
-    const pdfParse = await getPdfParse();
-    const data = await pdfParse(buffer, {
-      // Options pour gérer les PDFs protégés ou complexes
-      max: 0, // Pas de limite de pages
+    // 2. Extraire le texte avec pdfjs-dist
+    console.log(`[PDF] Début extraction avec pdfjs-dist...`);
+    
+    const loadingTask = pdfjsLib.getDocument({
+      data: new Uint8Array(buffer),
+      useSystemFonts: true,
+      disableFontFace: true,
     });
-
+    
+    const pdfDocument = await loadingTask.promise;
+    const numPages = pdfDocument.numPages;
+    
+    console.log(`[PDF] Document chargé - ${numPages} pages`);
+    
+    // Extraire le texte de toutes les pages
+    const textPromises: Promise<string>[] = [];
+    
+    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+      textPromises.push(
+        pdfDocument.getPage(pageNum).then(async (page) => {
+          const textContent = await page.getTextContent();
+          return textContent.items
+            .map((item: any) => item.str || '')
+            .join(' ');
+        })
+      );
+    }
+    
+    const pagesText = await Promise.all(textPromises);
+    const fullText = pagesText.join('\n\n');
+    
     const extractionTime = Date.now() - startTime;
-    const textLength = data.text?.length || 0;
-    const numPages = data.numpages || 0;
-
-    console.log(`[PDF] Extraction réussie en ${extractionTime}ms - ${numPages} pages, ${textLength} caractères`);
-
+    console.log(`[PDF] Extraction réussie en ${extractionTime}ms - ${numPages} pages, ${fullText.length} caractères`);
+    
     // 3. Vérifier que du texte a été extrait
-    if (!data.text || data.text.trim().length === 0) {
-      // Vérifier si le PDF est protégé par mot de passe
-      if (data.info?.Encrypted || data.info?.Trapped === "True") {
-        throw new Error(
-          "Le PDF semble être protégé par mot de passe ou crypté. Impossible d'extraire le texte."
-        );
-      }
-      
+    if (!fullText || fullText.trim().length === 0) {
       throw new Error(
         "Aucun texte n'a pu être extrait du PDF. Le fichier pourrait être une image scannée ou un PDF vide."
       );
     }
 
-    return data.text;
+    return fullText;
   } catch (error) {
     const extractionTime = Date.now() - startTime;
     console.error(`[PDF] Erreur après ${extractionTime}ms:`, error);
