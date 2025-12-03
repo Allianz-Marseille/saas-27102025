@@ -2,19 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminAuth, adminStorage, adminDb, Timestamp } from "@/lib/firebase/admin-config";
 import { v4 as uuidv4 } from "uuid";
 import { ragConfig, validateRagConfig } from "@/lib/config/rag-config";
-import {
-  processPDFForIndexing,
-  processImageForIndexing,
-  getFileTypeFromMimeType,
-  getImageTypeFromMimeType,
-  validateFile,
-} from "@/lib/rag/pdf-processor";
+import { getFileTypeFromMimeType, getImageTypeFromMimeType, validateFile } from "@/lib/rag/pdf-processor";
 import { generateEmbeddingsBatch, checkOpenAIConnection } from "@/lib/rag/embeddings";
 import { createCollectionIfNotExists, upsertVectors, checkQdrantConnection } from "@/lib/rag/qdrant-client";
 import { deleteDocumentVectors } from "@/lib/rag/qdrant-client";
 import type { QdrantPoint } from "@/lib/rag/types";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * Génère un ID de trace unique pour le logging
@@ -239,6 +234,9 @@ export async function POST(request: NextRequest) {
     const extractionStartTime = Date.now();
 
     try {
+      // Import dynamique pour éviter les problèmes de build avec pdfjs-dist et tesseract.js
+      const { processPDFForIndexing, processImageForIndexing } = await import("@/lib/rag/pdf-processor");
+      
       if (fileType === "pdf") {
         chunks = await processPDFForIndexing(buffer, documentId);
       } else {
