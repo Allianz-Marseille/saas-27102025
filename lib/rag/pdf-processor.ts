@@ -2,10 +2,74 @@
  * Service pour extraire le texte des PDFs et images, et créer les chunks
  */
 
-// pdf-parse n'a pas d'export par défaut en ESM, utiliser import dynamique
 import { createWorker } from "tesseract.js";
 import { ragConfig } from "@/lib/config/rag-config";
 import type { DocumentChunk, OCRResult, FileType } from "./types";
+
+// Import de pdf-parse avec gestion ESM/CommonJS
+// pdf-parse peut être exporté différemment selon l'environnement
+let pdfParseModule: any = null;
+
+async function getPdfParse(): Promise<any> {
+  if (pdfParseModule) {
+    return pdfParseModule;
+  }
+
+  try {
+    // Import dynamique pour gérer les différences ESM/CommonJS
+    const pdfParse = await import("pdf-parse");
+    // pdf-parse peut être dans default ou directement exporté
+    pdfParseModule = (pdfParse as any).default || pdfParse;
+    
+    // Si c'est un objet avec une fonction, utiliser directement
+    if (typeof pdfParseModule === "function") {
+      return pdfParseModule;
+    }
+    
+    // Sinon, essayer d'accéder à la fonction parse
+    if (pdfParseModule && typeof pdfParseModule.parse === "function") {
+      return pdfParseModule.parse;
+    }
+    
+    return pdfParseModule;
+  } catch (error) {
+    console.error("[PDF] Erreur import pdf-parse:", error);
+    throw new Error(
+      `Impossible de charger le module pdf-parse: ${error instanceof Error ? error.message : "Erreur inconnue"}`
+    );
+  }
+}
+
+/**
+ * Valide la structure d'un PDF avant extraction
+ */
+function validatePDFStructure(buffer: Buffer): { valid: boolean; error?: string } {
+  try {
+    // Vérifier que le buffer commence par le header PDF (%PDF)
+    const header = buffer.subarray(0, 4).toString("ascii");
+    if (header !== "%PDF") {
+      return {
+        valid: false,
+        error: "Le fichier ne semble pas être un PDF valide (header manquant)",
+      };
+    }
+
+    // Vérifier la taille minimale (un PDF doit avoir au moins quelques centaines d'octets)
+    if (buffer.length < 100) {
+      return {
+        valid: false,
+        error: "Le fichier PDF est trop petit pour être valide",
+      };
+    }
+
+    return { valid: true };
+  } catch (error) {
+    return {
+      valid: false,
+      error: `Erreur lors de la validation du PDF: ${error instanceof Error ? error.message : "Erreur inconnue"}`,
+    };
+  }
+}
 
 /**
  * Extrait le texte d'un fichier PDF
@@ -13,19 +77,74 @@ import type { DocumentChunk, OCRResult, FileType } from "./types";
 export async function extractTextFromPDF(
   buffer: Buffer
 ): Promise<string> {
+  const startTime = Date.now();
+  
   try {
-    // Import dynamique pour pdf-parse (pas d'export default en ESM)
-    const pdfParse = await import("pdf-parse");
-    // En ESM, la fonction peut être dans default ou directement dans le module
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const parseFunction = (pdfParse as any).default || pdfParse;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await (parseFunction as any)(buffer);
+    // 1. Valider la structure du PDF
+    console.log(`[PDF] Validation de la structure (taille: ${buffer.length} bytes)`);
+    const validation = validatePDFStructure(buffer);
+    if (!validation.valid) {
+      throw new Error(validation.error || "PDF invalide");
+    }
+
+    // 2. Extraire le texte avec pdf-parse
+    console.log(`[PDF] Début extraction texte...`);
+    const pdfParse = await getPdfParse();
+    const data = await pdfParse(buffer, {
+      // Options pour gérer les PDFs protégés ou complexes
+      max: 0, // Pas de limite de pages
+    });
+
+    const extractionTime = Date.now() - startTime;
+    const textLength = data.text?.length || 0;
+    const numPages = data.numpages || 0;
+
+    console.log(`[PDF] Extraction réussie en ${extractionTime}ms - ${numPages} pages, ${textLength} caractères`);
+
+    // 3. Vérifier que du texte a été extrait
+    if (!data.text || data.text.trim().length === 0) {
+      // Vérifier si le PDF est protégé par mot de passe
+      if (data.info?.Encrypted || data.info?.Trapped === "True") {
+        throw new Error(
+          "Le PDF semble être protégé par mot de passe ou crypté. Impossible d'extraire le texte."
+        );
+      }
+      
+      throw new Error(
+        "Aucun texte n'a pu être extrait du PDF. Le fichier pourrait être une image scannée ou un PDF vide."
+      );
+    }
+
     return data.text;
   } catch (error) {
-    console.error("Erreur lors de l'extraction du texte PDF:", error);
+    const extractionTime = Date.now() - startTime;
+    console.error(`[PDF] Erreur après ${extractionTime}ms:`, error);
+    
+    // Distinguer les erreurs récupérables des erreurs fatales
+    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+    
+    // Erreurs récupérables (ne pas supprimer le fichier)
+    if (
+      errorMessage.includes("mot de passe") ||
+      errorMessage.includes("protégé") ||
+      errorMessage.includes("crypté") ||
+      errorMessage.includes("scanné")
+    ) {
+      throw new Error(`PDF non traitable: ${errorMessage}`);
+    }
+    
+    // Erreurs fatales (fichier corrompu)
+    if (
+      errorMessage.includes("corrompu") ||
+      errorMessage.includes("invalide") ||
+      errorMessage.includes("header")
+    ) {
+      throw new Error(`PDF corrompu: ${errorMessage}`);
+    }
+    
+    // Erreur générique
     throw new Error(
-      `Impossible d'extraire le texte du PDF: ${error instanceof Error ? error.message : "Erreur inconnue"}`
+      `Erreur lors de l'extraction du texte du PDF: ${errorMessage}`
     );
   }
 }
@@ -37,6 +156,7 @@ export async function extractTextFromImage(
   buffer: Buffer,
   imageType: "png" | "jpg" | "jpeg" | "webp"
 ): Promise<OCRResult> {
+  const startTime = Date.now();
   const { provider, language, confidenceThreshold } = ragConfig.ocr;
 
   if (!ragConfig.ocr.enabled) {
@@ -45,6 +165,8 @@ export async function extractTextFromImage(
 
   try {
     if (provider === "tesseract") {
+      console.log(`[OCR] Début extraction avec Tesseract (langue: ${language}, taille: ${(buffer.length / 1024).toFixed(2)} KB)`);
+      
       // Utiliser Tesseract.js
       const worker = await createWorker(language);
       
@@ -53,14 +175,22 @@ export async function extractTextFromImage(
       await worker.terminate();
 
       const confidence = imageData.data.confidence / 100; // Convertir de 0-100 à 0-1
+      const extractionTime = Date.now() - startTime;
+      const textLength = imageData.data.text?.length || 0;
+
+      console.log(`[OCR] Extraction réussie en ${extractionTime}ms - ${textLength} caractères, confiance: ${(confidence * 100).toFixed(1)}%`);
+
+      if (confidence < confidenceThreshold) {
+        console.warn(`[OCR] Confiance faible (${(confidence * 100).toFixed(1)}%) - seuil: ${(confidenceThreshold * 100).toFixed(1)}%`);
+      }
 
       return {
         text: imageData.data.text,
         confidence,
         language, // Utiliser le langage de configuration
         metadata: {
-          // Métadonnées basiques - les propriétés words/lines ne sont pas typées dans Page
           provider: "tesseract",
+          extractionTime,
         },
       };
     } else {
@@ -71,9 +201,12 @@ export async function extractTextFromImage(
       );
     }
   } catch (error) {
-    console.error("Erreur lors de l'extraction OCR:", error);
+    const extractionTime = Date.now() - startTime;
+    console.error(`[OCR] Erreur après ${extractionTime}ms:`, error);
+    
+    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
     throw new Error(
-      `Impossible d'extraire le texte de l'image: ${error instanceof Error ? error.message : "Erreur inconnue"}`
+      `Impossible d'extraire le texte de l'image: ${errorMessage}`
     );
   }
 }
@@ -131,16 +264,26 @@ export async function processPDFForIndexing(
   buffer: Buffer,
   documentId: string
 ): Promise<DocumentChunk[]> {
+  const startTime = Date.now();
+  console.log(`[PDF Processing] Début traitement pour document ${documentId} (${(buffer.length / 1024 / 1024).toFixed(2)} MB)`);
+
   try {
     // Extraire le texte
     const text = await extractTextFromPDF(buffer);
 
     if (!text || text.trim().length === 0) {
-      throw new Error("Aucun texte trouvé dans le PDF");
+      throw new Error("Aucun texte trouvé dans le PDF après extraction");
     }
+
+    console.log(`[PDF Processing] Texte extrait: ${text.length} caractères`);
 
     // Découper en chunks
     const chunkTexts = chunkText(text);
+    console.log(`[PDF Processing] ${chunkTexts.length} chunks créés`);
+
+    if (chunkTexts.length === 0) {
+      throw new Error("Aucun chunk n'a pu être créé à partir du texte extrait");
+    }
 
     // Créer les DocumentChunk
     const chunks: DocumentChunk[] = chunkTexts.map((chunkText, index) => ({
@@ -149,14 +292,27 @@ export async function processPDFForIndexing(
       text: chunkText,
       chunkIndex: index,
       metadata: {
+        chunkSize: chunkText.length,
         // Pour les PDFs, on pourrait extraire le numéro de page si nécessaire
       },
     }));
 
+    const processingTime = Date.now() - startTime;
+    console.log(`[PDF Processing] Traitement terminé en ${processingTime}ms - ${chunks.length} chunks générés`);
+
     return chunks;
   } catch (error) {
-    console.error("Erreur lors du traitement du PDF:", error);
-    throw error;
+    const processingTime = Date.now() - startTime;
+    console.error(`[PDF Processing] Erreur après ${processingTime}ms:`, error);
+    
+    // Préserver le message d'erreur original
+    if (error instanceof Error) {
+      // Ajouter le contexte du document
+      error.message = `[Document ${documentId}] ${error.message}`;
+      throw error;
+    }
+    
+    throw new Error(`Erreur lors du traitement du PDF: ${error}`);
   }
 }
 
@@ -168,6 +324,9 @@ export async function processImageForIndexing(
   documentId: string,
   imageType: "png" | "jpg" | "jpeg" | "webp"
 ): Promise<{ chunks: DocumentChunk[]; ocrResult: OCRResult }> {
+  const startTime = Date.now();
+  console.log(`[Image Processing] Début traitement pour document ${documentId} (type: ${imageType}, ${(buffer.length / 1024 / 1024).toFixed(2)} MB)`);
+
   try {
     // Extraire le texte avec OCR
     const ocrResult = await extractTextFromImage(buffer, imageType);
@@ -175,16 +334,23 @@ export async function processImageForIndexing(
     // Vérifier le score de confiance
     if (ocrResult.confidence < ragConfig.ocr.confidenceThreshold) {
       console.warn(
-        `Score de confiance OCR faible: ${ocrResult.confidence}. Seuil: ${ragConfig.ocr.confidenceThreshold}`
+        `[Image Processing] Score de confiance OCR faible: ${(ocrResult.confidence * 100).toFixed(1)}%. Seuil: ${(ragConfig.ocr.confidenceThreshold * 100).toFixed(1)}%`
       );
     }
 
     if (!ocrResult.text || ocrResult.text.trim().length === 0) {
-      throw new Error("Aucun texte trouvé dans l'image (OCR)");
+      throw new Error("Aucun texte trouvé dans l'image après OCR");
     }
+
+    console.log(`[Image Processing] Texte extrait: ${ocrResult.text.length} caractères (confiance: ${(ocrResult.confidence * 100).toFixed(1)}%)`);
 
     // Découper en chunks
     const chunkTexts = chunkText(ocrResult.text);
+    console.log(`[Image Processing] ${chunkTexts.length} chunks créés`);
+
+    if (chunkTexts.length === 0) {
+      throw new Error("Aucun chunk n'a pu être créé à partir du texte OCR");
+    }
 
     // Créer les DocumentChunk
     const chunks: DocumentChunk[] = chunkTexts.map((chunkText, index) => ({
@@ -194,13 +360,25 @@ export async function processImageForIndexing(
       chunkIndex: index,
       metadata: {
         ocrConfidence: ocrResult.confidence,
+        chunkSize: chunkText.length,
       },
     }));
 
+    const processingTime = Date.now() - startTime;
+    console.log(`[Image Processing] Traitement terminé en ${processingTime}ms - ${chunks.length} chunks générés`);
+
     return { chunks, ocrResult };
   } catch (error) {
-    console.error("Erreur lors du traitement de l'image:", error);
-    throw error;
+    const processingTime = Date.now() - startTime;
+    console.error(`[Image Processing] Erreur après ${processingTime}ms:`, error);
+    
+    // Préserver le message d'erreur original
+    if (error instanceof Error) {
+      error.message = `[Document ${documentId}] ${error.message}`;
+      throw error;
+    }
+    
+    throw new Error(`Erreur lors du traitement de l'image: ${error}`);
   }
 }
 

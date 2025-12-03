@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth, adminStorage, adminDb, Timestamp } from "@/lib/firebase/admin-config";
 import { v4 as uuidv4 } from "uuid";
-import { ragConfig } from "@/lib/config/rag-config";
+import { ragConfig, validateRagConfig } from "@/lib/config/rag-config";
 import {
   processPDFForIndexing,
   processImageForIndexing,
@@ -9,14 +9,90 @@ import {
   getImageTypeFromMimeType,
   validateFile,
 } from "@/lib/rag/pdf-processor";
-import { generateEmbeddingsBatch } from "@/lib/rag/embeddings";
-import { createCollectionIfNotExists, upsertVectors } from "@/lib/rag/qdrant-client";
+import { generateEmbeddingsBatch, checkOpenAIConnection } from "@/lib/rag/embeddings";
+import { createCollectionIfNotExists, upsertVectors, checkQdrantConnection } from "@/lib/rag/qdrant-client";
+import { deleteDocumentVectors } from "@/lib/rag/qdrant-client";
 import type { QdrantPoint } from "@/lib/rag/types";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Génère un ID de trace unique pour le logging
+ */
+function generateTraceId(): string {
+  return `trace_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
+ * Log structuré avec trace ID
+ */
+function logWithTrace(traceId: string, message: string, data?: Record<string, unknown>) {
+  const logData = { traceId, ...data };
+  console.log(`[${traceId}] ${message}`, logData);
+}
+
+/**
+ * Vérifie toutes les configurations avant traitement
+ */
+async function validateSystemConfiguration(traceId: string): Promise<{ valid: boolean; errors: string[] }> {
+  const errors: string[] = [];
+
+  // 1. Vérifier la configuration RAG
+  const configValidation = validateRagConfig();
+  if (!configValidation.valid) {
+    errors.push(...configValidation.errors);
+    return { valid: false, errors };
+  }
+
+  // 2. Vérifier la connexion Qdrant
+  logWithTrace(traceId, "Vérification connexion Qdrant...");
+  const qdrantConnected = await checkQdrantConnection();
+  if (!qdrantConnected) {
+    errors.push("Impossible de se connecter à Qdrant. Vérifiez QDRANT_URL et QDRANT_API_KEY.");
+  }
+
+  // 3. Vérifier la connexion OpenAI
+  logWithTrace(traceId, "Vérification connexion OpenAI...");
+  const openAIConnected = await checkOpenAIConnection();
+  if (!openAIConnected) {
+    errors.push("Impossible de se connecter à OpenAI. Vérifiez OPENAI_API_KEY.");
+  }
+
+  // 4. Vérifier Firebase Storage
+  logWithTrace(traceId, "Vérification Firebase Storage...");
+  if (!ragConfig.storage.bucket) {
+    errors.push("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET n'est pas configurée.");
+  } else {
+    try {
+      const bucket = adminStorage.bucket(ragConfig.storage.bucket);
+      const [exists] = await bucket.exists();
+      if (!exists) {
+        logWithTrace(traceId, "Bucket n'existe pas encore, sera créé automatiquement");
+      }
+    } catch (error) {
+      errors.push(`Erreur vérification Storage: ${error instanceof Error ? error.message : "Erreur inconnue"}`);
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
 export async function POST(request: NextRequest) {
+  const traceId = generateTraceId();
+  const startTime = Date.now();
+  let documentId: string | null = null;
+  let storagePath: string | null = null;
+  let fileRef: any = null;
+  let chunksCreated = false;
+  let vectorsIndexed = false;
+  let firestoreSaved = false;
+
   try {
+    logWithTrace(traceId, "Début upload document");
+
     // Vérifier l'authentification
     const authHeader = request.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
@@ -65,6 +141,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    logWithTrace(traceId, "Fichier reçu", {
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+    });
+
     // Déterminer le type de fichier
     const fileType = getFileTypeFromMimeType(file.type);
     if (!fileType) {
@@ -83,238 +165,310 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier que le bucket Firebase Storage est configuré
-    if (!ragConfig.storage.bucket) {
-      return NextResponse.json(
-        { error: "Configuration Firebase Storage manquante. NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET n'est pas configurée." },
-        { status: 500 }
-      );
-    }
-
-    // Générer un ID unique pour le document
-    const documentId = uuidv4();
-    const fileExtension = file.name.split(".").pop() || "";
-    const storageFileName = `${documentId}.${fileExtension}`;
-    const storagePath = `${ragConfig.storage.folder}/${storageFileName}`;
-
-    try {
-      // 1. Uploader vers Firebase Storage
-      console.log(`[Upload] Préparation upload vers Firebase Storage: ${ragConfig.storage.bucket}`);
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const bucket = adminStorage.bucket(ragConfig.storage.bucket);
-      
-      // Vérifier que le bucket existe et est accessible
-      // Note: Si le bucket n'existe pas encore, on essaie quand même d'uploader
-      // Firebase Storage créera le bucket automatiquement si les permissions sont correctes
-      try {
-        const [exists] = await bucket.exists();
-        if (!exists) {
-          console.warn(`[Upload] Bucket ${ragConfig.storage.bucket} n'existe pas encore, tentative de création automatique...`);
-          // On continue quand même, Firebase peut créer le bucket automatiquement
-        } else {
-          console.log(`[Upload] Bucket ${ragConfig.storage.bucket} vérifié`);
-        }
-      } catch (bucketError) {
-        console.warn("[Upload] Erreur vérification bucket (on continue quand même):", bucketError);
-        // On continue quand même, l'upload peut fonctionner même si exists() échoue
-      }
-      
-      const fileRef = bucket.file(storagePath);
-      console.log(`[Upload] Upload du fichier vers ${storagePath}...`);
-
-      try {
-        await fileRef.save(buffer, {
-          metadata: {
-            contentType: file.type,
-            metadata: {
-              originalName: file.name,
-              uploadedBy: decodedToken.uid,
-              uploadedAt: new Date().toISOString(),
-            },
-          },
-        });
-        console.log(`[Upload] Fichier uploadé avec succès`);
-      } catch (saveError) {
-        console.error("[Upload] Erreur lors de l'upload du fichier:", saveError);
-        const errorMessage = saveError instanceof Error ? saveError.message : "Erreur inconnue";
-        throw new Error(`Erreur lors de l'upload vers Firebase Storage: ${errorMessage}`);
-      }
-
-      // Rendre le fichier public (ou utiliser signed URL selon vos besoins)
-      try {
-        await fileRef.makePublic();
-        console.log(`[Upload] Fichier rendu public`);
-      } catch (publicError) {
-        console.warn("[Upload] Impossible de rendre le fichier public:", publicError);
-        // Continuer même si makePublic échoue, on peut utiliser signed URLs
-      }
-      
-      const fileUrl = `https://storage.googleapis.com/${ragConfig.storage.bucket}/${storagePath}`;
-      console.log(`[Upload] URL du fichier: ${fileUrl}`);
-
-      // 2. Extraire le texte (PDF ou OCR pour images)
-      console.log(`[Upload] Début extraction texte pour ${file.name} (type: ${fileType})`);
-      let chunks;
-      let ocrResult;
-      let imageType: "png" | "jpg" | "jpeg" | "webp" | undefined;
-
-      try {
-        if (fileType === "pdf") {
-          chunks = await processPDFForIndexing(buffer, documentId);
-          console.log(`[Upload] PDF traité: ${chunks.length} chunks générés`);
-        } else {
-          // Image
-          const detectedImageType = getImageTypeFromMimeType(file.type);
-          if (!detectedImageType) {
-            throw new Error("Type d'image non reconnu");
-          }
-          imageType = detectedImageType;
-          const result = await processImageForIndexing(buffer, documentId, imageType);
-          chunks = result.chunks;
-          ocrResult = result.ocrResult;
-          console.log(`[Upload] Image traitée: ${chunks.length} chunks générés (OCR confiance: ${ocrResult?.confidence})`);
-        }
-      } catch (extractError) {
-        console.error(`[Upload] Erreur extraction texte:`, extractError);
-        await fileRef.delete().catch(() => {});
-        throw new Error(`Erreur lors de l'extraction du texte: ${extractError instanceof Error ? extractError.message : "Erreur inconnue"}`);
-      }
-
-      if (!chunks || chunks.length === 0) {
-        // Supprimer le fichier uploadé si aucun texte n'a été extrait
-        await fileRef.delete();
-        return NextResponse.json(
-          { error: "Aucun texte n'a pu être extrait du fichier" },
-          { status: 400 }
-        );
-      }
-
-      // 3. Générer les embeddings pour tous les chunks
-      console.log(`[Upload] Génération embeddings pour ${chunks.length} chunks...`);
-      let embeddings: number[][];
-      try {
-        const chunkTexts = chunks.map((chunk) => chunk.text);
-        embeddings = await generateEmbeddingsBatch(chunkTexts);
-        console.log(`[Upload] ${embeddings.length} embeddings générés`);
-      } catch (embeddingError) {
-        console.error(`[Upload] Erreur génération embeddings:`, embeddingError);
-        await fileRef.delete().catch(() => {});
-        throw new Error(`Erreur lors de la génération des embeddings: ${embeddingError instanceof Error ? embeddingError.message : "Erreur inconnue"}`);
-      }
-
-      // 4. Créer la collection Qdrant si elle n'existe pas
-      console.log(`[Upload] Vérification collection Qdrant...`);
-      try {
-        await createCollectionIfNotExists();
-        console.log(`[Upload] Collection Qdrant prête`);
-      } catch (qdrantError) {
-        console.error(`[Upload] Erreur Qdrant:`, qdrantError);
-        await fileRef.delete().catch(() => {});
-        throw new Error(`Erreur de connexion à Qdrant: ${qdrantError instanceof Error ? qdrantError.message : "Erreur inconnue"}`);
-      }
-
-      // 5. Préparer les points pour Qdrant
-      const points: QdrantPoint[] = chunks.map((chunk, index) => ({
-        id: chunk.id,
-        vector: embeddings[index],
-        payload: {
-          text: chunk.text,
-          documentId: documentId,
-          filename: file.name,
-          fileType: fileType,
-          chunkIndex: chunk.chunkIndex,
-          metadata: chunk.metadata || {},
-        },
-      }));
-
-      // 6. Indexer dans Qdrant
-      console.log(`[Upload] Indexation ${points.length} points dans Qdrant...`);
-      try {
-        await upsertVectors(points);
-        console.log(`[Upload] Points indexés avec succès`);
-      } catch (indexError) {
-        console.error(`[Upload] Erreur indexation Qdrant:`, indexError);
-        await fileRef.delete().catch(() => {});
-        throw new Error(`Erreur lors de l'indexation dans Qdrant: ${indexError instanceof Error ? indexError.message : "Erreur inconnue"}`);
-      }
-
-      // 7. Sauvegarder les métadonnées dans Firestore
-      const documentData = {
-        id: documentId,
-        filename: file.name,
-        fileType: fileType,
-        imageType: imageType,
-        uploadedBy: decodedToken.uid,
-        uploadedAt: Timestamp.now(),
-        fileUrl: fileUrl,
-        fileSize: file.size,
-        chunkCount: chunks.length,
-        ocrConfidence: ocrResult?.confidence,
-        qdrantCollectionId: ragConfig.qdrant.collectionName,
-        metadata: {
-          originalName: file.name,
-        },
-      };
-
-      await adminDb.collection("rag_documents").doc(documentId).set(documentData);
-
-      return NextResponse.json({
-        message: "Document uploadé et indexé avec succès",
-        documentId: documentId,
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: fileType,
-        chunkCount: chunks.length,
-        fileUrl: fileUrl,
-      });
-    } catch (error) {
-      console.error("Erreur lors du traitement du fichier:", error);
-      
-      // Log détaillé pour debugging
-      if (error instanceof Error) {
-        console.error("Message d'erreur:", error.message);
-        console.error("Stack:", error.stack);
-        console.error("Nom du fichier:", file.name);
-        console.error("Type de fichier:", file.type);
-        console.error("Taille:", file.size);
-      }
-      
-      // Nettoyer en cas d'erreur : supprimer le fichier de Storage si uploadé
-      try {
-        const bucket = adminStorage.bucket(ragConfig.storage.bucket);
-        const fileRef = bucket.file(storagePath);
-        await fileRef.delete().catch(() => {
-          // Ignorer les erreurs de suppression
-        });
-      } catch {
-        // Ignorer
-      }
-
-      // Message d'erreur plus détaillé pour l'utilisateur
-      let errorMessage = "Erreur lors du traitement du fichier";
-      let errorDetails = error instanceof Error ? error.message : "Erreur inconnue";
-      
-      // Messages d'erreur spécifiques selon le type d'erreur
-      if (errorDetails.includes("QDRANT") || errorDetails.includes("Qdrant")) {
-        errorMessage = "Erreur de connexion à Qdrant. Vérifiez la configuration.";
-      } else if (errorDetails.includes("OPENAI") || errorDetails.includes("OpenAI")) {
-        errorMessage = "Erreur de connexion à OpenAI. Vérifiez la configuration.";
-      } else if (errorDetails.includes("Storage") || errorDetails.includes("bucket")) {
-        errorMessage = "Erreur de stockage Firebase. Vérifiez la configuration.";
-      } else if (errorDetails.includes("pdf-parse") || errorDetails.includes("PDF")) {
-        errorMessage = "Erreur lors de l'extraction du texte du PDF. Le fichier est peut-être corrompu.";
-      } else if (errorDetails.includes("OCR") || errorDetails.includes("Tesseract")) {
-        errorMessage = "Erreur lors de l'extraction OCR. Vérifiez la configuration.";
-      }
-
+    // Validation préalable du système
+    logWithTrace(traceId, "Validation préalable du système...");
+    const systemValidation = await validateSystemConfiguration(traceId);
+    if (!systemValidation.valid) {
+      logWithTrace(traceId, "Validation système échouée", { errors: systemValidation.errors });
       return NextResponse.json(
         {
-          error: errorMessage,
-          details: errorDetails,
+          error: "Configuration système invalide",
+          details: systemValidation.errors.join("; "),
         },
         { status: 500 }
       );
     }
+
+    logWithTrace(traceId, "Validation système réussie");
+
+    // Générer un ID unique pour le document
+    documentId = uuidv4();
+    const fileExtension = file.name.split(".").pop() || "";
+    const storageFileName = `${documentId}.${fileExtension}`;
+    storagePath = `${ragConfig.storage.folder}/${storageFileName}`;
+
+    logWithTrace(traceId, "Document ID généré", { documentId, storagePath });
+
+    // 1. Uploader vers Firebase Storage
+    logWithTrace(traceId, "Étape 1/7: Upload vers Firebase Storage", { bucket: ragConfig.storage.bucket });
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const bucket = adminStorage.bucket(ragConfig.storage.bucket);
+    
+    fileRef = bucket.file(storagePath);
+    const uploadStartTime = Date.now();
+
+    try {
+      await fileRef.save(buffer, {
+        metadata: {
+          contentType: file.type,
+          metadata: {
+            originalName: file.name,
+            uploadedBy: decodedToken.uid,
+            uploadedAt: new Date().toISOString(),
+            traceId,
+          },
+        },
+      });
+      const uploadTime = Date.now() - uploadStartTime;
+      logWithTrace(traceId, "Fichier uploadé avec succès", { uploadTime });
+    } catch (saveError) {
+      const errorMessage = saveError instanceof Error ? saveError.message : "Erreur inconnue";
+      logWithTrace(traceId, "Erreur upload Storage", { error: errorMessage });
+      throw new Error(`Erreur lors de l'upload vers Firebase Storage: ${errorMessage}`);
+    }
+
+    // Rendre le fichier public (ou utiliser signed URL selon vos besoins)
+    try {
+      await fileRef.makePublic();
+      logWithTrace(traceId, "Fichier rendu public");
+    } catch (publicError) {
+      logWithTrace(traceId, "Impossible de rendre le fichier public (non bloquant)", {
+        error: publicError instanceof Error ? publicError.message : "Erreur inconnue",
+      });
+      // Continuer même si makePublic échoue, on peut utiliser signed URLs
+    }
+    
+    const fileUrl = `https://storage.googleapis.com/${ragConfig.storage.bucket}/${storagePath}`;
+    logWithTrace(traceId, "URL du fichier générée", { fileUrl });
+
+    // 2. Extraire le texte (PDF ou OCR pour images)
+    logWithTrace(traceId, "Étape 2/7: Extraction du texte", { fileType });
+    let chunks;
+    let ocrResult;
+    let imageType: "png" | "jpg" | "jpeg" | "webp" | undefined;
+    const extractionStartTime = Date.now();
+
+    try {
+      if (fileType === "pdf") {
+        chunks = await processPDFForIndexing(buffer, documentId);
+      } else {
+        // Image
+        const detectedImageType = getImageTypeFromMimeType(file.type);
+        if (!detectedImageType) {
+          throw new Error("Type d'image non reconnu");
+        }
+        imageType = detectedImageType;
+        const result = await processImageForIndexing(buffer, documentId, imageType);
+        chunks = result.chunks;
+        ocrResult = result.ocrResult;
+      }
+      chunksCreated = true;
+      const extractionTime = Date.now() - extractionStartTime;
+      logWithTrace(traceId, "Extraction réussie", {
+        chunksCount: chunks.length,
+        extractionTime,
+        ocrConfidence: ocrResult?.confidence,
+      });
+    } catch (extractError) {
+      const errorMessage = extractError instanceof Error ? extractError.message : "Erreur inconnue";
+      logWithTrace(traceId, "Erreur extraction texte", { error: errorMessage });
+      // Rollback: supprimer le fichier de Storage
+      await fileRef.delete().catch(() => {});
+      throw new Error(`Erreur lors de l'extraction du texte: ${errorMessage}`);
+    }
+
+    if (!chunks || chunks.length === 0) {
+      logWithTrace(traceId, "Aucun texte extrait, rollback");
+      // Rollback: supprimer le fichier uploadé
+      await fileRef.delete().catch(() => {});
+      return NextResponse.json(
+        { error: "Aucun texte n'a pu être extrait du fichier" },
+        { status: 400 }
+      );
+    }
+
+    // 3. Générer les embeddings pour tous les chunks
+    logWithTrace(traceId, "Étape 3/7: Génération des embeddings", { chunksCount: chunks.length });
+    let embeddings: number[][];
+    const embeddingStartTime = Date.now();
+
+    try {
+      const chunkTexts = chunks.map((chunk) => chunk.text);
+      embeddings = await generateEmbeddingsBatch(chunkTexts);
+      const embeddingTime = Date.now() - embeddingStartTime;
+      logWithTrace(traceId, "Embeddings générés", {
+        embeddingsCount: embeddings.length,
+        embeddingTime,
+      });
+    } catch (embeddingError) {
+      const errorMessage = embeddingError instanceof Error ? embeddingError.message : "Erreur inconnue";
+      logWithTrace(traceId, "Erreur génération embeddings", { error: errorMessage });
+      // Rollback: supprimer le fichier de Storage
+      await fileRef.delete().catch(() => {});
+      throw new Error(`Erreur lors de la génération des embeddings: ${errorMessage}`);
+    }
+
+    // 4. Créer la collection Qdrant si elle n'existe pas
+    logWithTrace(traceId, "Étape 4/7: Vérification collection Qdrant");
+    try {
+      await createCollectionIfNotExists();
+      logWithTrace(traceId, "Collection Qdrant prête");
+    } catch (qdrantError) {
+      const errorMessage = qdrantError instanceof Error ? qdrantError.message : "Erreur inconnue";
+      logWithTrace(traceId, "Erreur Qdrant", { error: errorMessage });
+      // Rollback: supprimer le fichier de Storage
+      await fileRef.delete().catch(() => {});
+      throw new Error(`Erreur de connexion à Qdrant: ${errorMessage}`);
+    }
+
+    // 5. Préparer les points pour Qdrant
+    logWithTrace(traceId, "Étape 5/7: Préparation des points Qdrant");
+    const points: QdrantPoint[] = chunks.map((chunk, index) => ({
+      id: chunk.id,
+      vector: embeddings[index],
+      payload: {
+        text: chunk.text,
+        documentId: documentId,
+        filename: file.name,
+        fileType: fileType,
+        chunkIndex: chunk.chunkIndex,
+        metadata: chunk.metadata || {},
+      },
+    }));
+
+    // 6. Indexer dans Qdrant
+    logWithTrace(traceId, "Étape 6/7: Indexation dans Qdrant", { pointsCount: points.length });
+    const indexStartTime = Date.now();
+
+    try {
+      await upsertVectors(points);
+      vectorsIndexed = true;
+      const indexTime = Date.now() - indexStartTime;
+      logWithTrace(traceId, "Points indexés avec succès", { indexTime });
+    } catch (indexError) {
+      const errorMessage = indexError instanceof Error ? indexError.message : "Erreur inconnue";
+      logWithTrace(traceId, "Erreur indexation Qdrant", { error: errorMessage });
+      // Rollback: supprimer le fichier de Storage
+      await fileRef.delete().catch(() => {});
+      throw new Error(`Erreur lors de l'indexation dans Qdrant: ${errorMessage}`);
+    }
+
+    // 7. Sauvegarder les métadonnées dans Firestore
+    logWithTrace(traceId, "Étape 7/7: Sauvegarde métadonnées Firestore");
+    const documentData = {
+      id: documentId,
+      filename: file.name,
+      fileType: fileType,
+      imageType: imageType,
+      uploadedBy: decodedToken.uid,
+      uploadedAt: Timestamp.now(),
+      fileUrl: fileUrl,
+      fileSize: file.size,
+      chunkCount: chunks.length,
+      ocrConfidence: ocrResult?.confidence,
+      qdrantCollectionId: ragConfig.qdrant.collectionName,
+      metadata: {
+        originalName: file.name,
+        traceId,
+      },
+    };
+
+    try {
+      await adminDb.collection("rag_documents").doc(documentId).set(documentData);
+      firestoreSaved = true;
+      logWithTrace(traceId, "Métadonnées sauvegardées dans Firestore");
+    } catch (firestoreError) {
+      const errorMessage = firestoreError instanceof Error ? firestoreError.message : "Erreur inconnue";
+      logWithTrace(traceId, "Erreur sauvegarde Firestore", { error: errorMessage });
+      // Rollback complet: supprimer Storage, Qdrant
+      await fileRef.delete().catch(() => {});
+      if (vectorsIndexed) {
+        await deleteDocumentVectors(documentId).catch(() => {});
+      }
+      throw new Error(`Erreur lors de la sauvegarde dans Firestore: ${errorMessage}`);
+    }
+
+    const totalTime = Date.now() - startTime;
+    logWithTrace(traceId, "Upload terminé avec succès", {
+      totalTime,
+      documentId,
+      chunksCount: chunks.length,
+    });
+
+    return NextResponse.json({
+      message: "Document uploadé et indexé avec succès",
+      documentId: documentId,
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: fileType,
+      chunkCount: chunks.length,
+      fileUrl: fileUrl,
+      traceId,
+    });
+  } catch (error) {
+    const totalTime = Date.now() - startTime;
+    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+    
+    logWithTrace(traceId, "Erreur lors du traitement", {
+      error: errorMessage,
+      totalTime,
+      documentId,
+      chunksCreated,
+      vectorsIndexed,
+      firestoreSaved,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
+    // Rollback complet selon l'état
+    const rollbackErrors: string[] = [];
+
+    if (fileRef && storagePath) {
+      try {
+        await fileRef.delete();
+        logWithTrace(traceId, "Fichier Storage supprimé (rollback)");
+      } catch (deleteError) {
+        rollbackErrors.push(`Storage: ${deleteError instanceof Error ? deleteError.message : "Erreur inconnue"}`);
+      }
+    }
+
+    if (vectorsIndexed && documentId) {
+      try {
+        await deleteDocumentVectors(documentId);
+        logWithTrace(traceId, "Vecteurs Qdrant supprimés (rollback)");
+      } catch (deleteError) {
+        rollbackErrors.push(`Qdrant: ${deleteError instanceof Error ? deleteError.message : "Erreur inconnue"}`);
+      }
+    }
+
+    if (firestoreSaved && documentId) {
+      try {
+        await adminDb.collection("rag_documents").doc(documentId).delete();
+        logWithTrace(traceId, "Document Firestore supprimé (rollback)");
+      } catch (deleteError) {
+        rollbackErrors.push(`Firestore: ${deleteError instanceof Error ? deleteError.message : "Erreur inconnue"}`);
+      }
+    }
+
+    if (rollbackErrors.length > 0) {
+      logWithTrace(traceId, "Erreurs lors du rollback", { rollbackErrors });
+    }
+
+    // Messages d'erreur spécifiques selon le type d'erreur
+    let userErrorMessage = "Erreur lors du traitement du fichier";
+    
+    if (errorMessage.includes("QDRANT") || errorMessage.includes("Qdrant")) {
+      userErrorMessage = "Erreur de connexion à Qdrant. Vérifiez la configuration.";
+    } else if (errorMessage.includes("OPENAI") || errorMessage.includes("OpenAI")) {
+      userErrorMessage = "Erreur de connexion à OpenAI. Vérifiez la configuration.";
+    } else if (errorMessage.includes("Storage") || errorMessage.includes("bucket")) {
+      userErrorMessage = "Erreur de stockage Firebase. Vérifiez la configuration.";
+    } else if (errorMessage.includes("pdf-parse") || errorMessage.includes("PDF") || errorMessage.includes("corrompu")) {
+      userErrorMessage = "Erreur lors de l'extraction du texte du PDF. Le fichier est peut-être corrompu ou protégé.";
+    } else if (errorMessage.includes("OCR") || errorMessage.includes("Tesseract")) {
+      userErrorMessage = "Erreur lors de l'extraction OCR. Vérifiez la configuration.";
+    } else if (errorMessage.includes("mot de passe") || errorMessage.includes("protégé")) {
+      userErrorMessage = "Le PDF est protégé par mot de passe. Impossible d'extraire le texte.";
+    }
+
+    return NextResponse.json(
+      {
+        error: userErrorMessage,
+        details: errorMessage,
+        traceId,
+      },
+      { status: 500 }
+    );
+  }
   } catch (error) {
     console.error("Erreur API upload:", error);
     return NextResponse.json(

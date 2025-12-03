@@ -9,6 +9,40 @@ import type { QdrantPoint, SearchResult } from "./types";
 let qdrantClient: QdrantClient | null = null;
 
 /**
+ * Retry avec backoff exponentiel
+ */
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      if (attempt < maxRetries - 1) {
+        const delay = baseDelay * Math.pow(2, attempt);
+        console.log(`[Qdrant] Tentative ${attempt + 1}/${maxRetries} échouée, retry dans ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError || new Error("Erreur inconnue lors du retry");
+}
+
+/**
+ * Log structuré pour Qdrant
+ */
+function logQdrant(operation: string, data?: Record<string, unknown>) {
+  console.log(`[Qdrant] ${operation}`, data || {});
+}
+
+/**
  * Initialise et retourne le client Qdrant
  */
 export function getQdrantClient(): QdrantClient {
@@ -27,17 +61,34 @@ export function getQdrantClient(): QdrantClient {
 }
 
 /**
- * Vérifie la connexion à Qdrant
+ * Vérifie la santé de la connexion à Qdrant
  */
-export async function checkQdrantConnection(): Promise<boolean> {
+export async function checkQdrantHealth(): Promise<{
+  healthy: boolean;
+  latency?: number;
+  error?: string;
+}> {
+  const startTime = Date.now();
   try {
     const client = getQdrantClient();
     await client.getCollections();
-    return true;
+    const latency = Date.now() - startTime;
+    logQdrant("Health check réussi", { latency });
+    return { healthy: true, latency };
   } catch (error) {
-    console.error("Erreur de connexion à Qdrant:", error);
-    return false;
+    const latency = Date.now() - startTime;
+    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+    logQdrant("Health check échoué", { latency, error: errorMessage });
+    return { healthy: false, latency, error: errorMessage };
   }
+}
+
+/**
+ * Vérifie la connexion à Qdrant (alias pour compatibilité)
+ */
+export async function checkQdrantConnection(): Promise<boolean> {
+  const health = await checkQdrantHealth();
+  return health.healthy;
 }
 
 /**
@@ -46,27 +97,41 @@ export async function checkQdrantConnection(): Promise<boolean> {
 export async function createCollectionIfNotExists(): Promise<void> {
   const client = getQdrantClient();
   const collectionName = ragConfig.qdrant.collectionName;
+  const startTime = Date.now();
 
   try {
-    // Vérifier si la collection existe
-    const collections = await client.getCollections();
+    logQdrant("Vérification collection", { collectionName });
+    
+    // Vérifier si la collection existe avec retry
+    const collections = await retryWithBackoff(async () => {
+      return await client.getCollections();
+    });
+    
     const exists = collections.collections.some(
       (col) => col.name === collectionName
     );
 
     if (!exists) {
+      logQdrant("Création collection", { collectionName });
       // Créer la collection avec la dimension des embeddings OpenAI text-embedding-3-small (1536)
-      await client.createCollection(collectionName, {
-        vectors: {
-          size: 1536,
-          distance: "Cosine",
-        },
+      await retryWithBackoff(async () => {
+        await client.createCollection(collectionName, {
+          vectors: {
+            size: 1536,
+            distance: "Cosine",
+          },
+        });
       });
-      console.log(`Collection "${collectionName}" créée avec succès.`);
+      const creationTime = Date.now() - startTime;
+      logQdrant("Collection créée", { collectionName, creationTime });
+    } else {
+      const checkTime = Date.now() - startTime;
+      logQdrant("Collection existe déjà", { collectionName, checkTime });
     }
   } catch (error) {
-    console.error("Erreur lors de la création de la collection:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+    logQdrant("Erreur création collection", { collectionName, error: errorMessage });
+    throw new Error(`Erreur lors de la création de la collection: ${errorMessage}`);
   }
 }
 
@@ -76,19 +141,28 @@ export async function createCollectionIfNotExists(): Promise<void> {
 export async function upsertVectors(points: QdrantPoint[]): Promise<void> {
   const client = getQdrantClient();
   const collectionName = ragConfig.qdrant.collectionName;
+  const startTime = Date.now();
 
   try {
-    await client.upsert(collectionName, {
-      wait: true,
-      points: points.map((point) => ({
-        id: point.id,
-        vector: point.vector,
-        payload: point.payload,
-      })),
+    logQdrant("Upsert vecteurs", { pointsCount: points.length, collectionName });
+    
+    await retryWithBackoff(async () => {
+      await client.upsert(collectionName, {
+        wait: true,
+        points: points.map((point) => ({
+          id: point.id,
+          vector: point.vector,
+          payload: point.payload,
+        })),
+      });
     });
+
+    const upsertTime = Date.now() - startTime;
+    logQdrant("Vecteurs upsertés", { pointsCount: points.length, upsertTime });
   } catch (error) {
-    console.error("Erreur lors de l'upsert des vecteurs:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+    logQdrant("Erreur upsert vecteurs", { pointsCount: points.length, error: errorMessage });
+    throw new Error(`Erreur lors de l'upsert des vecteurs: ${errorMessage}`);
   }
 }
 
@@ -101,13 +175,21 @@ export async function searchVectors(
 ): Promise<SearchResult[]> {
   const client = getQdrantClient();
   const collectionName = ragConfig.qdrant.collectionName;
+  const startTime = Date.now();
 
   try {
-    const results = await client.search(collectionName, {
-      vector: queryVector,
-      limit,
-      score_threshold: ragConfig.search.scoreThreshold,
+    logQdrant("Recherche vectorielle", { limit, collectionName });
+    
+    const results = await retryWithBackoff(async () => {
+      return await client.search(collectionName, {
+        vector: queryVector,
+        limit,
+        score_threshold: ragConfig.search.scoreThreshold,
+      });
     });
+
+    const searchTime = Date.now() - startTime;
+    logQdrant("Recherche terminée", { resultsCount: results.length, searchTime });
 
     return results.map((result) => ({
       id: result.id as string,
@@ -119,8 +201,9 @@ export async function searchVectors(
       metadata: result.payload?.metadata as Record<string, unknown>,
     }));
   } catch (error) {
-    console.error("Erreur lors de la recherche vectorielle:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+    logQdrant("Erreur recherche vectorielle", { error: errorMessage });
+    throw new Error(`Erreur lors de la recherche vectorielle: ${errorMessage}`);
   }
 }
 
@@ -130,25 +213,34 @@ export async function searchVectors(
 export async function deleteDocumentVectors(documentId: string): Promise<void> {
   const client = getQdrantClient();
   const collectionName = ragConfig.qdrant.collectionName;
+  const startTime = Date.now();
 
   try {
+    logQdrant("Suppression vecteurs document", { documentId, collectionName });
+    
     // Supprimer tous les points avec ce documentId dans le payload
-    await client.delete(collectionName, {
-      wait: true,
-      filter: {
-        must: [
-          {
-            key: "documentId",
-            match: {
-              value: documentId,
+    await retryWithBackoff(async () => {
+      await client.delete(collectionName, {
+        wait: true,
+        filter: {
+          must: [
+            {
+              key: "documentId",
+              match: {
+                value: documentId,
+              },
             },
-          },
-        ],
-      },
+          ],
+        },
+      });
     });
+
+    const deleteTime = Date.now() - startTime;
+    logQdrant("Vecteurs supprimés", { documentId, deleteTime });
   } catch (error) {
-    console.error("Erreur lors de la suppression des vecteurs:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+    logQdrant("Erreur suppression vecteurs", { documentId, error: errorMessage });
+    throw new Error(`Erreur lors de la suppression des vecteurs: ${errorMessage}`);
   }
 }
 

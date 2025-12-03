@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Sparkles } from "lucide-react";
+import { X, Sparkles, Copy, Download } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
+import { toast } from "sonner";
 
 // Composant SVG personnalisé pour le bot avec un visage souriant
 function BotFaceIcon({ className }: { className?: string }) {
@@ -68,6 +69,79 @@ export function FloatingChatButton() {
 
   const handleImagePaste = async (imageFile: File) => {
     setPastedImage(imageFile);
+    const fileSizeMB = (imageFile.size / (1024 * 1024)).toFixed(2);
+    toast.success("Image collée", {
+      description: `${imageFile.name} (${fileSizeMB} MB) - Analyse OCR en cours...`,
+      duration: 3000,
+    });
+  };
+
+  const handleCopyAllChat = async () => {
+    if (messages.length === 0) {
+      toast.info("Aucun message à copier");
+      return;
+    }
+
+    try {
+      const chatText = messages
+        .map((msg) => {
+          const role = msg.role === "user" ? "Vous" : "Assistant";
+          const content = msg.content;
+          const imageInfo = msg.imageText ? `\n[Image: ${msg.imageText}]` : "";
+          return `${role}: ${content}${imageInfo}`;
+        })
+        .join("\n\n");
+
+      await navigator.clipboard.writeText(chatText);
+      toast.success("Conversation copiée", {
+        description: `${messages.length} message${messages.length > 1 ? "s" : ""} copié${messages.length > 1 ? "s" : ""}`,
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error("Erreur lors de la copie:", error);
+      toast.error("Erreur lors de la copie", {
+        description: "Impossible de copier la conversation",
+      });
+    }
+  };
+
+  const handleExportChat = () => {
+    if (messages.length === 0) {
+      toast.info("Aucun message à exporter");
+      return;
+    }
+
+    try {
+      const chatText = messages
+        .map((msg, index) => {
+          const role = msg.role === "user" ? "Vous" : "Assistant";
+          const timestamp = new Date().toLocaleString("fr-FR");
+          const content = msg.content;
+          const imageInfo = msg.imageText ? `\n[Image analysée: ${msg.imageText}]` : "";
+          return `[${timestamp}] ${role}:\n${content}${imageInfo}`;
+        })
+        .join("\n\n" + "=".repeat(50) + "\n\n");
+
+      const blob = new Blob([chatText], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `conversation-allianz-${new Date().toISOString().split("T")[0]}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success("Conversation exportée", {
+        description: "Fichier téléchargé avec succès",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error("Erreur lors de l'export:", error);
+      toast.error("Erreur lors de l'export", {
+        description: "Impossible d'exporter la conversation",
+      });
+    }
   };
 
   const handleSendMessage = async () => {
@@ -98,8 +172,26 @@ export function FloatingChatButton() {
             const imageData = await imageResponse.json();
             imageText = imageData.text || "";
             imageUrl = imageData.imageUrl || "";
+            
+            if (imageText) {
+              toast.success("Image analysée", {
+                description: `Texte extrait avec ${((imageData.confidence || 0) * 100).toFixed(0)}% de confiance`,
+                duration: 3000,
+              });
+            } else {
+              toast.warning("Aucun texte trouvé", {
+                description: "L'image ne contient pas de texte lisible",
+                duration: 3000,
+              });
+            }
           } else {
-            console.error("Erreur analyse image:", await imageResponse.json());
+            const errorData = await imageResponse.json().catch(() => ({}));
+            const errorMessage = errorData.error || errorData.details || "Erreur lors de l'analyse";
+            console.error("Erreur analyse image:", errorMessage);
+            toast.error("Erreur d'analyse", {
+              description: errorMessage,
+              duration: 4000,
+            });
           }
         } catch (error) {
           console.error("Erreur lors de l'analyse de l'image:", error);
@@ -276,14 +368,41 @@ export function FloatingChatButton() {
                   </p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(false)}
-                className="h-8 w-8 hover:bg-white/20 rounded-full transition-all hover:rotate-90"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                {/* Bouton copier toute la conversation */}
+                {messages.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleCopyAllChat}
+                    className="h-8 w-8 hover:bg-white/20 rounded-full transition-all"
+                    title="Copier toute la conversation"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                )}
+                {/* Bouton exporter la conversation */}
+                {messages.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleExportChat}
+                    className="h-8 w-8 hover:bg-white/20 rounded-full transition-all"
+                    title="Exporter la conversation"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsOpen(false)}
+                  className="h-8 w-8 hover:bg-white/20 rounded-full transition-all hover:rotate-90"
+                  title="Fermer"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 

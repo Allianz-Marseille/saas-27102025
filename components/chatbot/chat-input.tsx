@@ -74,7 +74,12 @@ export function ChatInput({
         // Vérifier le type d'image
         const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
         if (!allowedTypes.includes(file.type)) {
-          // Afficher un message d'erreur (vous pouvez utiliser toast ici)
+          // Utiliser toast pour afficher l'erreur
+          if (typeof window !== "undefined" && (window as any).toast) {
+            (window as any).toast.error("Type d'image non supporté", {
+              description: `Type autorisé: PNG, JPG, JPEG, WEBP`,
+            });
+          }
           console.warn("Type d'image non supporté:", file.type);
           continue;
         }
@@ -82,6 +87,11 @@ export function ChatInput({
         // Vérifier la taille (max 5MB)
         const maxSize = 5 * 1024 * 1024; // 5MB
         if (file.size > maxSize) {
+          if (typeof window !== "undefined" && (window as any).toast) {
+            (window as any).toast.error("Image trop volumineuse", {
+              description: `Taille maximale: 5MB`,
+            });
+          }
           console.warn("Image trop volumineuse:", file.size);
           continue;
         }
