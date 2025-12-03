@@ -3,16 +3,8 @@
  * Utilise pdfjs-dist pour les PDFs et tesseract.js pour l'OCR
  */
 
-import { createWorker } from "tesseract.js";
 import { ragConfig } from "@/lib/config/rag-config";
 import type { DocumentChunk, OCRResult, FileType } from "./types";
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
-
-// Configuration de pdfjs-dist pour l'environnement Node.js serverless
-// Important : utiliser le legacy build qui fonctionne mieux en Node.js
-if (typeof window === 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-}
 
 /**
  * Extrait le texte d'un fichier PDF
@@ -24,6 +16,14 @@ export async function extractTextFromPDF(
   
   try {
     console.log(`[PDF] Début extraction avec pdfjs-dist (taille: ${(buffer.length / 1024).toFixed(2)} KB)`);
+    
+    // Import dynamique de pdfjs-dist pour éviter l'évaluation au build time
+    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    
+    // Configuration pour environnement serverless
+    if (typeof window === 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+    }
     
     // Charger le document PDF avec pdfjs-dist
     const loadingTask = pdfjsLib.getDocument({
@@ -114,6 +114,9 @@ export async function extractTextFromImage(
   try {
     if (provider === "tesseract") {
       console.log(`[OCR] Début extraction avec Tesseract (langue: ${language}, taille: ${(buffer.length / 1024).toFixed(2)} KB)`);
+      
+      // Import dynamique de tesseract.js pour éviter l'évaluation au build time
+      const { createWorker } = await import("tesseract.js");
       
       // Utiliser Tesseract.js
       const worker = await createWorker(language);
