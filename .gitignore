@@ -50,3 +50,6 @@ firebase-debug.log
 firestore-debug.log
 serviceAccountKey.json
 *-firebase-adminsdk-*.json
+
+# Google Cloud credentials
+gen-lang-client-*.json

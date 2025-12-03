@@ -1,24 +1,61 @@
 /**
  * Service pour extraire le texte des PDFs et images, et créer les chunks
- * Utilise pdfjs-dist pour les PDFs et tesseract.js pour l'OCR
+ * Utilise Google Document AI pour les PDFs et tesseract.js pour l'OCR
  */
 
 import { ragConfig } from "@/lib/config/rag-config";
 import type { DocumentChunk, OCRResult, FileType } from "./types";
+import { getDocumentAIClient, googleConfig } from "@/lib/google-cloud/config";
 
 /**
- * Extrait le texte d'un fichier PDF
- * TEMPORAIREMENT DÉSACTIVÉ - En attente d'une solution serverless fiable
- * Les images avec OCR sont fonctionnelles et recommandées pour le moment
+ * Extrait le texte d'un fichier PDF avec Google Document AI
  */
 export async function extractTextFromPDF(
   buffer: Buffer
 ): Promise<string> {
-  throw new Error(
-    "L'extraction de PDF est temporairement désactivée. " +
-    "Veuillez convertir votre PDF en images (PNG, JPG) et utiliser l'upload d'images avec OCR. " +
-    "Les PDFs seront réactivés prochainement avec une solution API externe (AWS Textract ou Google Document AI)."
-  );
+  const startTime = Date.now();
+  console.log(`[Document AI] Début extraction PDF (${(buffer.length / 1024).toFixed(2)} KB)`);
+
+  try {
+    const client = getDocumentAIClient();
+    
+    // Construire le nom du processeur
+    const processorName = `projects/${googleConfig.projectId}/locations/${googleConfig.documentAI.location}/processors/${googleConfig.documentAI.processorId}`;
+    
+    console.log(`[Document AI] Utilisation du processeur: ${processorName}`);
+
+    // Préparer la requête
+    const request = {
+      name: processorName,
+      rawDocument: {
+        content: buffer.toString("base64"),
+        mimeType: "application/pdf",
+      },
+    };
+
+    // Appeler l'API Document AI
+    const [result] = await client.processDocument(request);
+    const { document } = result;
+
+    if (!document || !document.text) {
+      throw new Error("Aucun texte extrait du PDF par Document AI");
+    }
+
+    const extractionTime = Date.now() - startTime;
+    const textLength = document.text.length;
+
+    console.log(`[Document AI] Extraction réussie en ${extractionTime}ms - ${textLength} caractères`);
+
+    return document.text;
+  } catch (error) {
+    const extractionTime = Date.now() - startTime;
+    console.error(`[Document AI] Erreur après ${extractionTime}ms:`, error);
+    
+    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+    throw new Error(
+      `Impossible d'extraire le texte du PDF avec Document AI: ${errorMessage}`
+    );
+  }
 }
 
 /**
@@ -261,14 +298,12 @@ export async function processImageForIndexing(
  * Détermine le type de fichier à partir du MIME type
  */
 export function getFileTypeFromMimeType(mimeType: string): FileType | null {
-  // Utiliser une vérification explicite pour éviter les problèmes de type avec readonly arrays
-  // const pdfTypes = ragConfig.files.allowedPDFTypes as readonly string[];
+  const pdfTypes = ragConfig.files.allowedPDFTypes as readonly string[];
   const imageTypes = ragConfig.files.allowedImageTypes as readonly string[];
   
-  // PDFs temporairement désactivés
-  // if (pdfTypes.includes(mimeType)) {
-  //   return "pdf";
-  // }
+  if (pdfTypes.includes(mimeType)) {
+    return "pdf";
+  }
 
   if (imageTypes.includes(mimeType)) {
     return "image";

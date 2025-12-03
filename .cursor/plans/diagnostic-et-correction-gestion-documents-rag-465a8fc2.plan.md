@@ -1,147 +1,241 @@
-<!-- 465a8fc2-5900-40db-b60e-c037b2e9cd07 1addb81f-cae3-4c8d-911c-2a0d1f32e2d6 -->
-# Refonte complète du système RAG - Base propre et fonctionnelle
+<!-- 465a8fc2-5900-40db-b60e-c037b2e9cd07 7581939d-79d4-4e6f-86c3-450e9cafd253 -->
+# Intégration Google Cloud AI pour PDFs et Images
 
-## Diagnostic des problèmes
+## Distinction des cas d'usage
 
-### Problèmes identifiés
+### Cas 1 : Admin - Vectorisation PDF (Page Outils)
 
-1. **pdf-parse** : incompatible avec environnement serverless (erreurs DOMMatrix, Canvas)
-2. **Dépendances mixtes** : pdf-parse ET pdfjs-dist présents simultanément
-3. **Configuration manquante** : pas de guide de configuration dès le début
-4. **Tests incomplets** : pas de validation du système avant déploiement
+**Objectif :** Extraire le texte d'un PDF pour l'indexer dans Qdrant (base de connaissances RAG)
 
-### Causes racines
+**Solution :** Google Document AI - Document OCR Processor
 
-- Approche réactive au lieu de proactive
-- Manque de documentation de configuration
-- Bibliothèques PDF incompatibles avec Vercel serverless
+- **API :** `documentai.googleapis.com`
+- **Tarif :** $1.50 / 1000 pages
+- **Features :** OCR avancé, extraction de texte structuré, supporte PDFs natifs et scannés
 
-## Plan de correction
+### Cas 2 : Tous utilisateurs - Lecture ponctuelle (Chatbot)
 
-### Phase 1 : Nettoyage complet des dépendances
+**Objectif :** Analyser un PDF/image collé dans la conversation
 
-**Fichiers :** [`package.json`](package.json)
+**Solution :** Google Vision AI - Document Text Detection
 
-1. Supprimer complètement `pdf-parse` et `@types/pdf-parse`
-2. Garder uniquement `pdfjs-dist` (solution éprouvée pour Node.js)
-3. Vérifier que `tesseract.js` est présent pour l'OCR
+- **API :** `vision.googleapis.com`
+- **Tarif :** $1.50 / 1000 images
+- **Features :** OCR rapide, détection de texte, analyse d'image
 
-### Phase 2 : Correction de l'extraction PDF
+## Configuration Google Cloud
+
+### Étape 1 : Créer un projet Google Cloud
+
+**Lien :** https://console.cloud.google.com/
+
+1. Créer un projet (ex: "allianz-rag")
+2. Activer la facturation (carte requise, mais $300 de crédit gratuit)
+
+### Étape 2 : Activer les APIs
+
+**Document AI (pour admin) :**
+
+- https://console.cloud.google.com/apis/library/documentai.googleapis.com
+- Cliquer sur "Activer"
+
+**Vision AI (pour chatbot) :**
+
+- https://console.cloud.google.com/apis/library/vision.googleapis.com
+- Cliquer sur "Activer"
+
+### Étape 3 : Créer un compte de service
+
+**Lien :** https://console.cloud.google.com/iam-admin/serviceaccounts
+
+1. "Créer un compte de service"
+2. Nom : "allianz-rag-service"
+3. Rôles nécessaires :
+
+   - `Document AI API User`
+   - `Cloud Vision API User`
+
+4. Créer une clé JSON
+5. Télécharger le fichier JSON
+
+### Étape 4 : Configuration environnement
+
+Ajouter dans `.env.local` et Vercel :
+
+```bash
+# Google Cloud Service Account (contenu du fichier JSON en base64)
+GOOGLE_APPLICATION_CREDENTIALS_BASE64=eyJ0eXBlIjoic2VydmljZV9hY2NvdW50...
+
+# Ou chemin vers le fichier (local uniquement)
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+
+# Project ID
+GOOGLE_CLOUD_PROJECT=allianz-rag
+
+# Document AI Processor (pour admin)
+GOOGLE_DOCUMENT_AI_PROCESSOR_ID=abc123def456
+GOOGLE_DOCUMENT_AI_LOCATION=eu
+```
+
+### Étape 5 : Créer un processeur Document AI
+
+**Lien :** https://console.cloud.google.com/ai/document-ai/processors
+
+1. "Créer un processeur"
+2. Type : "Document OCR"
+3. Région : "EU" (Europe)
+4. Copier le "Processor ID"
+
+## Implémentation
+
+### Fichier 1 : Installation dépendances
+
+**Fichier :** [`package.json`](package.json)
+
+```bash
+npm install @google-cloud/documentai @google-cloud/vision
+```
+
+### Fichier 2 : Configuration Google
+
+**Nouveau fichier :** `lib/google-cloud/config.ts`
+
+```typescript
+import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
+import { ImageAnnotatorClient } from '@google-cloud/vision';
+
+// Initialisation des clients
+export function getDocumentAIClient() {
+  const credentials = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64
+    ? JSON.parse(Buffer.from(process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64, 'base64').toString())
+    : undefined;
+
+  return new DocumentProcessorServiceClient({ credentials });
+}
+
+export function getVisionClient() {
+  const credentials = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64
+    ? JSON.parse(Buffer.from(process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64, 'base64').toString())
+    : undefined;
+
+  return new ImageAnnotatorClient({ credentials });
+}
+
+export const googleConfig = {
+  projectId: process.env.GOOGLE_CLOUD_PROJECT || '',
+  documentAI: {
+    processorId: process.env.GOOGLE_DOCUMENT_AI_PROCESSOR_ID || '',
+    location: process.env.GOOGLE_DOCUMENT_AI_LOCATION || 'eu',
+  },
+};
+```
+
+### Fichier 3 : Extraction PDF avec Document AI (Admin)
 
 **Fichier :** [`lib/rag/pdf-processor.ts`](lib/rag/pdf-processor.ts)
 
-1. **Supprimer tout le code lié à pdf-parse**
+```typescript
+import { getDocumentAIClient, googleConfig } from '@/lib/google-cloud/config';
 
-- Fonction `getPdfParse()` obsolète
-- Polyfills DOMMatrix/DOMPoint obsolètes
+export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  try {
+    const client = getDocumentAIClient();
+    
+    const name = `projects/${googleConfig.projectId}/locations/${googleConfig.documentAI.location}/processors/${googleConfig.documentAI.processorId}`;
+    
+    const request = {
+      name,
+      rawDocument: {
+        content: buffer.toString('base64'),
+        mimeType: 'application/pdf',
+      },
+    };
 
-2. **Configurer correctement pdfjs-dist pour Node.js**
+    const [result] = await client.processDocument(request);
+    const { document } = result;
 
-- Ajouter configuration worker pour environnement serverless
-- Gérer les promesses de chargement correctement
-- Extraire le texte page par page
+    if (!document || !document.text) {
+      throw new Error('Aucun texte extrait du PDF');
+    }
 
-3. **Simplifier la gestion d'erreurs**
+    return document.text;
+  } catch (error) {
+    throw new Error(`Erreur Google Document AI: ${error.message}`);
+  }
+}
+```
 
-- Messages clairs et spécifiques
-- Pas de validation PDF complexe (laisser pdfjs-dist gérer)
+### Fichier 4 : Analyse ponctuelle dans chatbot
 
-### Phase 3 : Vérification système Tesseract
+**Nouveau fichier :** `app/api/chat/analyze-document/route.ts`
 
-**Fichier :** [`lib/rag/pdf-processor.ts`](lib/rag/pdf-processor.ts)
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { getVisionClient } from '@/lib/google-cloud/config';
 
-1. Vérifier que `extractTextFromImage` fonctionne
-2. Tester avec une vraie image
-3. Gérer les timeouts potentiels en serverless
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+    
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const client = getVisionClient();
 
-### Phase 4 : Tests complets du système
+    const [result] = await client.documentTextDetection({
+      image: { content: buffer.toString('base64') },
+    });
 
-**Nouveau fichier :** `scripts/test-rag-upload.ts`
+    const text = result.fullTextAnnotation?.text || '';
 
-Créer un script de test qui :
+    return NextResponse.json({
+      text,
+      confidence: result.fullTextAnnotation?.pages?.[0]?.confidence || 0,
+    });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+```
 
-1. Teste la connexion Qdrant
-2. Teste l'extraction PDF avec pdfjs-dist
-3. Teste l'OCR avec une image
-4. Teste la génération d'embeddings OpenAI
-5. Teste l'indexation Qdrant
+## Coûts estimés
 
-### Phase 5 : Documentation de configuration
+### Document AI (Admin - Vectorisation)
 
-**Fichier :** [`SETUP_QDRANT.md`](SETUP_QDRANT.md) (à améliorer)
+- **Tarif :** $1.50 / 1000 pages
+- **Usage typique :** 100 documents/mois × 10 pages = 1000 pages
+- **Coût mensuel :** ~$1.50/mois
 
-Créer un guide `SETUP_RAG_COMPLETE.md` avec :
+### Vision AI (Chatbot - Analyse ponctuelle)
 
-1. **Checklist de pré-configuration** (avant de coder)
-2. **Guide Qdrant Cloud** (avec captures)
-3. **Guide OpenAI** (génération clé API)
-4. **Configuration Firebase Storage**
-5. **Variables Vercel** (toutes listées)
-6. **Script de validation** (`npm run test:rag`)
+- **Tarif :** $1.50 / 1000 images
+- **Usage typique :** 50 analyses/mois
+- **Coût mensuel :** ~$0.08/mois
 
-### Phase 6 : Amélioration de l'API upload
+**Total estimé : ~$2/mois** (très raisonnable)
 
-**Fichier :** [`app/api/chat/upload/route.ts`](app/api/chat/upload/route.ts)
+## Liens utiles
 
-1. Meilleure gestion des timeouts serverless
-2. Retourner des erreurs plus explicites
-3. Ajouter des métriques de performance
+- **Console Google Cloud :** https://console.cloud.google.com/
+- **Document AI Docs :** https://cloud.google.com/document-ai/docs
+- **Vision AI Docs :** https://cloud.google.com/vision/docs
+- **Pricing Calculator :** https://cloud.google.com/products/calculator
+- **Free Tier :** $300 crédit gratuit (3 mois)
 
-## Fichiers à modifier
+## Timeline d'implémentation
 
-1. [`package.json`](package.json) - Suppression pdf-parse
-2. [`lib/rag/pdf-processor.ts`](lib/rag/pdf-processor.ts) - Nettoyage code pdf-parse, configuration pdfjs-dist
-3. [`app/api/chat/upload/route.ts`](app/api/chat/upload/route.ts) - Amélioration gestion erreurs
-4. `scripts/test-rag-upload.ts` - Nouveau script de test
-5. `SETUP_RAG_COMPLETE.md` - Documentation complète
+1. Configuration Google Cloud : 10 minutes
+2. Installation dépendances : 2 minutes
+3. Code Document AI : 15 minutes
+4. Code Vision AI : 10 minutes
+5. Tests : 10 minutes
 
-## Ordre d'exécution
-
-1. Nettoyer package.json (supprimer pdf-parse)
-2. Nettoyer pdf-processor.ts (supprimer code obsolète)
-3. Tester extraction PDF avec pdfjs-dist
-4. Créer script de test
-5. Créer documentation complète
-6. Tester en local
-7. Déployer et tester en production
-
-## Résultat attendu
-
-- Upload PDF fonctionnel en local ET production
-- Upload images avec OCR fonctionnel
-- Documentation complète pour configuration future
-- Script de validation pour diagnostiquer rapidement les problèmes
+**Total : ~45 minutes pour une solution production-ready**
 
 ### To-dos
 
 - [x] Améliorer la fonctionnalité de copie - ajouter bouton pour copier toute la conversation
 - [x] Améliorer le feedback utilisateur pour le collage d'image - ajouter toast et meilleure UX
 - [x] Ajouter fonctionnalité pour exporter/télécharger la conversation en format texte
-- [ ] Corriger l'import de pdf-parse dans pdf-processor.ts - utiliser import statique et ajouter validation PDF
-- [ ] Améliorer la gestion d'erreurs dans pdf-processor.ts - distinguer erreurs récupérables/fatales, messages spécifiques
-- [ ] Ajouter validation préalable dans upload route - vérifier config Qdrant/OpenAI/Storage avant traitement
-- [ ] Améliorer gestion erreurs upload route - rollback complet, messages spécifiques, retry mechanism
-- [ ] Ajouter logs structurés dans upload route - ID trace, métriques, contexte erreurs
-- [ ] Améliorer robustesse suppression - vérifications préalables, rollback si erreur partielle
-- [ ] Améliorer client Qdrant - vérification santé, retry avec backoff, logs détaillés
-- [ ] Créer script diagnose-rag-system.ts pour vérifier toute la chaîne RAG
-- [ ] Améliorer UI upload dialog - messages erreurs spécifiques, progression détaillée, métriques
-- [ ] Nettoyer package.json - supprimer pdf-parse complètement
-- [ ] Nettoyer pdf-processor.ts - supprimer code pdf-parse obsolète
-- [ ] Corriger configuration pdfjs-dist pour serverless
-- [ ] Vérifier fonctionnement Tesseract.js
-- [ ] Créer script test-rag-upload.ts
-- [ ] Créer documentation SETUP_RAG_COMPLETE.md
-- [ ] Tester upload PDF et image en local
-- [ ] Déployer et tester en production
-- [x] 
-- [x] 
-- [x] 
-- [x] 
-- [x] 
-- [x] 
-- [x] 
-- [x] 
 - [ ] Corriger l'import de pdf-parse dans pdf-processor.ts - utiliser import statique et ajouter validation PDF
 - [ ] Améliorer la gestion d'erreurs dans pdf-processor.ts - distinguer erreurs récupérables/fatales, messages spécifiques
 - [ ] Ajouter validation préalable dans upload route - vérifier config Qdrant/OpenAI/Storage avant traitement

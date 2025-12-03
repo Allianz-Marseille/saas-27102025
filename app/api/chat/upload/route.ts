@@ -6,6 +6,7 @@ import { getFileTypeFromMimeType, getImageTypeFromMimeType, validateFile } from 
 import { generateEmbeddingsBatch, checkOpenAIConnection } from "@/lib/rag/embeddings";
 import { createCollectionIfNotExists, upsertVectors, checkQdrantConnection } from "@/lib/rag/qdrant-client";
 import { deleteDocumentVectors } from "@/lib/rag/qdrant-client";
+import { validateGoogleCloudConfig } from "@/lib/google-cloud/config";
 import type { QdrantPoint } from "@/lib/rag/types";
 
 export const dynamic = "force-dynamic";
@@ -67,6 +68,13 @@ async function validateSystemConfiguration(traceId: string): Promise<{ valid: bo
     } catch (error) {
       errors.push(`Erreur vérification Storage: ${error instanceof Error ? error.message : "Erreur inconnue"}`);
     }
+  }
+
+  // 5. Vérifier Google Cloud Configuration (pour extraction PDF)
+  logWithTrace(traceId, "Vérification Google Cloud...");
+  const googleCloudValidation = validateGoogleCloudConfig();
+  if (!googleCloudValidation.isValid) {
+    errors.push(...googleCloudValidation.errors.map(err => `Google Cloud: ${err}`));
   }
 
   return {

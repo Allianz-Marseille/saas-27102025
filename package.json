@@ -26,6 +26,8 @@
     "test:rag": "ts-node --project tsconfig.scripts.json scripts/test-rag-upload.ts"
   },
   "dependencies": {
+    "@google-cloud/documentai": "^9.5.0",
+    "@google-cloud/vision": "^5.3.4",
     "@hookform/resolvers": "^5.2.2",
     "@qdrant/js-client-rest": "^1.16.2",
     "@radix-ui/react-alert-dialog": "^1.1.15",
