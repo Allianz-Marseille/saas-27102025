@@ -7,12 +7,25 @@ import { ragConfig } from "@/lib/config/rag-config";
 import type { DocumentChunk, OCRResult, FileType } from "./types";
 
 // Polyfill pour DOMMatrix dans l'environnement serverless (nécessaire pour pdf-parse)
-if (typeof globalThis !== 'undefined' && typeof (globalThis as any).DOMMatrix === 'undefined') {
-  (globalThis as any).DOMMatrix = class DOMMatrix {
-    constructor() {
-      // Polyfill minimal pour pdf-parse
-    }
-  };
+if (typeof globalThis !== 'undefined') {
+  if (typeof (globalThis as any).DOMMatrix === 'undefined') {
+    // Polyfill complet pour DOMMatrix
+    (globalThis as any).DOMMatrix = function DOMMatrix() {
+      this.a = 1; this.b = 0; this.c = 0; this.d = 1; this.e = 0; this.f = 0;
+      this.m11 = 1; this.m12 = 0; this.m13 = 0; this.m14 = 0;
+      this.m21 = 0; this.m22 = 1; this.m23 = 0; this.m24 = 0;
+      this.m31 = 0; this.m32 = 0; this.m33 = 1; this.m34 = 0;
+      this.m41 = 0; this.m42 = 0; this.m43 = 0; this.m44 = 1;
+    };
+    (globalThis as any).DOMMatrix.prototype = Object.create(null);
+  }
+  
+  // Désactiver les warnings canvas-related dans pdf-parse
+  if (typeof (globalThis as any).DOMPoint === 'undefined') {
+    (globalThis as any).DOMPoint = function DOMPoint() {
+      this.x = 0; this.y = 0; this.z = 0; this.w = 1;
+    };
+  }
 }
 
 // Import dynamique de pdf-parse avec cache
