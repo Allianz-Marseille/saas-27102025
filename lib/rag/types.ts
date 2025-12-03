@@ -38,6 +38,7 @@ export interface DocumentChunk {
     pageNumber?: number; // Pour les PDFs
     section?: string; // Section du document
     ocrConfidence?: number; // Score de confiance OCR (si image)
+    chunkSize?: number; // Taille du chunk en caractères
   };
 }
 
