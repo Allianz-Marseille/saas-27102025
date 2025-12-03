@@ -313,12 +313,21 @@ export async function POST(request: NextRequest) {
 
     // 5. Préparer les points pour Qdrant
     logWithTrace(traceId, "Étape 5/7: Préparation des points Qdrant");
+    
+    // Vérifier que documentId est défini (ne devrait jamais être null à ce point)
+    if (!documentId) {
+      throw new Error("documentId n'est pas défini");
+    }
+    
+    // Créer une variable locale avec le type correct pour TypeScript
+    const finalDocumentId: string = documentId;
+    
     const points: QdrantPoint[] = chunks.map((chunk, index) => ({
       id: chunk.id,
       vector: embeddings[index],
       payload: {
         text: chunk.text,
-        documentId: documentId,
+        documentId: finalDocumentId,
         filename: file.name,
         fileType: fileType,
         chunkIndex: chunk.chunkIndex,
