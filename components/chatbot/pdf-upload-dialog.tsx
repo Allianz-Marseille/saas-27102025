@@ -192,11 +192,11 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
             newStatus = "extracting";
             newProgress = Math.min(50, newProgress + 2);
             newStep = "Extraction du texte...";
-          } else if (current.status === "embedding" || (current.status === "extracting" && newProgress >= 50)) {
+          } else if (current.status === "embedding" || (newStatus === "extracting" && newProgress >= 50)) {
             newStatus = "embedding";
             newProgress = Math.min(75, newProgress + 2);
             newStep = "Génération des embeddings...";
-          } else if (current.status === "indexing" || (current.status === "embedding" && newProgress >= 75)) {
+          } else if (current.status === "indexing" || (newStatus === "embedding" && newProgress >= 75)) {
             newStatus = "indexing";
             newProgress = Math.min(95, newProgress + 2);
             newStep = "Indexation dans la base vectorielle...";
