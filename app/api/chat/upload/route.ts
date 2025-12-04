@@ -360,23 +360,31 @@ export async function POST(request: NextRequest) {
 
       // 7. Sauvegarder les métadonnées dans Firestore
     logWithTrace(traceId, "Étape 7/7: Sauvegarde métadonnées Firestore");
-      const documentData = {
+      
+      // Construire l'objet documentData en excluant les valeurs undefined (Firestore les refuse)
+      const documentData: Record<string, unknown> = {
         id: documentId,
         filename: file.name,
         fileType: fileType,
-        imageType: imageType,
         uploadedBy: decodedToken.uid,
         uploadedAt: Timestamp.now(),
         fileUrl: fileUrl,
         fileSize: file.size,
         chunkCount: chunks.length,
-        ocrConfidence: ocrResult?.confidence,
         qdrantCollectionId: ragConfig.qdrant.collectionName,
         metadata: {
           originalName: file.name,
         traceId,
         },
       };
+
+      // Ajouter les champs optionnels uniquement s'ils sont définis
+      if (imageType !== undefined) {
+        documentData.imageType = imageType;
+      }
+      if (ocrResult?.confidence !== undefined) {
+        documentData.ocrConfidence = ocrResult.confidence;
+      }
 
     try {
       await adminDb.collection("rag_documents").doc(documentId).set(documentData);
