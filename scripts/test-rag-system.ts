@@ -49,8 +49,10 @@ async function testConfiguration() {
     { name: "QDRANT_API_KEY", value: process.env.QDRANT_API_KEY },
     { name: "OPENAI_API_KEY", value: process.env.OPENAI_API_KEY },
     { name: "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET", value: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET },
-    { name: "GOOGLE_CLOUD_PROJECT_ID", value: process.env.GOOGLE_CLOUD_PROJECT_ID },
-    { name: "GOOGLE_CLOUD_DOCUMENT_AI_PROCESSOR_ID", value: process.env.GOOGLE_CLOUD_DOCUMENT_AI_PROCESSOR_ID },
+    { name: "GOOGLE_CLOUD_PROJECT", value: process.env.GOOGLE_CLOUD_PROJECT },
+    { name: "GOOGLE_DOCUMENT_AI_PROCESSOR_ID", value: process.env.GOOGLE_DOCUMENT_AI_PROCESSOR_ID },
+    { name: "GOOGLE_PRIVATE_KEY", value: process.env.GOOGLE_PRIVATE_KEY ? "***" : undefined }, // Ne pas afficher la clé privée
+    { name: "GOOGLE_CLIENT_EMAIL", value: process.env.GOOGLE_CLIENT_EMAIL },
   ];
 
   let allConfigured = true;
