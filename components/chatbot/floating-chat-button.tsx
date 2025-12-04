@@ -393,15 +393,15 @@ export function FloatingChatButton() {
                     <Download className="h-4 w-4" />
                   </Button>
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsOpen(false)}
-                  className="h-8 w-8 hover:bg-white/20 rounded-full transition-all hover:rotate-90"
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsOpen(false)}
+                className="h-8 w-8 hover:bg-white/20 rounded-full transition-all hover:rotate-90"
                   title="Fermer"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+              >
+                <X className="h-4 w-4" />
+              </Button>
               </div>
             </div>
           </div>

@@ -286,7 +286,7 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
       const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
       
       updateProgress(fileName, "error", 0, "Erreur lors de l'upload");
-      
+
       toast.error(`Erreur lors de l'upload de "${fileName}"`, {
         description: errorMessage,
         duration: 5000,
@@ -328,10 +328,10 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
         <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
           <DialogTitle className="flex items-center gap-3 text-xl">
             <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg">
-              <Upload className="h-5 w-5" />
+            <Upload className="h-5 w-5" />
             </div>
             <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Importer des documents
+            Importer des documents
             </span>
           </DialogTitle>
           <DialogDescription className="text-base mt-2">
@@ -372,10 +372,10 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
                 ) : (
                   "Glissez-déposez vos fichiers ici ou cliquez pour parcourir"
                 )}
-              </p>
+            </p>
               <p className="text-sm text-muted-foreground mb-6">
                 PDFs jusqu&apos;à <span className="font-semibold text-purple-600 dark:text-purple-400">10MB</span>, Images jusqu&apos;à <span className="font-semibold text-pink-600 dark:text-pink-400">5MB</span>
-              </p>
+            </p>
               <Button 
                 variant="outline" 
                 size="lg" 
@@ -383,8 +383,8 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
                 className="bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:border-purple-400 dark:hover:border-purple-600 transition-all"
               >
                 <FileText className="h-4 w-4 mr-2 text-purple-600 dark:text-purple-400" />
-                Sélectionner des fichiers
-              </Button>
+              Sélectionner des fichiers
+            </Button>
             </div>
           </div>
 
@@ -433,12 +433,12 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
                             </div>
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
-                                {progress.status === "uploading" && (
+                              {progress.status === "uploading" && (
                                   <span className="text-xs font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
                                     <div className="h-2 w-2 rounded-full bg-purple-500 animate-pulse" />
                                     {progress.currentStep || "Upload en cours..."}
                                   </span>
-                                )}
+                              )}
                                 {progress.status === "extracting" && (
                                   <span className="text-xs font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
                                     <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
@@ -456,14 +456,14 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
                                     <div className="h-2 w-2 rounded-full bg-pink-500 animate-pulse" />
                                     {progress.currentStep || "Indexation..."}
                                   </span>
-                                )}
-                                {progress.status === "success" && (
+                              )}
+                              {progress.status === "success" && (
                                   <span className="text-xs font-medium text-green-600 dark:text-green-400 flex items-center gap-1.5">
                                     <CheckCircle className="h-3.5 w-3.5" />
                                     {progress.currentStep || "Succès"}
-                                  </span>
-                                )}
-                                {progress.status === "error" && (
+                                </span>
+                              )}
+                              {progress.status === "error" && (
                                   <span className="text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5">
                                     <AlertCircle className="h-3.5 w-3.5" />
                                     <span className="truncate">{progress.error || "Erreur"}</span>
@@ -486,7 +486,7 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
                                   {progress.metrics.traceId && (
                                     <span className="font-mono text-[10px] opacity-70">
                                       Trace: {progress.metrics.traceId.substring(0, 8)}...
-                                    </span>
+                                </span>
                                   )}
                                 </div>
                               )}
@@ -513,29 +513,29 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
           )}
         </div>
 
-        {/* Boutons d'action */}
-        {files.length > 0 && (
+          {/* Boutons d'action */}
+          {files.length > 0 && (
           <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50/50 dark:bg-gray-900/50">
             <Button 
               variant="outline" 
               onClick={handleClose}
               className="min-w-[100px]"
             >
-              Annuler
-            </Button>
-            <Button
-              onClick={handleUploadAll}
-              disabled={files.some((f) => {
-                const progress = uploadProgress.get(f.name);
+                Annuler
+              </Button>
+              <Button
+                onClick={handleUploadAll}
+                disabled={files.some((f) => {
+                  const progress = uploadProgress.get(f.name);
                 return progress && progress.status !== "success" && progress.status !== "error";
-              })}
+                })}
               className="min-w-[160px] bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Uploader {files.length} fichier{files.length > 1 ? "s" : ""}
-            </Button>
-          </div>
-        )}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Uploader {files.length} fichier{files.length > 1 ? "s" : ""}
+              </Button>
+            </div>
+          )}
       </DialogContent>
     </Dialog>
   );

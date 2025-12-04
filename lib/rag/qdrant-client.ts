@@ -115,12 +115,12 @@ export async function createCollectionIfNotExists(): Promise<void> {
       logQdrant("Création collection", { collectionName });
       // Créer la collection avec la dimension des embeddings OpenAI text-embedding-3-small (1536)
       await retryWithBackoff(async () => {
-        await client.createCollection(collectionName, {
-          vectors: {
-            size: 1536,
-            distance: "Cosine",
-          },
-        });
+      await client.createCollection(collectionName, {
+        vectors: {
+          size: 1536,
+          distance: "Cosine",
+        },
+      });
       });
       const creationTime = Date.now() - startTime;
       logQdrant("Collection créée", { collectionName, creationTime });
@@ -147,14 +147,14 @@ export async function upsertVectors(points: QdrantPoint[]): Promise<void> {
     logQdrant("Upsert vecteurs", { pointsCount: points.length, collectionName });
     
     await retryWithBackoff(async () => {
-      await client.upsert(collectionName, {
-        wait: true,
-        points: points.map((point) => ({
-          id: point.id,
-          vector: point.vector,
-          payload: point.payload,
-        })),
-      });
+    await client.upsert(collectionName, {
+      wait: true,
+      points: points.map((point) => ({
+        id: point.id,
+        vector: point.vector,
+        payload: point.payload,
+      })),
+    });
     });
 
     const upsertTime = Date.now() - startTime;
@@ -182,10 +182,10 @@ export async function searchVectors(
     
     const results = await retryWithBackoff(async () => {
       return await client.search(collectionName, {
-        vector: queryVector,
-        limit,
-        score_threshold: ragConfig.search.scoreThreshold,
-      });
+      vector: queryVector,
+      limit,
+      score_threshold: ragConfig.search.scoreThreshold,
+    });
     });
 
     const searchTime = Date.now() - startTime;
@@ -220,19 +220,19 @@ export async function deleteDocumentVectors(documentId: string): Promise<void> {
     
     // Supprimer tous les points avec ce documentId dans le payload
     await retryWithBackoff(async () => {
-      await client.delete(collectionName, {
-        wait: true,
-        filter: {
-          must: [
-            {
-              key: "documentId",
-              match: {
-                value: documentId,
-              },
+    await client.delete(collectionName, {
+      wait: true,
+      filter: {
+        must: [
+          {
+            key: "documentId",
+            match: {
+              value: documentId,
             },
-          ],
-        },
-      });
+          },
+        ],
+      },
+    });
     });
 
     const deleteTime = Date.now() - startTime;

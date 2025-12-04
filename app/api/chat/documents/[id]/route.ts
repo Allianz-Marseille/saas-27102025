@@ -149,13 +149,13 @@ export async function DELETE(
         // Vérifier que le fichier existe avant de le supprimer
         const [exists] = await fileRef.exists();
         if (exists) {
-          await fileRef.delete();
+        await fileRef.delete();
           storageDeleted = true;
           logWithTrace(traceId, "Fichier Storage supprimé");
         } else {
           logWithTrace(traceId, "Fichier Storage n'existe pas (déjà supprimé?)");
-        }
-      } catch (error) {
+      }
+    } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
         logWithTrace(traceId, "Erreur suppression Storage", { error: errorMessage });
         errors.push(`Storage: ${errorMessage}`);
