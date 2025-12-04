@@ -144,6 +144,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Récupérer les tags optionnels
+    let tags: string[] = [];
+    const tagsData = formData.get("tags");
+    if (tagsData) {
+      try {
+        tags = JSON.parse(tagsData as string);
+        if (!Array.isArray(tags)) {
+          tags = [];
+        }
+      } catch (error) {
+        logWithTrace(traceId, "Erreur parsing tags, ignoré", { error });
+        tags = [];
+      }
+    }
+
     logWithTrace(traceId, "Fichier reçu", {
       fileName: file.name,
       fileType: file.type,
@@ -384,6 +399,9 @@ export async function POST(request: NextRequest) {
       }
       if (ocrResult?.confidence !== undefined) {
         documentData.ocrConfidence = ocrResult.confidence;
+      }
+      if (tags.length > 0) {
+        documentData.tags = tags;
       }
 
     try {

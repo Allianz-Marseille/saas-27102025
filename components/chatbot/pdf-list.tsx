@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FileText, Image as ImageIcon, Download, Trash2, Calendar, Database } from "lucide-react";
+import { FileText, Image as ImageIcon, Download, Trash2, Calendar, Database, Tag as TagIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/firebase/use-auth";
+import { TagFilter } from "./tag-filter";
+import { EditTagsDialog } from "./edit-tags-dialog";
+import { getTagConfig } from "@/lib/config/rag-tags";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +36,7 @@ interface Document {
   fileSize: number;
   chunkCount: number;
   ocrConfidence?: number;
+  tags?: string[];
 }
 
 interface PdfListProps {
@@ -44,7 +48,10 @@ export function PdfList({ onRefresh }: PdfListProps) {
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
-  const { user } = useAuth();
+  const [editTagsDialogOpen, setEditTagsDialogOpen] = useState(false);
+  const [documentToEditTags, setDocumentToEditTags] = useState<Document | null>(null);
+  const [selectedTagsFilter, setSelectedTagsFilter] = useState<string[]>([]);
+  const { user} = useAuth();
 
   const fetchDocuments = async () => {
     if (!user) return;
@@ -137,6 +144,31 @@ export function PdfList({ onRefresh }: PdfListProps) {
     }
   };
 
+  // Calculer les tags disponibles avec leurs compteurs
+  const availableTags = documents.reduce((acc, doc) => {
+    if (!doc.tags || doc.tags.length === 0) return acc;
+    
+    doc.tags.forEach((tagId) => {
+      const existing = acc.find((t) => t.tagId === tagId);
+      if (existing) {
+        existing.count++;
+      } else {
+        acc.push({ tagId, count: 1 });
+      }
+    });
+    
+    return acc;
+  }, [] as Array<{ tagId: string; count: number }>);
+
+  // Filtrer les documents selon les tags sélectionnés
+  const filteredDocuments = selectedTagsFilter.length === 0
+    ? documents
+    : documents.filter((doc) => {
+        if (!doc.tags || doc.tags.length === 0) return false;
+        // Un document est affiché s'il a au moins un des tags sélectionnés
+        return selectedTagsFilter.some((tagId) => doc.tags?.includes(tagId));
+      });
+
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
@@ -189,8 +221,35 @@ export function PdfList({ onRefresh }: PdfListProps) {
 
   return (
     <>
+      {/* Filtre par tags */}
+      {availableTags.length > 0 && (
+        <div className="mb-6">
+          <TagFilter
+            availableTags={availableTags}
+            selectedTags={selectedTagsFilter}
+            onFilterChange={setSelectedTagsFilter}
+          />
+        </div>
+      )}
+
+      {/* Message si aucun résultat après filtrage */}
+      {filteredDocuments.length === 0 && selectedTagsFilter.length > 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p className="text-sm">Aucun document trouvé avec les tags sélectionnés</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSelectedTagsFilter([])}
+            className="mt-4"
+          >
+            Réinitialiser les filtres
+          </Button>
+        </div>
+      )}
+
       <div className="space-y-3">
-        {documents.map((document) => (
+        {filteredDocuments.map((document) => (
           <Card
             key={document.id}
             className="hover:bg-muted/50 transition-colors animate-in slide-in-from-left-4 fade-in"
@@ -208,6 +267,28 @@ export function PdfList({ onRefresh }: PdfListProps) {
                         {getFileTypeBadge(document)}
                       </Badge>
                     </div>
+                    
+                    {/* Tags du document */}
+                    {document.tags && document.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {document.tags.map((tagId) => {
+                          const config = getTagConfig(tagId);
+                          return (
+                            <Badge
+                              key={tagId}
+                              className={cn(
+                                "text-xs px-2 py-0.5 gap-1 border",
+                                config.color
+                              )}
+                            >
+                              {config.icon && <span className="text-xs">{config.icon}</span>}
+                              {config.label}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
@@ -227,6 +308,18 @@ export function PdfList({ onRefresh }: PdfListProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setDocumentToEditTags(document);
+                      setEditTagsDialogOpen(true);
+                    }}
+                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/30"
+                    title="Modifier les tags"
+                  >
+                    <TagIcon className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -278,6 +371,17 @@ export function PdfList({ onRefresh }: PdfListProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog d'édition des tags */}
+      <EditTagsDialog
+        document={documentToEditTags}
+        open={editTagsDialogOpen}
+        onOpenChange={setEditTagsDialogOpen}
+        onSuccess={() => {
+          fetchDocuments();
+          if (onRefresh) onRefresh();
+        }}
+      />
     </>
   );
 }

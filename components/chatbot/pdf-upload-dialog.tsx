@@ -3,11 +3,12 @@
 import { useState, useCallback, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, Image as ImageIcon, X, CheckCircle, AlertCircle } from "lucide-react";
+import { Upload, FileText, Image as ImageIcon, X, CheckCircle, AlertCircle, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { ragConfig } from "@/lib/config/rag-config";
+import { TagSelector } from "./tag-selector";
 
 interface PdfUploadDialogProps {
   open: boolean;
@@ -32,6 +33,7 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
   const [files, setFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<Map<string, UploadProgress>>(new Map());
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
 
@@ -159,6 +161,10 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
       // Créer FormData
       const formData = new FormData();
       formData.append("file", file);
+      // Ajouter les tags si définis
+      if (selectedTags.length > 0) {
+        formData.append("tags", JSON.stringify(selectedTags));
+      }
 
       // Upload avec suivi de progression
       updateProgress(fileName, "uploading", 20, "Envoi du fichier...");
@@ -327,6 +333,7 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
     setFiles([]);
     setUploadProgress(new Map());
     setIsDragging(false);
+    setSelectedTags([]);
     onOpenChange(false);
   };
 
@@ -394,6 +401,25 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
               Sélectionner des fichiers
             </Button>
             </div>
+          </div>
+
+          {/* Section Tags (toujours visible) */}
+          <div className="space-y-3 p-6 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <h3 className="text-base font-semibold">Organisez vos documents</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Ajoutez des tags pour mieux organiser et retrouver vos documents (optionnel)
+            </p>
+            <TagSelector
+              selectedTags={selectedTags}
+              onTagsChange={setSelectedTags}
+              disabled={files.some((f) => {
+                const progress = uploadProgress.get(f.name);
+                return progress && progress.status !== "success" && progress.status !== "error";
+              })}
+            />
           </div>
 
           {/* Liste des fichiers sélectionnés */}

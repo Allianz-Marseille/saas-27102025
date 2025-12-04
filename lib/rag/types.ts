@@ -21,6 +21,7 @@ export interface RAGDocument {
   chunkCount: number;
   qdrantCollectionId: string;
   ocrConfidence?: number; // Score de confiance OCR (si image)
+  tags?: string[]; // Tags associés au document
   metadata?: {
     title?: string;
     description?: string;
