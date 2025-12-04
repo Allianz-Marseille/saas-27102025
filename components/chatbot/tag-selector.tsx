@@ -188,7 +188,7 @@ export function TagSelector({ selectedTags, onTagsChange, disabled = false, clas
           </div>
         )}
         <p className="text-xs text-muted-foreground">
-          Les tags personnalisés peuvent contenir des lettres, chiffres, tirets et underscores
+          Les tags personnalisés peuvent contenir des lettres, chiffres, espaces et emojis 🎨
         </p>
       </div>
     </div>

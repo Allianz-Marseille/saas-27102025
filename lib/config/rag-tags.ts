@@ -69,23 +69,23 @@ export function getTagConfig(tagId: string): DocumentTag {
 }
 
 /**
- * Valide un tag (nom valide, pas de caractères spéciaux)
+ * Valide un tag (nom valide, accepte les emojis)
  */
 export function validateTag(tag: string): { valid: boolean; error?: string } {
   if (!tag || tag.trim().length === 0) {
     return { valid: false, error: "Le tag ne peut pas être vide" };
   }
 
-  if (tag.length > 30) {
-    return { valid: false, error: "Le tag est trop long (max 30 caractères)" };
+  if (tag.length > 50) {
+    return { valid: false, error: "Le tag est trop long (max 50 caractères)" };
   }
 
-  // Autorise lettres, chiffres, tirets et underscores
-  const validPattern = /^[a-zA-Z0-9-_]+$/;
-  if (!validPattern.test(tag)) {
+  // Interdit certains caractères problématiques mais accepte les emojis
+  const invalidCharsPattern = /[<>{}[\]\\\/|"'`]/;
+  if (invalidCharsPattern.test(tag)) {
     return {
       valid: false,
-      error: "Le tag ne peut contenir que des lettres, chiffres, tirets et underscores",
+      error: "Le tag contient des caractères interdits (<>{}[]\\|\"'`)",
     };
   }
 
