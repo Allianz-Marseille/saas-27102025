@@ -3,13 +3,12 @@
 export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
-import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, MessageSquare } from "lucide-react";
+import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { MobileMenu } from "@/components/navigation/mobile-menu";
 import { ResponsiveHeader } from "@/components/navigation/responsive-header";
 import { NavigationItems } from "@/components/navigation/navigation-items";
 import { RouteGuard } from "@/components/auth/route-guard";
-import { FloatingChatButton } from "@/components/chatbot/floating-chat-button";
 import { logout } from "@/lib/firebase/auth";
 import { logUserLogout } from "@/lib/firebase/logs";
 import { useRouter, usePathname } from "next/navigation";
@@ -65,12 +64,6 @@ const adminNavItems = [
     href: "/admin/logs",
     label: "Journal des logs",
     icon: ScrollText,
-  },
-  {
-    href: "/admin/outils",
-    label: "Outils",
-    icon: MessageSquare,
-    separator: true,
   },
 ];
 
@@ -165,9 +158,6 @@ export default function AdminLayout({
             {children}
           </main>
         </div>
-
-        {/* Bouton flottant du chatbot */}
-        <FloatingChatButton />
       </div>
     </RouteGuard>
   );

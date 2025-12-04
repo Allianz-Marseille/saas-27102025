@@ -1,0 +1,300 @@
+[
+  {
+    "segment": "Pro",
+    "sous_segment": "Transport / Route",
+    "offre": "-10 % en AN Allianz Route",
+    "code": "0325",
+    "conditions": "",
+    "categorie_client": "professionnel",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Pro",
+    "sous_segment": "Transport / Route Mission",
+    "offre": "-10 % en AN Allianz Route Mission",
+    "code": "",
+    "conditions": "",
+    "categorie_client": "professionnel",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Pro",
+    "sous_segment": "Route Mission + Route",
+    "offre": "-20 % Route Mission si couplée AN Allianz Route",
+    "code": "",
+    "conditions": "nécessite souscription conjointe",
+    "categorie_client": "professionnel",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Pro",
+    "sous_segment": "APA Confort",
+    "offre": "-10 % à -25 % selon note financière",
+    "code": "",
+    "conditions": "target: agents de marque, contrôles techniques, carrossiers, stations-service, motocistes, réparateurs cycles, itinérants, membre CAPS",
+    "categorie_client": "professionnel",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Pro",
+    "sous_segment": "Pacifique Mission",
+    "offre": "-15 % à la main du souscripteur",
+    "code": "",
+    "conditions": "diagnostic sûreté + abonnement portail risques pays offert",
+    "categorie_client": "professionnel",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Pro",
+    "sous_segment": "Arts & Collections",
+    "offre": "-15 % à la main du souscripteur",
+    "code": "",
+    "conditions": "",
+    "categorie_client": "professionnel",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Construction",
+    "sous_segment": "Az Solution BTP",
+    "offre": "-20 % en AN",
+    "code": "3880",
+    "conditions": "activités : 1210, 1220, 1310, 1510, 1610, 1910, 1920, 2210, 2510, 2710, 2720, 2730, 1710, 2711 ; mono ou multi activités dans la liste",
+    "categorie_client": "professionnel",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Construction",
+    "sous_segment": "Az Solution BTP",
+    "offre": "-10 % supplémentaire en multipossession",
+    "code": "",
+    "conditions": "détention ABR ou ADP prévoyance/santé",
+    "categorie_client": "professionnel",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Construction",
+    "sous_segment": "Grille qualité",
+    "offre": "Réduction jusqu'à -15 %",
+    "code": "",
+    "conditions": "selon réponses grille qualité",
+    "categorie_client": "professionnel",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Construction",
+    "sous_segment": "Gros Œuvre ASBTP",
+    "offre": "Réduction jusqu'à -40 %",
+    "code": "4005 / 4006",
+    "conditions": "RI ≥ 5 ans sans sinistre ; top 40 ASBTP",
+    "categorie_client": "professionnel",
+    "periode": "jusqu'au 30/04/2026"
+  },
+  {
+    "segment": "Entreprise",
+    "sous_segment": "Collectives",
+    "offre": "-15 % sur AN APE",
+    "code": "",
+    "conditions": "TOP 35 conquête",
+    "categorie_client": "entreprise",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Entreprise",
+    "sous_segment": "Collectives",
+    "offre": "-10 % sur AN ACE",
+    "code": "",
+    "conditions": "TOP 35 conquête",
+    "categorie_client": "entreprise",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Entreprise",
+    "sous_segment": "Collectives",
+    "offre": "-10 % ACE",
+    "code": "",
+    "conditions": "sur CCN Bâtiment, Pharmacie (non cadre), matériel agricole",
+    "categorie_client": "entreprise",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Entreprise",
+    "sous_segment": "Collectives",
+    "offre": "-10 % en AN ACE",
+    "code": "",
+    "conditions": "si souscription UNICED TNS Santé (hors avocats)",
+    "categorie_client": "entreprise",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Pro",
+    "sous_segment": "MR Pro",
+    "offre": "-25 % en multipossession",
+    "code": "4300",
+    "conditions": "Profil Pro / Actif Pro / Associa Pro / AZPE",
+    "categorie_client": "professionnel",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Pro",
+    "sous_segment": "MR Pro",
+    "offre": "Jusqu'à 3 mois gratuits",
+    "code": "",
+    "conditions": "multipossession",
+    "categorie_client": "professionnel",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Pro",
+    "sous_segment": "Associa Pro",
+    "offre": "-20 % en conquête",
+    "code": "7085",
+    "conditions": "",
+    "categorie_client": "professionnel",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Pro",
+    "sous_segment": "Immeuble",
+    "offre": "-10 % si immeuble < 10 ans",
+    "code": "1010",
+    "conditions": "",
+    "categorie_client": "professionnel",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "TNS",
+    "sous_segment": "Santé TNS",
+    "offre": "2 MG en AN",
+    "code": "",
+    "conditions": "",
+    "categorie_client": "TNS",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "TNS",
+    "sous_segment": "Santé TNS",
+    "offre": "-30 % nouvelle installation ou assuré ≤ 50 ans",
+    "code": "",
+    "conditions": "UNIM / UNICED",
+    "categorie_client": "TNS",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "TNS",
+    "sous_segment": "Santé TNS",
+    "offre": "-15 % infirmier",
+    "code": "",
+    "conditions": "",
+    "categorie_client": "TNS",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "TNS",
+    "sous_segment": "Prévoyance",
+    "offre": "2 MG en AN",
+    "code": "",
+    "conditions": "",
+    "categorie_client": "TNS",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "TNS",
+    "sous_segment": "Prévoyance",
+    "offre": "-25 % TOP 425",
+    "code": "B181",
+    "conditions": "capital ≥ 2× revenus",
+    "categorie_client": "TNS",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "TNS",
+    "sous_segment": "Prévoyance",
+    "offre": "-40 % UNICED ou médicale",
+    "code": "",
+    "conditions": "nouvelle installation ou assuré ≤ 50 ans",
+    "categorie_client": "TNS",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "TNS",
+    "sous_segment": "Prévoyance",
+    "offre": "-30 % UNIM paramédicale",
+    "code": "",
+    "conditions": "nouvelle installation ou assuré ≤ 50 ans",
+    "categorie_client": "TNS",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "TNS",
+    "sous_segment": "Prévoyance",
+    "offre": "-15 % UNIM infirmier",
+    "code": "",
+    "conditions": "",
+    "categorie_client": "TNS",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Agri",
+    "sous_segment": "Multirisque Agricole",
+    "offre": "-20 % en conquête",
+    "code": "4057",
+    "conditions": "",
+    "categorie_client": "agriculteur",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Agri",
+    "sous_segment": "Jeunes agriculteurs",
+    "offre": "-50 % à -10 % par an",
+    "code": "",
+    "conditions": "MRA et assurance des récoltes",
+    "categorie_client": "agriculteur",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Agri",
+    "sous_segment": "Viti Vini",
+    "offre": "-10 % en AN",
+    "code": "6025",
+    "conditions": "",
+    "categorie_client": "viticulteur",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Agri",
+    "sous_segment": "Terroirs Évolution / Viti Vini Évolution",
+    "offre": "Jusqu'à -15 % en AN ou avenant",
+    "code": "3709",
+    "conditions": "multi détention",
+    "categorie_client": "viticulteur",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Agri",
+    "sous_segment": "Spécialistes Agricole",
+    "offre": "-25 % TMA agricole",
+    "code": "3936",
+    "conditions": "hors ETA et CUMA",
+    "categorie_client": "agriculteur",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Agri",
+    "sous_segment": "Multirisque Agricole",
+    "offre": "-25 % en multidétention ABR ou ADP",
+    "code": "4084",
+    "conditions": "",
+    "categorie_client": "agriculteur",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Agri",
+    "sous_segment": "Prévoyance AP",
+    "offre": "-40 % décès agriculteurs / viticulteurs",
+    "code": "P314",
+    "conditions": "",
+    "categorie_client": "agriculteur",
+    "periode": "Q3 2025"
+  }
+]
+

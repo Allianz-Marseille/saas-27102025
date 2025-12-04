@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Home, FileText, User, Coins, MessageSquare } from "lucide-react";
+import { Home, FileText, User, Coins, Tag } from "lucide-react";
 import { CommercialSidebar } from "@/components/dashboard/commercial-sidebar";
 import { MobileMenu } from "@/components/navigation/mobile-menu";
 import { ResponsiveHeader } from "@/components/navigation/responsive-header";
 import { NavigationItems } from "@/components/navigation/navigation-items";
 import { RouteGuard } from "@/components/auth/route-guard";
-import { FloatingChatButton } from "@/components/chatbot/floating-chat-button";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { useAutoLogout } from "@/lib/hooks/use-auto-logout";
 import { usePathname, useRouter } from "next/navigation";
@@ -33,14 +32,14 @@ const commercialNavItems = [
     href: "/dashboard/commissions",
   },
   {
+    icon: Tag,
+    label: "Offres",
+    href: "/dashboard/offres",
+  },
+  {
     icon: User,
     label: "Profil",
     href: "/dashboard/profile",
-  },
-  {
-    icon: MessageSquare,
-    label: "Outils",
-    href: "/dashboard/outils",
   },
 ];
 
@@ -119,9 +118,6 @@ export default function DashboardLayout({
         <main className="flex-1 overflow-y-auto bg-background pt-16 lg:pt-0">
           {children}
         </main>
-
-        {/* Bouton flottant du chatbot */}
-        <FloatingChatButton />
       </div>
     </RouteGuard>
   );

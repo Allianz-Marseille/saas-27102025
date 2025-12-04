@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, FileText, User, LogOut, ChevronLeft, Coins, MessageSquare } from "lucide-react";
+import { Home, FileText, User, LogOut, ChevronLeft, Coins, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { NotificationCenter } from "@/components/dashboard/notification-center";
@@ -37,14 +37,14 @@ const menuItems: SidebarItem[] = [
     href: "/dashboard/commissions",
   },
   {
+    icon: Tag,
+    label: "Offres",
+    href: "/dashboard/offres",
+  },
+  {
     icon: User,
     label: "Profil",
     href: "/dashboard/profile",
-  },
-  {
-    icon: MessageSquare,
-    label: "Outils",
-    href: "/dashboard/outils",
   },
 ];
 
