@@ -15,11 +15,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { OffreCommerciale } from "@/types/offre";
-import { useToast } from "@/lib/hooks/use-toast";
+import { toast } from "sonner";
 
 export function OffresViewer() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [offres, setOffres] = useState<OffreCommerciale[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -46,11 +45,7 @@ export function OffresViewer() {
       setOffres(data.data || []);
     } catch (error) {
       console.error("Erreur:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les offres",
-        variant: "destructive",
-      });
+      toast.error("Impossible de charger les offres");
     } finally {
       setLoading(false);
     }
