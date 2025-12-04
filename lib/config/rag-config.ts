@@ -26,7 +26,7 @@ export const ragConfig = {
   // Configuration de la recherche vectorielle
   search: {
     limit: 5, // Nombre de résultats à retourner par recherche
-    scoreThreshold: 0.7, // Score minimum de similarité (0-1)
+    scoreThreshold: 0.3, // Score minimum de similarité (0-1) - Baissé pour permettre plus de résultats pertinents
   },
 
   // Configuration des fichiers
