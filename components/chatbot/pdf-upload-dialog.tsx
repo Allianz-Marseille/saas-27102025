@@ -229,7 +229,7 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
           fullResponse: errorData,
         });
         
-        // Messages d'erreur plus spécifiques
+        // Messages d'erreur plus spécifiques (cohérents avec le serveur)
         let userFriendlyMessage = errorMessage;
         if (errorMessage.includes("Qdrant") || errorMessage.includes("connexion à Qdrant")) {
           userFriendlyMessage = "Erreur de connexion à la base vectorielle. Vérifiez la configuration.";
@@ -237,10 +237,18 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
           userFriendlyMessage = "Erreur de connexion à OpenAI. Vérifiez la configuration.";
         } else if (errorMessage.includes("Storage") || errorMessage.includes("bucket")) {
           userFriendlyMessage = "Erreur de stockage. Vérifiez la configuration Firebase.";
-        } else if (errorMessage.includes("corrompu") || errorMessage.includes("PDF")) {
-          userFriendlyMessage = "Le fichier PDF est corrompu ou protégé. Impossible d'extraire le texte.";
-        } else if (errorMessage.includes("mot de passe") || errorMessage.includes("protégé")) {
-          userFriendlyMessage = "Le PDF est protégé par mot de passe. Impossible de l'indexer.";
+        } else if (errorMessage.includes("protégé par mot de passe")) {
+          userFriendlyMessage = "Le PDF est protégé par mot de passe. Impossible d'extraire le texte.";
+        } else if (errorMessage.includes("corrompu") || errorMessage.includes("invalide")) {
+          userFriendlyMessage = "Le fichier PDF est corrompu ou invalide. Impossible d'extraire le texte.";
+        } else if (errorMessage.includes("PDF Parse") || errorMessage.includes("pdf-parse")) {
+          // Si on arrive ici, c'est que Document AI ET pdf-parse ont échoué
+          userFriendlyMessage = "Le fichier PDF est corrompu ou protégé. Impossible d'extraire le texte avec Document AI ni avec pdf-parse.";
+        } else if (errorMessage.includes("PDF") || errorMessage.includes("Document AI")) {
+          // Erreur générique PDF - le fallback pdf-parse devrait normalement avoir été tenté
+          userFriendlyMessage = "Erreur lors de l'extraction du texte du PDF. Le fichier est peut-être corrompu ou protégé.";
+        } else if (errorMessage.includes("OCR") || errorMessage.includes("Tesseract")) {
+          userFriendlyMessage = "Erreur lors de l'extraction OCR. Vérifiez la configuration.";
         }
         
         updateProgress(fileName, "error", 0, undefined, { traceId });
