@@ -522,28 +522,58 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
         </div>
 
           {/* Boutons d'action */}
-          {files.length > 0 && (
-          <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50/50 dark:bg-gray-900/50">
-            <Button 
-              variant="outline" 
-              onClick={handleClose}
-              className="min-w-[100px]"
-            >
-                Annuler
-              </Button>
-              <Button
-                onClick={handleUploadAll}
-                disabled={files.some((f) => {
-                  const progress = uploadProgress.get(f.name);
-                return progress && progress.status !== "success" && progress.status !== "error";
-                })}
-              className="min-w-[160px] bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Uploader {files.length} fichier{files.length > 1 ? "s" : ""}
-              </Button>
-            </div>
-          )}
+          {files.length > 0 && (() => {
+            // Vérifier si tous les fichiers ont été traités (succès ou erreur)
+            const allProcessed = files.every((f) => {
+              const progress = uploadProgress.get(f.name);
+              return progress && (progress.status === "success" || progress.status === "error");
+            });
+
+            // Vérifier si au moins un fichier est en succès
+            const hasSuccess = files.some((f) => {
+              const progress = uploadProgress.get(f.name);
+              return progress && progress.status === "success";
+            });
+
+            // Si tous les fichiers sont traités et qu'il y a au moins un succès
+            if (allProcessed && hasSuccess) {
+              return (
+                <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
+                  <Button 
+                    onClick={handleClose}
+                    className="min-w-[160px] bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Terminer
+                  </Button>
+                </div>
+              );
+            }
+
+            // Sinon, afficher les boutons normaux
+            return (
+              <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50/50 dark:bg-gray-900/50">
+                <Button 
+                  variant="outline" 
+                  onClick={handleClose}
+                  className="min-w-[100px]"
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={handleUploadAll}
+                  disabled={files.some((f) => {
+                    const progress = uploadProgress.get(f.name);
+                    return progress && progress.status !== "success" && progress.status !== "error";
+                  })}
+                  className="min-w-[160px] bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Uploader {files.length} fichier{files.length > 1 ? "s" : ""}
+                </Button>
+              </div>
+            );
+          })()}
       </DialogContent>
     </Dialog>
   );
