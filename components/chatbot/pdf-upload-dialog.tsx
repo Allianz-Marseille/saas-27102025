@@ -578,26 +578,26 @@ export function PdfUploadDialog({ open, onOpenChange, onSuccess }: PdfUploadDial
 
             // Sinon, afficher les boutons normaux
             return (
-              <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50/50 dark:bg-gray-900/50">
-                <Button 
-                  variant="outline" 
-                  onClick={handleClose}
-                  className="min-w-[100px]"
-                >
-                  Annuler
-                </Button>
-                <Button
-                  onClick={handleUploadAll}
-                  disabled={files.some((f) => {
-                    const progress = uploadProgress.get(f.name);
-                    return progress && progress.status !== "success" && progress.status !== "error";
-                  })}
-                  className="min-w-[160px] bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Uploader {files.length} fichier{files.length > 1 ? "s" : ""}
-                </Button>
-              </div>
+          <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50/50 dark:bg-gray-900/50">
+            <Button 
+              variant="outline" 
+              onClick={handleClose}
+              className="min-w-[100px]"
+            >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleUploadAll}
+                disabled={files.some((f) => {
+                  const progress = uploadProgress.get(f.name);
+                return progress && progress.status !== "success" && progress.status !== "error";
+                })}
+              className="min-w-[160px] bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Uploader {files.length} fichier{files.length > 1 ? "s" : ""}
+              </Button>
+            </div>
             );
           })()}
       </DialogContent>

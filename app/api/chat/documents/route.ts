@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
         fileSize: data.fileSize,
         chunkCount: data.chunkCount || 0,
         ocrConfidence: data.ocrConfidence,
+        tags: data.tags || [],
         metadata: data.metadata || {},
       };
     });
