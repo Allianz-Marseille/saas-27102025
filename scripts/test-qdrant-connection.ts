@@ -45,7 +45,7 @@ async function main() {
     if (collections.collections.length > 0) {
       console.log("\n📋 Détails des collections:");
       for (const col of collections.collections) {
-        console.log(`  - ${col.name}: ${col.vectors_count || 0} vecteurs`);
+        console.log(`  - ${col.name}`);
       }
     } else {
       console.log("\n⚠️  Aucune collection trouvée. La collection sera créée lors du premier upload.");
@@ -56,7 +56,6 @@ async function main() {
     try {
       const collectionInfo = await client.getCollection(collectionName);
       console.log(`\n✅ Collection '${collectionName}' trouvée:`);
-      console.log(`  - Vecteurs: ${collectionInfo.vectors_count || 0}`);
       console.log(`  - Points: ${collectionInfo.points_count || 0}`);
       console.log(`  - Status: ${collectionInfo.status}`);
     } catch (error) {

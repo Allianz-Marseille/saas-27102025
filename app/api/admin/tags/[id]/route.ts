@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Vérifier l'authentification
@@ -33,7 +33,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
 
-    const tagId = params.id;
+    const { id: tagId } = await params;
 
     // Vérifier que le tag existe
     const tagRef = adminDb.collection("rag_tags").doc(tagId);
@@ -168,7 +168,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Vérifier l'authentification
@@ -191,7 +191,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
 
-    const tagId = params.id;
+    const { id: tagId } = await params;
 
     // Vérifier que le tag existe
     const tagRef = adminDb.collection("rag_tags").doc(tagId);
