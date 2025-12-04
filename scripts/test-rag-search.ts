@@ -37,7 +37,7 @@ async function main() {
       console.log(`--- Résultat ${i + 1} ---`);
       console.log(`Score: ${result.score}`);
       console.log(`Document ID: ${result.documentId}`);
-      console.log(`Chunk ID: ${result.chunkId}`);
+      console.log(`Chunk ID: ${result.id}`);
       console.log(`Texte (${result.text.length} caractères):`);
       console.log(result.text.substring(0, 200) + "...\n");
     }
