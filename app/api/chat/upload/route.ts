@@ -192,71 +192,71 @@ export async function POST(request: NextRequest) {
 
     logWithTrace(traceId, "Document ID généré", { documentId, storagePath });
 
-    // 1. Uploader vers Firebase Storage
+      // 1. Uploader vers Firebase Storage
     logWithTrace(traceId, "Étape 1/7: Upload vers Firebase Storage", { bucket: ragConfig.storage.bucket });
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const bucket = adminStorage.bucket(ragConfig.storage.bucket);
-    
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const bucket = adminStorage.bucket(ragConfig.storage.bucket);
+      
     fileRef = bucket.file(storagePath);
     const uploadStartTime = Date.now();
 
-    try {
-      await fileRef.save(buffer, {
-        metadata: {
-          contentType: file.type,
+      try {
+        await fileRef.save(buffer, {
           metadata: {
-            originalName: file.name,
-            uploadedBy: decodedToken.uid,
-            uploadedAt: new Date().toISOString(),
+            contentType: file.type,
+            metadata: {
+              originalName: file.name,
+              uploadedBy: decodedToken.uid,
+              uploadedAt: new Date().toISOString(),
             traceId,
+            },
           },
-        },
-      });
+        });
       const uploadTime = Date.now() - uploadStartTime;
       logWithTrace(traceId, "Fichier uploadé avec succès", { uploadTime });
-    } catch (saveError) {
-      const errorMessage = saveError instanceof Error ? saveError.message : "Erreur inconnue";
+      } catch (saveError) {
+        const errorMessage = saveError instanceof Error ? saveError.message : "Erreur inconnue";
       logWithTrace(traceId, "Erreur upload Storage", { error: errorMessage });
-      throw new Error(`Erreur lors de l'upload vers Firebase Storage: ${errorMessage}`);
-    }
+        throw new Error(`Erreur lors de l'upload vers Firebase Storage: ${errorMessage}`);
+      }
 
-    // Rendre le fichier public (ou utiliser signed URL selon vos besoins)
-    try {
-      await fileRef.makePublic();
+      // Rendre le fichier public (ou utiliser signed URL selon vos besoins)
+      try {
+        await fileRef.makePublic();
       logWithTrace(traceId, "Fichier rendu public");
-    } catch (publicError) {
+      } catch (publicError) {
       logWithTrace(traceId, "Impossible de rendre le fichier public (non bloquant)", {
         error: publicError instanceof Error ? publicError.message : "Erreur inconnue",
       });
-      // Continuer même si makePublic échoue, on peut utiliser signed URLs
-    }
-    
-    const fileUrl = `https://storage.googleapis.com/${ragConfig.storage.bucket}/${storagePath}`;
+        // Continuer même si makePublic échoue, on peut utiliser signed URLs
+      }
+      
+      const fileUrl = `https://storage.googleapis.com/${ragConfig.storage.bucket}/${storagePath}`;
     logWithTrace(traceId, "URL du fichier générée", { fileUrl });
 
-    // 2. Extraire le texte (PDF ou OCR pour images)
+      // 2. Extraire le texte (PDF ou OCR pour images)
     logWithTrace(traceId, "Étape 2/7: Extraction du texte", { fileType });
-    let chunks;
-    let ocrResult;
-    let imageType: "png" | "jpg" | "jpeg" | "webp" | undefined;
+      let chunks;
+      let ocrResult;
+      let imageType: "png" | "jpg" | "jpeg" | "webp" | undefined;
     const extractionStartTime = Date.now();
 
-    try {
+      try {
       // Import dynamique pour éviter les problèmes de build avec pdfjs-dist et tesseract.js
       const { processPDFForIndexing, processImageForIndexing } = await import("@/lib/rag/pdf-processor");
       
-      if (fileType === "pdf") {
-        chunks = await processPDFForIndexing(buffer, documentId);
-      } else {
-        // Image
-        const detectedImageType = getImageTypeFromMimeType(file.type);
-        if (!detectedImageType) {
-          throw new Error("Type d'image non reconnu");
-        }
-        imageType = detectedImageType;
-        const result = await processImageForIndexing(buffer, documentId, imageType);
-        chunks = result.chunks;
-        ocrResult = result.ocrResult;
+        if (fileType === "pdf") {
+          chunks = await processPDFForIndexing(buffer, documentId);
+        } else {
+          // Image
+          const detectedImageType = getImageTypeFromMimeType(file.type);
+          if (!detectedImageType) {
+            throw new Error("Type d'image non reconnu");
+          }
+          imageType = detectedImageType;
+          const result = await processImageForIndexing(buffer, documentId, imageType);
+          chunks = result.chunks;
+          ocrResult = result.ocrResult;
       }
       chunksCreated = true;
       const extractionTime = Date.now() - extractionStartTime;
@@ -265,59 +265,59 @@ export async function POST(request: NextRequest) {
         extractionTime,
         ocrConfidence: ocrResult?.confidence,
       });
-    } catch (extractError) {
+      } catch (extractError) {
       const errorMessage = extractError instanceof Error ? extractError.message : "Erreur inconnue";
       logWithTrace(traceId, "Erreur extraction texte", { error: errorMessage });
       // Rollback: supprimer le fichier de Storage
-      await fileRef.delete().catch(() => {});
+        await fileRef.delete().catch(() => {});
       throw new Error(`Erreur lors de l'extraction du texte: ${errorMessage}`);
-    }
+      }
 
-    if (!chunks || chunks.length === 0) {
+      if (!chunks || chunks.length === 0) {
       logWithTrace(traceId, "Aucun texte extrait, rollback");
       // Rollback: supprimer le fichier uploadé
       await fileRef.delete().catch(() => {});
-      return NextResponse.json(
-        { error: "Aucun texte n'a pu être extrait du fichier" },
-        { status: 400 }
-      );
-    }
+        return NextResponse.json(
+          { error: "Aucun texte n'a pu être extrait du fichier" },
+          { status: 400 }
+        );
+      }
 
-    // 3. Générer les embeddings pour tous les chunks
+      // 3. Générer les embeddings pour tous les chunks
     logWithTrace(traceId, "Étape 3/7: Génération des embeddings", { chunksCount: chunks.length });
-    let embeddings: number[][];
+      let embeddings: number[][];
     const embeddingStartTime = Date.now();
 
-    try {
-      const chunkTexts = chunks.map((chunk) => chunk.text);
-      embeddings = await generateEmbeddingsBatch(chunkTexts);
+      try {
+        const chunkTexts = chunks.map((chunk) => chunk.text);
+        embeddings = await generateEmbeddingsBatch(chunkTexts);
       const embeddingTime = Date.now() - embeddingStartTime;
       logWithTrace(traceId, "Embeddings générés", {
         embeddingsCount: embeddings.length,
         embeddingTime,
       });
-    } catch (embeddingError) {
+      } catch (embeddingError) {
       const errorMessage = embeddingError instanceof Error ? embeddingError.message : "Erreur inconnue";
       logWithTrace(traceId, "Erreur génération embeddings", { error: errorMessage });
       // Rollback: supprimer le fichier de Storage
-      await fileRef.delete().catch(() => {});
+        await fileRef.delete().catch(() => {});
       throw new Error(`Erreur lors de la génération des embeddings: ${errorMessage}`);
-    }
+      }
 
-    // 4. Créer la collection Qdrant si elle n'existe pas
+      // 4. Créer la collection Qdrant si elle n'existe pas
     logWithTrace(traceId, "Étape 4/7: Vérification collection Qdrant");
-    try {
-      await createCollectionIfNotExists();
+      try {
+        await createCollectionIfNotExists();
       logWithTrace(traceId, "Collection Qdrant prête");
-    } catch (qdrantError) {
+      } catch (qdrantError) {
       const errorMessage = qdrantError instanceof Error ? qdrantError.message : "Erreur inconnue";
       logWithTrace(traceId, "Erreur Qdrant", { error: errorMessage });
       // Rollback: supprimer le fichier de Storage
-      await fileRef.delete().catch(() => {});
+        await fileRef.delete().catch(() => {});
       throw new Error(`Erreur de connexion à Qdrant: ${errorMessage}`);
-    }
+      }
 
-    // 5. Préparer les points pour Qdrant
+      // 5. Préparer les points pour Qdrant
     logWithTrace(traceId, "Étape 5/7: Préparation des points Qdrant");
     
     // Vérifier que documentId est défini (ne devrait jamais être null à ce point)
@@ -328,55 +328,55 @@ export async function POST(request: NextRequest) {
     // Créer une variable locale avec le type correct pour TypeScript
     const finalDocumentId: string = documentId;
     
-    const points: QdrantPoint[] = chunks.map((chunk, index) => ({
-      id: chunk.id,
-      vector: embeddings[index],
-      payload: {
-        text: chunk.text,
+      const points: QdrantPoint[] = chunks.map((chunk, index) => ({
+        id: chunk.id,
+        vector: embeddings[index],
+        payload: {
+          text: chunk.text,
         documentId: finalDocumentId,
-        filename: file.name,
-        fileType: fileType,
-        chunkIndex: chunk.chunkIndex,
-        metadata: chunk.metadata || {},
-      },
-    }));
+          filename: file.name,
+          fileType: fileType,
+          chunkIndex: chunk.chunkIndex,
+          metadata: chunk.metadata || {},
+        },
+      }));
 
-    // 6. Indexer dans Qdrant
+      // 6. Indexer dans Qdrant
     logWithTrace(traceId, "Étape 6/7: Indexation dans Qdrant", { pointsCount: points.length });
     const indexStartTime = Date.now();
 
-    try {
-      await upsertVectors(points);
+      try {
+        await upsertVectors(points);
       vectorsIndexed = true;
       const indexTime = Date.now() - indexStartTime;
       logWithTrace(traceId, "Points indexés avec succès", { indexTime });
-    } catch (indexError) {
+      } catch (indexError) {
       const errorMessage = indexError instanceof Error ? indexError.message : "Erreur inconnue";
       logWithTrace(traceId, "Erreur indexation Qdrant", { error: errorMessage });
       // Rollback: supprimer le fichier de Storage
-      await fileRef.delete().catch(() => {});
+        await fileRef.delete().catch(() => {});
       throw new Error(`Erreur lors de l'indexation dans Qdrant: ${errorMessage}`);
-    }
+      }
 
-    // 7. Sauvegarder les métadonnées dans Firestore
+      // 7. Sauvegarder les métadonnées dans Firestore
     logWithTrace(traceId, "Étape 7/7: Sauvegarde métadonnées Firestore");
-    const documentData = {
-      id: documentId,
-      filename: file.name,
-      fileType: fileType,
-      imageType: imageType,
-      uploadedBy: decodedToken.uid,
-      uploadedAt: Timestamp.now(),
-      fileUrl: fileUrl,
-      fileSize: file.size,
-      chunkCount: chunks.length,
-      ocrConfidence: ocrResult?.confidence,
-      qdrantCollectionId: ragConfig.qdrant.collectionName,
-      metadata: {
-        originalName: file.name,
+      const documentData = {
+        id: documentId,
+        filename: file.name,
+        fileType: fileType,
+        imageType: imageType,
+        uploadedBy: decodedToken.uid,
+        uploadedAt: Timestamp.now(),
+        fileUrl: fileUrl,
+        fileSize: file.size,
+        chunkCount: chunks.length,
+        ocrConfidence: ocrResult?.confidence,
+        qdrantCollectionId: ragConfig.qdrant.collectionName,
+        metadata: {
+          originalName: file.name,
         traceId,
-      },
-    };
+        },
+      };
 
     try {
       await adminDb.collection("rag_documents").doc(documentId).set(documentData);
@@ -400,17 +400,17 @@ export async function POST(request: NextRequest) {
       chunksCount: chunks.length,
     });
 
-    return NextResponse.json({
-      message: "Document uploadé et indexé avec succès",
-      documentId: documentId,
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: fileType,
-      chunkCount: chunks.length,
-      fileUrl: fileUrl,
+      return NextResponse.json({
+        message: "Document uploadé et indexé avec succès",
+        documentId: documentId,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: fileType,
+        chunkCount: chunks.length,
+        fileUrl: fileUrl,
       traceId,
-    });
-  } catch (error) {
+      });
+    } catch (error) {
     const totalTime = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
     
@@ -457,8 +457,8 @@ export async function POST(request: NextRequest) {
     if (rollbackErrors.length > 0) {
       logWithTrace(traceId, "Erreurs lors du rollback", { rollbackErrors });
     }
-
-    // Messages d'erreur spécifiques selon le type d'erreur
+      
+      // Messages d'erreur spécifiques selon le type d'erreur
     let userErrorMessage = "Erreur lors du traitement du fichier";
     
     if (errorMessage.includes("QDRANT") || errorMessage.includes("Qdrant")) {
@@ -467,12 +467,18 @@ export async function POST(request: NextRequest) {
       userErrorMessage = "Erreur de connexion à OpenAI. Vérifiez la configuration.";
     } else if (errorMessage.includes("Storage") || errorMessage.includes("bucket")) {
       userErrorMessage = "Erreur de stockage Firebase. Vérifiez la configuration.";
-    } else if (errorMessage.includes("pdf-parse") || errorMessage.includes("PDF") || errorMessage.includes("corrompu")) {
+    } else if (errorMessage.includes("protégé par mot de passe")) {
+      userErrorMessage = "Le PDF est protégé par mot de passe. Impossible d'extraire le texte.";
+    } else if (errorMessage.includes("corrompu") || errorMessage.includes("invalide")) {
+      userErrorMessage = "Le fichier PDF est corrompu ou invalide. Impossible d'extraire le texte.";
+    } else if (errorMessage.includes("PDF Parse") || errorMessage.includes("pdf-parse")) {
+      // Si on arrive ici, c'est que Document AI ET pdf-parse ont échoué
+      userErrorMessage = "Le fichier PDF est corrompu ou protégé. Impossible d'extraire le texte avec Document AI ni avec pdf-parse.";
+    } else if (errorMessage.includes("PDF") || errorMessage.includes("Document AI")) {
+      // Erreur générique PDF - le fallback pdf-parse devrait normalement avoir été tenté
       userErrorMessage = "Erreur lors de l'extraction du texte du PDF. Le fichier est peut-être corrompu ou protégé.";
     } else if (errorMessage.includes("OCR") || errorMessage.includes("Tesseract")) {
       userErrorMessage = "Erreur lors de l'extraction OCR. Vérifiez la configuration.";
-    } else if (errorMessage.includes("mot de passe") || errorMessage.includes("protégé")) {
-      userErrorMessage = "Le PDF est protégé par mot de passe. Impossible d'extraire le texte.";
     }
 
     return NextResponse.json(

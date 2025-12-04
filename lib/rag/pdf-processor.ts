@@ -1,6 +1,6 @@
 /**
  * Service pour extraire le texte des PDFs et images, et créer les chunks
- * Utilise Google Document AI pour les PDFs et tesseract.js pour l'OCR
+ * Utilise Google Document AI pour les PDFs (avec fallback pdf-parse) et tesseract.js pour l'OCR
  */
 
 import { ragConfig } from "@/lib/config/rag-config";
@@ -8,21 +8,22 @@ import type { DocumentChunk, OCRResult, FileType } from "./types";
 import { getDocumentAIClient, googleConfig } from "@/lib/google-cloud/config";
 
 /**
- * Extrait le texte d'un fichier PDF avec Google Document AI
+ * Extrait le texte d'un fichier PDF avec Google Document AI, avec fallback sur pdf-parse
  */
 export async function extractTextFromPDF(
   buffer: Buffer
 ): Promise<string> {
   const startTime = Date.now();
-  console.log(`[Document AI] Début extraction PDF (${(buffer.length / 1024).toFixed(2)} KB)`);
+  console.log(`[PDF Extraction] Début extraction PDF (${(buffer.length / 1024).toFixed(2)} KB)`);
 
+  // Essayer d'abord avec Document AI
   try {
     const client = getDocumentAIClient();
     
     // Construire le nom du processeur
     const processorName = `projects/${googleConfig.projectId}/locations/${googleConfig.documentAI.location}/processors/${googleConfig.documentAI.processorId}`;
     
-    console.log(`[Document AI] Utilisation du processeur: ${processorName}`);
+    console.log(`[Document AI] Tentative extraction avec Document AI (processeur: ${processorName})`);
 
     // Préparer la requête
     const request = {
@@ -47,14 +48,68 @@ export async function extractTextFromPDF(
     console.log(`[Document AI] Extraction réussie en ${extractionTime}ms - ${textLength} caractères`);
 
     return document.text;
-  } catch (error) {
-    const extractionTime = Date.now() - startTime;
-    console.error(`[Document AI] Erreur après ${extractionTime}ms:`, error);
+  } catch (documentAIError) {
+    const documentAITime = Date.now() - startTime;
+    const errorMessage = documentAIError instanceof Error ? documentAIError.message : "Erreur inconnue";
     
-    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
-    throw new Error(
-      `Impossible d'extraire le texte du PDF avec Document AI: ${errorMessage}`
-    );
+    // Vérifier si c'est une erreur récupérable (INVALID_ARGUMENT, PDF protégé, etc.)
+    const isRecoverableError = 
+      errorMessage.includes("INVALID_ARGUMENT") ||
+      errorMessage.includes("3 INVALID_ARGUMENT") ||
+      errorMessage.includes("corrompu") ||
+      errorMessage.includes("protégé") ||
+      errorMessage.includes("password") ||
+      errorMessage.includes("encrypted");
+
+    if (isRecoverableError) {
+      console.warn(`[Document AI] Erreur récupérable après ${documentAITime}ms: ${errorMessage}`);
+      console.log(`[PDF Parse] Activation du fallback avec pdf-parse...`);
+    } else {
+      console.error(`[Document AI] Erreur non récupérable après ${documentAITime}ms: ${errorMessage}`);
+      // Pour les erreurs non récupérables (connexion, authentification, etc.), on essaie quand même le fallback
+      console.log(`[PDF Parse] Tentative avec pdf-parse en dernier recours...`);
+    }
+
+    // Fallback: utiliser pdf-parse
+    try {
+      const fallbackStartTime = Date.now();
+      // Import dynamique pour éviter les problèmes de build
+      const pdfParse = await import("pdf-parse");
+      
+      const data = await pdfParse.default(buffer);
+      const extractedText = data.text || "";
+
+      if (!extractedText || extractedText.trim().length === 0) {
+        throw new Error("Aucun texte extrait du PDF avec pdf-parse");
+      }
+
+      const fallbackTime = Date.now() - fallbackStartTime;
+      const totalTime = Date.now() - startTime;
+      const textLength = extractedText.length;
+
+      console.log(`[PDF Parse] Extraction réussie en ${fallbackTime}ms (total: ${totalTime}ms) - ${textLength} caractères`);
+      console.log(`[PDF Parse] Fallback utilisé car Document AI a échoué: ${errorMessage.substring(0, 100)}...`);
+
+      return extractedText;
+    } catch (fallbackError) {
+      const totalTime = Date.now() - startTime;
+      const fallbackErrorMessage = fallbackError instanceof Error ? fallbackError.message : "Erreur inconnue";
+      
+      console.error(`[PDF Extraction] Échec complet après ${totalTime}ms`);
+      console.error(`[Document AI] Erreur: ${errorMessage}`);
+      console.error(`[PDF Parse] Erreur: ${fallbackErrorMessage}`);
+
+      // Déterminer le type d'erreur pour un message plus clair
+      if (fallbackErrorMessage.includes("password") || fallbackErrorMessage.includes("encrypted")) {
+        throw new Error("Le PDF est protégé par mot de passe. Impossible d'extraire le texte.");
+      } else if (fallbackErrorMessage.includes("corrupted") || fallbackErrorMessage.includes("invalid")) {
+        throw new Error("Le fichier PDF est corrompu ou invalide. Impossible d'extraire le texte.");
+      } else {
+        throw new Error(
+          `Impossible d'extraire le texte du PDF. Document AI: ${errorMessage.substring(0, 100)}. PDF Parse: ${fallbackErrorMessage.substring(0, 100)}`
+        );
+      }
+    }
   }
 }
 
@@ -221,7 +276,7 @@ export async function processPDFForIndexing(
     if (error instanceof Error) {
       // Ajouter le contexte du document
       error.message = `[Document ${documentId}] ${error.message}`;
-      throw error;
+    throw error;
     }
     
     throw new Error(`Erreur lors du traitement du PDF: ${error}`);
@@ -287,7 +342,7 @@ export async function processImageForIndexing(
     // Préserver le message d'erreur original
     if (error instanceof Error) {
       error.message = `[Document ${documentId}] ${error.message}`;
-      throw error;
+    throw error;
     }
     
     throw new Error(`Erreur lors du traitement de l'image: ${error}`);
