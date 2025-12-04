@@ -8,7 +8,7 @@ import { Loader2, Pencil, Trash2, Plus, FileText } from "lucide-react";
 import { TagFormDialog } from "./tag-form-dialog";
 import { DeleteTagDialog } from "./delete-tag-dialog";
 import type { Tag } from "@/types/tag";
-import { useAuth } from "@/lib/hooks/use-auth";
+import { useAuth } from "@/lib/firebase/use-auth";
 
 const COLORS_MAP: Record<string, string> = {
   blue: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",

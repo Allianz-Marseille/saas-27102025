@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import type { Tag } from "@/types/tag";
-import { useAuth } from "@/lib/hooks/use-auth";
+import { useAuth } from "@/lib/firebase/use-auth";
 
 // Charger EmojiPicker dynamiquement (côté client uniquement)
 const EmojiPicker = dynamic(

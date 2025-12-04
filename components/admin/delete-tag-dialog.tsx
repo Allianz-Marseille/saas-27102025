@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import type { Tag } from "@/types/tag";
-import { useAuth } from "@/lib/hooks/use-auth";
+import { useAuth } from "@/lib/firebase/use-auth";
 
 interface DeleteTagDialogProps {
   open: boolean;
