@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { PdfUploadDialog } from "@/components/chatbot/pdf-upload-dialog";
 import { PdfList } from "@/components/chatbot/pdf-list";
+import { TagManagement } from "@/components/admin/tag-management";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { useRagStats } from "@/lib/hooks/use-rag-stats";
 
@@ -48,6 +49,21 @@ export default function ChatbotManagementPage() {
           </div>
         </div>
       </div>
+
+      {/* Gestion des tags */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            🏷️ Gestion des tags
+          </CardTitle>
+          <CardDescription>
+            Créez et gérez les tags pour organiser vos documents avec des emojis et des couleurs personnalisées
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TagManagement />
+        </CardContent>
+      </Card>
 
       {/* Statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
