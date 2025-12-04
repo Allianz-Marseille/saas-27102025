@@ -24,11 +24,10 @@ import { useAuth } from "@/lib/firebase/use-auth";
 import { OffreCommerciale } from "@/types/offre";
 import { OffreFormDialog } from "./offre-form-dialog";
 import { ImportOffresDialog } from "./import-offres-dialog";
-import { useToast } from "@/lib/hooks/use-toast";
+import { toast } from "sonner";
 
 export function OffresList() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [offres, setOffres] = useState<OffreCommerciale[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -58,11 +57,7 @@ export function OffresList() {
       setOffres(data.data || []);
     } catch (error) {
       console.error("Erreur:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les offres",
-        variant: "destructive",
-      });
+      toast.error("Impossible de charger les offres");
     } finally {
       setLoading(false);
     }
@@ -91,19 +86,12 @@ export function OffresList() {
         throw new Error("Erreur lors de la suppression");
       }
 
-      toast({
-        title: "Succès",
-        description: "Offre supprimée avec succès",
-      });
+      toast.success("Offre supprimée avec succès");
 
       fetchOffres();
     } catch (error) {
       console.error("Erreur:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de supprimer l'offre",
-        variant: "destructive",
-      });
+      toast.error("Impossible de supprimer l'offre");
     }
   };
 

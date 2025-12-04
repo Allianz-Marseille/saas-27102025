@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/firebase/use-auth";
-import { useToast } from "@/lib/hooks/use-toast";
+import { toast } from "sonner";
 import { OffreCommerciale } from "@/types/offre";
 
 interface OffreFormDialogProps {
@@ -32,7 +32,6 @@ interface OffreFormDialogProps {
 
 export function OffreFormDialog({ open, onClose, offre }: OffreFormDialogProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -93,19 +92,12 @@ export function OffreFormDialog({ open, onClose, offre }: OffreFormDialogProps) 
         throw new Error(error.error || "Erreur lors de la sauvegarde");
       }
 
-      toast({
-        title: "Succès",
-        description: offre ? "Offre mise à jour avec succès" : "Offre créée avec succès",
-      });
+      toast.success(offre ? "Offre mise à jour avec succès" : "Offre créée avec succès");
 
       onClose();
     } catch (error) {
       console.error("Erreur:", error);
-      toast({
-        title: "Erreur",
-        description: error instanceof Error ? error.message : "Une erreur est survenue",
-        variant: "destructive",
-      });
+      toast.error(error instanceof Error ? error.message : "Une erreur est survenue");
     } finally {
       setLoading(false);
     }

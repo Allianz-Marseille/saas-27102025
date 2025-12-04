@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/lib/firebase/use-auth";
-import { useToast } from "@/lib/hooks/use-toast";
+import { toast } from "sonner";
 import { FileJson, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -30,18 +30,13 @@ export function ImportOffresDialog({
   onSuccess,
 }: ImportOffresDialogProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [jsonContent, setJsonContent] = useState("");
   const [replaceAll, setReplaceAll] = useState(false);
 
   const handleImport = async () => {
     if (!jsonContent.trim()) {
-      toast({
-        title: "Erreur",
-        description: "Le contenu JSON est vide",
-        variant: "destructive",
-      });
+      toast.error("Le contenu JSON est vide");
       return;
     }
 
@@ -76,24 +71,18 @@ export function ImportOffresDialog({
 
       const result = await response.json();
 
-      toast({
-        title: "Succès",
-        description: `${result.stats.imported} offres importées${
+      toast.success(
+        `${result.stats.imported} offres importées${
           result.stats.failed > 0 ? ` (${result.stats.failed} erreurs)` : ""
-        }`,
-      });
+        }`
+      );
 
       setJsonContent("");
       setReplaceAll(false);
       onSuccess();
     } catch (error) {
       console.error("Erreur:", error);
-      toast({
-        title: "Erreur",
-        description:
-          error instanceof Error ? error.message : "Erreur lors de l'import",
-        variant: "destructive",
-      });
+      toast.error(error instanceof Error ? error.message : "Erreur lors de l'import");
     } finally {
       setLoading(false);
     }
