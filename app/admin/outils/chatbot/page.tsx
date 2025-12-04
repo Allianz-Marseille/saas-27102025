@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageSquare, Upload, FileText, ChevronRight, Sparkles, Home } from "lucide-react";
+import { MessageSquare, Upload, FileText, ChevronRight, Sparkles, Home, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,11 +9,13 @@ import Link from "next/link";
 import { PdfUploadDialog } from "@/components/chatbot/pdf-upload-dialog";
 import { PdfList } from "@/components/chatbot/pdf-list";
 import { useAuth } from "@/lib/firebase/use-auth";
+import { useRagStats } from "@/lib/hooks/use-rag-stats";
 
 export default function ChatbotManagementPage() {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const { user } = useAuth();
+  const { stats, loading: statsLoading, refresh: refreshStats } = useRagStats();
   return (
     <div className="container mx-auto py-8 px-4 space-y-8">
       {/* Breadcrumb */}
@@ -56,7 +58,13 @@ export default function ChatbotManagementPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" id="documents-count">-</div>
+            <div className="text-2xl font-bold flex items-center gap-2">
+              {statsLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              ) : (
+                stats?.documents ?? "-"
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               PDFs et images
             </p>
@@ -70,7 +78,13 @@ export default function ChatbotManagementPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" id="chunks-count">-</div>
+            <div className="text-2xl font-bold flex items-center gap-2">
+              {statsLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              ) : (
+                stats?.chunks ?? "-"
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               Segments de texte
             </p>
@@ -84,7 +98,13 @@ export default function ChatbotManagementPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold flex items-center gap-2">
+              {statsLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              ) : (
+                stats?.requests ?? 0
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               Questions posées
             </p>
@@ -127,7 +147,13 @@ export default function ChatbotManagementPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <PdfList key={refreshKey} onRefresh={() => setRefreshKey((k) => k + 1)} />
+          <PdfList 
+            key={refreshKey} 
+            onRefresh={() => {
+              setRefreshKey((k) => k + 1);
+              refreshStats();
+            }} 
+          />
         </CardContent>
       </Card>
 
@@ -199,8 +225,9 @@ export default function ChatbotManagementPage() {
         onOpenChange={setUploadDialogOpen}
         onSuccess={() => {
           setRefreshKey((k) => k + 1);
-          // Mettre à jour les statistiques
+          // Mettre à jour les statistiques après un délai pour laisser le temps à Firestore/Qdrant
           setTimeout(() => {
+            refreshStats();
             const event = new CustomEvent("refresh-stats");
             window.dispatchEvent(event);
           }, 1000);
