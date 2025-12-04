@@ -6,6 +6,7 @@
 import { ragConfig } from "@/lib/config/rag-config";
 import type { DocumentChunk, OCRResult, FileType } from "./types";
 import { getDocumentAIClient, googleConfig } from "@/lib/google-cloud/config";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * Extrait le texte d'un fichier PDF avec Google Document AI, avec fallback sur pdf-parse
@@ -252,9 +253,9 @@ export async function processPDFForIndexing(
       throw new Error("Aucun chunk n'a pu être créé à partir du texte extrait");
     }
 
-    // Créer les DocumentChunk
+    // Créer les DocumentChunk avec des UUID valides pour Qdrant
     const chunks: DocumentChunk[] = chunkTexts.map((chunkText, index) => ({
-      id: `${documentId}_chunk_${index}`,
+      id: uuidv4(), // UUID valide pour Qdrant
       documentId,
       text: chunkText,
       chunkIndex: index,
@@ -319,9 +320,9 @@ export async function processImageForIndexing(
       throw new Error("Aucun chunk n'a pu être créé à partir du texte OCR");
     }
 
-    // Créer les DocumentChunk
+    // Créer les DocumentChunk avec des UUID valides pour Qdrant
     const chunks: DocumentChunk[] = chunkTexts.map((chunkText, index) => ({
-      id: `${documentId}_chunk_${index}`,
+      id: uuidv4(), // UUID valide pour Qdrant
       documentId,
       text: chunkText,
       chunkIndex: index,
