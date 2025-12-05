@@ -56,10 +56,10 @@ export async function POST(request: NextRequest) {
       stream: false,
     };
 
-    // Tester les deux formats d'authentification
+    // Tester les différents formats d'authentification
     const results = [];
     
-    // Test 1 : Api-Key avec x-project-id
+    // Test 1 : Api-Key SANS x-project-id (pour clés API classiques pcsk_...)
     try {
       const startTime = Date.now();
       const response1 = await fetch(PINECONE_CHAT_API_URL, {
@@ -68,7 +68,6 @@ export async function POST(request: NextRequest) {
           "Api-Key": apiKey.trim(),
           "Content-Type": "application/json",
           "X-Pinecone-Api-Version": "2025-01",
-          "x-project-id": projectId.trim(), // En-tête requis pour JWT access
         },
         body: JSON.stringify(requestBody),
         signal: controller.signal,
@@ -84,7 +83,7 @@ export async function POST(request: NextRequest) {
       }
 
       results.push({
-        method: "Api-Key",
+        method: "Api-Key (sans x-project-id)",
         status: response1.status,
         statusText: response1.statusText,
         responseTime: responseTime1,
@@ -94,21 +93,21 @@ export async function POST(request: NextRequest) {
       });
     } catch (error) {
       results.push({
-        method: "Api-Key",
+        method: "Api-Key (sans x-project-id)",
         error: error instanceof Error ? error.message : String(error),
       });
     }
 
-    // Test 2 : Authorization Bearer avec x-project-id
+    // Test 2 : Api-Key AVEC x-project-id
     try {
       const startTime = Date.now();
       const response2 = await fetch(PINECONE_CHAT_API_URL, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${apiKey.trim()}`,
+          "Api-Key": apiKey.trim(),
           "Content-Type": "application/json",
           "X-Pinecone-Api-Version": "2025-01",
-          "x-project-id": projectId.trim(), // En-tête requis pour JWT access
+          "x-project-id": projectId.trim(),
         },
         body: JSON.stringify(requestBody),
         signal: controller.signal,
@@ -124,7 +123,7 @@ export async function POST(request: NextRequest) {
       }
 
       results.push({
-        method: "Authorization Bearer",
+        method: "Api-Key (avec x-project-id)",
         status: response2.status,
         statusText: response2.statusText,
         responseTime: responseTime2,
@@ -134,7 +133,47 @@ export async function POST(request: NextRequest) {
       });
     } catch (error) {
       results.push({
-        method: "Authorization Bearer",
+        method: "Api-Key (avec x-project-id)",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    // Test 3 : Authorization Bearer AVEC x-project-id (pour tokens JWT)
+    try {
+      const startTime = Date.now();
+      const response3 = await fetch(PINECONE_CHAT_API_URL, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey.trim()}`,
+          "Content-Type": "application/json",
+          "X-Pinecone-Api-Version": "2025-01",
+          "x-project-id": projectId.trim(),
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+      const responseTime3 = Date.now() - startTime;
+      
+      const responseText3 = await response3.text();
+      let responseData3: unknown = null;
+      try {
+        responseData3 = JSON.parse(responseText3);
+      } catch {
+        responseData3 = responseText3;
+      }
+
+      results.push({
+        method: "Authorization Bearer (avec x-project-id)",
+        status: response3.status,
+        statusText: response3.statusText,
+        responseTime: responseTime3,
+        success: response3.ok,
+        response: responseData3,
+        headers: Object.fromEntries(response3.headers.entries()),
+      });
+    } catch (error) {
+      results.push({
+        method: "Authorization Bearer (avec x-project-id)",
         error: error instanceof Error ? error.message : String(error),
       });
     }

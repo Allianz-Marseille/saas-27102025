@@ -57,7 +57,7 @@ interface PineconeChatResponse {
     role?: string;
   };
   error?: {
-    message?: string;
+  message?: string;
     code?: string;
   };
 }
@@ -77,7 +77,7 @@ function extractAssistantResponse(data: unknown): string {
     if (response.message?.content) {
       return response.message.content;
     }
-    
+
     // En cas d'erreur
     if (response.error?.message) {
       console.error("Erreur API Pinecone:", response.error);
@@ -148,7 +148,7 @@ function handleApiError(status: number, errorText: string): NextResponse {
             specificError = error.message || "Erreur de requête";
           }
         } else {
-          specificError = parsed.message || parsed.error?.message || "";
+        specificError = parsed.message || parsed.error?.message || "";
         }
       } catch {
         // Ce n'est pas du JSON, on garde le message générique
@@ -320,55 +320,84 @@ export async function POST(request: NextRequest) {
       // Format 2: Authorization Bearer (format alternatif possible)
       
       let response: Response;
-      let authMethod = "Api-Key";
+      let authMethod = "Api-Key (sans x-project-id)";
       
-      // Construire les en-têtes avec x-project-id (requis pour JWT access)
-      const headersWithProjectId = {
-        "Api-Key": apiKey.trim(),
-        "Content-Type": "application/json",
-        "X-Pinecone-Api-Version": "2025-01",
-        "x-project-id": projectId.trim(), // En-tête requis pour JWT access
-      };
-
+      // Stratégie : tester plusieurs combinaisons d'authentification
+      // Les clés API classiques (pcsk_...) peuvent ne pas nécessiter x-project-id
+      // Les tokens JWT nécessitent x-project-id
+      
+      // Tentative 1 : Api-Key sans x-project-id (pour clés API classiques)
       try {
+        if (isDevelopment) {
+          console.log("Tentative 1: Api-Key sans x-project-id");
+        }
+        
         response = await fetch(PINECONE_CHAT_API_URL, {
           method: "POST",
-          headers: headersWithProjectId,
+          headers: {
+            "Api-Key": apiKey.trim(),
+            "Content-Type": "application/json",
+            "X-Pinecone-Api-Version": "2025-01",
+          },
           body: JSON.stringify(requestBody),
           signal: controller.signal,
         });
         
-        // Si erreur 401/403, essayer avec Authorization Bearer
+        // Si erreur 401/403 demandant x-project-id, essayer avec
         if (response.status === 401 || response.status === 403) {
-          if (isDevelopment) {
-            console.log("Tentative avec Authorization Bearer au lieu de Api-Key");
+          const errorText = await response.text();
+          const needsProjectId = errorText.includes("x-project-id") || errorText.includes("project-id");
+          
+          if (needsProjectId) {
+            if (isDevelopment) {
+              console.log("Tentative 2: Api-Key avec x-project-id");
+            }
+            authMethod = "Api-Key (avec x-project-id)";
+            response = await fetch(PINECONE_CHAT_API_URL, {
+              method: "POST",
+              headers: {
+                "Api-Key": apiKey.trim(),
+                "Content-Type": "application/json",
+                "X-Pinecone-Api-Version": "2025-01",
+                "x-project-id": projectId.trim(),
+              },
+              body: JSON.stringify(requestBody),
+              signal: controller.signal,
+            });
           }
-          authMethod = "Authorization Bearer";
-          response = await fetch(PINECONE_CHAT_API_URL, {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${apiKey.trim()}`,
-              "Content-Type": "application/json",
-              "X-Pinecone-Api-Version": "2025-01",
-              "x-project-id": projectId.trim(), // Toujours inclure x-project-id
-            },
-            body: JSON.stringify(requestBody),
-            signal: controller.signal,
-          });
+          
+          // Si toujours erreur et que l'erreur mentionne JWT, essayer Authorization Bearer
+          if ((response.status === 401 || response.status === 403) && errorText.includes("JWT")) {
+            if (isDevelopment) {
+              console.log("Tentative 3: Authorization Bearer avec x-project-id (pour JWT)");
+            }
+            authMethod = "Authorization Bearer (avec x-project-id)";
+            response = await fetch(PINECONE_CHAT_API_URL, {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${apiKey.trim()}`,
+                "Content-Type": "application/json",
+                "X-Pinecone-Api-Version": "2025-01",
+                "x-project-id": projectId.trim(),
+              },
+              body: JSON.stringify(requestBody),
+              signal: controller.signal,
+            });
+          }
         }
       } catch (fetchErr) {
-        // En cas d'erreur réseau, essayer avec Authorization Bearer
+        // En cas d'erreur réseau, réessayer avec x-project-id
         if (isDevelopment) {
-          console.log("Erreur avec Api-Key, tentative avec Authorization Bearer");
+          console.log("Erreur réseau, tentative avec Api-Key + x-project-id");
         }
-        authMethod = "Authorization Bearer";
+        authMethod = "Api-Key (avec x-project-id, retry)";
         response = await fetch(PINECONE_CHAT_API_URL, {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${apiKey.trim()}`,
+            "Api-Key": apiKey.trim(),
             "Content-Type": "application/json",
             "X-Pinecone-Api-Version": "2025-01",
-            "x-project-id": projectId.trim(), // Toujours inclure x-project-id
+            "x-project-id": projectId.trim(),
           },
           body: JSON.stringify(requestBody),
           signal: controller.signal,
@@ -381,15 +410,15 @@ export async function POST(request: NextRequest) {
       if (!response.ok) {
         const errorText = await response.text();
         let errorData: unknown = null;
-        
-        try {
+            
+            try {
           errorData = JSON.parse(errorText);
-        } catch {
-          // Ce n'est pas du JSON
-        }
+            } catch {
+              // Ce n'est pas du JSON
+            }
 
         console.error("Erreur API Pinecone Chat:", {
-          status: response.status,
+              status: response.status,
           statusText: response.statusText,
           responseTime,
           authMethod,
@@ -410,8 +439,8 @@ export async function POST(request: NextRequest) {
 
       // Parser la réponse JSON
       const data: unknown = await response.json();
-      
-      if (isDevelopment) {
+        
+        if (isDevelopment) {
         console.log("Réponse API Chat reçue:", {
           responseTime,
           preview: JSON.stringify(data).substring(0, 500),
