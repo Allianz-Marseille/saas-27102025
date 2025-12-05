@@ -45,32 +45,107 @@ function buildContextualMessage(
 }
 
 /**
+ * Interface pour les réponses possibles de l'API Pinecone MCP
+ */
+interface PineconeResponse {
+  response?: string;
+  message?: string;
+  text?: string;
+  content?: string;
+  answer?: string;
+  result?: string | unknown;
+}
+
+/**
  * Extrait la réponse de l'assistant depuis différents formats de réponse
  */
-function extractAssistantResponse(data: any): string {
+function extractAssistantResponse(data: unknown): string {
   if (typeof data === "string") {
     return data;
   }
 
-  // Essayer différents champs possibles
-  const possibleFields = ["response", "message", "text", "content", "answer"];
-  for (const field of possibleFields) {
-    if (data[field] && typeof data[field] === "string") {
-      return data[field];
-    }
-  }
-
-  // Si c'est un objet avec une structure complexe, essayer de le formater
   if (typeof data === "object" && data !== null) {
-    // Si l'objet contient un champ "result" ou similaire
-    if (data.result) {
-      return typeof data.result === "string" ? data.result : JSON.stringify(data.result);
+    const response = data as PineconeResponse;
+    
+    // Essayer différents champs possibles
+    const possibleFields: (keyof PineconeResponse)[] = ["response", "message", "text", "content", "answer"];
+    for (const field of possibleFields) {
+      const value = response[field];
+      if (value && typeof value === "string") {
+        return value;
+      }
     }
+
+    // Si l'objet contient un champ "result"
+    if (response.result) {
+      return typeof response.result === "string" 
+        ? response.result 
+        : JSON.stringify(response.result);
+    }
+
     // Sinon, retourner une représentation JSON
     return JSON.stringify(data);
   }
 
   return "Désolé, je n'ai pas pu traiter votre demande.";
+}
+
+/**
+ * Génère différents formats de body de requête à tester
+ */
+function generateRequestBodies(
+  message: string,
+  category?: string,
+  theme?: string
+): Array<{ body: Record<string, unknown>; name: string }> {
+  const contextualMessage = buildContextualMessage(message, category, theme);
+  
+  return [
+    {
+      name: "message_with_context",
+      body: {
+        message: contextualMessage,
+      },
+    },
+    {
+      name: "message_only",
+      body: {
+        message: message.trim(),
+      },
+    },
+    {
+      name: "message_with_params",
+      body: {
+        message: message.trim(),
+        ...(category && { category }),
+        ...(theme && { theme }),
+      },
+    },
+    {
+      name: "query",
+      body: {
+        query: contextualMessage,
+      },
+    },
+    {
+      name: "prompt",
+      body: {
+        prompt: contextualMessage,
+      },
+    },
+    {
+      name: "input",
+      body: {
+        input: contextualMessage,
+      },
+    },
+    {
+      name: "text",
+      body: {
+        text: contextualMessage,
+      },
+    },
+  ];
 }
 
 /**
@@ -174,101 +249,178 @@ export async function POST(request: NextRequest) {
     // car l'API Pinecone pourrait ne pas accepter le format avec crochets
     const contextualMessage = message.trim();
     
-    // Log pour debug (on garde le format contextuel pour les logs mais on ne l'envoie pas)
-    const contextualMessageForLog = buildContextualMessage(
-      message.trim(),
-      category,
-      theme
-    );
-    console.log("Message original:", message.trim());
-    console.log("Message contextuel (pour log):", contextualMessageForLog);
+    // Log conditionnel pour debug (uniquement en développement)
+    const isDevelopment = process.env.NODE_ENV === "development";
+    
+    if (isDevelopment) {
+      const contextualMessageForLog = buildContextualMessage(
+        message.trim(),
+        category,
+        theme
+      );
+      console.log("Message original:", message.trim());
+      console.log("Message contextuel (pour log):", contextualMessageForLog);
+    }
 
     // Appel à l'API Pinecone avec timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
     try {
-      // Préparer le body de la requête
-      const requestBody = {
-        message: contextualMessage,
-      };
+      // Générer les différents formats de requête à tester
+      const requestBodies = generateRequestBodies(
+        message.trim(),
+        category,
+        theme
+      );
 
-      console.log("Requête API Pinecone:", {
-        url: PINECONE_API_URL,
-        body: requestBody,
-        messageLength: contextualMessage.length,
-      });
+      // Essayer chaque format jusqu'à trouver celui qui fonctionne
+      let lastError: { status: number; errorText: string; errorJson: unknown } | null = null;
+      let successfulResponse: Response | null = null;
+      let successfulBodyName = "";
 
-      const response = await fetch(PINECONE_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json, text/event-stream",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal,
-      });
+      for (const { body, name } of requestBodies) {
+        try {
+          // Log conditionnel (uniquement en développement)
+          if (isDevelopment) {
+            console.log(`Tentative avec format: ${name}`, {
+              url: PINECONE_API_URL,
+              body,
+            });
+          }
+
+          const response = await fetch(PINECONE_API_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(body),
+            signal: controller.signal,
+          });
+
+          // Si la requête réussit, on s'arrête
+          if (response.ok) {
+            successfulResponse = response;
+            successfulBodyName = name;
+            
+            if (isDevelopment) {
+              console.log(`✅ Format ${name} accepté par l'API`);
+            }
+            break;
+          }
+
+          // Si c'est une erreur 400, on essaie le format suivant
+          if (response.status === 400) {
+            const errorContent = await response.text();
+            let errorJson: unknown = null;
+            
+            try {
+              errorJson = JSON.parse(errorContent);
+            } catch {
+              // Ce n'est pas du JSON
+            }
+
+            lastError = {
+              status: response.status,
+              errorText: errorContent,
+              errorJson,
+            };
+
+            if (isDevelopment) {
+              console.log(`❌ Format ${name} rejeté (400):`, {
+                error: errorContent.substring(0, 200),
+                errorJson,
+              });
+            }
+
+            // Continuer avec le format suivant
+            continue;
+          }
+
+          // Pour les autres erreurs (401, 403, 500, etc.), on s'arrête
+          lastError = {
+            status: response.status,
+            errorText: await response.text().catch(() => response.statusText),
+            errorJson: null,
+          };
+          break;
+
+        } catch (fetchError: unknown) {
+          // Erreur réseau, on continue avec le format suivant
+          if (isDevelopment) {
+            console.log(`❌ Format ${name} - Erreur réseau:`, fetchError);
+          }
+          continue;
+        }
+      }
 
       clearTimeout(timeoutId);
 
-      // Gestion des erreurs HTTP
-      if (!response.ok) {
-        let errorText = "";
-        let errorJson: any = null;
-        
-        try {
-          const errorContent = await response.text();
-          errorText = errorContent;
-          
-          // Essayer de parser en JSON pour avoir plus d'infos
-          try {
-            errorJson = JSON.parse(errorContent);
-          } catch {
-            // Ce n'est pas du JSON, on garde le texte
-          }
-        } catch {
-          errorText = response.statusText || "Erreur inconnue";
-        }
-
-        console.error("Erreur API Pinecone:", {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorText.substring(0, 500),
-          errorJson: errorJson,
-          requestBody: requestBody,
+      // Si aucun format n'a fonctionné
+      if (!successfulResponse && lastError) {
+        console.error("Tous les formats de requête ont échoué. Dernière erreur:", {
+          status: lastError.status,
+          errorText: lastError.errorText.substring(0, 500),
+          errorJson: lastError.errorJson,
+          formatsTested: requestBodies.map(b => b.name),
         });
 
-        // Si c'est une erreur 400, essayer de donner plus de détails
-        if (response.status === 400 && errorJson) {
-          const errorMessage = errorJson.message || errorJson.error?.message || errorText;
+        // Si c'était une erreur 400, donner plus de détails
+        if (lastError.status === 400) {
+          const errorMessage = 
+            (typeof lastError.errorJson === "object" && lastError.errorJson !== null && "message" in lastError.errorJson)
+              ? String(lastError.errorJson.message)
+              : lastError.errorText;
+
           return NextResponse.json(
             {
-              error: `Erreur ${response.status}`,
-              response: `La requête n'est pas valide : ${errorMessage}. Veuillez reformuler votre question.`,
+              error: `Erreur ${lastError.status}`,
+              response: errorMessage
+                ? `La requête n'est pas valide : ${errorMessage}. Veuillez reformuler votre question.`
+                : "La requête n'est pas valide. Veuillez reformuler votre question ou contacter le support.",
             },
             { status: 200 }
           );
         }
 
-        return handleApiError(response.status, errorText);
+        return handleApiError(lastError.status, lastError.errorText);
       }
 
-      // Traitement de la réponse
+      // Si aucun format n'a fonctionné et pas d'erreur (cas improbable)
+      if (!successfulResponse) {
+        return NextResponse.json(
+          {
+            error: "Erreur inconnue",
+            response: "Impossible de contacter l'assistant IA. Veuillez réessayer.",
+          },
+          { status: 200 }
+        );
+      }
+
+      // Traitement de la réponse réussie
+      const response = successfulResponse;
+      
+      if (isDevelopment && successfulBodyName) {
+        console.log(`✅ Réponse réussie avec le format: ${successfulBodyName}`);
+      }
+
+      // Traitement de la réponse de l'API
       let data;
       const contentType = response.headers.get("content-type") || "";
-
+      
       try {
         if (contentType.includes("application/json")) {
-          data = await response.json();
-        } else {
-          const text = await response.text();
-          try {
-            data = JSON.parse(text);
-          } catch {
-            data = text;
-          }
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = text;
         }
+      }
       } catch (parseError) {
         console.error("Erreur lors du parsing de la réponse:", parseError);
         return NextResponse.json(
@@ -286,11 +438,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         response: assistantResponse,
       });
-    } catch (fetchError: any) {
+    } catch (fetchError: unknown) {
       clearTimeout(timeoutId);
 
       // Gestion du timeout
-      if (fetchError.name === "AbortError") {
+      if (fetchError instanceof Error && fetchError.name === "AbortError") {
         return NextResponse.json(
           {
             error: "Timeout",
@@ -301,9 +453,12 @@ export async function POST(request: NextRequest) {
       }
 
       // Gestion des erreurs réseau
+      const errorName = fetchError instanceof Error ? fetchError.name : "Unknown";
+      const errorMessage = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      
       console.error("Erreur réseau lors de l'appel à l'API Pinecone:", {
-        name: fetchError.name,
-        message: fetchError.message,
+        name: errorName,
+        message: errorMessage,
       });
 
       return NextResponse.json(
@@ -314,11 +469,15 @@ export async function POST(request: NextRequest) {
         { status: 200 }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorName = error instanceof Error ? error.name : "Unknown";
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack?.substring(0, 200) : undefined;
+    
     console.error("Erreur inattendue dans /api/assistant/chat:", {
-      name: error?.name,
-      message: error?.message,
-      stack: error?.stack?.substring(0, 200),
+      name: errorName,
+      message: errorMessage,
+      stack: errorStack,
     });
 
     return NextResponse.json(
