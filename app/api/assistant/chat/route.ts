@@ -99,18 +99,27 @@ function generateRequestBodies(
   theme?: string
 ): Array<{ body: Record<string, unknown>; name: string }> {
   const contextualMessage = buildContextualMessage(message, category, theme);
+  const cleanMessage = message.trim();
   
   return [
+    {
+      name: "message_only",
+      body: {
+        message: cleanMessage,
+      },
+    },
+    {
+      name: "message_with_params",
+      body: {
+        message: cleanMessage,
+        ...(category && { category }),
+        ...(theme && { theme }),
+      },
+    },
     {
       name: "message_with_context",
       body: {
         message: contextualMessage,
-      },
-    },
-    {
-      name: "message_only",
-      body: {
-        message: message.trim(),
       },
     },
     {
@@ -330,12 +339,42 @@ export async function POST(request: NextRequest) {
 
             if (isDevelopment) {
               console.log(`❌ Format ${name} rejeté (400):`, {
-                error: errorContent.substring(0, 200),
+                error: errorContent.substring(0, 500),
                 errorJson,
+                requestBody: body,
               });
             }
 
             // Continuer avec le format suivant
+            continue;
+          }
+          
+          // Si c'est une erreur 422 (Unprocessable Entity) ou autre erreur client, on essaie le format suivant
+          if (response.status >= 400 && response.status < 500) {
+            const errorContent = await response.text();
+            let errorJson: unknown = null;
+            
+            try {
+              errorJson = JSON.parse(errorContent);
+            } catch {
+              // Ce n'est pas du JSON
+            }
+
+            lastError = {
+              status: response.status,
+              errorText: errorContent,
+              errorJson,
+            };
+
+            if (isDevelopment) {
+              console.log(`❌ Format ${name} rejeté (${response.status}):`, {
+                error: errorContent.substring(0, 500),
+                errorJson,
+                requestBody: body,
+              });
+            }
+
+            // Continuer avec le format suivant pour les erreurs 4xx
             continue;
           }
 
@@ -407,22 +446,47 @@ export async function POST(request: NextRequest) {
       }
 
       // Traitement de la réponse de l'API
-      let data;
+      let data: unknown;
       const contentType = response.headers.get("content-type") || "";
       
       try {
-        if (contentType.includes("application/json")) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        try {
-          data = JSON.parse(text);
-        } catch {
-          data = text;
+        // Lire le contenu brut d'abord pour le logging
+        const rawText = await response.text();
+        
+        if (isDevelopment) {
+          console.log("Réponse brute de l'API:", {
+            contentType,
+            length: rawText.length,
+            preview: rawText.substring(0, 500),
+          });
         }
-      }
+        
+        if (contentType.includes("application/json")) {
+          try {
+            data = JSON.parse(rawText);
+          } catch (jsonError) {
+            // Si le parsing JSON échoue, essayer de logger l'erreur
+            console.error("Erreur parsing JSON:", {
+              error: jsonError,
+              rawText: rawText.substring(0, 1000),
+            });
+            // Essayer de traiter comme texte
+            data = rawText;
+          }
+        } else {
+          // Essayer de parser comme JSON même si le content-type n'est pas JSON
+          try {
+            data = JSON.parse(rawText);
+          } catch {
+            // Si ça ne marche pas, utiliser le texte brut
+            data = rawText;
+          }
+        }
       } catch (parseError) {
-        console.error("Erreur lors du parsing de la réponse:", parseError);
+        console.error("Erreur lors du parsing de la réponse:", {
+          error: parseError,
+          contentType,
+        });
         return NextResponse.json(
           {
             error: "Erreur de format",
@@ -434,6 +498,13 @@ export async function POST(request: NextRequest) {
 
       // Extraction de la réponse
       const assistantResponse = extractAssistantResponse(data);
+      
+      if (isDevelopment) {
+        console.log("Réponse extraite:", {
+          length: assistantResponse.length,
+          preview: assistantResponse.substring(0, 200),
+        });
+      }
 
       return NextResponse.json({
         response: assistantResponse,
