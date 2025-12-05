@@ -162,55 +162,101 @@ function generateRequestBodies(
   
   const formats: Array<{ body: Record<string, unknown>; name: string }> = [];
   
-  // FORMATS JSON-RPC 2.0 CORRECTS (priorité)
-  // L'API MCP exige jsonrpc: "2.0", id, et method obligatoires
+  // FORMATS DIRECTS EN PRIORITÉ (sans JSON-RPC)
+  // L'API Pinecone MCP pourrait accepter des formats REST simples
   
-  // Méthodes possibles pour les assistants Pinecone MCP
-  // L'outil "context" n'existe pas (-32602), donc on ne teste plus tools/call avec context
-  // On priorise les méthodes directes de chat
+  // Format 1 : Message simple avec contexte (priorité)
+  if (hasContext) {
+    formats.push({
+      name: "direct_message_with_context",
+      body: {
+        message: contextualMessage,
+      },
+    });
+  }
+  
+  // Format 2 : Message simple
+  formats.push({
+    name: "direct_message",
+    body: {
+      message: cleanMessage,
+    },
+  });
+  
+  // Format 3 : Query
+  formats.push({
+    name: "direct_query",
+    body: {
+      query: cleanMessage,
+    },
+  });
+  
+  // Format 4 : Input
+  formats.push({
+    name: "direct_input",
+    body: {
+      input: cleanMessage,
+    },
+  });
+  
+  // Format 5 : Prompt
+  formats.push({
+    name: "direct_prompt",
+    body: {
+      prompt: cleanMessage,
+    },
+  });
+  
+  // Format 6 : Text
+  formats.push({
+    name: "direct_text",
+    body: {
+      text: cleanMessage,
+    },
+  });
+  
+  // Format 7 : Avec conversation history
+  formats.push({
+    name: "direct_with_conversation",
+    body: {
+      message: cleanMessage,
+      conversation: [],
+    },
+  });
+  
+  // FORMATS JSON-RPC 2.0 en fallback (si les formats directs ne fonctionnent pas)
+  // Tester d'autres méthodes possibles
   
   const jsonrpcMethods = [
-    "assistant/chat",    // Chat avec l'assistant (priorité)
-    "assistant/message", // Message à l'assistant
-    "chat",              // Chat simple
-    "message",           // Message simple
-    "invoke",            // Invocation
-    "call",              // Appel générique
+    "assistant/query",
+    "assistant/chat",
+    "assistant/message",
+    "query",
+    "chat",
+    "message",
+    "send",
+    "send_message",
+    "invoke",
+    "call",
   ];
   
   for (const method of jsonrpcMethods) {
-    // Format avec message (priorité pour les méthodes de chat/assistant)
-    if (method.includes("chat") || method.includes("message") || method.includes("assistant")) {
-      formats.push({
-        name: `jsonrpc_${method.replace(/\//g, "_")}_with_message`,
-        body: {
-          jsonrpc: "2.0",
-          id: 1,
-          method: method,
-          params: {
-            message: cleanMessage,
-          },
-        },
-      });
-      
-      if (hasContext) {
-        formats.push({
-          name: `jsonrpc_${method.replace(/\//g, "_")}_with_context_message`,
-          body: {
-            jsonrpc: "2.0",
-            id: 1,
-            method: method,
-            params: {
-              message: contextualMessage,
-            },
-          },
-        });
-      }
-    }
-    
-    // Format avec query (fallback)
+    // Format avec message
     formats.push({
-      name: `jsonrpc_${method.replace(/\//g, "_")}_with_query`,
+      name: `jsonrpc_${method.replace(/\//g, "_")}_message`,
+      body: {
+        jsonrpc: "2.0",
+        id: 1,
+        method: method,
+        params: {
+          message: cleanMessage,
+        },
+      },
+    });
+    
+    // Format avec query
+    formats.push({
+      name: `jsonrpc_${method.replace(/\//g, "_")}_query`,
       body: {
         jsonrpc: "2.0",
         id: 1,
@@ -221,38 +267,19 @@ function generateRequestBodies(
       },
     });
     
-    // Format avec contexte si disponible
-    if (hasContext) {
-      formats.push({
-        name: `jsonrpc_${method.replace(/\//g, "_")}_with_context`,
-        body: {
-          jsonrpc: "2.0",
-          id: 1,
-          method: method,
-          params: {
-            query: contextualMessage,
-          },
-        },
-      });
-    }
-  }
-  
-  // FORMATS DIRECTS en dernier recours (mais probablement non supportés)
-  if (hasContext) {
+    // Format avec input
     formats.push({
-      name: "message_with_context",
+      name: `jsonrpc_${method.replace(/\//g, "_")}_input`,
       body: {
-        message: contextualMessage,
+        jsonrpc: "2.0",
+        id: 1,
+        method: method,
+        params: {
+          input: cleanMessage,
+        },
       },
     });
   }
-  
-  formats.push({
-    name: "message_only",
-    body: {
-      message: cleanMessage,
-    },
-  });
   
   return formats;
 }
