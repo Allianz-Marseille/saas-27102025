@@ -18,11 +18,18 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.PINECONE_API_KEY;
     if (!apiKey) {
       console.error("PINECONE_API_KEY n'est pas configurée");
+      console.error("Variables d'environnement disponibles:", {
+        hasPineconeKey: !!process.env.PINECONE_API_KEY,
+        nodeEnv: process.env.NODE_ENV,
+        allEnvKeys: Object.keys(process.env).filter(key => key.includes('PINE') || key.includes('API')),
+      });
       return NextResponse.json(
         { error: "Configuration serveur manquante" },
         { status: 500 }
       );
     }
+    
+    console.log("PINECONE_API_KEY trouvée, longueur:", apiKey.length);
 
     // Construire le message avec contexte de catégorie si disponible
     let contextualMessage = message;
