@@ -152,16 +152,16 @@ export function AiAssistantDialog({
 
         <div className="flex-1 overflow-hidden flex flex-col">
           {/* Zone de chat */}
-          <>
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {messages.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full space-y-4">
+            <>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {messages.length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-full space-y-4">
                   <Bot className="h-12 w-12 text-blue-600 opacity-50" />
-                  <p className="text-muted-foreground text-center">
-                    Commencez une conversation avec Nono le robot
-                  </p>
-                </div>
-              )}
+                    <p className="text-muted-foreground text-center">
+                      Commencez une conversation avec Nono le robot
+                    </p>
+                  </div>
+                )}
 
                 {messages.map((message, index) => (
                   <div
