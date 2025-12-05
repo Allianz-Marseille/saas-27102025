@@ -102,12 +102,14 @@ function generateRequestBodies(
   const cleanMessage = message.trim();
   
   return [
+    // Format 1 : Message simple (priorité pour éviter Parse error)
     {
       name: "message_only",
       body: {
         message: cleanMessage,
       },
     },
+    // Format 2 : Message avec paramètres séparés
     {
       name: "message_with_params",
       body: {
@@ -116,42 +118,56 @@ function generateRequestBodies(
         ...(theme && { theme }),
       },
     },
+    // Format 3 : Query simple
+    {
+      name: "query_only",
+      body: {
+        query: cleanMessage,
+      },
+    },
+    // Format 4 : Query avec paramètres
+    {
+      name: "query_with_params",
+      body: {
+        query: cleanMessage,
+        ...(category && { category }),
+        ...(theme && { theme }),
+      },
+    },
+    // Format 5 : Input simple
+    {
+      name: "input_only",
+      body: {
+        input: cleanMessage,
+      },
+    },
+    // Format 6 : Prompt simple
+    {
+      name: "prompt_only",
+      body: {
+        prompt: cleanMessage,
+      },
+    },
+    // Format 7 : Text simple
+    {
+      name: "text_only",
+      body: {
+        text: cleanMessage,
+      },
+    },
+    // Format 8 : Message avec contexte (testé en dernier car peut causer Parse error)
     {
       name: "message_with_context",
       body: {
         message: contextualMessage,
       },
     },
+    // Format 9 : Format avec conversation (si l'API le supporte)
     {
-      name: "message_with_params",
+      name: "message_with_conversation",
       body: {
-        message: message.trim(),
-        ...(category && { category }),
-        ...(theme && { theme }),
-      },
-    },
-    {
-      name: "query",
-      body: {
-        query: contextualMessage,
-      },
-    },
-    {
-      name: "prompt",
-      body: {
-        prompt: contextualMessage,
-      },
-    },
-    {
-      name: "input",
-      body: {
-        input: contextualMessage,
-      },
-    },
-    {
-      name: "text",
-      body: {
-        text: contextualMessage,
+        message: cleanMessage,
+        conversation: [],
       },
     },
   ];
@@ -320,36 +336,7 @@ export async function POST(request: NextRequest) {
             break;
           }
 
-          // Si c'est une erreur 400, on essaie le format suivant
-          if (response.status === 400) {
-            const errorContent = await response.text();
-            let errorJson: unknown = null;
-            
-            try {
-              errorJson = JSON.parse(errorContent);
-            } catch {
-              // Ce n'est pas du JSON
-            }
-
-            lastError = {
-              status: response.status,
-              errorText: errorContent,
-              errorJson,
-            };
-
-            if (isDevelopment) {
-              console.log(`❌ Format ${name} rejeté (400):`, {
-                error: errorContent.substring(0, 500),
-                errorJson,
-                requestBody: body,
-              });
-            }
-
-            // Continuer avec le format suivant
-            continue;
-          }
-          
-          // Si c'est une erreur 422 (Unprocessable Entity) ou autre erreur client, on essaie le format suivant
+          // Si c'est une erreur 4xx (client error), on essaie le format suivant
           if (response.status >= 400 && response.status < 500) {
             const errorContent = await response.text();
             let errorJson: unknown = null;
@@ -370,11 +357,12 @@ export async function POST(request: NextRequest) {
               console.log(`❌ Format ${name} rejeté (${response.status}):`, {
                 error: errorContent.substring(0, 500),
                 errorJson,
-                requestBody: body,
+                requestBody: JSON.stringify(body),
+                messageLength: message.trim().length,
               });
             }
 
-            // Continuer avec le format suivant pour les erreurs 4xx
+            // Continuer avec le format suivant pour toutes les erreurs 4xx
             continue;
           }
 
