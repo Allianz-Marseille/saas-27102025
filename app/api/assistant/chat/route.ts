@@ -165,7 +165,20 @@ function handleApiError(status: number, errorText: string): NextResponse {
       break;
     case 401:
     case 403:
-      userMessage = "Problème d'authentification avec l'assistant IA. Veuillez contacter l'administrateur.";
+      // Essayer d'extraire plus de détails sur l'erreur d'authentification
+      let authError = "";
+      try {
+        const parsed = JSON.parse(errorText);
+        authError = parsed.message || parsed.error?.message || "";
+      } catch {
+        authError = errorText.substring(0, 200);
+      }
+      
+      if (authError) {
+        userMessage = `Problème d'authentification : ${authError}. Vérifiez la configuration de la clé API.`;
+      } else {
+        userMessage = "Problème d'authentification avec l'assistant IA. Vérifiez que la clé API Pinecone est correcte et que le nom de l'assistant est valide.";
+      }
       break;
     case 404:
       userMessage = "L'assistant IA n'est pas disponible. Veuillez réessayer plus tard.";
@@ -286,16 +299,60 @@ export async function POST(request: NextRequest) {
       }
 
       const startTime = Date.now();
-      const response = await fetch(PINECONE_CHAT_API_URL, {
-        method: "POST",
-        headers: {
-          "Api-Key": apiKey,
-          "Content-Type": "application/json",
-          "X-Pinecone-Api-Version": "2025-01",
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal,
-      });
+      
+      // Tester les deux formats d'authentification possibles
+      // Format 1: Api-Key (format standard selon la doc)
+      // Format 2: Authorization Bearer (format alternatif possible)
+      
+      let response: Response;
+      let authMethod = "Api-Key";
+      
+      try {
+        response = await fetch(PINECONE_CHAT_API_URL, {
+          method: "POST",
+          headers: {
+            "Api-Key": apiKey,
+            "Content-Type": "application/json",
+            "X-Pinecone-Api-Version": "2025-01",
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+        
+        // Si erreur 401/403, essayer avec Authorization Bearer
+        if (response.status === 401 || response.status === 403) {
+          if (isDevelopment) {
+            console.log("Tentative avec Authorization Bearer au lieu de Api-Key");
+          }
+          authMethod = "Authorization Bearer";
+          response = await fetch(PINECONE_CHAT_API_URL, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+              "X-Pinecone-Api-Version": "2025-01",
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+          });
+        }
+      } catch (fetchErr) {
+        // En cas d'erreur réseau, essayer avec Authorization Bearer
+        if (isDevelopment) {
+          console.log("Erreur avec Api-Key, tentative avec Authorization Bearer");
+        }
+        authMethod = "Authorization Bearer";
+        response = await fetch(PINECONE_CHAT_API_URL, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "X-Pinecone-Api-Version": "2025-01",
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+      }
 
       const responseTime = Date.now() - startTime;
       clearTimeout(timeoutId);
@@ -314,6 +371,11 @@ export async function POST(request: NextRequest) {
           status: response.status,
           statusText: response.statusText,
           responseTime,
+          authMethod,
+          url: PINECONE_CHAT_API_URL,
+          assistantName: PINECONE_ASSISTANT_NAME,
+          apiKeyPrefix: apiKey.trim().substring(0, 5),
+          apiKeyLength: apiKey.trim().length,
           error: errorText,
           errorData,
         });
