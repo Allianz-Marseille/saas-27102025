@@ -270,410 +270,69 @@ export async function POST(request: NextRequest) {
       console.log("Contexte présent:", { category, theme, hasContext });
     }
 
-    // Appel à l'API Pinecone avec timeout
+    // Appel à l'API Chat standard de Pinecone Assistant
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
     try {
-      // Générer les différents formats de requête à tester
-      const requestBodies = generateRequestBodies(
-        message.trim(),
-        category,
-        theme
-      );
-
-      // Essayer chaque format jusqu'à trouver celui qui fonctionne
-      let lastError: { status: number; errorText: string; errorJson: unknown; formatName: string; responseTime: number } | null = null;
-      let successfulResponse: Response | null = null;
-      let successfulBodyName = "";
-      const formatAttempts: Array<{ name: string; status: number; responseTime: number; error?: string }> = [];
-
-      for (const { body, name } of requestBodies) {
-        try {
-          const startTime = Date.now();
-          
-          // Log conditionnel (uniquement en développement)
-          if (isDevelopment) {
-            console.log(`Tentative avec format: ${name}`, {
-              url: PINECONE_API_URL,
-              body,
-            });
-          }
-
-          const response = await fetch(PINECONE_API_URL, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json, text/event-stream",
-              Authorization: `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify(body),
-            signal: controller.signal,
-          });
-
-          const responseTime = Date.now() - startTime;
-          
-          // Avertissement si le temps de réponse dépasse 10s
-          if (responseTime > 10000) {
-            console.warn(`⚠️ Format ${name} a pris ${responseTime}ms (> 10s)`, {
-              format: name,
-              responseTime,
-              status: response.status,
-            });
-          }
-
-          // Si la requête réussit, on s'arrête
-          if (response.ok) {
-            successfulResponse = response;
-            successfulBodyName = name;
-            
-            formatAttempts.push({
-              name,
-              status: response.status,
-              responseTime,
-            });
-            
-            if (isDevelopment) {
-              console.log(`✅ Format ${name} accepté par l'API (${responseTime}ms)`);
-            }
-            break;
-          }
-
-          // Si c'est une erreur 4xx (client error), on essaie le format suivant
-          if (response.status >= 400 && response.status < 500) {
-            const errorContent = await response.text();
-            let errorJson: unknown = null;
-            
-            try {
-              errorJson = JSON.parse(errorContent);
-            } catch {
-              // Ce n'est pas du JSON
-            }
-            
-            // Vérifier si c'est une erreur JSON-RPC "Method not found" (-32601)
-            // ou "Tool context not found" (-32602)
-            // Dans ce cas, on continue avec les autres méthodes JSON-RPC ou formats
-            const isJsonRpcError = 
-              typeof errorJson === "object" && 
-              errorJson !== null && 
-              "error" in errorJson &&
-              typeof (errorJson as { error?: unknown }).error === "object";
-            
-            const errorCode = isJsonRpcError 
-              ? (errorJson as { error?: { code?: number } }).error?.code 
-              : null;
-            
-            const isJsonRpcMethodNotFound = errorCode === -32601;
-            const isToolNotFound = errorCode === -32602;
-
-            lastError = {
-              status: response.status,
-              errorText: errorContent,
-              errorJson,
-              formatName: name,
-              responseTime,
-            };
-
-            formatAttempts.push({
-              name,
-              status: response.status,
-              responseTime,
-              error: errorContent.substring(0, 200),
-            });
-
-            if (isDevelopment) {
-              console.log(`❌ Format ${name} rejeté (${response.status}, ${responseTime}ms):`, {
-                error: errorContent.substring(0, 500),
-                errorJson,
-                isMethodNotFound: isJsonRpcMethodNotFound,
-                requestBody: JSON.stringify(body),
-                messageLength: message.trim().length,
-              });
-            }
-
-            // Pour les erreurs "Method not found" JSON-RPC, continuer à essayer d'autres méthodes
-            // Pour les autres erreurs 4xx, continuer aussi avec le format suivant
-            continue;
-          }
-
-          // Pour les autres erreurs (401, 403, 500, etc.), on s'arrête
-          const errorContent = await response.text().catch(() => response.statusText);
-          lastError = {
-            status: response.status,
-            errorText: errorContent,
-            errorJson: null,
-            formatName: name,
-            responseTime,
-          };
-          
-          formatAttempts.push({
-            name,
-            status: response.status,
-            responseTime,
-            error: errorContent.substring(0, 200),
-          });
-          
-          break;
-
-        } catch (fetchError: unknown) {
-          // Erreur réseau ou timeout
-          const isTimeout = fetchError instanceof Error && fetchError.name === "AbortError";
-          
-          if (isTimeout) {
-            console.error(`⏱️ Format ${name} - Timeout après ${TIMEOUT_MS}ms`);
-            formatAttempts.push({
-              name,
-              status: 0,
-              responseTime: TIMEOUT_MS,
-              error: "Timeout",
-            });
-          } else {
-            // Erreur réseau, on continue avec le format suivant
-            if (isDevelopment) {
-              console.log(`❌ Format ${name} - Erreur réseau:`, fetchError);
-            }
-            formatAttempts.push({
-              name,
-              status: 0,
-              responseTime: 0,
-              error: fetchError instanceof Error ? fetchError.message : String(fetchError),
-            });
-          }
-          
-          // Si c'est un timeout, on arrête car tous les autres formats échoueront aussi
-          if (isTimeout) {
-            break;
-          }
-          
-          continue;
-        }
+      // Construire la requête au format standard de l'API Chat
+      const requestBody = buildChatRequest(message.trim(), category, theme);
+      
+      if (isDevelopment) {
+        console.log("Appel API Chat Pinecone:", {
+          url: PINECONE_CHAT_API_URL,
+          body: requestBody,
+        });
       }
 
+      const startTime = Date.now();
+      const response = await fetch(PINECONE_CHAT_API_URL, {
+        method: "POST",
+        headers: {
+          "Api-Key": apiKey,
+          "Content-Type": "application/json",
+          "X-Pinecone-Api-Version": "2025-01",
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+
+      const responseTime = Date.now() - startTime;
       clearTimeout(timeoutId);
 
-      // Si aucun format n'a fonctionné
-      if (!successfulResponse && lastError) {
-        // Log structuré complet en production pour faciliter l'analyse dans Vercel
-        const errorLog = {
-          timestamp: new Date().toISOString(),
-          error: "Tous les formats de requête ont échoué",
-          configuration: {
-            pineconeApiUrl: PINECONE_API_URL,
-            timeout: TIMEOUT_MS,
-            apiKeyPresent: !!apiKey,
-            apiKeyLength: apiKey.trim().length,
-            apiKeyPrefix: apiKeyPrefix,
-            apiKeyLastChars: apiKeyLastChars,
-          },
-          lastError: {
-            status: lastError.status,
-            formatName: lastError.formatName,
-            responseTime: lastError.responseTime,
-            errorText: lastError.errorText, // Complet, sans limite
-            errorJson: lastError.errorJson, // Complet
-          },
-          formatsTested: formatAttempts.map(attempt => ({
-            name: attempt.name,
-            status: attempt.status,
-            responseTime: attempt.responseTime,
-            error: attempt.error,
-          })),
-          requestInfo: {
-            messageLength: message.trim().length,
-            hasCategory: !!category,
-            hasTheme: !!theme,
-            category: category || null,
-            theme: theme || null,
-          },
-        };
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData: unknown = null;
         
-        console.error(JSON.stringify(errorLog, null, 2));
-
-        // Si c'était une erreur 400, donner plus de détails
-        if (lastError.status === 400) {
-          const errorMessage = 
-            (typeof lastError.errorJson === "object" && lastError.errorJson !== null && "message" in lastError.errorJson)
-              ? String(lastError.errorJson.message)
-              : lastError.errorText;
-
-          return NextResponse.json(
-            {
-              error: `Erreur ${lastError.status}`,
-              response: errorMessage
-                ? `La requête n'est pas valide : ${errorMessage}. Veuillez reformuler votre question.`
-                : "La requête n'est pas valide. Veuillez reformuler votre question ou contacter le support.",
-            },
-            { status: 200 }
-          );
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          // Ce n'est pas du JSON
         }
 
-        return handleApiError(lastError.status, lastError.errorText);
-      }
-
-      // Si aucun format n'a fonctionné et pas d'erreur (cas improbable)
-      if (!successfulResponse) {
-        return NextResponse.json(
-          {
-            error: "Erreur inconnue",
-            response: "Impossible de contacter l'assistant IA. Veuillez réessayer.",
-          },
-          { status: 200 }
-        );
-      }
-
-      // Traitement de la réponse réussie
-      const response = successfulResponse;
-      
-      if (isDevelopment && successfulBodyName) {
-        console.log(`✅ Réponse réussie avec le format: ${successfulBodyName}`);
-      }
-
-      // Traitement de la réponse de l'API
-      let data: unknown;
-      const contentType = response.headers.get("content-type") || "";
-      const isStreaming = contentType.includes("text/event-stream");
-      
-      try {
-        // Si c'est un stream (text/event-stream), le parser
-        if (isStreaming) {
-          const rawText = await response.text();
-          
-          if (isDevelopment) {
-            console.log("Réponse stream reçue:", {
-              contentType,
-              length: rawText.length,
-              preview: rawText.substring(0, 500),
-            });
-          }
-          
-          // Parser le format Server-Sent Events (SSE) pour MCP
-          // Format: "event: message\ndata: {...}\n\n" ou "event: tool_response\ndata: {...}"
-          const lines = rawText.split("\n");
-          const messages: string[] = [];
-          let currentEvent: string | null = null;
-          let currentData: string[] = [];
-          
-          for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            
-            if (line.startsWith("event: ")) {
-              // Nouvel événement, traiter les données précédentes si disponibles
-              if (currentData.length > 0 && currentEvent) {
-                const dataStr = currentData.join("\n");
-                try {
-                  const parsed = JSON.parse(dataStr);
-                  // Extraire le contenu selon le type d'événement MCP
-                  if (currentEvent === "message" || currentEvent === "tool_response") {
-                    const extracted = extractAssistantResponse(parsed);
-                    if (extracted && extracted !== "Désolé, je n'ai pas pu traiter votre demande.") {
-                      messages.push(extracted);
-                    }
-                  }
-                } catch {
-                  // Si ce n'est pas du JSON, utiliser le texte brut
-                  if (dataStr.trim()) {
-                    messages.push(dataStr);
-                  }
-                }
-              }
-              currentEvent = line.substring(7).trim(); // Enlever "event: "
-              currentData = [];
-            } else if (line.startsWith("data: ")) {
-              // Accumuler les données (peuvent être sur plusieurs lignes)
-              currentData.push(line.substring(6)); // Enlever "data: "
-            } else if (line.trim() === "" && currentData.length > 0) {
-              // Ligne vide = fin d'un message SSE, traiter
-              const dataStr = currentData.join("\n");
-              try {
-                const parsed = JSON.parse(dataStr);
-                const extracted = extractAssistantResponse(parsed);
-                if (extracted && extracted !== "Désolé, je n'ai pas pu traiter votre demande.") {
-                  messages.push(extracted);
-                }
-              } catch {
-                if (dataStr.trim()) {
-                  messages.push(dataStr);
-                }
-              }
-              currentData = [];
-            }
-          }
-          
-          // Traiter les dernières données si disponibles
-          if (currentData.length > 0) {
-            const dataStr = currentData.join("\n");
-            try {
-              const parsed = JSON.parse(dataStr);
-              const extracted = extractAssistantResponse(parsed);
-              if (extracted && extracted !== "Désolé, je n'ai pas pu traiter votre demande.") {
-                messages.push(extracted);
-              }
-            } catch {
-              if (dataStr.trim()) {
-                messages.push(dataStr);
-              }
-            }
-          }
-          
-          // Combiner tous les messages reçus ou utiliser le texte brut
-          data = messages.length > 0 ? messages.join("\n") : rawText;
-        } else {
-          // Format JSON normal
-          const rawText = await response.text();
-          
-          if (isDevelopment) {
-            console.log("Réponse JSON de l'API:", {
-              contentType,
-              length: rawText.length,
-              preview: rawText.substring(0, 500),
-            });
-          }
-          
-          if (contentType.includes("application/json")) {
-            try {
-              data = JSON.parse(rawText);
-            } catch (jsonError) {
-              // Si le parsing JSON échoue, essayer de logger l'erreur
-              console.error("Erreur parsing JSON:", {
-                error: jsonError,
-                rawText: rawText.substring(0, 1000),
-              });
-              // Essayer de traiter comme texte
-              data = rawText;
-            }
-          } else {
-            // Essayer de parser comme JSON même si le content-type n'est pas JSON
-            try {
-              data = JSON.parse(rawText);
-            } catch {
-              // Si ça ne marche pas, utiliser le texte brut
-              data = rawText;
-            }
-          }
-        }
-      } catch (parseError) {
-        console.error("Erreur lors du parsing de la réponse:", {
-          error: parseError,
-          contentType,
+        console.error("Erreur API Pinecone Chat:", {
+          status: response.status,
+          statusText: response.statusText,
+          responseTime,
+          error: errorText,
+          errorData,
         });
-        return NextResponse.json(
-          {
-            error: "Erreur de format",
-            response: "La réponse de l'assistant IA est dans un format inattendu. Veuillez réessayer.",
-          },
-          { status: 200 }
-        );
+
+        return handleApiError(response.status, errorText);
+      }
+
+      // Parser la réponse JSON
+      const data: unknown = await response.json();
+      
+      if (isDevelopment) {
+        console.log("Réponse API Chat reçue:", {
+          responseTime,
+          preview: JSON.stringify(data).substring(0, 500),
+        });
       }
 
       // Extraction de la réponse
       const assistantResponse = extractAssistantResponse(data);
-      
-      if (isDevelopment) {
-        console.log("Réponse extraite:", {
-          length: assistantResponse.length,
-          preview: assistantResponse.substring(0, 200),
-        });
-      }
 
       return NextResponse.json({
         response: assistantResponse,
