@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PINECONE_API_URL = "https://prod-1-data.ke.pinecone.io/mcp/assistants/saas-allianz";
+// API Chat standard de Pinecone Assistant (PAS l'endpoint MCP)
+const PINECONE_ASSISTANT_NAME = "saas-allianz";
+const PINECONE_CHAT_API_URL = `https://api.pinecone.io/assistant/assistants/${PINECONE_ASSISTANT_NAME}/chat`;
 const TIMEOUT_MS = 30000; // 30 secondes
 
 /**
@@ -45,32 +47,21 @@ function buildContextualMessage(
 }
 
 /**
- * Interface pour les réponses possibles de l'API Pinecone MCP
- * L'API utilise streamable HTTP transport (SSE) avec des outils MCP
+ * Interface pour les réponses de l'API Chat standard de Pinecone Assistant
  */
-interface PineconeResponse {
-  // Format MCP avec outils
-  tool?: string;
-  content?: string | Array<{ type: string; text: string }>;
-  isError?: boolean;
-  // Format streamable HTTP transport (SSE)
-  event?: string;
-  data?: unknown;
-  // Format JSON-RPC (si utilisé)
-  jsonrpc?: string;
-  id?: number;
-  result?: string | { message?: string; response?: string; text?: string; content?: string };
-  error?: { code: number; message: string; data?: unknown };
-  // Formats directs (fallback)
-  response?: string;
-  message?: string;
-  text?: string;
-  answer?: string;
+interface PineconeChatResponse {
+  message?: {
+    content?: string;
+    role?: string;
+  };
+  error?: {
+    message?: string;
+    code?: string;
+  };
 }
 
 /**
- * Extrait la réponse de l'assistant depuis différents formats de réponse
- * L'API Pinecone MCP utilise streamable HTTP transport avec des outils
+ * Extrait la réponse de l'assistant depuis la réponse de l'API Chat
  */
 function extractAssistantResponse(data: unknown): string {
   if (typeof data === "string") {
@@ -78,210 +69,49 @@ function extractAssistantResponse(data: unknown): string {
   }
 
   if (typeof data === "object" && data !== null) {
-    const response = data as PineconeResponse;
+    const response = data as PineconeChatResponse;
     
-    // Format MCP avec outil "context" : extraire le contenu
-    if (response.content) {
-      // Le contenu peut être une string ou un array d'objets avec type/text
-      if (typeof response.content === "string") {
-        return response.content;
-      }
-      if (Array.isArray(response.content)) {
-        // Format MCP standard : array de { type: string, text: string }
-        const texts = response.content
-          .filter((item: unknown) => typeof item === "object" && item !== null && "text" in item)
-          .map((item: { text?: string }) => item.text || "")
-          .filter((text: string) => text.length > 0);
-        if (texts.length > 0) {
-          return texts.join("\n");
-        }
-      }
+    // Format standard de l'API Chat: { message: { content: "..." } }
+    if (response.message?.content) {
+      return response.message.content;
     }
     
-    // Format JSON-RPC 2.0 (fallback si utilisé)
-    if (response.jsonrpc === "2.0") {
-      if (response.error) {
-        console.error("Erreur JSON-RPC:", response.error);
-        return `Erreur: ${response.error.message || "Erreur inconnue"}`;
-      }
-      if (response.result) {
-        if (typeof response.result === "string") {
-          return response.result;
-        }
-        if (typeof response.result === "object") {
-          const resultObj = response.result as Record<string, unknown>;
-          const possibleFields = ["message", "response", "text", "content", "answer"];
-          for (const field of possibleFields) {
-            const value = resultObj[field];
-            if (value && typeof value === "string") {
-              return value;
-            }
-          }
-        }
-      }
-    }
-    
-    // Formats directs (fallback) : essayer différents champs possibles
-    const possibleFields: (keyof PineconeResponse)[] = ["response", "message", "text", "content", "answer"];
-    for (const field of possibleFields) {
-      const value = response[field];
-      if (value && typeof value === "string") {
-        return value;
-      }
+    // En cas d'erreur
+    if (response.error?.message) {
+      console.error("Erreur API Pinecone:", response.error);
+      return `Erreur: ${response.error.message}`;
     }
 
-    // Si l'objet contient un champ "result" (format non JSON-RPC)
-    if (response.result) {
-      return typeof response.result === "string" 
-        ? response.result 
-        : JSON.stringify(response.result);
+    // Fallback : essayer de trouver du contenu ailleurs
+    const dataObj = data as Record<string, unknown>;
+    if (dataObj.content && typeof dataObj.content === "string") {
+      return dataObj.content;
     }
-
-    // Sinon, retourner une représentation JSON
-    return JSON.stringify(data);
   }
 
   return "Désolé, je n'ai pas pu traiter votre demande.";
 }
 
 /**
- * Génère différents formats de body de requête à tester
- * L'API Pinecone MCP utilise JSON-RPC 2.0 avec des champs obligatoires :
- * - jsonrpc: "2.0" (obligatoire)
- * - id: string | number (obligatoire)
- * - method: string (obligatoire)
+ * Construit le body de requête pour l'API Chat standard de Pinecone Assistant
+ * Format: { messages: [{ role: "user", content: "..." }], stream: false }
  */
-function generateRequestBodies(
+function buildChatRequest(
   message: string,
   category?: string,
   theme?: string
-): Array<{ body: Record<string, unknown>; name: string }> {
+): { messages: Array<{ role: string; content: string }>; stream: boolean } {
   const contextualMessage = buildContextualMessage(message, category, theme);
-  const cleanMessage = message.trim();
-  const hasContext = !!(category || theme);
   
-  const formats: Array<{ body: Record<string, unknown>; name: string }> = [];
-  
-  // FORMATS DIRECTS EN PRIORITÉ (sans JSON-RPC)
-  // L'API Pinecone MCP pourrait accepter des formats REST simples
-  
-  // Format 1 : Message simple avec contexte (priorité)
-  if (hasContext) {
-    formats.push({
-      name: "direct_message_with_context",
-      body: {
-        message: contextualMessage,
+  return {
+    messages: [
+      {
+        role: "user",
+        content: contextualMessage,
       },
-    });
-  }
-  
-  // Format 2 : Message simple
-  formats.push({
-    name: "direct_message",
-    body: {
-      message: cleanMessage,
-    },
-  });
-  
-  // Format 3 : Query
-  formats.push({
-    name: "direct_query",
-    body: {
-      query: cleanMessage,
-    },
-  });
-  
-  // Format 4 : Input
-  formats.push({
-    name: "direct_input",
-    body: {
-      input: cleanMessage,
-    },
-  });
-  
-  // Format 5 : Prompt
-  formats.push({
-    name: "direct_prompt",
-    body: {
-      prompt: cleanMessage,
-    },
-  });
-  
-  // Format 6 : Text
-  formats.push({
-    name: "direct_text",
-    body: {
-      text: cleanMessage,
-    },
-  });
-  
-  // Format 7 : Avec conversation history
-  formats.push({
-    name: "direct_with_conversation",
-    body: {
-      message: cleanMessage,
-      conversation: [],
-    },
-  });
-  
-  // FORMATS JSON-RPC 2.0 en fallback (si les formats directs ne fonctionnent pas)
-  // Tester d'autres méthodes possibles
-  
-  const jsonrpcMethods = [
-    "assistant/query",
-    "assistant/chat",
-    "assistant/message",
-    "query",
-    "chat",
-    "message",
-    "send",
-    "send_message",
-    "invoke",
-    "call",
-  ];
-  
-  for (const method of jsonrpcMethods) {
-    // Format avec message
-    formats.push({
-      name: `jsonrpc_${method.replace(/\//g, "_")}_message`,
-      body: {
-        jsonrpc: "2.0",
-        id: 1,
-        method: method,
-        params: {
-          message: cleanMessage,
-        },
-      },
-    });
-    
-    // Format avec query
-    formats.push({
-      name: `jsonrpc_${method.replace(/\//g, "_")}_query`,
-      body: {
-        jsonrpc: "2.0",
-        id: 1,
-        method: method,
-        params: {
-          query: cleanMessage,
-        },
-      },
-    });
-    
-    // Format avec input
-    formats.push({
-      name: `jsonrpc_${method.replace(/\//g, "_")}_input`,
-      body: {
-        jsonrpc: "2.0",
-        id: 1,
-        method: method,
-        params: {
-          input: cleanMessage,
-        },
-      },
-    });
-  }
-  
-  return formats;
+    ],
+    stream: false,
+  };
 }
 
 /**
@@ -853,10 +683,10 @@ export async function POST(request: NextRequest) {
 
       // Gestion du timeout
       if (fetchError instanceof Error && fetchError.name === "AbortError") {
-        console.error("⏱️ Timeout atteint lors de l'appel à l'API Pinecone", {
+        console.error("⏱️ Timeout atteint lors de l'appel à l'API Pinecone Chat", {
           timestamp: new Date().toISOString(),
           timeout: TIMEOUT_MS,
-          pineconeApiUrl: PINECONE_API_URL,
+          pineconeApiUrl: PINECONE_CHAT_API_URL,
           suggestion: `Le timeout de ${TIMEOUT_MS}ms a été atteint. Considérez augmenter TIMEOUT_MS si nécessaire.`,
         });
         
@@ -873,9 +703,10 @@ export async function POST(request: NextRequest) {
       const errorName = fetchError instanceof Error ? fetchError.name : "Unknown";
       const errorMessage = fetchError instanceof Error ? fetchError.message : String(fetchError);
       
-      console.error("Erreur réseau lors de l'appel à l'API Pinecone:", {
+      console.error("Erreur réseau lors de l'appel à l'API Pinecone Chat:", {
         name: errorName,
         message: errorMessage,
+        url: PINECONE_CHAT_API_URL,
       });
 
       return NextResponse.json(
