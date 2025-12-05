@@ -141,55 +141,17 @@ function generateRequestBodies(
   
   const formats: Array<{ body: Record<string, unknown>; name: string }> = [];
   
-  // Formats JSON-RPC 2.0 : tester différentes méthodes possibles
-  // L'API peut utiliser différentes méthodes : call, execute, chat, send_message, etc.
-  const jsonrpcMethods = ["call", "execute", "chat", "send_message", "invoke", "query"];
-  
-  for (const method of jsonrpcMethods) {
-    // Format avec message simple
+  // FORMATS DIRECTS EN PRIORITÉ (sans JSON-RPC)
+  // L'API MCP Pinecone pourrait accepter des formats directs avant JSON-RPC
+  if (hasContext) {
     formats.push({
-      name: `jsonrpc_${method}`,
+      name: "message_with_context",
       body: {
-        jsonrpc: "2.0",
-        method: method,
-        params: {
-          message: cleanMessage,
-        },
-        id: 1,
+        message: contextualMessage,
       },
     });
-    
-    // Format avec contexte si disponible
-    if (hasContext) {
-      formats.push({
-        name: `jsonrpc_${method}_with_context`,
-        body: {
-          jsonrpc: "2.0",
-          method: method,
-          params: {
-            message: contextualMessage,
-          },
-          id: 1,
-        },
-      });
-      
-      formats.push({
-        name: `jsonrpc_${method}_with_params`,
-        body: {
-          jsonrpc: "2.0",
-          method: method,
-          params: {
-            message: cleanMessage,
-            ...(category && { category }),
-            ...(theme && { theme }),
-          },
-          id: 1,
-        },
-      });
-    }
   }
   
-  // Autres formats de fallback (au cas où l'API changerait)
   formats.push(
     {
       name: "message_only",
@@ -212,12 +174,58 @@ function generateRequestBodies(
       },
     },
     {
-      name: "message_with_context",
+      name: "query_with_params",
       body: {
-        message: contextualMessage,
+        query: cleanMessage,
+        ...(category && { category }),
+        ...(theme && { theme }),
+      },
+    },
+    {
+      name: "input_only",
+      body: {
+        input: cleanMessage,
+      },
+    },
+    {
+      name: "prompt_only",
+      body: {
+        prompt: cleanMessage,
       },
     }
   );
+  
+  // FORMATS JSON-RPC 2.0 en fallback
+  // Si les formats directs échouent, tester JSON-RPC avec différentes méthodes
+  const jsonrpcMethods = ["call", "execute", "chat", "invoke"];
+  
+  for (const method of jsonrpcMethods) {
+    formats.push({
+      name: `jsonrpc_${method}`,
+      body: {
+        jsonrpc: "2.0",
+        method: method,
+        params: {
+          message: cleanMessage,
+        },
+        id: 1,
+      },
+    });
+    
+    if (hasContext) {
+      formats.push({
+        name: `jsonrpc_${method}_with_context`,
+        body: {
+          jsonrpc: "2.0",
+          method: method,
+          params: {
+            message: contextualMessage,
+          },
+          id: 1,
+        },
+      });
+    }
+  }
   
   return formats;
 }
