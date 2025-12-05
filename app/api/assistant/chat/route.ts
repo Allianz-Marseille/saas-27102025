@@ -146,8 +146,10 @@ function extractAssistantResponse(data: unknown): string {
 
 /**
  * Génère différents formats de body de requête à tester
- * L'API Pinecone MCP utilise le streamable HTTP transport (pas JSON-RPC classique)
- * L'API fournit un outil "context" pour récupérer des snippets de contexte
+ * L'API Pinecone MCP utilise JSON-RPC 2.0 avec des champs obligatoires :
+ * - jsonrpc: "2.0" (obligatoire)
+ * - id: string | number (obligatoire)
+ * - method: string (obligatoire)
  */
 function generateRequestBodies(
   message: string,
@@ -160,56 +162,101 @@ function generateRequestBodies(
   
   const formats: Array<{ body: Record<string, unknown>; name: string }> = [];
   
-  // FORMATS MCP STREAMABLE HTTP TRANSPORT (priorité)
-  // Le serveur MCP Pinecone utilise streamable HTTP transport avec des outils
+  // FORMATS JSON-RPC 2.0 CORRECTS (priorité)
+  // L'API MCP exige jsonrpc: "2.0", id, et method obligatoires
   
-  // Format 1 : Utilisation de l'outil "context" de MCP
-  formats.push({
-    name: "mcp_context_tool",
-    body: {
-      tool: "context",
-      arguments: {
-        query: cleanMessage,
-      },
-    },
-  });
+  // Méthodes possibles pour les assistants Pinecone MCP
+  const jsonrpcMethods = [
+    "tools/call",        // Appel d'outil MCP
+    "tools/list",        // Lister les outils disponibles
+    "assistant/chat",    // Chat avec l'assistant
+    "assistant/message", // Message à l'assistant
+    "chat",              // Chat simple
+    "message",           // Message simple
+    "invoke",            // Invocation
+    "call",              // Appel générique
+  ];
   
-  // Format 2 : Format MCP avec méthode "tools/call"
-  formats.push({
-    name: "mcp_tools_call",
-    body: {
-      method: "tools/call",
-      params: {
-        name: "context",
-        arguments: {
+  for (const method of jsonrpcMethods) {
+    // Format JSON-RPC 2.0 standard avec méthode
+    formats.push({
+      name: `jsonrpc_${method.replace(/\//g, "_")}`,
+      body: {
+        jsonrpc: "2.0",
+        id: 1,
+        method: method,
+        params: {
           query: cleanMessage,
         },
       },
-    },
-  });
-  
-  // Format 3 : Format MCP avec message direct
-  formats.push({
-    name: "mcp_message_direct",
-    body: {
-      message: cleanMessage,
-    },
-  });
-  
-  // Format 4 : Format MCP avec context tool et message contextuel
-  if (hasContext) {
-    formats.push({
-      name: "mcp_context_tool_with_context",
-      body: {
-        tool: "context",
-        arguments: {
-          query: contextualMessage,
-        },
-      },
     });
+    
+    // Format avec outil "context" (si la méthode est tools/call)
+    if (method === "tools/call") {
+      formats.push({
+        name: "jsonrpc_tools_call_context",
+        body: {
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/call",
+          params: {
+            name: "context",
+            arguments: {
+              query: cleanMessage,
+            },
+          },
+        },
+      });
+      
+      if (hasContext) {
+        formats.push({
+          name: "jsonrpc_tools_call_context_with_context",
+          body: {
+            jsonrpc: "2.0",
+            id: 1,
+            method: "tools/call",
+            params: {
+              name: "context",
+              arguments: {
+                query: contextualMessage,
+              },
+            },
+          },
+        });
+      }
+    }
+    
+    // Format avec message (pour les méthodes de chat)
+    if (method.includes("chat") || method.includes("message")) {
+      formats.push({
+        name: `jsonrpc_${method.replace(/\//g, "_")}_with_message`,
+        body: {
+          jsonrpc: "2.0",
+          id: 1,
+          method: method,
+          params: {
+            message: cleanMessage,
+          },
+        },
+      });
+      
+      if (hasContext) {
+        formats.push({
+          name: `jsonrpc_${method.replace(/\//g, "_")}_with_context_message`,
+          body: {
+            jsonrpc: "2.0",
+            id: 1,
+            method: method,
+            params: {
+              message: contextualMessage,
+            },
+          },
+        });
+      }
+    }
   }
   
-  // FORMATS DIRECTS (fallback)
+  // FORMATS DIRECTS en dernier recours (mais probablement non supportés)
   if (hasContext) {
     formats.push({
       name: "message_with_context",
@@ -219,26 +266,12 @@ function generateRequestBodies(
     });
   }
   
-  formats.push(
-    {
-      name: "message_only",
-      body: {
-        message: cleanMessage,
-      },
+  formats.push({
+    name: "message_only",
+    body: {
+      message: cleanMessage,
     },
-    {
-      name: "query_only",
-      body: {
-        query: cleanMessage,
-      },
-    },
-    {
-      name: "input_only",
-      body: {
-        input: cleanMessage,
-      },
-    }
-  );
+  });
   
   return formats;
 }
