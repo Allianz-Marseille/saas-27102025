@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 // API Chat standard de Pinecone Assistant (PAS l'endpoint MCP)
 const PINECONE_PROJECT_ID = process.env.PINECONE_PROJECT_ID || "prj_kcqNaE60ERclhMMTQYfzrlkKwx29";
 const PINECONE_ASSISTANT_NAME = "saas-allianz";
-// Format possible: https://api.pinecone.io/assistant/assistants/{assistant_name}/chat
-// OU avec project ID: https://api.pinecone.io/{project_id}/assistants/{assistant_name}/chat
+// URL API Chat : https://api.pinecone.io/assistant/assistants/{assistant_name}/chat
 const PINECONE_CHAT_API_URL = `https://api.pinecone.io/assistant/assistants/${PINECONE_ASSISTANT_NAME}/chat`;
 const TIMEOUT_MS = 30000; // 30 secondes
 
@@ -376,11 +375,15 @@ export async function POST(request: NextRequest) {
           responseTime,
           authMethod,
           url: PINECONE_CHAT_API_URL,
+          projectId: PINECONE_PROJECT_ID,
           assistantName: PINECONE_ASSISTANT_NAME,
           apiKeyPrefix: apiKey.trim().substring(0, 5),
           apiKeyLength: apiKey.trim().length,
+          apiKeyLastChars: apiKey.trim().length > 4 ? `...${apiKey.trim().slice(-4)}` : "****",
           error: errorText,
           errorData,
+          // Vérifier si l'URL ou l'assistant name est dans l'erreur
+          suggestion: "Vérifier: 1) Clé API complète dans Vercel, 2) Nom assistant correct, 3) Clé API valide pour ce projet",
         });
 
         return handleApiError(response.status, errorText);
