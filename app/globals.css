@@ -559,3 +559,57 @@
 .level-up-text {
   animation: level-up 2s ease-out;
 }
+
+/* ==================== CUSTOM CURSOR ==================== */
+
+:root {
+  --cursor-dot: oklch(0.985 0 0);
+  --cursor-circle: oklch(0.205 0 0);
+  --cursor-circle-hover: oklch(0.488 0.243 264.376);
+}
+
+.dark {
+  --cursor-dot: oklch(0.985 0 0);
+  --cursor-circle: oklch(0.922 0 0);
+  --cursor-circle-hover: oklch(0.488 0.243 264.376);
+}
+
+.custom-cursor-dot {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--cursor-dot);
+  pointer-events: none;
+  z-index: 9999;
+  transition: opacity 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  will-change: transform;
+}
+
+.custom-cursor-circle {
+  position: fixed;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--cursor-circle);
+  pointer-events: none;
+  z-index: 9998;
+  transition: width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              height 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              border-color 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              transform 0.1s linear;
+  will-change: transform;
+}
+
+.custom-cursor-circle[data-hovering="true"] {
+  border-color: var(--cursor-circle-hover);
+}
+
+/* Désactiver le curseur personnalisé sur mobile/tablette */
+@media (hover: none) or (pointer: coarse) {
+  .custom-cursor-dot,
+  .custom-cursor-circle {
+    display: none !important;
+  }
+}
