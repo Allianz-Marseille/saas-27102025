@@ -263,6 +263,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Vérification du Project ID (requis pour l'en-tête x-project-id)
+    const projectId = process.env.PINECONE_PROJECT_ID || PINECONE_PROJECT_ID;
+    if (!projectId || projectId.trim().length === 0) {
+      console.error("PINECONE_PROJECT_ID n'est pas configuré");
+      return NextResponse.json(
+        {
+          error: "Configuration manquante",
+          response: "L'assistant IA n'est pas configuré. Le Project ID Pinecone est requis.",
+        },
+        { status: 200 }
+      );
+    }
+
     // Construction du message contextuel
     // Note: Le contexte (category/theme) est inclus dans les formats de requête testés
     // via la fonction generateRequestBodies qui construit différents formats incluant le contexte.
@@ -309,14 +322,18 @@ export async function POST(request: NextRequest) {
       let response: Response;
       let authMethod = "Api-Key";
       
+      // Construire les en-têtes avec x-project-id (requis pour JWT access)
+      const headersWithProjectId = {
+        "Api-Key": apiKey.trim(),
+        "Content-Type": "application/json",
+        "X-Pinecone-Api-Version": "2025-01",
+        "x-project-id": projectId.trim(), // En-tête requis pour JWT access
+      };
+
       try {
         response = await fetch(PINECONE_CHAT_API_URL, {
           method: "POST",
-          headers: {
-            "Api-Key": apiKey,
-            "Content-Type": "application/json",
-            "X-Pinecone-Api-Version": "2025-01",
-          },
+          headers: headersWithProjectId,
           body: JSON.stringify(requestBody),
           signal: controller.signal,
         });
@@ -330,9 +347,10 @@ export async function POST(request: NextRequest) {
           response = await fetch(PINECONE_CHAT_API_URL, {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${apiKey}`,
+              "Authorization": `Bearer ${apiKey.trim()}`,
               "Content-Type": "application/json",
               "X-Pinecone-Api-Version": "2025-01",
+              "x-project-id": projectId.trim(), // Toujours inclure x-project-id
             },
             body: JSON.stringify(requestBody),
             signal: controller.signal,
@@ -347,9 +365,10 @@ export async function POST(request: NextRequest) {
         response = await fetch(PINECONE_CHAT_API_URL, {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${apiKey}`,
+            "Authorization": `Bearer ${apiKey.trim()}`,
             "Content-Type": "application/json",
             "X-Pinecone-Api-Version": "2025-01",
+            "x-project-id": projectId.trim(), // Toujours inclure x-project-id
           },
           body: JSON.stringify(requestBody),
           signal: controller.signal,
@@ -375,7 +394,7 @@ export async function POST(request: NextRequest) {
           responseTime,
           authMethod,
           url: PINECONE_CHAT_API_URL,
-          projectId: PINECONE_PROJECT_ID,
+          projectId: projectId.trim(),
           assistantName: PINECONE_ASSISTANT_NAME,
           apiKeyPrefix: apiKey.trim().substring(0, 5),
           apiKeyLength: apiKey.trim().length,
@@ -383,7 +402,7 @@ export async function POST(request: NextRequest) {
           error: errorText,
           errorData,
           // Vérifier si l'URL ou l'assistant name est dans l'erreur
-          suggestion: "Vérifier: 1) Clé API complète dans Vercel, 2) Nom assistant correct, 3) Clé API valide pour ce projet",
+          suggestion: "Vérifier: 1) Clé API complète dans Vercel, 2) Project ID correct et présent dans les en-têtes (x-project-id), 3) Nom assistant correct, 4) Clé API valide pour ce projet",
         });
 
         return handleApiError(response.status, errorText);

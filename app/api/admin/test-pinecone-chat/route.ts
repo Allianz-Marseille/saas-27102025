@@ -32,6 +32,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const projectId = process.env.PINECONE_PROJECT_ID || "prj_kcqNaE60ERclhMMTQYfzrlkKwx29";
+    if (!projectId || projectId.trim().length === 0) {
+      return NextResponse.json(
+        { error: "PINECONE_PROJECT_ID n'est pas configuré" },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const testMessage = body.message || "Bonjour, qui êtes-vous ?";
 
@@ -51,15 +59,16 @@ export async function POST(request: NextRequest) {
     // Tester les deux formats d'authentification
     const results = [];
     
-    // Test 1 : Api-Key
+    // Test 1 : Api-Key avec x-project-id
     try {
       const startTime = Date.now();
       const response1 = await fetch(PINECONE_CHAT_API_URL, {
         method: "POST",
         headers: {
-          "Api-Key": apiKey,
+          "Api-Key": apiKey.trim(),
           "Content-Type": "application/json",
           "X-Pinecone-Api-Version": "2025-01",
+          "x-project-id": projectId.trim(), // En-tête requis pour JWT access
         },
         body: JSON.stringify(requestBody),
         signal: controller.signal,
@@ -90,15 +99,16 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Test 2 : Authorization Bearer
+    // Test 2 : Authorization Bearer avec x-project-id
     try {
       const startTime = Date.now();
       const response2 = await fetch(PINECONE_CHAT_API_URL, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${apiKey}`,
+          "Authorization": `Bearer ${apiKey.trim()}`,
           "Content-Type": "application/json",
           "X-Pinecone-Api-Version": "2025-01",
+          "x-project-id": projectId.trim(), // En-tête requis pour JWT access
         },
         body: JSON.stringify(requestBody),
         signal: controller.signal,
@@ -136,6 +146,7 @@ export async function POST(request: NextRequest) {
       configuration: {
         url: PINECONE_CHAT_API_URL,
         assistantName: PINECONE_ASSISTANT_NAME,
+        projectId: projectId.trim(),
         apiKeyPrefix: apiKey.trim().substring(0, 5),
         apiKeyLength: apiKey.trim().length,
         apiKeyLastChars: apiKey.trim().length > 4 ? `...${apiKey.trim().slice(-4)}` : "****",
