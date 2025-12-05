@@ -81,7 +81,20 @@ function handleApiError(status: number, errorText: string): NextResponse {
 
   switch (status) {
     case 400:
-      userMessage = "La requête est invalide. Veuillez réessayer avec une autre question.";
+      // Essayer d'extraire un message d'erreur plus spécifique
+      let specificError = "";
+      try {
+        const parsed = JSON.parse(errorText);
+        specificError = parsed.message || parsed.error?.message || "";
+      } catch {
+        // Ce n'est pas du JSON, on garde le message générique
+      }
+      
+      if (specificError) {
+        userMessage = `La requête n'est pas valide : ${specificError}. Veuillez reformuler votre question.`;
+      } else {
+        userMessage = "La requête est invalide. Veuillez réessayer avec une autre question ou contacter le support si le problème persiste.";
+      }
       break;
     case 401:
     case 403:
@@ -157,17 +170,35 @@ export async function POST(request: NextRequest) {
     }
 
     // Construction du message contextuel
-    const contextualMessage = buildContextualMessage(
+    // Note: On envoie le message tel quel, sans formatage contextuel
+    // car l'API Pinecone pourrait ne pas accepter le format avec crochets
+    const contextualMessage = message.trim();
+    
+    // Log pour debug (on garde le format contextuel pour les logs mais on ne l'envoie pas)
+    const contextualMessageForLog = buildContextualMessage(
       message.trim(),
       category,
       theme
     );
+    console.log("Message original:", message.trim());
+    console.log("Message contextuel (pour log):", contextualMessageForLog);
 
     // Appel à l'API Pinecone avec timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
     try {
+      // Préparer le body de la requête
+      const requestBody = {
+        message: contextualMessage,
+      };
+
+      console.log("Requête API Pinecone:", {
+        url: PINECONE_API_URL,
+        body: requestBody,
+        messageLength: contextualMessage.length,
+      });
+
       const response = await fetch(PINECONE_API_URL, {
         method: "POST",
         headers: {
@@ -175,9 +206,7 @@ export async function POST(request: NextRequest) {
           Accept: "application/json, text/event-stream",
           Authorization: `Bearer ${apiKey}`,
         },
-        body: JSON.stringify({
-          message: contextualMessage,
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       });
 
@@ -186,8 +215,18 @@ export async function POST(request: NextRequest) {
       // Gestion des erreurs HTTP
       if (!response.ok) {
         let errorText = "";
+        let errorJson: any = null;
+        
         try {
-          errorText = await response.text();
+          const errorContent = await response.text();
+          errorText = errorContent;
+          
+          // Essayer de parser en JSON pour avoir plus d'infos
+          try {
+            errorJson = JSON.parse(errorContent);
+          } catch {
+            // Ce n'est pas du JSON, on garde le texte
+          }
         } catch {
           errorText = response.statusText || "Erreur inconnue";
         }
@@ -195,8 +234,22 @@ export async function POST(request: NextRequest) {
         console.error("Erreur API Pinecone:", {
           status: response.status,
           statusText: response.statusText,
-          error: errorText.substring(0, 200), // Limiter la longueur du log
+          error: errorText.substring(0, 500),
+          errorJson: errorJson,
+          requestBody: requestBody,
         });
+
+        // Si c'est une erreur 400, essayer de donner plus de détails
+        if (response.status === 400 && errorJson) {
+          const errorMessage = errorJson.message || errorJson.error?.message || errorText;
+          return NextResponse.json(
+            {
+              error: `Erreur ${response.status}`,
+              response: `La requête n'est pas valide : ${errorMessage}. Veuillez reformuler votre question.`,
+            },
+            { status: 200 }
+          );
+        }
 
         return handleApiError(response.status, errorText);
       }
