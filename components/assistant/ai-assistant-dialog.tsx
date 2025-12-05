@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bot, Car, Building2, Briefcase, Shield, Home, Building, Heart, Send, Loader2, Sparkles } from "lucide-react";
+import { Bot, Car, Building2, Briefcase, Shield, Home, Building, Heart, Send, Loader2, Sparkles, ArrowLeft, Lightbulb, Users, Briefcase as BriefcaseIcon, Award } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import type {
   CategoryConfig,
   ChatMessage,
 } from "@/types/assistant.type";
+import { THEME_CONFIGS, type PromptSuggestion } from "@/lib/assistant/prompts";
 
 const CATEGORIES: CategoryConfig[] = [
   {
@@ -90,8 +91,11 @@ export function AiAssistantDialog({
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showCategories, setShowCategories] = useState(true);
+  const [showPrompts, setShowPrompts] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState<"retail" | "pro" | "specialized" | null>(null);
   const [selectedCategory, setSelectedCategory] =
     useState<AssistantCategory | null>(null);
+  const [currentTheme, setCurrentTheme] = useState<"retail" | "pro" | "specialized" | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -99,8 +103,11 @@ export function AiAssistantDialog({
   useEffect(() => {
     if (open) {
       setShowCategories(true);
+      setShowPrompts(false);
       setMessages([]);
       setSelectedCategory(null);
+      setSelectedTheme(null);
+      setCurrentTheme(null);
       setInputValue("");
     }
   }, [open]);
@@ -119,14 +126,21 @@ export function AiAssistantDialog({
     }
   }, [showCategories, open]);
 
-  const sendMessage = async (content: string, category?: AssistantCategory) => {
+  const sendMessage = async (
+    content: string,
+    category?: AssistantCategory,
+    theme?: "retail" | "pro" | "specialized"
+  ) => {
     if (!content.trim() || isLoading) return;
+
+    const finalCategory = category || selectedCategory || undefined;
+    const finalTheme = theme || currentTheme || selectedTheme || undefined;
 
     const userMessage: ChatMessage = {
       role: "user",
       content,
       timestamp: new Date(),
-      category: category || selectedCategory || undefined,
+      category: finalCategory,
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -141,7 +155,8 @@ export function AiAssistantDialog({
         },
         body: JSON.stringify({
           message: content,
-          category: category || selectedCategory || undefined,
+          category: finalCategory,
+          theme: finalTheme,
         }),
       });
 
@@ -181,12 +196,30 @@ export function AiAssistantDialog({
   const handleCategorySelect = (category: AssistantCategory) => {
     setSelectedCategory(category);
     setShowCategories(false);
+    setShowPrompts(false);
     const categoryConfig = CATEGORIES.find((c) => c.id === category);
     const categoryLabel = categoryConfig?.label || category;
     sendMessage(
       `Je souhaite des informations sur ${categoryLabel}`,
       category
     );
+  };
+
+  const handlePromptSelect = (prompt: PromptSuggestion) => {
+    setShowPrompts(false);
+    setShowCategories(false);
+    if (prompt.category) {
+      setSelectedCategory(prompt.category as AssistantCategory);
+    }
+    setCurrentTheme(prompt.theme);
+    sendMessage(prompt.text, prompt.category as AssistantCategory | undefined, prompt.theme);
+  };
+
+  const handleThemeSelect = (theme: "retail" | "pro" | "specialized") => {
+    setSelectedTheme(theme);
+    setCurrentTheme(theme);
+    setShowCategories(false);
+    setShowPrompts(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -215,7 +248,7 @@ export function AiAssistantDialog({
         <div className="flex-1 overflow-hidden flex flex-col">
           {showCategories ? (
             // Écran de sélection de catégorie
-            <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
               <div className="text-center space-y-2">
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Bonjour ! Je suis Nono le robot 🤖
@@ -225,37 +258,142 @@ export function AiAssistantDialog({
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 w-full max-w-2xl">
-                {CATEGORIES.map((category) => {
-                  const Icon = category.icon;
-                  return (
-                    <Button
-                      key={category.id}
-                      variant="outline"
-                      className={cn(
-                        "h-auto flex-col gap-2 p-4 hover:scale-105 transition-transform",
-                        "hover:bg-gradient-to-br hover:from-white hover:to-gray-50",
-                        "dark:hover:from-gray-900 dark:hover:to-gray-800"
-                      )}
-                      onClick={() => handleCategorySelect(category.id)}
-                    >
-                      <div
+              {/* Section des thèmes d'offres commerciales */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-yellow-500" />
+                  <h3 className="font-semibold text-lg">Offres Commerciales</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {THEME_CONFIGS.map((theme) => {
+                    const themeIcons = {
+                      retail: Home,
+                      pro: BriefcaseIcon,
+                      specialized: Award,
+                    };
+                    const Icon = themeIcons[theme.id];
+                    const themeColors = {
+                      retail: "from-pink-500 to-pink-600",
+                      pro: "from-indigo-500 to-indigo-600",
+                      specialized: "from-purple-500 to-purple-600",
+                    };
+                    return (
+                      <Button
+                        key={theme.id}
+                        variant="outline"
                         className={cn(
-                          "p-3 rounded-lg bg-gradient-to-br",
-                          category.gradient
+                          "h-auto flex-col gap-2 p-4 hover:scale-105 transition-transform text-left",
+                          "hover:bg-gradient-to-br hover:from-white hover:to-gray-50",
+                          "dark:hover:from-gray-900 dark:hover:to-gray-800"
                         )}
+                        onClick={() => handleThemeSelect(theme.id)}
                       >
-                        <Icon className="h-6 w-6 text-white" />
-                      </div>
-                      <span className="font-semibold">{category.label}</span>
-                      {category.description && (
-                        <span className="text-xs text-muted-foreground">
-                          {category.description}
+                        <div
+                          className={cn(
+                            "p-3 rounded-lg bg-gradient-to-br",
+                            themeColors[theme.id]
+                          )}
+                        >
+                          <Icon className="h-6 w-6 text-white" />
+                        </div>
+                        <span className="font-semibold">{theme.label}</span>
+                        <span className="text-xs text-muted-foreground text-center">
+                          {theme.description}
                         </span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Section des catégories produits */}
+              <div className="space-y-4 pt-4 border-t">
+                <div className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-blue-500" />
+                  <h3 className="font-semibold text-lg">Produits & Marchés</h3>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {CATEGORIES.map((category) => {
+                    const Icon = category.icon;
+                    return (
+                      <Button
+                        key={category.id}
+                        variant="outline"
+                        className={cn(
+                          "h-auto flex-col gap-2 p-4 hover:scale-105 transition-transform",
+                          "hover:bg-gradient-to-br hover:from-white hover:to-gray-50",
+                          "dark:hover:from-gray-900 dark:hover:to-gray-800"
+                        )}
+                        onClick={() => handleCategorySelect(category.id)}
+                      >
+                        <div
+                          className={cn(
+                            "p-3 rounded-lg bg-gradient-to-br",
+                            category.gradient
+                          )}
+                        >
+                          <Icon className="h-6 w-6 text-white" />
+                        </div>
+                        <span className="font-semibold">{category.label}</span>
+                        {category.description && (
+                          <span className="text-xs text-muted-foreground">
+                            {category.description}
+                          </span>
+                        )}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : showPrompts && selectedTheme ? (
+            // Écran de sélection d'amorces pour un thème
+            <div className="flex-1 overflow-y-auto flex flex-col">
+              <div className="p-6 space-y-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowPrompts(false);
+                    setShowCategories(true);
+                    setSelectedTheme(null);
+                  }}
+                  className="w-fit"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Retour aux catégories
+                </Button>
+
+                <div className="space-y-4">
+                  <div>
+                    <h2 className="text-xl font-bold">
+                      {THEME_CONFIGS.find((t) => t.id === selectedTheme)?.label}
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {THEME_CONFIGS.find((t) => t.id === selectedTheme)?.description}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-sm text-muted-foreground">
+                      Questions suggérées :
+                    </h3>
+                    <div className="space-y-2">
+                      {THEME_CONFIGS.find((t) => t.id === selectedTheme)?.prompts.map(
+                        (prompt) => (
+                          <Button
+                            key={prompt.id}
+                            variant="outline"
+                            className="w-full justify-start text-left h-auto p-3 hover:bg-muted"
+                            onClick={() => handlePromptSelect(prompt)}
+                          >
+                            <span className="text-sm">{prompt.text}</span>
+                          </Button>
+                        )
                       )}
-                    </Button>
-                  );
-                })}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
@@ -263,10 +401,23 @@ export function AiAssistantDialog({
             <>
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {messages.length === 0 && (
-                  <div className="flex items-center justify-center h-full">
+                  <div className="flex flex-col items-center justify-center h-full space-y-4">
                     <p className="text-muted-foreground text-center">
                       Commencez une conversation avec Nono le robot
                     </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowCategories(true);
+                        setShowPrompts(false);
+                        setSelectedTheme(null);
+                        setSelectedCategory(null);
+                      }}
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Voir les catégories
+                    </Button>
                   </div>
                 )}
 

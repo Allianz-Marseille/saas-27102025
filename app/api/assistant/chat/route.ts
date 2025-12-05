@@ -6,7 +6,7 @@ const TIMEOUT_MS = 30000; // 30 secondes
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, category } = body;
+    const { message, category, theme } = body;
 
     if (!message || typeof message !== "string") {
       return NextResponse.json(
@@ -31,8 +31,20 @@ export async function POST(request: NextRequest) {
     
     console.log("PINECONE_API_KEY trouvée, longueur:", apiKey.length);
 
-    // Construire le message avec contexte de catégorie si disponible
+    // Construire le message avec contexte de catégorie et/ou thème si disponible
     let contextualMessage = message;
+    const contextParts: string[] = [];
+
+    if (theme) {
+      const themeLabels: Record<string, string> = {
+        retail: "Offres Retail (Particuliers)",
+        pro: "Offres Pro / Agri / Entreprise",
+        specialized: "Offres Agents Différenciés & Spécialistes",
+      };
+      const themeLabel = themeLabels[theme] || theme;
+      contextParts.push(`Thème: ${themeLabel}`);
+    }
+
     if (category) {
       const categoryLabels: Record<string, string> = {
         auto: "Auto",
@@ -44,7 +56,11 @@ export async function POST(request: NextRequest) {
         sante: "Marché Santé",
       };
       const categoryLabel = categoryLabels[category] || category;
-      contextualMessage = `[Contexte: ${categoryLabel}] ${message}`;
+      contextParts.push(`Catégorie: ${categoryLabel}`);
+    }
+
+    if (contextParts.length > 0) {
+      contextualMessage = `[${contextParts.join(", ")}] ${message}`;
     }
 
     // Appel à l'API Pinecone avec timeout

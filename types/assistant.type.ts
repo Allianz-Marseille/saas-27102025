@@ -28,6 +28,7 @@ export interface ChatMessage {
 export interface ChatRequest {
   message: string;
   category?: AssistantCategory;
+  theme?: "retail" | "pro" | "specialized";
   conversationHistory?: ChatMessage[];
 }
 
