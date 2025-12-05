@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PINECONE_API_URL = "https://prod-1-data.ke.pinecone.io/mcp/assistants/commercial-quadri";
+const PINECONE_API_URL = "https://prod-1-data.ke.pinecone.io/mcp/assistants/saas-allianz";
 const TIMEOUT_MS = 30000; // 30 secondes
 
 /**
@@ -46,18 +46,25 @@ function buildContextualMessage(
 
 /**
  * Interface pour les réponses possibles de l'API Pinecone MCP
+ * L'API utilise JSON-RPC 2.0, donc la réponse peut être au format JSON-RPC
  */
 interface PineconeResponse {
+  // Format JSON-RPC 2.0
+  jsonrpc?: string;
+  id?: number;
+  result?: string | { message?: string; response?: string; text?: string; content?: string };
+  error?: { code: number; message: string; data?: unknown };
+  // Formats directs (fallback)
   response?: string;
   message?: string;
   text?: string;
   content?: string;
   answer?: string;
-  result?: string | unknown;
 }
 
 /**
  * Extrait la réponse de l'assistant depuis différents formats de réponse
+ * L'API Pinecone MCP utilise JSON-RPC 2.0
  */
 function extractAssistantResponse(data: unknown): string {
   if (typeof data === "string") {
@@ -67,7 +74,36 @@ function extractAssistantResponse(data: unknown): string {
   if (typeof data === "object" && data !== null) {
     const response = data as PineconeResponse;
     
-    // Essayer différents champs possibles
+    // Format JSON-RPC 2.0 : vérifier d'abord si c'est une réponse JSON-RPC
+    if (response.jsonrpc === "2.0") {
+      // Si c'est une erreur JSON-RPC
+      if (response.error) {
+        console.error("Erreur JSON-RPC:", response.error);
+        return `Erreur: ${response.error.message || "Erreur inconnue"}`;
+      }
+      
+      // Si c'est un résultat JSON-RPC
+      if (response.result) {
+        // Le résultat peut être une string directement
+        if (typeof response.result === "string") {
+          return response.result;
+        }
+        
+        // Ou un objet avec des champs comme message, response, text, content
+        if (typeof response.result === "object") {
+          const resultObj = response.result as Record<string, unknown>;
+          const possibleFields = ["message", "response", "text", "content", "answer"];
+          for (const field of possibleFields) {
+            const value = resultObj[field];
+            if (value && typeof value === "string") {
+              return value;
+            }
+          }
+        }
+      }
+    }
+    
+    // Formats directs (fallback) : essayer différents champs possibles
     const possibleFields: (keyof PineconeResponse)[] = ["response", "message", "text", "content", "answer"];
     for (const field of possibleFields) {
       const value = response[field];
@@ -76,7 +112,7 @@ function extractAssistantResponse(data: unknown): string {
       }
     }
 
-    // Si l'objet contient un champ "result"
+    // Si l'objet contient un champ "result" (format non JSON-RPC)
     if (response.result) {
       return typeof response.result === "string" 
         ? response.result 
@@ -92,6 +128,7 @@ function extractAssistantResponse(data: unknown): string {
 
 /**
  * Génère différents formats de body de requête à tester
+ * L'API Pinecone MCP utilise JSON-RPC 2.0, donc on teste ce format en priorité
  */
 function generateRequestBodies(
   message: string,
@@ -100,16 +137,64 @@ function generateRequestBodies(
 ): Array<{ body: Record<string, unknown>; name: string }> {
   const contextualMessage = buildContextualMessage(message, category, theme);
   const cleanMessage = message.trim();
+  const hasContext = !!(category || theme);
   
-  return [
-    // Format 1 : Message simple (priorité pour éviter Parse error)
+  const formats: Array<{ body: Record<string, unknown>; name: string }> = [];
+  
+  // Format prioritaire : JSON-RPC 2.0 avec contexte si disponible
+  // L'API Pinecone MCP utilise ce format selon les tests
+  if (hasContext) {
+    formats.push({
+      name: "jsonrpc_invoke_with_context",
+      body: {
+        jsonrpc: "2.0",
+        method: "invoke",
+        params: {
+          message: contextualMessage,
+        },
+        id: 1,
+      },
+    });
+  }
+  
+  // Format JSON-RPC 2.0 standard (testé en priorité)
+  formats.push({
+    name: "jsonrpc_invoke",
+    body: {
+      jsonrpc: "2.0",
+      method: "invoke",
+      params: {
+        message: cleanMessage,
+      },
+      id: 1,
+    },
+  });
+  
+  // Format JSON-RPC 2.0 avec paramètres séparés
+  if (hasContext) {
+    formats.push({
+      name: "jsonrpc_invoke_with_params",
+      body: {
+        jsonrpc: "2.0",
+        method: "invoke",
+        params: {
+          message: cleanMessage,
+          ...(category && { category }),
+          ...(theme && { theme }),
+        },
+        id: 1,
+      },
+    });
+  }
+  
+  // Autres formats de fallback (au cas où l'API changerait)
+  formats.push(
     {
       name: "message_only",
       body: {
         message: cleanMessage,
       },
     },
-    // Format 2 : Message avec paramètres séparés
     {
       name: "message_with_params",
       body: {
@@ -118,59 +203,21 @@ function generateRequestBodies(
         ...(theme && { theme }),
       },
     },
-    // Format 3 : Query simple
     {
       name: "query_only",
       body: {
         query: cleanMessage,
       },
     },
-    // Format 4 : Query avec paramètres
-    {
-      name: "query_with_params",
-      body: {
-        query: cleanMessage,
-        ...(category && { category }),
-        ...(theme && { theme }),
-      },
-    },
-    // Format 5 : Input simple
-    {
-      name: "input_only",
-      body: {
-        input: cleanMessage,
-      },
-    },
-    // Format 6 : Prompt simple
-    {
-      name: "prompt_only",
-      body: {
-        prompt: cleanMessage,
-      },
-    },
-    // Format 7 : Text simple
-    {
-      name: "text_only",
-      body: {
-        text: cleanMessage,
-      },
-    },
-    // Format 8 : Message avec contexte (testé en dernier car peut causer Parse error)
     {
       name: "message_with_context",
       body: {
         message: contextualMessage,
       },
-    },
-    // Format 9 : Format avec conversation (si l'API le supporte)
-    {
-      name: "message_with_conversation",
-      body: {
-        message: cleanMessage,
-        conversation: [],
-      },
-    },
-  ];
+    }
+  );
+  
+  return formats;
 }
 
 /**
@@ -269,13 +316,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validation du format de la clé API (doit commencer par pcsk_)
+    const apiKeyPrefix = apiKey.trim().substring(0, 5);
+    const apiKeyLastChars = apiKey.trim().length > 4 ? `...${apiKey.trim().slice(-4)}` : "****";
+    
+    if (!apiKey.trim().startsWith("pcsk_")) {
+      console.error("PINECONE_API_KEY n'a pas le format attendu (doit commencer par pcsk_)", {
+        keyPrefix: apiKeyPrefix,
+        keyLength: apiKey.trim().length,
+        keyLastChars: apiKeyLastChars,
+      });
+    }
+
     // Construction du message contextuel
-    // Note: On envoie le message tel quel, sans formatage contextuel
-    // car l'API Pinecone pourrait ne pas accepter le format avec crochets
+    // Note: Le contexte (category/theme) est inclus dans les formats de requête testés
+    // via la fonction generateRequestBodies qui construit différents formats incluant le contexte.
+    // On ne l'applique pas directement ici car l'API Pinecone pourrait ne pas accepter
+    // le format avec crochets dans tous les cas, donc on teste plusieurs variantes.
     const contextualMessage = message.trim();
     
     // Log conditionnel pour debug (uniquement en développement)
     const isDevelopment = process.env.NODE_ENV === "development";
+    const hasContext = !!(category || theme);
     
     if (isDevelopment) {
       const contextualMessageForLog = buildContextualMessage(
@@ -285,6 +347,7 @@ export async function POST(request: NextRequest) {
       );
       console.log("Message original:", message.trim());
       console.log("Message contextuel (pour log):", contextualMessageForLog);
+      console.log("Contexte présent:", { category, theme, hasContext });
     }
 
     // Appel à l'API Pinecone avec timeout
@@ -300,12 +363,15 @@ export async function POST(request: NextRequest) {
       );
 
       // Essayer chaque format jusqu'à trouver celui qui fonctionne
-      let lastError: { status: number; errorText: string; errorJson: unknown } | null = null;
+      let lastError: { status: number; errorText: string; errorJson: unknown; formatName: string; responseTime: number } | null = null;
       let successfulResponse: Response | null = null;
       let successfulBodyName = "";
+      const formatAttempts: Array<{ name: string; status: number; responseTime: number; error?: string }> = [];
 
       for (const { body, name } of requestBodies) {
         try {
+          const startTime = Date.now();
+          
           // Log conditionnel (uniquement en développement)
           if (isDevelopment) {
             console.log(`Tentative avec format: ${name}`, {
@@ -318,20 +384,37 @@ export async function POST(request: NextRequest) {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Accept: "application/json",
+              Accept: "application/json, text/event-stream",
               Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify(body),
             signal: controller.signal,
           });
 
+          const responseTime = Date.now() - startTime;
+          
+          // Avertissement si le temps de réponse dépasse 10s
+          if (responseTime > 10000) {
+            console.warn(`⚠️ Format ${name} a pris ${responseTime}ms (> 10s)`, {
+              format: name,
+              responseTime,
+              status: response.status,
+            });
+          }
+
           // Si la requête réussit, on s'arrête
           if (response.ok) {
             successfulResponse = response;
             successfulBodyName = name;
             
+            formatAttempts.push({
+              name,
+              status: response.status,
+              responseTime,
+            });
+            
             if (isDevelopment) {
-              console.log(`✅ Format ${name} accepté par l'API`);
+              console.log(`✅ Format ${name} accepté par l'API (${responseTime}ms)`);
             }
             break;
           }
@@ -351,10 +434,19 @@ export async function POST(request: NextRequest) {
               status: response.status,
               errorText: errorContent,
               errorJson,
+              formatName: name,
+              responseTime,
             };
 
+            formatAttempts.push({
+              name,
+              status: response.status,
+              responseTime,
+              error: errorContent.substring(0, 200),
+            });
+
             if (isDevelopment) {
-              console.log(`❌ Format ${name} rejeté (${response.status}):`, {
+              console.log(`❌ Format ${name} rejeté (${response.status}, ${responseTime}ms):`, {
                 error: errorContent.substring(0, 500),
                 errorJson,
                 requestBody: JSON.stringify(body),
@@ -367,18 +459,54 @@ export async function POST(request: NextRequest) {
           }
 
           // Pour les autres erreurs (401, 403, 500, etc.), on s'arrête
+          const errorContent = await response.text().catch(() => response.statusText);
           lastError = {
             status: response.status,
-            errorText: await response.text().catch(() => response.statusText),
+            errorText: errorContent,
             errorJson: null,
+            formatName: name,
+            responseTime,
           };
+          
+          formatAttempts.push({
+            name,
+            status: response.status,
+            responseTime,
+            error: errorContent.substring(0, 200),
+          });
+          
           break;
 
         } catch (fetchError: unknown) {
-          // Erreur réseau, on continue avec le format suivant
-          if (isDevelopment) {
-            console.log(`❌ Format ${name} - Erreur réseau:`, fetchError);
+          // Erreur réseau ou timeout
+          const isTimeout = fetchError instanceof Error && fetchError.name === "AbortError";
+          
+          if (isTimeout) {
+            console.error(`⏱️ Format ${name} - Timeout après ${TIMEOUT_MS}ms`);
+            formatAttempts.push({
+              name,
+              status: 0,
+              responseTime: TIMEOUT_MS,
+              error: "Timeout",
+            });
+          } else {
+            // Erreur réseau, on continue avec le format suivant
+            if (isDevelopment) {
+              console.log(`❌ Format ${name} - Erreur réseau:`, fetchError);
+            }
+            formatAttempts.push({
+              name,
+              status: 0,
+              responseTime: 0,
+              error: fetchError instanceof Error ? fetchError.message : String(fetchError),
+            });
           }
+          
+          // Si c'est un timeout, on arrête car tous les autres formats échoueront aussi
+          if (isTimeout) {
+            break;
+          }
+          
           continue;
         }
       }
@@ -387,12 +515,41 @@ export async function POST(request: NextRequest) {
 
       // Si aucun format n'a fonctionné
       if (!successfulResponse && lastError) {
-        console.error("Tous les formats de requête ont échoué. Dernière erreur:", {
-          status: lastError.status,
-          errorText: lastError.errorText.substring(0, 500),
-          errorJson: lastError.errorJson,
-          formatsTested: requestBodies.map(b => b.name),
-        });
+        // Log structuré complet en production pour faciliter l'analyse dans Vercel
+        const errorLog = {
+          timestamp: new Date().toISOString(),
+          error: "Tous les formats de requête ont échoué",
+          configuration: {
+            pineconeApiUrl: PINECONE_API_URL,
+            timeout: TIMEOUT_MS,
+            apiKeyPresent: !!apiKey,
+            apiKeyLength: apiKey.trim().length,
+            apiKeyPrefix: apiKeyPrefix,
+            apiKeyLastChars: apiKeyLastChars,
+          },
+          lastError: {
+            status: lastError.status,
+            formatName: lastError.formatName,
+            responseTime: lastError.responseTime,
+            errorText: lastError.errorText, // Complet, sans limite
+            errorJson: lastError.errorJson, // Complet
+          },
+          formatsTested: formatAttempts.map(attempt => ({
+            name: attempt.name,
+            status: attempt.status,
+            responseTime: attempt.responseTime,
+            error: attempt.error,
+          })),
+          requestInfo: {
+            messageLength: message.trim().length,
+            hasCategory: !!category,
+            hasTheme: !!theme,
+            category: category || null,
+            theme: theme || null,
+          },
+        };
+        
+        console.error(JSON.stringify(errorLog, null, 2));
 
         // Si c'était une erreur 400, donner plus de détails
         if (lastError.status === 400) {
@@ -502,10 +659,17 @@ export async function POST(request: NextRequest) {
 
       // Gestion du timeout
       if (fetchError instanceof Error && fetchError.name === "AbortError") {
+        console.error("⏱️ Timeout atteint lors de l'appel à l'API Pinecone", {
+          timestamp: new Date().toISOString(),
+          timeout: TIMEOUT_MS,
+          pineconeApiUrl: PINECONE_API_URL,
+          suggestion: `Le timeout de ${TIMEOUT_MS}ms a été atteint. Considérez augmenter TIMEOUT_MS si nécessaire.`,
+        });
+        
         return NextResponse.json(
           {
             error: "Timeout",
-            response: "La requête a pris trop de temps. Veuillez réessayer avec une question plus courte.",
+            response: `La requête a pris trop de temps (limite: ${TIMEOUT_MS / 1000}s). Veuillez réessayer avec une question plus courte.`,
           },
           { status: 200 }
         );
