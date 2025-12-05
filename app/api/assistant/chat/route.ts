@@ -166,10 +166,11 @@ function generateRequestBodies(
   // L'API MCP exige jsonrpc: "2.0", id, et method obligatoires
   
   // Méthodes possibles pour les assistants Pinecone MCP
+  // L'outil "context" n'existe pas (-32602), donc on ne teste plus tools/call avec context
+  // On priorise les méthodes directes de chat
+  
   const jsonrpcMethods = [
-    "tools/call",        // Appel d'outil MCP
-    "tools/list",        // Lister les outils disponibles
-    "assistant/chat",    // Chat avec l'assistant
+    "assistant/chat",    // Chat avec l'assistant (priorité)
     "assistant/message", // Message à l'assistant
     "chat",              // Chat simple
     "message",           // Message simple
@@ -178,87 +179,7 @@ function generateRequestBodies(
   ];
   
   for (const method of jsonrpcMethods) {
-    // Pour tools/call, params.name est OBLIGATOIRE - ne pas tester sans name
-    if (method === "tools/call") {
-      // Format avec outil "context" (obligatoire pour tools/call)
-      formats.push({
-        name: "jsonrpc_tools_call_context_query",
-        body: {
-          jsonrpc: "2.0",
-          id: 1,
-          method: "tools/call",
-          params: {
-            name: "context",
-            arguments: {
-              query: cleanMessage,
-            },
-          },
-        },
-      });
-      
-      formats.push({
-        name: "jsonrpc_tools_call_context_message",
-        body: {
-          jsonrpc: "2.0",
-          id: 1,
-          method: "tools/call",
-          params: {
-            name: "context",
-            arguments: {
-              message: cleanMessage,
-            },
-          },
-        },
-      });
-      
-      if (hasContext) {
-        formats.push({
-          name: "jsonrpc_tools_call_context_with_context",
-          body: {
-            jsonrpc: "2.0",
-            id: 1,
-            method: "tools/call",
-            params: {
-              name: "context",
-              arguments: {
-                query: contextualMessage,
-              },
-            },
-          },
-        });
-      }
-      
-      // Continuer à la méthode suivante (pas de formats génériques pour tools/call)
-      continue;
-    }
-    
-    // Pour tools/list, format spécifique
-    if (method === "tools/list") {
-      formats.push({
-        name: "jsonrpc_tools_list",
-        body: {
-          jsonrpc: "2.0",
-          id: 1,
-          method: "tools/list",
-        },
-      });
-      continue;
-    }
-    
-    // Pour les autres méthodes : formats avec query
-    formats.push({
-      name: `jsonrpc_${method.replace(/\//g, "_")}_with_query`,
-      body: {
-        jsonrpc: "2.0",
-        id: 1,
-        method: method,
-        params: {
-          query: cleanMessage,
-        },
-      },
-    });
-    
-    // Format avec message (pour les méthodes de chat/assistant)
+    // Format avec message (priorité pour les méthodes de chat/assistant)
     if (method.includes("chat") || method.includes("message") || method.includes("assistant")) {
       formats.push({
         name: `jsonrpc_${method.replace(/\//g, "_")}_with_message`,
@@ -287,8 +208,21 @@ function generateRequestBodies(
       }
     }
     
-    // Format avec contexte si disponible (pour méthodes autres que tools/call)
-    if (hasContext && method !== "tools/call" && method !== "tools/list") {
+    // Format avec query (fallback)
+    formats.push({
+      name: `jsonrpc_${method.replace(/\//g, "_")}_with_query`,
+      body: {
+        jsonrpc: "2.0",
+        id: 1,
+        method: method,
+        params: {
+          query: cleanMessage,
+        },
+      },
+    });
+    
+    // Format avec contexte si disponible
+    if (hasContext) {
       formats.push({
         name: `jsonrpc_${method.replace(/\//g, "_")}_with_context`,
         body: {
