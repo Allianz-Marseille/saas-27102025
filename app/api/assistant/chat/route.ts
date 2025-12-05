@@ -45,6 +45,8 @@ export async function POST(request: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
     try {
+      console.log("Appel API Pinecone avec message:", contextualMessage);
+      
       const response = await fetch(PINECONE_API_URL, {
         method: "POST",
         headers: {
@@ -61,17 +63,38 @@ export async function POST(request: NextRequest) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Erreur API Pinecone:", response.status, errorText);
+        console.error("Erreur API Pinecone:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+          url: PINECONE_API_URL,
+        });
+        
+        // Retourner une réponse avec le message d'erreur mais en 200 pour que le frontend puisse l'afficher
         return NextResponse.json(
           {
             error: `Erreur de l'assistant IA (${response.status})`,
-            response: "Désolé, je rencontre un problème technique. Pouvez-vous reformuler votre question ?",
+            response: `Désolé, je rencontre un problème technique (${response.status}). ${errorText || "Veuillez réessayer plus tard."}`,
           },
-          { status: response.status }
+          { status: 200 } // On retourne 200 pour que le frontend puisse afficher l'erreur
         );
       }
 
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get("content-type");
+      
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = text;
+        }
+      }
+
+      console.log("Réponse API Pinecone:", data);
 
       // Gérer différents formats de réponse possibles
       let assistantResponse: string;
@@ -83,6 +106,10 @@ export async function POST(request: NextRequest) {
         assistantResponse = data.message;
       } else if (data.text) {
         assistantResponse = data.text;
+      } else if (data.content) {
+        assistantResponse = data.content;
+      } else if (data.answer) {
+        assistantResponse = data.answer;
       } else {
         assistantResponse = JSON.stringify(data);
       }

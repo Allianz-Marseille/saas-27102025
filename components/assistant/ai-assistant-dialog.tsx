@@ -5,6 +5,7 @@ import { Bot, Car, Building2, Briefcase, Shield, Home, Building, Heart, Send, Lo
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -144,7 +145,18 @@ export function AiAssistantDialog({
         }),
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Erreur HTTP:", response.status, errorText);
+        throw new Error(`Erreur ${response.status}: ${errorText || "Erreur serveur"}`);
+      }
+
       const data = await response.json();
+
+      // Si c'est une erreur, afficher le message d'erreur mais aussi logger pour le debug
+      if (data.error) {
+        console.error("Erreur API assistant:", data.error);
+      }
 
       const assistantMessage: ChatMessage = {
         role: "assistant",
@@ -153,11 +165,11 @@ export function AiAssistantDialog({
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erreur lors de l'envoi du message:", error);
       const errorMessage: ChatMessage = {
         role: "assistant",
-        content: "Une erreur s'est produite. Veuillez réessayer.",
+        content: `Une erreur s'est produite : ${error.message || "Erreur réseau"}. Veuillez réessayer ou contacter le support si le problème persiste.`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -195,6 +207,9 @@ export function AiAssistantDialog({
             </div>
             Nono le robot
           </DialogTitle>
+          <DialogDescription>
+            Assistant IA pour vos questions sur les actions commerciales, codes de réduction et dispositifs
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col">
