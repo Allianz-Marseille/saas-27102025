@@ -335,15 +335,38 @@ function handleApiError(status: number, errorText: string): NextResponse {
       let specificError = "";
       try {
         const parsed = JSON.parse(errorText);
-        specificError = parsed.message || parsed.error?.message || "";
+        // Gérer les erreurs JSON-RPC avec validation Zod
+        if (parsed.jsonrpc === "2.0" && parsed.error) {
+          const error = parsed.error;
+          if (error.data && Array.isArray(error.data)) {
+            // Erreur Zod dans error.data
+            const zodErrors = error.data as Array<{
+              code?: string;
+              path?: (string | number)[];
+              message?: string;
+            }>;
+            const firstError = zodErrors[0];
+            if (firstError?.message && firstError?.path) {
+              specificError = `Erreur de validation: ${firstError.path.join(".")} - ${firstError.message}`;
+            } else {
+              specificError = error.message || "Format de requête invalide";
+            }
+          } else {
+            specificError = error.message || "Erreur de requête";
+          }
+        } else {
+          specificError = parsed.message || parsed.error?.message || "";
+        }
       } catch {
         // Ce n'est pas du JSON, on garde le message générique
       }
       
-      if (specificError) {
+      if (specificError && !specificError.includes("Required") && !specificError.includes("invalid_type")) {
+        // Afficher uniquement les erreurs compréhensibles pour l'utilisateur
         userMessage = `La requête n'est pas valide : ${specificError}. Veuillez reformuler votre question.`;
       } else {
-        userMessage = "La requête est invalide. Veuillez réessayer avec une autre question ou contacter le support si le problème persiste.";
+        // Pour les erreurs de validation technique, message générique
+        userMessage = "La requête est invalide. Le système teste différents formats automatiquement. Veuillez réessayer.";
       }
       break;
     case 401:
