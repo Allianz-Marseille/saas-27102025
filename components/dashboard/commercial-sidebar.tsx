@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, FileText, User, LogOut, ChevronLeft, Coins, Bot } from "lucide-react";
+import { Home, FileText, User, LogOut, ChevronLeft, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { NotificationCenter } from "@/components/dashboard/notification-center";
@@ -12,7 +12,6 @@ import { logUserLogout } from "@/lib/firebase/logs";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useAuth } from "@/lib/firebase/use-auth";
-import { AiAssistantDialog } from "@/components/assistant/ai-assistant-dialog";
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -49,7 +48,6 @@ export function CommercialSidebar() {
   const router = useRouter();
   const { user, userData } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -131,20 +129,6 @@ export function CommercialSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
-        {/* Bouton Assistant IA */}
-        <Button
-          variant="ghost"
-          onClick={() => setIsAssistantOpen(true)}
-          className={cn(
-            "w-full justify-start gap-3 transition-all relative overflow-hidden",
-            "hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30",
-            isCollapsed && "justify-center px-2"
-          )}
-        >
-          <Bot className="h-5 w-5 shrink-0" />
-          {!isCollapsed && <span className="font-medium">Assistant IA</span>}
-        </Button>
-
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -266,12 +250,6 @@ export function CommercialSidebar() {
         <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-50 blur-xl transition-opacity rounded-r-xl -z-10" />
       </button>
     )}
-
-    {/* Modal Assistant IA */}
-    <AiAssistantDialog
-      open={isAssistantOpen}
-      onOpenChange={setIsAssistantOpen}
-    />
   </>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LayoutDashboard, FileText, User, BarChart3, ChevronLeft, Bot } from "lucide-react";
+import { LayoutDashboard, FileText, User, BarChart3, ChevronLeft } from "lucide-react";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { useAutoLogout } from "@/lib/hooks/use-auto-logout";
@@ -17,7 +17,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
-import { AiAssistantDialog } from "@/components/assistant/ai-assistant-dialog";
 
 const healthNavItems = [
   {
@@ -53,7 +52,6 @@ export default function SanteIndividuelleLayout({
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
   // Déconnexion automatique après 10 minutes d'inactivité
   useAutoLogout({
@@ -152,25 +150,6 @@ export default function SanteIndividuelleLayout({
           {/* Navigation */}
           <nav className="flex-1 p-4 overflow-y-auto">
             <ul className="space-y-2">
-              {/* Bouton Assistant IA */}
-              <li>
-                <Button
-                  variant="ghost"
-                  onClick={() => setIsAssistantOpen(true)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
-                    "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50",
-                    isCollapsed && "justify-center px-2"
-                  )}
-                  title={isCollapsed ? "Assistant IA" : undefined}
-                >
-                  <Bot className="h-5 w-5 shrink-0" />
-                  {!isCollapsed && (
-                    <span className="font-medium">Assistant IA</span>
-                  )}
-                </Button>
-              </li>
-
               {healthNavItems.map((item) => {
                 const isActive = item.exact 
                   ? pathname === item.href
@@ -286,7 +265,6 @@ export default function SanteIndividuelleLayout({
             onLogout={handleLogout}
             userData={userData}
             onNavigate={handleMobileNavigation}
-            onOpenAssistant={() => setIsAssistantOpen(true)}
           />
         </MobileMenu>
 
@@ -302,12 +280,6 @@ export default function SanteIndividuelleLayout({
         <main className="flex-1 overflow-y-auto bg-background pt-16 lg:pt-0">
           {children}
         </main>
-
-        {/* Modal Assistant IA */}
-        <AiAssistantDialog
-          open={isAssistantOpen}
-          onOpenChange={setIsAssistantOpen}
-        />
       </div>
     </RouteGuard>
   );
