@@ -46,10 +46,17 @@ function buildContextualMessage(
 
 /**
  * Interface pour les réponses possibles de l'API Pinecone MCP
- * L'API utilise JSON-RPC 2.0, donc la réponse peut être au format JSON-RPC
+ * L'API utilise streamable HTTP transport (SSE) avec des outils MCP
  */
 interface PineconeResponse {
-  // Format JSON-RPC 2.0
+  // Format MCP avec outils
+  tool?: string;
+  content?: string | Array<{ type: string; text: string }>;
+  isError?: boolean;
+  // Format streamable HTTP transport (SSE)
+  event?: string;
+  data?: unknown;
+  // Format JSON-RPC (si utilisé)
   jsonrpc?: string;
   id?: number;
   result?: string | { message?: string; response?: string; text?: string; content?: string };
@@ -58,13 +65,12 @@ interface PineconeResponse {
   response?: string;
   message?: string;
   text?: string;
-  content?: string;
   answer?: string;
 }
 
 /**
  * Extrait la réponse de l'assistant depuis différents formats de réponse
- * L'API Pinecone MCP utilise JSON-RPC 2.0
+ * L'API Pinecone MCP utilise streamable HTTP transport avec des outils
  */
 function extractAssistantResponse(data: unknown): string {
   if (typeof data === "string") {
@@ -74,22 +80,34 @@ function extractAssistantResponse(data: unknown): string {
   if (typeof data === "object" && data !== null) {
     const response = data as PineconeResponse;
     
-    // Format JSON-RPC 2.0 : vérifier d'abord si c'est une réponse JSON-RPC
+    // Format MCP avec outil "context" : extraire le contenu
+    if (response.content) {
+      // Le contenu peut être une string ou un array d'objets avec type/text
+      if (typeof response.content === "string") {
+        return response.content;
+      }
+      if (Array.isArray(response.content)) {
+        // Format MCP standard : array de { type: string, text: string }
+        const texts = response.content
+          .filter((item: unknown) => typeof item === "object" && item !== null && "text" in item)
+          .map((item: { text?: string }) => item.text || "")
+          .filter((text: string) => text.length > 0);
+        if (texts.length > 0) {
+          return texts.join("\n");
+        }
+      }
+    }
+    
+    // Format JSON-RPC 2.0 (fallback si utilisé)
     if (response.jsonrpc === "2.0") {
-      // Si c'est une erreur JSON-RPC
       if (response.error) {
         console.error("Erreur JSON-RPC:", response.error);
         return `Erreur: ${response.error.message || "Erreur inconnue"}`;
       }
-      
-      // Si c'est un résultat JSON-RPC
       if (response.result) {
-        // Le résultat peut être une string directement
         if (typeof response.result === "string") {
           return response.result;
         }
-        
-        // Ou un objet avec des champs comme message, response, text, content
         if (typeof response.result === "object") {
           const resultObj = response.result as Record<string, unknown>;
           const possibleFields = ["message", "response", "text", "content", "answer"];
@@ -128,7 +146,8 @@ function extractAssistantResponse(data: unknown): string {
 
 /**
  * Génère différents formats de body de requête à tester
- * L'API Pinecone MCP utilise JSON-RPC 2.0, donc on teste ce format en priorité
+ * L'API Pinecone MCP utilise le streamable HTTP transport (pas JSON-RPC classique)
+ * L'API fournit un outil "context" pour récupérer des snippets de contexte
  */
 function generateRequestBodies(
   message: string,
@@ -141,8 +160,56 @@ function generateRequestBodies(
   
   const formats: Array<{ body: Record<string, unknown>; name: string }> = [];
   
-  // FORMATS DIRECTS EN PRIORITÉ (sans JSON-RPC)
-  // L'API MCP Pinecone pourrait accepter des formats directs avant JSON-RPC
+  // FORMATS MCP STREAMABLE HTTP TRANSPORT (priorité)
+  // Le serveur MCP Pinecone utilise streamable HTTP transport avec des outils
+  
+  // Format 1 : Utilisation de l'outil "context" de MCP
+  formats.push({
+    name: "mcp_context_tool",
+    body: {
+      tool: "context",
+      arguments: {
+        query: cleanMessage,
+      },
+    },
+  });
+  
+  // Format 2 : Format MCP avec méthode "tools/call"
+  formats.push({
+    name: "mcp_tools_call",
+    body: {
+      method: "tools/call",
+      params: {
+        name: "context",
+        arguments: {
+          query: cleanMessage,
+        },
+      },
+    },
+  });
+  
+  // Format 3 : Format MCP avec message direct
+  formats.push({
+    name: "mcp_message_direct",
+    body: {
+      message: cleanMessage,
+    },
+  });
+  
+  // Format 4 : Format MCP avec context tool et message contextuel
+  if (hasContext) {
+    formats.push({
+      name: "mcp_context_tool_with_context",
+      body: {
+        tool: "context",
+        arguments: {
+          query: contextualMessage,
+        },
+      },
+    });
+  }
+  
+  // FORMATS DIRECTS (fallback)
   if (hasContext) {
     formats.push({
       name: "message_with_context",
@@ -160,25 +227,9 @@ function generateRequestBodies(
       },
     },
     {
-      name: "message_with_params",
-      body: {
-        message: cleanMessage,
-        ...(category && { category }),
-        ...(theme && { theme }),
-      },
-    },
-    {
       name: "query_only",
       body: {
         query: cleanMessage,
-      },
-    },
-    {
-      name: "query_with_params",
-      body: {
-        query: cleanMessage,
-        ...(category && { category }),
-        ...(theme && { theme }),
       },
     },
     {
@@ -186,46 +237,8 @@ function generateRequestBodies(
       body: {
         input: cleanMessage,
       },
-    },
-    {
-      name: "prompt_only",
-      body: {
-        prompt: cleanMessage,
-      },
     }
   );
-  
-  // FORMATS JSON-RPC 2.0 en fallback
-  // Si les formats directs échouent, tester JSON-RPC avec différentes méthodes
-  const jsonrpcMethods = ["call", "execute", "chat", "invoke"];
-  
-  for (const method of jsonrpcMethods) {
-    formats.push({
-      name: `jsonrpc_${method}`,
-      body: {
-        jsonrpc: "2.0",
-        method: method,
-        params: {
-          message: cleanMessage,
-        },
-        id: 1,
-      },
-    });
-    
-    if (hasContext) {
-      formats.push({
-        name: `jsonrpc_${method}_with_context`,
-        body: {
-          jsonrpc: "2.0",
-          method: method,
-          params: {
-            message: contextualMessage,
-          },
-          id: 1,
-        },
-      });
-    }
-  }
   
   return formats;
 }
@@ -629,44 +642,76 @@ export async function POST(request: NextRequest) {
             });
           }
           
-          // Parser le format Server-Sent Events (SSE)
-          // Format: "event: message\ndata: {...}\n\n"
+          // Parser le format Server-Sent Events (SSE) pour MCP
+          // Format: "event: message\ndata: {...}\n\n" ou "event: tool_response\ndata: {...}"
           const lines = rawText.split("\n");
           const messages: string[] = [];
+          let currentEvent: string | null = null;
+          let currentData: string[] = [];
           
           for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            if (line.startsWith("data: ")) {
-              const jsonData = line.substring(6); // Enlever "data: "
-              try {
-                const parsed = JSON.parse(jsonData);
-                // Si c'est une réponse JSON-RPC, extraire le result
-                if (parsed.jsonrpc === "2.0" && parsed.result) {
-                  const result = parsed.result;
-                  if (typeof result === "string") {
-                    messages.push(result);
-                  } else if (typeof result === "object" && result !== null) {
-                    const resultObj = result as Record<string, unknown>;
-                    const possibleFields = ["message", "response", "text", "content"];
-                    for (const field of possibleFields) {
-                      if (resultObj[field] && typeof resultObj[field] === "string") {
-                        messages.push(resultObj[field] as string);
-                        break;
-                      }
+            
+            if (line.startsWith("event: ")) {
+              // Nouvel événement, traiter les données précédentes si disponibles
+              if (currentData.length > 0 && currentEvent) {
+                const dataStr = currentData.join("\n");
+                try {
+                  const parsed = JSON.parse(dataStr);
+                  // Extraire le contenu selon le type d'événement MCP
+                  if (currentEvent === "message" || currentEvent === "tool_response") {
+                    const extracted = extractAssistantResponse(parsed);
+                    if (extracted && extracted !== "Désolé, je n'ai pas pu traiter votre demande.") {
+                      messages.push(extracted);
                     }
                   }
-                } else {
-                  // Sinon, traiter comme une réponse directe
-                  messages.push(jsonData);
+                } catch {
+                  // Si ce n'est pas du JSON, utiliser le texte brut
+                  if (dataStr.trim()) {
+                    messages.push(dataStr);
+                  }
+                }
+              }
+              currentEvent = line.substring(7).trim(); // Enlever "event: "
+              currentData = [];
+            } else if (line.startsWith("data: ")) {
+              // Accumuler les données (peuvent être sur plusieurs lignes)
+              currentData.push(line.substring(6)); // Enlever "data: "
+            } else if (line.trim() === "" && currentData.length > 0) {
+              // Ligne vide = fin d'un message SSE, traiter
+              const dataStr = currentData.join("\n");
+              try {
+                const parsed = JSON.parse(dataStr);
+                const extracted = extractAssistantResponse(parsed);
+                if (extracted && extracted !== "Désolé, je n'ai pas pu traiter votre demande.") {
+                  messages.push(extracted);
                 }
               } catch {
-                // Si ce n'est pas du JSON, l'ajouter tel quel
-                messages.push(jsonData);
+                if (dataStr.trim()) {
+                  messages.push(dataStr);
+                }
+              }
+              currentData = [];
+            }
+          }
+          
+          // Traiter les dernières données si disponibles
+          if (currentData.length > 0) {
+            const dataStr = currentData.join("\n");
+            try {
+              const parsed = JSON.parse(dataStr);
+              const extracted = extractAssistantResponse(parsed);
+              if (extracted && extracted !== "Désolé, je n'ai pas pu traiter votre demande.") {
+                messages.push(extracted);
+              }
+            } catch {
+              if (dataStr.trim()) {
+                messages.push(dataStr);
               }
             }
           }
           
-          // Combiner tous les messages reçus
+          // Combiner tous les messages reçus ou utiliser le texte brut
           data = messages.length > 0 ? messages.join("\n") : rawText;
         } else {
           // Format JSON normal
