@@ -23,9 +23,13 @@ export async function POST(request: NextRequest) {
         nodeEnv: process.env.NODE_ENV,
         allEnvKeys: Object.keys(process.env).filter(key => key.includes('PINE') || key.includes('API')),
       });
+      // Retourner un message d'erreur user-friendly avec status 200 pour que le frontend puisse l'afficher
       return NextResponse.json(
-        { error: "Configuration serveur manquante" },
-        { status: 500 }
+        {
+          error: "Configuration serveur manquante",
+          response: "L'assistant IA n'est pas configuré correctement. Veuillez contacter l'administrateur pour configurer la clé API Pinecone (variable d'environnement PINECONE_API_KEY).",
+        },
+        { status: 200 }
       );
     }
     

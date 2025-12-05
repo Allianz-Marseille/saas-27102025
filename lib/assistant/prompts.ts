@@ -212,21 +212,21 @@ export const THEME_CONFIGS: ThemeConfig[] = [
     id: "retail",
     label: "Offres Retail (Particuliers)",
     description:
-      "Offres du moment, dispositifs annuels, bonus gros producteurs et offres par produit (Auto, MRH, Santé, Prévoyance, GAV)",
+      "Offres du moment, dispositifs annuels et bonus pour particuliers",
     prompts: RETAIL_PROMPTS,
   },
   {
     id: "pro",
     label: "Offres Pro / Agri / Entreprise",
     description:
-      "Offres pour clients professionnels, agricoles et entreprises, dispositifs annuels, offres segmentées et majorations",
+      "Offres professionnelles, agricoles et entreprises avec dispositifs annuels",
     prompts: PRO_PROMPTS,
   },
   {
     id: "specialized",
     label: "Agents Différenciés & Spécialistes",
     description:
-      "Dispositifs annuels spécifiques, bonus pour Spécialistes (Entreprise, Construction, Flottes & Garages, Agricole) et gros producteurs PJ Pro",
+      "Dispositifs spécifiques et bonus pour spécialistes et gros producteurs",
     prompts: SPECIALIZED_PROMPTS,
   },
 ];

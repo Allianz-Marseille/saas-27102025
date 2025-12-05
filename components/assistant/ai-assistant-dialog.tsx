@@ -248,7 +248,7 @@ export function AiAssistantDialog({
         <div className="flex-1 overflow-hidden flex flex-col">
           {showCategories ? (
             // Écran de sélection de catégorie
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-6 space-y-8">
               <div className="text-center space-y-2">
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Bonjour ! Je suis Nono le robot 🤖
@@ -261,10 +261,10 @@ export function AiAssistantDialog({
               {/* Section des thèmes d'offres commerciales */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-yellow-500" />
+                  <Lightbulb className="h-5 w-5 text-yellow-500 flex-shrink-0" />
                   <h3 className="font-semibold text-lg">Offres Commerciales</h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {THEME_CONFIGS.map((theme) => {
                     const themeIcons = {
                       retail: Home,
@@ -282,22 +282,25 @@ export function AiAssistantDialog({
                         key={theme.id}
                         variant="outline"
                         className={cn(
-                          "h-auto flex-col gap-2 p-4 hover:scale-105 transition-transform text-left",
+                          "h-auto flex-col gap-3 p-5 hover:scale-105 transition-transform text-left",
                           "hover:bg-gradient-to-br hover:from-white hover:to-gray-50",
-                          "dark:hover:from-gray-900 dark:hover:to-gray-800"
+                          "dark:hover:from-gray-900 dark:hover:to-gray-800",
+                          "min-h-[140px] overflow-hidden"
                         )}
                         onClick={() => handleThemeSelect(theme.id)}
                       >
                         <div
                           className={cn(
-                            "p-3 rounded-lg bg-gradient-to-br",
+                            "p-3 rounded-lg bg-gradient-to-br flex-shrink-0",
                             themeColors[theme.id]
                           )}
                         >
                           <Icon className="h-6 w-6 text-white" />
                         </div>
-                        <span className="font-semibold">{theme.label}</span>
-                        <span className="text-xs text-muted-foreground text-center">
+                        <span className="font-semibold text-sm md:text-base">
+                          {theme.label}
+                        </span>
+                        <span className="text-xs text-muted-foreground text-center line-clamp-2 overflow-hidden">
                           {theme.description}
                         </span>
                       </Button>
@@ -307,12 +310,12 @@ export function AiAssistantDialog({
               </div>
 
               {/* Section des catégories produits */}
-              <div className="space-y-4 pt-4 border-t">
+              <div className="space-y-4 pt-6 border-t">
                 <div className="flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-blue-500" />
+                  <Bot className="h-5 w-5 text-blue-500 flex-shrink-0" />
                   <h3 className="font-semibold text-lg">Produits & Marchés</h3>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {CATEGORIES.map((category) => {
                     const Icon = category.icon;
                     return (
@@ -320,23 +323,26 @@ export function AiAssistantDialog({
                         key={category.id}
                         variant="outline"
                         className={cn(
-                          "h-auto flex-col gap-2 p-4 hover:scale-105 transition-transform",
+                          "h-auto flex-col gap-2 p-5 hover:scale-105 transition-transform",
                           "hover:bg-gradient-to-br hover:from-white hover:to-gray-50",
-                          "dark:hover:from-gray-900 dark:hover:to-gray-800"
+                          "dark:hover:from-gray-900 dark:hover:to-gray-800",
+                          "min-h-[120px] overflow-hidden"
                         )}
                         onClick={() => handleCategorySelect(category.id)}
                       >
                         <div
                           className={cn(
-                            "p-3 rounded-lg bg-gradient-to-br",
+                            "p-3 rounded-lg bg-gradient-to-br flex-shrink-0",
                             category.gradient
                           )}
                         >
                           <Icon className="h-6 w-6 text-white" />
                         </div>
-                        <span className="font-semibold">{category.label}</span>
+                        <span className="font-semibold text-sm md:text-base">
+                          {category.label}
+                        </span>
                         {category.description && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-muted-foreground line-clamp-2 overflow-hidden text-center">
                             {category.description}
                           </span>
                         )}
