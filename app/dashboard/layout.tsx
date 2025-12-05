@@ -13,6 +13,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { logout } from "@/lib/firebase/auth";
 import { logUserLogout } from "@/lib/firebase/logs";
 import { toast } from "sonner";
+import { AiAssistantDialog } from "@/components/assistant/ai-assistant-dialog";
 
 const commercialNavItems = [
   {
@@ -47,6 +48,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
   // Déconnexion automatique après 10 minutes d'inactivité
   useAutoLogout({
@@ -99,6 +101,7 @@ export default function DashboardLayout({
             onLogout={handleLogout}
             userData={userData}
             onNavigate={handleMobileNavigation}
+            onOpenAssistant={() => setIsAssistantOpen(true)}
           />
         </MobileMenu>
 
@@ -113,6 +116,12 @@ export default function DashboardLayout({
         <main className="flex-1 overflow-y-auto bg-background pt-16 lg:pt-0">
           {children}
         </main>
+
+        {/* Modal Assistant IA */}
+        <AiAssistantDialog
+          open={isAssistantOpen}
+          onOpenChange={setIsAssistantOpen}
+        />
       </div>
     </RouteGuard>
   );

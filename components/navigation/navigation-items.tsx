@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -23,6 +23,7 @@ interface NavigationItemsProps {
     role?: string;
   } | null;
   onNavigate?: () => void; // Callback pour fermer le menu mobile après navigation
+  onOpenAssistant?: () => void; // Callback pour ouvrir l'assistant IA
 }
 
 export function NavigationItems({
@@ -32,6 +33,7 @@ export function NavigationItems({
   onLogout,
   userData,
   onNavigate,
+  onOpenAssistant,
 }: NavigationItemsProps) {
   const variantConfig = {
     admin: {
@@ -66,6 +68,26 @@ export function NavigationItems({
     <div className="flex flex-col h-full">
       {/* Navigation Items */}
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        {/* Bouton Assistant IA */}
+        {onOpenAssistant && (
+          <div>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                onOpenAssistant();
+                onNavigate?.();
+              }}
+              className={cn(
+                "w-full justify-start gap-3 transition-all relative overflow-hidden",
+                `hover:bg-gradient-to-r hover:${config.hoverGradient}`
+              )}
+            >
+              <Bot className="h-5 w-5 shrink-0" />
+              <span className="font-medium">Assistant IA</span>
+            </Button>
+          </div>
+        )}
+
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = item.exact

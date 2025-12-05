@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { useAutoLogout } from "@/lib/hooks/use-auto-logout";
+import { AiAssistantDialog } from "@/components/assistant/ai-assistant-dialog";
 
 const adminNavItems = [
   {
@@ -77,6 +78,7 @@ export default function AdminLayout({
   const { user, userData } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
   // Déconnexion automatique après 10 minutes d'inactivité
   useAutoLogout({
@@ -133,6 +135,7 @@ export default function AdminLayout({
             onLogout={handleLogout}
             userData={userData}
             onNavigate={handleMobileNavigation}
+            onOpenAssistant={() => setIsAssistantOpen(true)}
           />
         </MobileMenu>
 
@@ -158,6 +161,12 @@ export default function AdminLayout({
             {children}
           </main>
         </div>
+
+        {/* Modal Assistant IA */}
+        <AiAssistantDialog
+          open={isAssistantOpen}
+          onOpenChange={setIsAssistantOpen}
+        />
       </div>
     </RouteGuard>
   );

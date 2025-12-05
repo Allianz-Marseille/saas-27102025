@@ -1,12 +1,14 @@
 "use client";
 
-import { Home, Building2, LogOut, Users, User, ScrollText, ChevronLeft, ChevronRight, Heart, AlertTriangle, Coins } from "lucide-react";
+import { useState } from "react";
+import { Home, Building2, LogOut, Users, User, ScrollText, ChevronLeft, ChevronRight, Heart, AlertTriangle, Coins, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/firebase/use-auth";
 import Image from "next/image";
+import { AiAssistantDialog } from "@/components/assistant/ai-assistant-dialog";
 
 interface AdminSidebarProps {
   onLogout: () => void;
@@ -17,6 +19,7 @@ interface AdminSidebarProps {
 export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: AdminSidebarProps) {
   const pathname = usePathname();
   const { userData } = useAuth();
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
   const navItems = [
     {
@@ -126,6 +129,22 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+            {/* Bouton Assistant IA */}
+            <div>
+              <Button
+                variant="ghost"
+                onClick={() => setIsAssistantOpen(true)}
+                className={cn(
+                  "w-full justify-start gap-3 transition-all relative overflow-hidden",
+                  "hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30",
+                  isCollapsed && "justify-center px-2"
+                )}
+              >
+                <Bot className="h-5 w-5 shrink-0" />
+                {!isCollapsed && <span className="font-medium">Assistant IA</span>}
+              </Button>
+            </div>
+
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = item.exact 
@@ -230,6 +249,12 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
           <ChevronLeft className="h-4 w-4 group-hover:scale-110 transition-transform" />
         </button>
       )}
+
+      {/* Modal Assistant IA */}
+      <AiAssistantDialog
+        open={isAssistantOpen}
+        onOpenChange={setIsAssistantOpen}
+      />
     </>
   );
 }
