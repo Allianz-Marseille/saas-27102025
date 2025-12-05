@@ -138,7 +138,7 @@ export function AiAssistantDialog({
 
     const userMessage: ChatMessage = {
       role: "user",
-      content,
+      content: content.trim(),
       timestamp: new Date(),
       category: finalCategory,
     };
@@ -154,25 +154,21 @@ export function AiAssistantDialog({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message: content,
+          message: content.trim(),
           category: finalCategory,
           theme: finalTheme,
         }),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Erreur HTTP:", response.status, errorText);
-        throw new Error(`Erreur ${response.status}: ${errorText || "Erreur serveur"}`);
-      }
-
+      // L'API retourne toujours 200, même en cas d'erreur
       const data = await response.json();
 
-      // Si c'est une erreur, afficher le message d'erreur mais aussi logger pour le debug
+      // Vérifier si c'est une erreur
       if (data.error) {
         console.error("Erreur API assistant:", data.error);
       }
 
+      // Utiliser le message de réponse (qui peut être un message d'erreur user-friendly)
       const assistantMessage: ChatMessage = {
         role: "assistant",
         content: data.response || data.error || "Désolé, je n'ai pas pu traiter votre demande.",
@@ -182,12 +178,25 @@ export function AiAssistantDialog({
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error: any) {
       console.error("Erreur lors de l'envoi du message:", error);
-      const errorMessage: ChatMessage = {
+      
+      // Déterminer le message d'erreur approprié
+      let errorMessage = "Une erreur s'est produite. Veuillez réessayer.";
+      
+      if (error.name === "AbortError" || error.message?.includes("timeout")) {
+        errorMessage = "La requête a pris trop de temps. Veuillez réessayer avec une question plus courte.";
+      } else if (error.message?.includes("Failed to fetch") || error.message?.includes("network")) {
+        errorMessage = "Problème de connexion. Vérifiez votre connexion internet et réessayez.";
+      } else if (error.message) {
+        errorMessage = `Erreur : ${error.message}`;
+      }
+
+      const errorChatMessage: ChatMessage = {
         role: "assistant",
-        content: `Une erreur s'est produite : ${error.message || "Erreur réseau"}. Veuillez réessayer ou contacter le support si le problème persiste.`,
+        content: errorMessage,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      
+      setMessages((prev) => [...prev, errorChatMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -316,39 +325,39 @@ export function AiAssistantDialog({
                   <h3 className="font-semibold text-lg">Produits & Marchés</h3>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {CATEGORIES.map((category) => {
-                    const Icon = category.icon;
-                    return (
-                      <Button
-                        key={category.id}
-                        variant="outline"
-                        className={cn(
+                {CATEGORIES.map((category) => {
+                  const Icon = category.icon;
+                  return (
+                    <Button
+                      key={category.id}
+                      variant="outline"
+                      className={cn(
                           "h-auto flex-col gap-2 p-5 hover:scale-105 transition-transform",
-                          "hover:bg-gradient-to-br hover:from-white hover:to-gray-50",
+                        "hover:bg-gradient-to-br hover:from-white hover:to-gray-50",
                           "dark:hover:from-gray-900 dark:hover:to-gray-800",
                           "min-h-[120px] overflow-hidden"
-                        )}
-                        onClick={() => handleCategorySelect(category.id)}
-                      >
-                        <div
-                          className={cn(
+                      )}
+                      onClick={() => handleCategorySelect(category.id)}
+                    >
+                      <div
+                        className={cn(
                             "p-3 rounded-lg bg-gradient-to-br flex-shrink-0",
-                            category.gradient
-                          )}
-                        >
-                          <Icon className="h-6 w-6 text-white" />
-                        </div>
+                          category.gradient
+                        )}
+                      >
+                        <Icon className="h-6 w-6 text-white" />
+                      </div>
                         <span className="font-semibold text-sm md:text-base">
                           {category.label}
                         </span>
-                        {category.description && (
+                      {category.description && (
                           <span className="text-xs text-muted-foreground line-clamp-2 overflow-hidden text-center">
-                            {category.description}
-                          </span>
-                        )}
-                      </Button>
-                    );
-                  })}
+                          {category.description}
+                        </span>
+                      )}
+                    </Button>
+                  );
+                })}
                 </div>
               </div>
             </div>
