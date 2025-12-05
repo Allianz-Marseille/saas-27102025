@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // API Chat standard de Pinecone Assistant (PAS l'endpoint MCP)
+const PINECONE_PROJECT_ID = process.env.PINECONE_PROJECT_ID || "prj_kcqNaE60ERclhMMTQYfzrlkKwx29";
 const PINECONE_ASSISTANT_NAME = "saas-allianz";
+// Format possible: https://api.pinecone.io/assistant/assistants/{assistant_name}/chat
+// OU avec project ID: https://api.pinecone.io/{project_id}/assistants/{assistant_name}/chat
 const PINECONE_CHAT_API_URL = `https://api.pinecone.io/assistant/assistants/${PINECONE_ASSISTANT_NAME}/chat`;
 const TIMEOUT_MS = 30000; // 30 secondes
 
