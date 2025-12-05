@@ -251,15 +251,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validation du format de la clé API (doit commencer par pcsk_)
+    // Validation du format de la clé API
+    // Format attendu : pckey_<public-label>_<unique-key> (pour API Chat)
+    // Format alternatif : pcsk_... (ancien format, peut ne pas fonctionner avec l'API Chat)
     const apiKeyPrefix = apiKey.trim().substring(0, 5);
     const apiKeyLastChars = apiKey.trim().length > 4 ? `...${apiKey.trim().slice(-4)}` : "****";
     
-    if (!apiKey.trim().startsWith("pcsk_")) {
-      console.error("PINECONE_API_KEY n'a pas le format attendu (doit commencer par pcsk_)", {
+    if (!apiKey.trim().startsWith("pckey_") && !apiKey.trim().startsWith("pcsk_")) {
+      console.error("PINECONE_API_KEY n'a pas un format reconnu (attendu: pckey_... ou pcsk_...)", {
         keyPrefix: apiKeyPrefix,
         keyLength: apiKey.trim().length,
         keyLastChars: apiKeyLastChars,
+        note: "L'API Chat nécessite une clé API au format pckey_... Créez-en une via l'Admin API si nécessaire.",
+      });
+    } else if (apiKey.trim().startsWith("pcsk_")) {
+      console.warn("PINECONE_API_KEY utilise l'ancien format pcsk_...", {
+        keyPrefix: apiKeyPrefix,
+        note: "L'API Chat nécessite une clé API au format pckey_... Si vous rencontrez des erreurs, créez une nouvelle clé via l'Admin API.",
       });
     }
 
