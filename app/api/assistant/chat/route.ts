@@ -322,12 +322,15 @@ function handleApiError(status: number, errorText: string): NextResponse {
         // Ce n'est pas du JSON, on garde le message générique
       }
       
-      if (specificError && !specificError.includes("Required") && !specificError.includes("invalid_type")) {
+      // Vérifier si c'est une erreur "Method not found"
+      if (specificError && specificError.includes("Method not found")) {
+        userMessage = "L'assistant IA rencontre un problème de configuration. Veuillez contacter l'administrateur ou réessayer plus tard.";
+      } else if (specificError && !specificError.includes("Required") && !specificError.includes("invalid_type")) {
         // Afficher uniquement les erreurs compréhensibles pour l'utilisateur
         userMessage = `La requête n'est pas valide : ${specificError}. Veuillez reformuler votre question.`;
       } else {
         // Pour les erreurs de validation technique, message générique
-        userMessage = "La requête est invalide. Le système teste différents formats automatiquement. Veuillez réessayer.";
+        userMessage = "L'assistant IA rencontre une difficulté technique. Le système teste différents formats automatiquement. Veuillez réessayer dans quelques instants.";
       }
       break;
     case 401:
@@ -518,13 +521,20 @@ export async function POST(request: NextRequest) {
             }
             
             // Vérifier si c'est une erreur JSON-RPC "Method not found" (-32601)
+            // ou "Tool context not found" (-32602)
             // Dans ce cas, on continue avec les autres méthodes JSON-RPC ou formats
-            const isJsonRpcMethodNotFound = 
+            const isJsonRpcError = 
               typeof errorJson === "object" && 
               errorJson !== null && 
               "error" in errorJson &&
-              typeof (errorJson as { error?: unknown }).error === "object" &&
-              (errorJson as { error?: { code?: number } }).error?.code === -32601;
+              typeof (errorJson as { error?: unknown }).error === "object";
+            
+            const errorCode = isJsonRpcError 
+              ? (errorJson as { error?: { code?: number } }).error?.code 
+              : null;
+            
+            const isJsonRpcMethodNotFound = errorCode === -32601;
+            const isToolNotFound = errorCode === -32602;
 
             lastError = {
               status: response.status,
