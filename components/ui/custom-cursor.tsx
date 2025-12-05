@@ -66,13 +66,19 @@ export function CustomCursor() {
   // Gestion du mouvement de la souris
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
+      // Activer immédiatement si ce n'est pas déjà fait
+      if (!isEnabled) {
+        setIsEnabled(true);
+        document.body.style.cursor = "none";
+      }
+
       setMousePosition({ x: e.clientX, y: e.clientY });
 
       // Détection de l'élément sous le curseur
       const element = document.elementFromPoint(e.clientX, e.clientY);
       setIsHovering(isInteractiveElement(element));
     },
-    [isInteractiveElement]
+    [isInteractiveElement, isEnabled]
   );
 
   // Animation du cercle avec lerp
@@ -116,14 +122,18 @@ export function CustomCursor() {
       return; // Désactiver sur mobile/tablette
     }
 
-    setIsEnabled(true);
+    // Initialiser la position au centre de l'écran avant d'activer
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    setMousePosition({ x: centerX, y: centerY });
+    setCirclePosition({ x: centerX, y: centerY });
 
-    // Initialiser la position au centre de l'écran
-    setMousePosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-    setCirclePosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-
-    // Ajouter le style cursor: none au body
-    document.body.style.cursor = "none";
+    // Activer après un court délai pour éviter le flash à (0,0)
+    const initTimer = setTimeout(() => {
+      setIsEnabled(true);
+      // Ajouter le style cursor: none au body
+      document.body.style.cursor = "none";
+    }, 50);
 
     // Événements
     window.addEventListener("mousemove", handleMouseMove);
@@ -138,6 +148,7 @@ export function CustomCursor() {
     }
 
     return () => {
+      clearTimeout(initTimer);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("click", handleClick);
       document.body.style.cursor = "";
