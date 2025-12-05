@@ -141,50 +141,52 @@ function generateRequestBodies(
   
   const formats: Array<{ body: Record<string, unknown>; name: string }> = [];
   
-  // Format prioritaire : JSON-RPC 2.0 avec contexte si disponible
-  // L'API Pinecone MCP utilise ce format selon les tests
-  if (hasContext) {
+  // Formats JSON-RPC 2.0 : tester différentes méthodes possibles
+  // L'API peut utiliser différentes méthodes : call, execute, chat, send_message, etc.
+  const jsonrpcMethods = ["call", "execute", "chat", "send_message", "invoke", "query"];
+  
+  for (const method of jsonrpcMethods) {
+    // Format avec message simple
     formats.push({
-      name: "jsonrpc_invoke_with_context",
+      name: `jsonrpc_${method}`,
       body: {
         jsonrpc: "2.0",
-        method: "invoke",
-        params: {
-          message: contextualMessage,
-        },
-        id: 1,
-      },
-    });
-  }
-  
-  // Format JSON-RPC 2.0 standard (testé en priorité)
-  formats.push({
-    name: "jsonrpc_invoke",
-    body: {
-      jsonrpc: "2.0",
-      method: "invoke",
-      params: {
-        message: cleanMessage,
-      },
-      id: 1,
-    },
-  });
-  
-  // Format JSON-RPC 2.0 avec paramètres séparés
-  if (hasContext) {
-    formats.push({
-      name: "jsonrpc_invoke_with_params",
-      body: {
-        jsonrpc: "2.0",
-        method: "invoke",
+        method: method,
         params: {
           message: cleanMessage,
-          ...(category && { category }),
-          ...(theme && { theme }),
         },
         id: 1,
       },
     });
+    
+    // Format avec contexte si disponible
+    if (hasContext) {
+      formats.push({
+        name: `jsonrpc_${method}_with_context`,
+        body: {
+          jsonrpc: "2.0",
+          method: method,
+          params: {
+            message: contextualMessage,
+          },
+          id: 1,
+        },
+      });
+      
+      formats.push({
+        name: `jsonrpc_${method}_with_params`,
+        body: {
+          jsonrpc: "2.0",
+          method: method,
+          params: {
+            message: cleanMessage,
+            ...(category && { category }),
+            ...(theme && { theme }),
+          },
+          id: 1,
+        },
+      });
+    }
   }
   
   // Autres formats de fallback (au cas où l'API changerait)
@@ -429,6 +431,15 @@ export async function POST(request: NextRequest) {
             } catch {
               // Ce n'est pas du JSON
             }
+            
+            // Vérifier si c'est une erreur JSON-RPC "Method not found" (-32601)
+            // Dans ce cas, on continue avec les autres méthodes JSON-RPC ou formats
+            const isJsonRpcMethodNotFound = 
+              typeof errorJson === "object" && 
+              errorJson !== null && 
+              "error" in errorJson &&
+              typeof (errorJson as { error?: unknown }).error === "object" &&
+              (errorJson as { error?: { code?: number } }).error?.code === -32601;
 
             lastError = {
               status: response.status,
@@ -449,12 +460,14 @@ export async function POST(request: NextRequest) {
               console.log(`❌ Format ${name} rejeté (${response.status}, ${responseTime}ms):`, {
                 error: errorContent.substring(0, 500),
                 errorJson,
+                isMethodNotFound: isJsonRpcMethodNotFound,
                 requestBody: JSON.stringify(body),
                 messageLength: message.trim().length,
               });
             }
 
-            // Continuer avec le format suivant pour toutes les erreurs 4xx
+            // Pour les erreurs "Method not found" JSON-RPC, continuer à essayer d'autres méthodes
+            // Pour les autres erreurs 4xx, continuer aussi avec le format suivant
             continue;
           }
 
@@ -593,38 +606,92 @@ export async function POST(request: NextRequest) {
       // Traitement de la réponse de l'API
       let data: unknown;
       const contentType = response.headers.get("content-type") || "";
+      const isStreaming = contentType.includes("text/event-stream");
       
       try {
-        // Lire le contenu brut d'abord pour le logging
-        const rawText = await response.text();
-        
-        if (isDevelopment) {
-          console.log("Réponse brute de l'API:", {
-            contentType,
-            length: rawText.length,
-            preview: rawText.substring(0, 500),
-          });
-        }
-        
-        if (contentType.includes("application/json")) {
-          try {
-            data = JSON.parse(rawText);
-          } catch (jsonError) {
-            // Si le parsing JSON échoue, essayer de logger l'erreur
-            console.error("Erreur parsing JSON:", {
-              error: jsonError,
-              rawText: rawText.substring(0, 1000),
+        // Si c'est un stream (text/event-stream), le parser
+        if (isStreaming) {
+          const rawText = await response.text();
+          
+          if (isDevelopment) {
+            console.log("Réponse stream reçue:", {
+              contentType,
+              length: rawText.length,
+              preview: rawText.substring(0, 500),
             });
-            // Essayer de traiter comme texte
-            data = rawText;
           }
+          
+          // Parser le format Server-Sent Events (SSE)
+          // Format: "event: message\ndata: {...}\n\n"
+          const lines = rawText.split("\n");
+          const messages: string[] = [];
+          
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (line.startsWith("data: ")) {
+              const jsonData = line.substring(6); // Enlever "data: "
+              try {
+                const parsed = JSON.parse(jsonData);
+                // Si c'est une réponse JSON-RPC, extraire le result
+                if (parsed.jsonrpc === "2.0" && parsed.result) {
+                  const result = parsed.result;
+                  if (typeof result === "string") {
+                    messages.push(result);
+                  } else if (typeof result === "object" && result !== null) {
+                    const resultObj = result as Record<string, unknown>;
+                    const possibleFields = ["message", "response", "text", "content"];
+                    for (const field of possibleFields) {
+                      if (resultObj[field] && typeof resultObj[field] === "string") {
+                        messages.push(resultObj[field] as string);
+                        break;
+                      }
+                    }
+                  }
+                } else {
+                  // Sinon, traiter comme une réponse directe
+                  messages.push(jsonData);
+                }
+              } catch {
+                // Si ce n'est pas du JSON, l'ajouter tel quel
+                messages.push(jsonData);
+              }
+            }
+          }
+          
+          // Combiner tous les messages reçus
+          data = messages.length > 0 ? messages.join("\n") : rawText;
         } else {
-          // Essayer de parser comme JSON même si le content-type n'est pas JSON
-          try {
-            data = JSON.parse(rawText);
-          } catch {
-            // Si ça ne marche pas, utiliser le texte brut
-            data = rawText;
+          // Format JSON normal
+          const rawText = await response.text();
+          
+          if (isDevelopment) {
+            console.log("Réponse JSON de l'API:", {
+              contentType,
+              length: rawText.length,
+              preview: rawText.substring(0, 500),
+            });
+          }
+          
+          if (contentType.includes("application/json")) {
+            try {
+              data = JSON.parse(rawText);
+            } catch (jsonError) {
+              // Si le parsing JSON échoue, essayer de logger l'erreur
+              console.error("Erreur parsing JSON:", {
+                error: jsonError,
+                rawText: rawText.substring(0, 1000),
+              });
+              // Essayer de traiter comme texte
+              data = rawText;
+            }
+          } else {
+            // Essayer de parser comme JSON même si le content-type n'est pas JSON
+            try {
+              data = JSON.parse(rawText);
+            } catch {
+              // Si ça ne marche pas, utiliser le texte brut
+              data = rawText;
+            }
           }
         }
       } catch (parseError) {
