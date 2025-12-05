@@ -178,23 +178,11 @@ function generateRequestBodies(
   ];
   
   for (const method of jsonrpcMethods) {
-    // Format JSON-RPC 2.0 standard avec méthode
-    formats.push({
-      name: `jsonrpc_${method.replace(/\//g, "_")}`,
-      body: {
-        jsonrpc: "2.0",
-        id: 1,
-        method: method,
-        params: {
-          query: cleanMessage,
-        },
-      },
-    });
-    
-    // Format avec outil "context" (si la méthode est tools/call)
+    // Pour tools/call, params.name est OBLIGATOIRE - ne pas tester sans name
     if (method === "tools/call") {
+      // Format avec outil "context" (obligatoire pour tools/call)
       formats.push({
-        name: "jsonrpc_tools_call_context",
+        name: "jsonrpc_tools_call_context_query",
         body: {
           jsonrpc: "2.0",
           id: 1,
@@ -203,6 +191,21 @@ function generateRequestBodies(
             name: "context",
             arguments: {
               query: cleanMessage,
+            },
+          },
+        },
+      });
+      
+      formats.push({
+        name: "jsonrpc_tools_call_context_message",
+        body: {
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/call",
+          params: {
+            name: "context",
+            arguments: {
+              message: cleanMessage,
             },
           },
         },
@@ -224,10 +227,39 @@ function generateRequestBodies(
           },
         });
       }
+      
+      // Continuer à la méthode suivante (pas de formats génériques pour tools/call)
+      continue;
     }
     
-    // Format avec message (pour les méthodes de chat)
-    if (method.includes("chat") || method.includes("message")) {
+    // Pour tools/list, format spécifique
+    if (method === "tools/list") {
+      formats.push({
+        name: "jsonrpc_tools_list",
+        body: {
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/list",
+        },
+      });
+      continue;
+    }
+    
+    // Pour les autres méthodes : formats avec query
+    formats.push({
+      name: `jsonrpc_${method.replace(/\//g, "_")}_with_query`,
+      body: {
+        jsonrpc: "2.0",
+        id: 1,
+        method: method,
+        params: {
+          query: cleanMessage,
+        },
+      },
+    });
+    
+    // Format avec message (pour les méthodes de chat/assistant)
+    if (method.includes("chat") || method.includes("message") || method.includes("assistant")) {
       formats.push({
         name: `jsonrpc_${method.replace(/\//g, "_")}_with_message`,
         body: {
@@ -253,6 +285,21 @@ function generateRequestBodies(
           },
         });
       }
+    }
+    
+    // Format avec contexte si disponible (pour méthodes autres que tools/call)
+    if (hasContext && method !== "tools/call" && method !== "tools/list") {
+      formats.push({
+        name: `jsonrpc_${method.replace(/\//g, "_")}_with_context`,
+        body: {
+          jsonrpc: "2.0",
+          id: 1,
+          method: method,
+          params: {
+            query: contextualMessage,
+          },
+        },
+      });
     }
   }
   
