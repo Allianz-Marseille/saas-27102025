@@ -727,51 +727,162 @@ export default function AdminSanteIndividuellePage() {
                     })}
                   </div>
 
-                  {/* Informations en dessous */}
-                  <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-pink-200 dark:border-pink-800">
-                      <div className="text-xs text-muted-foreground mb-1">Seuil actuel</div>
-                      <div className="text-lg font-bold text-pink-600 dark:text-pink-400">
-                        {commissionInfo.label}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Taux : {(commissionInfo.taux * 100).toFixed(0)}%
-                      </div>
-                    </div>
-                    
-                    {commissionInfo.prochainSeuil > 0 ? (
-                      <>
-                        <div className="text-center p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-pink-200 dark:border-pink-800">
-                          <div className="text-xs text-muted-foreground mb-1">Prochain seuil</div>
-                          <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                            {formatCurrency(commissionInfo.prochainSeuil)}
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Objectif restant
+                  {/* Explications de chaque seuil en dessous */}
+                  <div className="mt-12 grid grid-cols-1 md:grid-cols-5 gap-4">
+                    {[
+                      { value: 0, label: "Seuil 1", rate: 0, description: "Début de carrière", color: "gray" },
+                      { value: 10000, label: "Seuil 2", rate: 2, description: "Premier palier", color: "yellow" },
+                      { value: 14000, label: "Seuil 3", rate: 3, description: "Performance solide", color: "blue" },
+                      { value: 18000, label: "Seuil 4", rate: 4, description: "Excellence", color: "indigo" },
+                      { value: 22000, label: "Seuil 5", rate: 6, description: "Performance maximale", color: "green" },
+                    ].map((seuil, index) => {
+                      const isReached = kpisByType.caPondere >= seuil.value;
+                      const isCurrent = commissionInfo.seuil === index + 1;
+                      const nextSeuilValue = index < 4 ? [
+                        { value: 10000 },
+                        { value: 14000 },
+                        { value: 18000 },
+                        { value: 22000 },
+                        { value: Infinity }
+                      ][index + 1]?.value : Infinity;
+                      const isNext = !isReached && kpisByType.caPondere < nextSeuilValue && (index === 0 || kpisByType.caPondere >= [
+                        { value: 0 },
+                        { value: 10000 },
+                        { value: 14000 },
+                        { value: 18000 },
+                        { value: 22000 }
+                      ][index]?.value);
+
+                      const colorClasses = {
+                        gray: {
+                          bg: "bg-gray-100 dark:bg-gray-900/50",
+                          border: "border-gray-300 dark:border-gray-700",
+                          text: "text-gray-700 dark:text-gray-300",
+                          rate: "text-gray-600 dark:text-gray-400",
+                          active: "bg-gray-200 dark:bg-gray-800 border-gray-400 dark:border-gray-600"
+                        },
+                        yellow: {
+                          bg: "bg-yellow-50 dark:bg-yellow-950/20",
+                          border: "border-yellow-300 dark:border-yellow-700",
+                          text: "text-yellow-700 dark:text-yellow-300",
+                          rate: "text-yellow-600 dark:text-yellow-400",
+                          active: "bg-yellow-100 dark:bg-yellow-900/30 border-yellow-400 dark:border-yellow-600"
+                        },
+                        blue: {
+                          bg: "bg-blue-50 dark:bg-blue-950/20",
+                          border: "border-blue-300 dark:border-blue-700",
+                          text: "text-blue-700 dark:text-blue-300",
+                          rate: "text-blue-600 dark:text-blue-400",
+                          active: "bg-blue-100 dark:bg-blue-900/30 border-blue-400 dark:border-blue-600"
+                        },
+                        indigo: {
+                          bg: "bg-indigo-50 dark:bg-indigo-950/20",
+                          border: "border-indigo-300 dark:border-indigo-700",
+                          text: "text-indigo-700 dark:text-indigo-300",
+                          rate: "text-indigo-600 dark:text-indigo-400",
+                          active: "bg-indigo-100 dark:bg-indigo-900/30 border-indigo-400 dark:border-indigo-600"
+                        },
+                        green: {
+                          bg: "bg-green-50 dark:bg-green-950/20",
+                          border: "border-green-300 dark:border-green-700",
+                          text: "text-green-700 dark:text-green-300",
+                          rate: "text-green-600 dark:text-green-400",
+                          active: "bg-green-100 dark:bg-green-900/30 border-green-400 dark:border-green-600"
+                        }
+                      };
+
+                      const colors = colorClasses[seuil.color as keyof typeof colorClasses];
+
+                      return (
+                        <div
+                          key={seuil.value}
+                          className={cn(
+                            "p-4 rounded-xl border-2 transition-all",
+                            isCurrent 
+                              ? colors.active + " shadow-lg scale-105" 
+                              : isReached
+                              ? colors.bg + " " + colors.border + " shadow-md"
+                              : colors.bg + " " + colors.border + " opacity-60"
+                          )}
+                        >
+                          <div className="text-center">
+                            {/* Label du seuil */}
+                            <div className={cn(
+                              "text-xs font-bold uppercase tracking-wide mb-2",
+                              isCurrent ? colors.text + " font-extrabold" : colors.text
+                            )}>
+                              {seuil.label}
+                            </div>
+                            
+                            {/* Pourcentage en relief */}
+                            <div className={cn(
+                              "text-4xl font-black mb-2",
+                              isCurrent 
+                                ? colors.rate + " drop-shadow-lg" 
+                                : isReached
+                                ? colors.rate
+                                : "text-slate-400 dark:text-slate-600"
+                            )}>
+                              {seuil.rate}%
+                            </div>
+                            
+                            {/* Montant */}
+                            <div className={cn(
+                              "text-sm font-semibold mb-1",
+                              isCurrent ? colors.text : isReached ? colors.text : "text-slate-500 dark:text-slate-500"
+                            )}>
+                              {formatCurrency(seuil.value)}
+                            </div>
+                            
+                            {/* Description */}
+                            <div className={cn(
+                              "text-xs mt-2",
+                              isCurrent ? colors.text + " font-medium" : "text-muted-foreground"
+                            )}>
+                              {seuil.description}
+                            </div>
+
+                            {/* Indicateur de statut */}
+                            {isCurrent && (
+                              <div className="mt-2 text-xs font-bold text-pink-600 dark:text-pink-400">
+                                ✓ Actuel
+                              </div>
+                            )}
+                            {isReached && !isCurrent && (
+                              <div className="mt-2 text-xs text-green-600 dark:text-green-400">
+                                ✓ Atteint
+                              </div>
+                            )}
+                            {isNext && (
+                              <div className="mt-2 text-xs font-semibold text-orange-600 dark:text-orange-400">
+                                → Prochain objectif
+                              </div>
+                            )}
                           </div>
                         </div>
-                        
-                        <div className="text-center p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-pink-200 dark:border-pink-800">
-                          <div className="text-xs text-muted-foreground mb-1">Reste à faire</div>
-                          <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                      );
+                    })}
+                  </div>
+
+                  {/* Informations supplémentaires */}
+                  {commissionInfo.prochainSeuil > 0 && (
+                    <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 border border-pink-200 dark:border-pink-800">
+                      <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div>
+                          <div className="text-sm font-semibold text-muted-foreground mb-1">Objectif restant</div>
+                          <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                             {formatCurrency(commissionInfo.objectifRestant)}
                           </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {((commissionInfo.objectifRestant / commissionInfo.prochainSeuil) * 100).toFixed(1)}% du chemin
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-semibold text-muted-foreground mb-1">Progression</div>
+                          <div className="text-2xl font-bold text-pink-600 dark:text-pink-400">
+                            {((kpisByType.caPondere / commissionInfo.prochainSeuil) * 100).toFixed(1)}%
                           </div>
                         </div>
-                      </>
-                    ) : (
-                      <div className="md:col-span-2 text-center p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
-                        <div className="text-sm font-bold text-green-600 dark:text-green-400">
-                          🎉 Seuil maximum atteint !
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Taux de commission maximum : 6%
-                        </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
