@@ -60,12 +60,7 @@ export default function SanteCollectiveLayout({
     userEmail: userData?.email,
   });
 
-  // Vérifier les permissions d'accès (rôle COMMERCIAL_SANTE_COLLECTIVE)
-  useEffect(() => {
-    if (userData && userData.role !== "COMMERCIAL_SANTE_COLLECTIVE") {
-      router.push("/dashboard");
-    }
-  }, [userData, router]);
+  // La vérification des permissions est gérée par le RouteGuard
 
   const handleLogout = async () => {
     try {

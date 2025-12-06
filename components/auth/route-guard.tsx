@@ -7,15 +7,17 @@ import {
   canAccessAdmin, 
   canAccessDashboard, 
   canAccessHealthDashboard,
+  canAccessHealthCollectiveDashboard,
   isAdmin,
   isCommercial,
-  isCommercialSanteIndividuel
+  isCommercialSanteIndividuel,
+  isCommercialSanteCollective
 } from "@/lib/utils/roles";
 import { toast } from "sonner";
 
 interface RouteGuardProps {
   children: React.ReactNode;
-  allowedRoles?: ("ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL")[];
+  allowedRoles?: ("ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL" | "COMMERCIAL_SANTE_COLLECTIVE")[];
   requireAuth?: boolean;
 }
 
@@ -74,12 +76,21 @@ export function RouteGuard({
       }
     }
 
+    if (pathname.startsWith("/sante-collective")) {
+      if (!canAccessHealthCollectiveDashboard(userData)) {
+        toast.error("Accès refusé");
+        router.push("/login");
+        return;
+      }
+    }
+
     // Vérifier les rôles spécifiques si définis
     if (allowedRoles && allowedRoles.length > 0) {
       const hasValidRole = allowedRoles.some((role) => {
         if (role === "ADMINISTRATEUR") return isAdmin(userData);
         if (role === "CDC_COMMERCIAL") return isCommercial(userData);
         if (role === "COMMERCIAL_SANTE_INDIVIDUEL") return isCommercialSanteIndividuel(userData);
+        if (role === "COMMERCIAL_SANTE_COLLECTIVE") return isCommercialSanteCollective(userData);
         return false;
       });
 
@@ -88,6 +99,8 @@ export function RouteGuard({
         // Rediriger vers le dashboard approprié selon le rôle
         if (isCommercialSanteIndividuel(userData)) {
           router.push("/sante-individuelle");
+        } else if (isCommercialSanteCollective(userData)) {
+          router.push("/sante-collective");
         } else {
           router.push("/dashboard");
         }
@@ -127,6 +140,10 @@ export function RouteGuard({
     }
 
     if (pathname.startsWith("/sante-individuelle") && !canAccessHealthDashboard(userData)) {
+      return null;
+    }
+
+    if (pathname.startsWith("/sante-collective") && !canAccessHealthCollectiveDashboard(userData)) {
       return null;
     }
   }

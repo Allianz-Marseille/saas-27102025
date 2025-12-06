@@ -57,6 +57,8 @@ export default function LoginPage() {
           router.push("/admin");
         } else if (userRole === ROLES.COMMERCIAL_SANTE_INDIVIDUEL) {
           router.push("/sante-individuelle");
+        } else if (userRole === ROLES.COMMERCIAL_SANTE_COLLECTIVE) {
+          router.push("/sante-collective");
         } else {
           router.push("/dashboard");
         }
