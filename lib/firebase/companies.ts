@@ -10,7 +10,7 @@ export interface Company {
 }
 
 // Compagnies système qui ne peuvent jamais être supprimées ou modifiées
-export const SYSTEM_COMPANIES = ["Allianz", "Courtage"];
+export const SYSTEM_COMPANIES = ["Allianz", "Courtage", "Unim", "Uniced"];
 
 // Vérifie si une compagnie est une compagnie système
 export const isSystemCompany = (name: string): boolean => {
@@ -71,7 +71,7 @@ export const updateCompany = async (id: string, data: Partial<Company>): Promise
     
     // Vérifier si c'est une compagnie système
     if (isSystemCompany(companyData.name)) {
-      throw new Error('Impossible de modifier une compagnie système (Allianz ou Courtage)');
+      throw new Error('Impossible de modifier une compagnie système (Allianz, Courtage, Unim ou Uniced)');
     }
     
     // Vérifier si le nouveau nom est une compagnie système
@@ -96,7 +96,7 @@ export const deleteCompany = async (id: string): Promise<void> => {
     
     // Vérifier si c'est une compagnie système
     if (isSystemCompany(companyData.name)) {
-      throw new Error('Impossible de supprimer une compagnie système (Allianz ou Courtage)');
+      throw new Error('Impossible de supprimer une compagnie système (Allianz, Courtage, Unim ou Uniced)');
     }
     
     // Remplacer toutes les occurrences de cette compagnie par "Courtage" dans les actes

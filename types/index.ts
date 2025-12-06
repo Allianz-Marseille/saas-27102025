@@ -96,6 +96,63 @@ export interface HealthKPI {
   prochainSeuil: number;
 }
 
+// Types pour Santé Collective
+export type HealthCollectiveActKind = 
+  | "IND_AN_SANTE"
+  | "IND_AN_PREVOYANCE"
+  | "IND_AN_RETRAITE"
+  | "COLL_AN_SANTE"
+  | "COLL_AN_PREVOYANCE"
+  | "COLL_AN_RETRAITE"
+  | "COLL_ADHESION_RENFORT"
+  | "REVISION"
+  | "ADHESION_RENFORT"
+  | "COURTAGE_TO_ALLIANZ"
+  | "ALLIANZ_TO_COURTAGE";
+
+export type HealthCollectiveActOrigin = "PROACTIF" | "REACTIF" | "PROSPECTION";
+
+export interface HealthCollectiveAct {
+  id: string;
+  userId: string;
+  kind: HealthCollectiveActKind;
+  origine: HealthCollectiveActOrigin;
+  clientNom: string;
+  numeroContrat: string;
+  compagnie: string;
+  dateEffet: Date | Timestamp;
+  dateSaisie: Date | Timestamp;
+  prime: number; // Montant de la prime
+  caAnnuel: number; // Égal à prime
+  coefficientOrigine: number;
+  coefficientTypeActe: number;
+  coefficientCompagnie: number;
+  caPondere: number; // prime × coefficientOrigine × coefficientTypeActe × coefficientCompagnie
+  moisKey: string;
+}
+
+export interface HealthCollectiveKPI {
+  total: number;
+  caIndANSante: number;
+  caIndANPrevoyance: number;
+  caIndANRetraite: number;
+  caCollANSante: number;
+  caCollANPrevoyance: number;
+  caCollANRetraite: number;
+  caCollAdhesionRenfort: number;
+  caRevision: number;
+  caAdhesionRenfort: number;
+  caCourtageToAllianz: number;
+  caAllianzToCourtage: number;
+  caBrut: number;
+  caPondere: number;
+  commissionsAcquises: number;
+  seuilAtteint: number; // 1 à 5
+  tauxCommission: number; // 0%, 2%, 3%, 4%, 6%
+  objectifRestant: number;
+  prochainSeuil: number;
+}
+
 // Types pour Commissions Agence
 export interface AgencyCommission {
   id: string;

@@ -17,10 +17,12 @@ import { db } from "@/lib/firebase/config";
 import { type UserData } from "@/lib/firebase/auth";
 import { getActsByMonth } from "@/lib/firebase/acts";
 import { getHealthActsByMonth } from "@/lib/firebase/health-acts";
+import { getHealthCollectiveActsByMonthFiltered } from "@/lib/firebase/health-collective-acts";
 import { calculateKPI } from "@/lib/utils/kpi";
 import { calculateHealthKPI } from "@/lib/utils/health-kpi";
+import { calculateHealthCollectiveKPI } from "@/lib/utils/health-collective-kpi";
 import { toast } from "sonner";
-import type { KPI, HealthKPI, HealthAct } from "@/types";
+import type { KPI, HealthKPI, HealthAct, HealthCollectiveAct } from "@/types";
 
 interface RoleSectionProps {
   title: string;
@@ -123,6 +125,20 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
           nbActes: healthActs.length,
           nbUsers: usersData.length,
         });
+      } else if (role === "COMMERCIAL_SANTE_COLLECTIVE") {
+        // Santé Collective
+        const userId = selectedUser === "all" ? null : selectedUser;
+        const healthCollectiveActs = await getHealthCollectiveActsByMonthFiltered(userId, selectedMonth);
+        
+        // Calculer les KPIs même si aucun acte n'est trouvé (pour afficher 0)
+        const calculatedKPIs = calculateHealthCollectiveKPI(healthCollectiveActs);
+        setKPIs({
+          caMensuel: calculatedKPIs.caBrut,
+          commissionsPotentielles: calculatedKPIs.commissionsAcquises,
+          nbActes: calculatedKPIs.total,
+          nbUsers: usersData.length,
+          caPondere: calculatedKPIs.caPondere,
+        } as KPI & { nbActes: number; nbUsers: number; caPondere?: number });
       } else {
         // Autres rôles (en construction)
         setKPIs({
@@ -304,6 +320,73 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
                           </p>
                         </div>
                         <DollarSign className="h-8 w-8 text-yellow-600 dark:text-yellow-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            ) : role === "COMMERCIAL_SANTE_COLLECTIVE" ? (
+              <>
+                {/* KPIs pour Santé Collective */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                  <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30 border-emerald-200 dark:border-emerald-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Total Actes</p>
+                          <p className="text-2xl font-bold">{kpis?.nbActes || 0}</p>
+                        </div>
+                        <FileText className="h-8 w-8 text-emerald-600 dark:text-emerald-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 border-blue-200 dark:border-blue-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">CA Brut</p>
+                          <p className="text-2xl font-bold">{formatCurrency(kpis?.caMensuel || 0)}</p>
+                        </div>
+                        <DollarSign className="h-8 w-8 text-blue-600 dark:text-blue-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 border-purple-200 dark:border-purple-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-1">CA Pondéré</p>
+                          <p className="text-2xl font-bold">{formatCurrency((kpis as any)?.caPondere || 0)}</p>
+                        </div>
+                        <TrendingUp className="h-8 w-8 text-purple-600 dark:text-purple-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950/30 dark:to-yellow-900/30 border-yellow-200 dark:border-yellow-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-1">Commissions</p>
+                          <p className="text-2xl font-bold">{formatCurrency(kpis?.commissionsPotentielles || 0)}</p>
+                        </div>
+                        <DollarSign className="h-8 w-8 text-yellow-600 dark:text-yellow-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
+                  <Card className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-950/30 dark:to-teal-900/30 border-teal-200 dark:border-teal-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-teal-600 dark:text-teal-400 mb-1">Commerciaux Actifs</p>
+                          <p className="text-2xl font-bold">{kpis?.nbUsers || 0}</p>
+                        </div>
+                        <Users className="h-8 w-8 text-teal-600 dark:text-teal-400 opacity-50" />
                       </div>
                     </CardContent>
                   </Card>

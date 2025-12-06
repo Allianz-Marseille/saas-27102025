@@ -32,6 +32,13 @@ export function isCommercialSanteIndividuel(userData: UserData | null): boolean 
 }
 
 /**
+ * Vérifie si l'utilisateur est un Commercial Santé Collective
+ */
+export function isCommercialSanteCollective(userData: UserData | null): boolean {
+  return userData?.role === ROLES.COMMERCIAL_SANTE_COLLECTIVE && userData?.active === true;
+}
+
+/**
  * Vérifie si l'utilisateur a accès à une fonctionnalité
  */
 export function hasAccess(
@@ -83,4 +90,11 @@ export function canAccessDashboard(userData: UserData | null): boolean {
  */
 export function canAccessHealthDashboard(userData: UserData | null): boolean {
   return isAdmin(userData) || isCommercialSanteIndividuel(userData);
+}
+
+/**
+ * Vérifie si l'utilisateur peut accéder au dashboard santé collective
+ */
+export function canAccessHealthCollectiveDashboard(userData: UserData | null): boolean {
+  return isAdmin(userData) || isCommercialSanteCollective(userData);
 }
