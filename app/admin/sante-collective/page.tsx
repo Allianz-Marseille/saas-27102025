@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, FileText as FileTextIcon, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Filter, X, Heart, DollarSign, FileText, ClipboardCheck, Target, TrendingUp, BarChart3, PieChart as PieChartIcon, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText as FileTextIcon, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Filter, X, Heart, DollarSign, FileText, ClipboardCheck, Target, TrendingUp, BarChart3, PieChart as PieChartIcon, Users, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -579,7 +579,7 @@ export default function AdminSanteCollectivePage() {
                 title="CA Coll AN Santé"
                 value={formatCurrency(kpisByType.caCollANSante)}
                 icon={Target}
-                colorScheme="cyan"
+                colorScheme="teal"
               />
               <KPICard
                 title="CA Coll AN Prévoyance"
@@ -605,7 +605,7 @@ export default function AdminSanteCollectivePage() {
                 title="CA Coll AN Retraite"
                 value={formatCurrency(kpisByType.caCollANRetraite)}
                 icon={Target}
-                colorScheme="emerald"
+                colorScheme="green"
               />
               <KPICard
                 title="CA Coll Adhésion/Renfort"
@@ -617,7 +617,7 @@ export default function AdminSanteCollectivePage() {
                 title="CA Révision"
                 value={formatCurrency(kpisByType.caRevision)}
                 icon={TrendingUp}
-                colorScheme="yellow"
+                colorScheme="orange"
               />
               <KPICard
                 title="CA Adhésion/Renfort"
@@ -635,7 +635,7 @@ export default function AdminSanteCollectivePage() {
                 title="CA Allianz → Courtage"
                 value={formatCurrency(kpisByType.caAllianzToCourtage)}
                 icon={ArrowUpDown}
-                colorScheme="rose"
+                colorScheme="pink"
               />
             </div>
           </div>
