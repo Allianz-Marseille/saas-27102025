@@ -624,59 +624,153 @@ export default function AdminSanteIndividuellePage() {
           {/* Séparateur */}
           <div className="border-t border-pink-200 dark:border-pink-800" />
 
-          {/* Progression seuils de commissions (conditionnel) */}
+          {/* Thermomètre des seuils de commissions (conditionnel) */}
           {selectedCommercial !== "all" && commissionInfo && (
             <Card className="overflow-hidden border-2 border-pink-200 dark:border-pink-800 bg-gradient-to-br from-pink-50/50 via-rose-50/50 to-pink-50/50 dark:from-pink-950/20 dark:via-rose-950/20 dark:to-pink-950/20 shadow-lg hover:shadow-xl transition-shadow">
               <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-2 rounded-lg bg-gradient-to-br from-pink-500 to-rose-600">
-                        <Target className="h-5 w-5 text-white" />
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-pink-500 to-rose-600">
+                    <Target className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                      Progression des seuils de commissions
+                    </CardTitle>
+                    <CardDescription className="text-xs mt-0.5">
+                      CA pondéré actuel : {formatCurrency(kpisByType.caPondere)}
+                    </CardDescription>
+                  </div>
+                </div>
+
+                {/* Thermomètre horizontal */}
+                <div className="relative">
+                  {/* Barre de fond du thermomètre */}
+                  <div className="relative w-full h-16 bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100 dark:from-slate-800 dark:via-slate-700 dark:to-slate-800 rounded-full overflow-hidden">
+                    {/* Barre de progression (température qui monte) */}
+                    <div 
+                      className="absolute top-0 left-0 h-full bg-gradient-to-r from-pink-400 via-rose-500 to-pink-600 transition-all duration-1000 ease-out rounded-full shadow-lg"
+                      style={{ 
+                        width: `${Math.min((kpisByType.caPondere / 22000) * 100, 100)}%` 
+                      }}
+                    >
+                      {/* Indicateur de position actuelle */}
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2">
+                        <div className="w-6 h-6 bg-white dark:bg-slate-900 border-4 border-pink-600 rounded-full shadow-xl flex items-center justify-center">
+                          <div className="w-2 h-2 bg-pink-600 rounded-full"></div>
+                        </div>
                       </div>
-                      <div>
-                        <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                          Progression vers le prochain seuil
-                        </CardTitle>
-                        <CardDescription className="text-xs mt-0.5">
-                          Seuil actuel : {commissionInfo.label} ({commissionInfo.taux * 100}%)
-                        </CardDescription>
+                    </div>
+
+                    {/* Marqueurs des seuils */}
+                    {[
+                      { value: 0, label: "Seuil 1", rate: "0%", color: "bg-gray-400" },
+                      { value: 10000, label: "Seuil 2", rate: "2%", color: "bg-yellow-400" },
+                      { value: 14000, label: "Seuil 3", rate: "3%", color: "bg-blue-400" },
+                      { value: 18000, label: "Seuil 4", rate: "4%", color: "bg-indigo-400" },
+                      { value: 22000, label: "Seuil 5", rate: "6%", color: "bg-green-400" },
+                    ].map((seuil, index) => {
+                      const position = (seuil.value / 22000) * 100;
+                      const isReached = kpisByType.caPondere >= seuil.value;
+                      const isCurrent = kpisByType.caPondere >= seuil.value && 
+                                       (index === 4 || kpisByType.caPondere < [
+                                         { value: 10000 },
+                                         { value: 14000 },
+                                         { value: 18000 },
+                                         { value: 22000 },
+                                         { value: Infinity }
+                                       ][index + 1]?.value || Infinity);
+
+                      return (
+                        <div
+                          key={seuil.value}
+                          className="absolute top-0 bottom-0 flex flex-col items-center"
+                          style={{ left: `${position}%`, transform: 'translateX(-50%)' }}
+                        >
+                          {/* Ligne verticale du seuil */}
+                          <div className={cn(
+                            "w-0.5 h-full",
+                            isReached ? "bg-white dark:bg-slate-900" : "bg-slate-400 dark:bg-slate-600"
+                          )} />
+                          
+                          {/* Point du seuil */}
+                          <div className={cn(
+                            "absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 shadow-lg transition-all",
+                            isReached ? seuil.color : "bg-slate-300 dark:bg-slate-600",
+                            isCurrent && "ring-4 ring-pink-500 ring-opacity-50 scale-125"
+                          )} />
+                          
+                          {/* Label du seuil (au-dessus) */}
+                          <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                            <div className={cn(
+                              "text-xs font-bold px-2 py-1 rounded",
+                              isReached 
+                                ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-md" 
+                                : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
+                            )}>
+                              {seuil.label}
+                            </div>
+                            <div className={cn(
+                              "text-[10px] font-semibold mt-1 text-center",
+                              isReached ? "text-slate-700 dark:text-slate-300" : "text-slate-500 dark:text-slate-500"
+                            )}>
+                              {seuil.rate}
+                            </div>
+                            <div className={cn(
+                              "text-[10px] mt-0.5 text-center",
+                              isReached ? "text-slate-600 dark:text-slate-400" : "text-slate-400 dark:text-slate-600"
+                            )}>
+                              {formatCurrency(seuil.value)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Informations en dessous */}
+                  <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-pink-200 dark:border-pink-800">
+                      <div className="text-xs text-muted-foreground mb-1">Seuil actuel</div>
+                      <div className="text-lg font-bold text-pink-600 dark:text-pink-400">
+                        {commissionInfo.label}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Taux : {(commissionInfo.taux * 100).toFixed(0)}%
                       </div>
                     </div>
                     
-                    <div className="mt-4 flex items-end gap-6">
-                      <div className="flex items-baseline gap-2">
-                        <div className="text-5xl font-bold bg-gradient-to-br from-pink-600 via-rose-600 to-pink-600 bg-clip-text text-transparent">
-                          {formatCurrency(kpisByType.caPondere)}
-                        </div>
-                        <div className="text-lg font-medium text-muted-foreground mb-1">
-                          CA pondéré
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        {commissionInfo.prochainSeuil > 0 ? (
-                          <>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-medium text-foreground">
-                                Objectif restant : {formatCurrency(commissionInfo.objectifRestant)} pour atteindre le seuil suivant
-                              </span>
-                            </div>
-                            <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
-                              <div 
-                                className="h-full bg-gradient-to-r from-pink-500 via-rose-500 to-pink-500 transition-all duration-500 ease-out rounded-full"
-                                style={{ 
-                                  width: `${Math.min((kpisByType.caPondere / commissionInfo.prochainSeuil) * 100, 100)}%` 
-                                }}
-                              />
-                            </div>
-                          </>
-                        ) : (
-                          <div className="text-sm font-medium text-green-600 dark:text-green-400">
-                            Seuil maximum atteint !
+                    {commissionInfo.prochainSeuil > 0 ? (
+                      <>
+                        <div className="text-center p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-pink-200 dark:border-pink-800">
+                          <div className="text-xs text-muted-foreground mb-1">Prochain seuil</div>
+                          <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                            {formatCurrency(commissionInfo.prochainSeuil)}
                           </div>
-                        )}
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Objectif restant
+                          </div>
+                        </div>
+                        
+                        <div className="text-center p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-pink-200 dark:border-pink-800">
+                          <div className="text-xs text-muted-foreground mb-1">Reste à faire</div>
+                          <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                            {formatCurrency(commissionInfo.objectifRestant)}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {((commissionInfo.objectifRestant / commissionInfo.prochainSeuil) * 100).toFixed(1)}% du chemin
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="md:col-span-2 text-center p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+                        <div className="text-sm font-bold text-green-600 dark:text-green-400">
+                          🎉 Seuil maximum atteint !
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Taux de commission maximum : 6%
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
