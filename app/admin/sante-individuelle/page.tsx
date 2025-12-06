@@ -2,978 +2,1038 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { formatCurrency, cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Heart, TrendingUp, TrendingDown, DollarSign, FileText, Users, Award, Target, Download, Mail, ExternalLink, Search, Filter, BarChart3, PieChart, History, AlertCircle, CheckCircle, Sparkles } from "lucide-react";
-import { calculateHealthKPI } from "@/lib/utils/health-kpi";
-import { HealthAct } from "@/types";
-import { Timestamp } from "firebase/firestore";
-import { MonthSelector } from "@/components/dashboard/month-selector";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell } from "recharts";
-import { subMonths } from "date-fns";
+import { ChevronLeft, ChevronRight, FileText as FileTextIcon, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Filter, X, Heart, DollarSign, FileText, ClipboardCheck, Target, TrendingUp, BarChart3, PieChart as PieChartIcon, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { KPICard } from "@/components/dashboard/kpi-card";
+import { formatCurrency, cn } from "@/lib/utils";
+import { getHealthActsByMonthFiltered } from "@/lib/firebase/health-acts";
+import { type UserData } from "@/lib/firebase/auth";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
+import { toast } from "sonner";
+import { Timestamp } from "firebase/firestore";
+import { HealthAct } from "@/types";
+import { calculateHealthKPIsByType, getHealthCommissionRate } from "@/lib/utils/health-kpi";
+import { toDate } from "@/lib/utils/date-helpers";
+import { EditHealthActDialog } from "@/components/health-acts/edit-health-act-dialog";
+import { DeleteHealthActDialog } from "@/components/health-acts/delete-health-act-dialog";
+import { getHealthActKindLabel } from "@/lib/firebase/health-acts";
+import { subMonths } from "date-fns";
+import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
-interface CommercialData {
-  id: string;
-  email: string;
-  name: string;
-  acts: HealthAct[];
-  kpis: {
-    caTotal: number;
-    caPondere: number;
-    commissionsAcquises: number;
-    tauxCommission: number;
-    seuilAtteint: number;
-    objectifRestant: number;
-    nbAffaireNouvelle: number;
-    nbRevision: number;
-    nbAdhesionSalarie: number;
-    nbCourtToAz: number;
-    nbAzToCourtage: number;
-    prochainSeuil: number;
-  };
+interface ActivityOverviewProps {
+  initialMonth?: string;
 }
 
-interface HistoricalData {
+// Helper functions pour les filtres
+const getKindBadgeColor = (kind: string) => {
+  switch (kind) {
+    case "AFFAIRE_NOUVELLE":
+      return "bg-blue-500 text-white";
+    case "REVISION":
+      return "bg-green-500 text-white";
+    case "ADHESION_SALARIE":
+      return "bg-orange-500 text-white";
+    case "COURT_TO_AZ":
+      return "bg-purple-500 text-white";
+    case "AZ_TO_COURTAGE":
+      return "bg-cyan-500 text-white";
+    default:
+      return "bg-gray-500 text-white";
+  }
+};
+
+type TimelineDay = {
+  date: Date;
+  isSaturday: boolean;
+  isSunday: boolean;
+  isToday: boolean;
+  acts: HealthAct[];
+};
+
+type SortKey =
+  | "dateSaisie"
+  | "dateEffet"
+  | "clientNom"
+  | "numeroContrat"
+  | "compagnie"
+  | "caAnnuel"
+  | "caPondere"
+  | "kind";
+
+type SortDirection = "asc" | "desc";
+
+type SortState = {
+  key: SortKey;
+  direction: SortDirection;
+};
+
+interface HistoricalMonthData {
   month: string;
   monthKey: string;
-  data: CommercialData[];
+  caPondere: number;
+  commissions: number;
+}
+
+// Fonction pour générer la timeline
+function generateTimeline(monthKey: string, acts: HealthAct[] = []): TimelineDay[] {
+  const [year, month] = monthKey.split("-").map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const timelineDays: TimelineDay[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Créer un map des actes par jour (basé sur la date de saisie)
+  const actsByDay = new Map<string, HealthAct[]>();
+  
+  acts.forEach((act) => {
+    // Convertir Timestamp en Date si nécessaire
+    const actDate = toDate(act.dateSaisie);
+    const dayKey = `${actDate.getFullYear()}-${actDate.getMonth() + 1}-${actDate.getDate()}`;
+    
+    if (!actsByDay.has(dayKey)) {
+      actsByDay.set(dayKey, []);
+    }
+    actsByDay.get(dayKey)!.push(act);
+  });
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month - 1, day);
+    const normalizedDate = new Date(date);
+    normalizedDate.setHours(0, 0, 0, 0);
+    const dayOfWeek = date.getDay();
+    const isSaturday = dayOfWeek === 6;
+    const isSunday = dayOfWeek === 0;
+    
+    const dayKey = `${year}-${month}-${day}`;
+    const dayActs = actsByDay.get(dayKey) || [];
+
+    timelineDays.push({
+      date,
+      isSaturday,
+      isSunday,
+      isToday: normalizedDate.getTime() === today.getTime(),
+      acts: dayActs,
+    });
+  }
+
+  return timelineDays;
+}
+
+function getSortableValue(act: HealthAct, key: SortKey): number | string | null {
+  switch (key) {
+    case "dateSaisie": {
+      const date = toDate(act.dateSaisie);
+      return Number.isNaN(date.getTime()) ? null : date.getTime();
+    }
+    case "dateEffet": {
+      const date = toDate(act.dateEffet);
+      return Number.isNaN(date.getTime()) ? null : date.getTime();
+    }
+    case "caAnnuel":
+      return typeof act.caAnnuel === "number" ? act.caAnnuel : null;
+    case "caPondere":
+      return typeof act.caPondere === "number" ? act.caPondere : null;
+    case "numeroContrat":
+      return act.numeroContrat ? act.numeroContrat.toLowerCase() : null;
+    case "clientNom":
+      return act.clientNom ? act.clientNom.toLowerCase() : null;
+    case "compagnie":
+      return act.compagnie ? act.compagnie.toLowerCase() : null;
+    case "kind":
+      return act.kind ? act.kind.toLowerCase() : null;
+    default:
+      return null;
+  }
+}
+
+function getAriaSort(column: SortKey, sortConfig: SortState): "ascending" | "descending" | "none" {
+  if (sortConfig.key !== column) {
+    return "none";
+  }
+
+  return sortConfig.direction === "asc" ? "ascending" : "descending";
 }
 
 export default function AdminSanteIndividuellePage() {
-  const [commerciaux, setCommerciaux] = useState<CommercialData[]>([]);
-  const [commerciauxPrevMonth, setCommerciauxPrevMonth] = useState<CommercialData[]>([]);
-  const [historicalData, setHistoricalData] = useState<HistoricalData[]>([]);
+  const [acts, setActs] = useState<HealthAct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), "yyyy-MM"));
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterSeuil, setFilterSeuil] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<string>("caPondere");
-  const [showGraphs, setShowGraphs] = useState(true);
-  const [selectedHistoricalMetrics, setSelectedHistoricalMetrics] = useState<string[]>(["caPondere", "commissions"]);
+  const [selectedMonth, setSelectedMonth] = useState<string>(
+    format(new Date(), "yyyy-MM")
+  );
+  const [selectedCommercial, setSelectedCommercial] = useState<string>("all");
+  const [commerciaux, setCommerciaux] = useState<UserData[]>([]);
+  const [editDialog, setEditDialog] = useState<{ open: boolean; act: HealthAct | null }>({
+    open: false,
+    act: null,
+  });
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; act: HealthAct | null }>({
+    open: false,
+    act: null,
+  });
+  const timelineContainerRef = useRef<HTMLDivElement | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortState>({
+    key: "dateSaisie",
+    direction: "desc",
+  });
+  const [activeFilter, setActiveFilter] = useState<{ type: 'kind' | null; value: string | null }>({
+    type: null,
+    value: null,
+  });
+  const [historicalData, setHistoricalData] = useState<HistoricalMonthData[]>([]);
 
-  const loadCommercialData = async (monthKey: string, userId: string, userData: any): Promise<CommercialData | null> => {
-    if (!db) return null;
-
-    const actsRef = collection(db, "health_acts");
-    const actsQuery = query(
-      actsRef,
-      where("userId", "==", userId),
-      where("moisKey", "==", monthKey)
-    );
-    const actsSnapshot = await getDocs(actsQuery);
-
-    const acts: HealthAct[] = actsSnapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        dateEffet: data.dateEffet instanceof Timestamp ? data.dateEffet.toDate() : data.dateEffet,
-        dateSaisie: data.dateSaisie instanceof Timestamp ? data.dateSaisie.toDate() : data.dateSaisie,
-      } as HealthAct;
-    });
-
-    const kpis = calculateHealthKPI(acts);
-    const name = userData.email.split('@')[0].split('.').map(
-      (part: string) => part.charAt(0).toUpperCase() + part.slice(1)
-    ).join(' ');
-
-    return {
-      id: userId,
-      email: userData.email,
-      name,
-      acts,
-      kpis,
+  // Charger les commerciaux
+  useEffect(() => {
+    const loadCommerciaux = async () => {
+      try {
+        if (!db) {
+          throw new Error("Firebase non initialisé");
+        }
+        
+        const usersRef = collection(db, "users");
+        const q = query(
+          usersRef,
+          where("role", "==", "COMMERCIAL_SANTE_INDIVIDUEL"),
+          where("active", "==", true)
+        );
+        const usersSnapshot = await getDocs(q);
+        
+        const healthCommercials: UserData[] = usersSnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            email: data.email,
+            role: data.role,
+            active: data.active,
+            createdAt: data.createdAt?.toDate() || new Date(),
+          } as UserData;
+        });
+        
+        setCommerciaux(healthCommercials);
+      } catch (error) {
+        console.error("Erreur chargement commerciaux:", error);
+        toast.error("Erreur lors du chargement des commerciaux");
+      }
     };
-  };
+    loadCommerciaux();
+  }, []);
 
-  const loadData = async () => {
+  // Charger les actes
+  const loadActs = async () => {
     setIsLoading(true);
     try {
-      if (!db) {
-        throw new Error("Firebase non initialisé");
-      }
-
-      // 1. Récupérer tous les commerciaux santé individuelle
-      const usersRef = collection(db, "users");
-      const q = query(usersRef, where("role", "==", "COMMERCIAL_SANTE_INDIVIDUEL"), where("active", "==", true));
-      const usersSnapshot = await getDocs(q);
-
-      const commerciauxData: CommercialData[] = [];
-      const commerciauxPrevData: CommercialData[] = [];
+      const userId = selectedCommercial === "all" ? null : selectedCommercial;
+      const actsData = await getHealthActsByMonthFiltered(userId, selectedMonth);
       
-      // Calculer le mois précédent
-      const prevMonthDate = subMonths(new Date(selectedMonth + "-01"), 1);
-      const prevMonthKey = format(prevMonthDate, "yyyy-MM");
-
-      // 2. Pour chaque commercial, récupérer ses actes du mois actuel et précédent
-      for (const userDoc of usersSnapshot.docs) {
-        const userData = userDoc.data();
-        
-        // Mois actuel
-        const currentData = await loadCommercialData(selectedMonth, userDoc.id, userData);
-        if (currentData) commerciauxData.push(currentData);
-
-        // Mois précédent
-        const prevData = await loadCommercialData(prevMonthKey, userDoc.id, userData);
-        if (prevData) commerciauxPrevData.push(prevData);
-      }
-
-      // Trier par CA pondéré décroissant
-      commerciauxData.sort((a, b) => b.kpis.caPondere - a.kpis.caPondere);
-      commerciauxPrevData.sort((a, b) => b.kpis.caPondere - a.kpis.caPondere);
-
-      setCommerciaux(commerciauxData);
-      setCommerciauxPrevMonth(commerciauxPrevData);
-
-      // Charger l'historique (6 derniers mois)
-      const historical: HistoricalData[] = [];
-      for (let i = 5; i >= 0; i--) {
-        const histMonthDate = subMonths(new Date(selectedMonth + "-01"), i);
-        const histMonthKey = format(histMonthDate, "yyyy-MM");
-        const histData: CommercialData[] = [];
-
-        for (const userDoc of usersSnapshot.docs) {
-          const userData = userDoc.data();
-          const data = await loadCommercialData(histMonthKey, userDoc.id, userData);
-          if (data) histData.push(data);
-        }
-
-        historical.push({
-          month: format(histMonthDate, "MMMM yyyy", { locale: fr }),
-          monthKey: histMonthKey,
-          data: histData,
-        });
-      }
-
-      setHistoricalData(historical);
+      // Convertir les Timestamp en Date
+      const convertedActs = actsData.map((act) => {
+        return {
+          ...act,
+          dateEffet: toDate(act.dateEffet),
+          dateSaisie: toDate(act.dateSaisie),
+        } as HealthAct;
+      });
+      
+      setActs(convertedActs);
     } catch (error) {
-      console.error("Erreur lors du chargement des données:", error);
-      toast.error("Erreur lors du chargement des données");
+      console.error("Erreur chargement actes:", error);
+      toast.error("Erreur lors du chargement des actes");
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [selectedMonth]);
-
-  // Calculer les totaux globaux
-  const totaux = commerciaux.reduce(
-    (acc, c) => ({
-      nbActes: acc.nbActes + c.acts.length,
-      caTotal: acc.caTotal + c.kpis.caTotal,
-      caPondere: acc.caPondere + c.kpis.caPondere,
-      commissions: acc.commissions + c.kpis.commissionsAcquises,
-    }),
-    { nbActes: 0, caTotal: 0, caPondere: 0, commissions: 0 }
-  );
-
-  // Calculer la tendance vs mois précédent
-  const getTrend = (commercial: CommercialData, metric: 'acts' | 'caPondere' | 'commissions'): { value: number; isPositive: boolean } => {
-    const prev = commerciauxPrevMonth.find(c => c.id === commercial.id);
-    if (!prev) return { value: 0, isPositive: true };
-
-    let current = 0;
-    let previous = 0;
-
-    switch (metric) {
-      case 'acts':
-        current = commercial.acts.length;
-        previous = prev.acts.length;
-        break;
-      case 'caPondere':
-        current = commercial.kpis.caPondere;
-        previous = prev.kpis.caPondere;
-        break;
-      case 'commissions':
-        current = commercial.kpis.commissionsAcquises;
-        previous = prev.kpis.commissionsAcquises;
-        break;
+  // Charger les données historiques pour les graphiques (uniquement si commercial sélectionné)
+  const loadHistoricalData = async () => {
+    if (selectedCommercial === "all") {
+      setHistoricalData([]);
+      return;
     }
 
-    if (previous === 0) return { value: current > 0 ? 100 : 0, isPositive: current > 0 };
-    const change = ((current - previous) / previous) * 100;
-    return { value: Math.abs(change), isPositive: change >= 0 };
+    try {
+      const historical: HistoricalMonthData[] = [];
+      
+      // Charger les 6 mois (mois en cours + 5 précédents)
+      for (let i = 5; i >= 0; i--) {
+        const histMonthDate = subMonths(new Date(selectedMonth + "-01"), i);
+        const histMonthKey = format(histMonthDate, "yyyy-MM");
+        
+        const actsData = await getHealthActsByMonthFiltered(selectedCommercial, histMonthKey);
+        const convertedActs = actsData.map((act) => ({
+          ...act,
+          dateEffet: toDate(act.dateEffet),
+          dateSaisie: toDate(act.dateSaisie),
+        })) as HealthAct[];
+
+        const caPondere = convertedActs.reduce((sum, a) => sum + a.caPondere, 0);
+        const commissionInfo = getHealthCommissionRate(caPondere);
+        const commissions = caPondere * commissionInfo.taux;
+
+        historical.push({
+          month: format(histMonthDate, "MMM yy", { locale: fr }),
+          monthKey: histMonthKey,
+          caPondere,
+          commissions,
+        });
+      }
+
+      setHistoricalData(historical);
+    } catch (error) {
+      console.error("Erreur chargement données historiques:", error);
+    }
   };
 
-  // Filtres et tri
-  const filteredAndSorted = commerciaux
-    .filter(c => {
-      const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           c.email.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesSeuil = filterSeuil === "all" || c.kpis.seuilAtteint.toString() === filterSeuil;
-      return matchesSearch && matchesSeuil;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'acts':
-          return b.acts.length - a.acts.length;
-        case 'caTotal':
-          return b.kpis.caTotal - a.kpis.caTotal;
-        case 'caPondere':
-          return b.kpis.caPondere - a.kpis.caPondere;
-        case 'commissions':
-          return b.kpis.commissionsAcquises - a.kpis.commissionsAcquises;
-        case 'name':
-          return a.name.localeCompare(b.name);
-        default:
-          return b.kpis.caPondere - a.kpis.caPondere;
+  useEffect(() => {
+    loadActs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth, selectedCommercial]);
+
+  useEffect(() => {
+    if (selectedCommercial !== "all") {
+      loadHistoricalData();
+    } else {
+      setHistoricalData([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth, selectedCommercial]);
+
+  const previousMonth = () => {
+    const date = new Date(selectedMonth + "-01");
+    date.setMonth(date.getMonth() - 1);
+    setSelectedMonth(format(date, "yyyy-MM"));
+  };
+
+  const nextMonth = () => {
+    const date = new Date(selectedMonth + "-01");
+    date.setMonth(date.getMonth() + 1);
+    setSelectedMonth(format(date, "yyyy-MM"));
+  };
+
+  const kpisByType = useMemo(() => calculateHealthKPIsByType(acts), [acts]);
+  const timelineDays = useMemo(() => generateTimeline(selectedMonth, acts), [selectedMonth, acts]);
+
+  // Calculer les KPIs pour la progression seuils (uniquement si commercial sélectionné)
+  const commissionInfo = useMemo(() => {
+    if (selectedCommercial === "all") return null;
+    return getHealthCommissionRate(kpisByType.caPondere);
+  }, [selectedCommercial, kpisByType.caPondere]);
+
+  // Scroll automatique vers aujourd'hui
+  useEffect(() => {
+    const container = timelineContainerRef.current;
+    if (!container) return;
+
+    const todayElement = container.querySelector<HTMLDivElement>('[data-timeline-day="today"]');
+    if (!todayElement) {
+      container.scrollTo({ left: 0, behavior: "auto" });
+      return;
+    }
+
+    const targetLeft = todayElement.offsetLeft - container.clientWidth / 2 + todayElement.clientWidth / 2;
+    const safeTarget = Math.max(targetLeft, 0);
+
+    container.scrollTo({
+      left: safeTarget,
+      behavior: "smooth",
+    });
+  }, [timelineDays]);
+
+  const sortedActs = useMemo(() => {
+    if (acts.length === 0) {
+      return [];
+    }
+
+    // Filtrage
+    let filteredActs = [...acts];
+    if (activeFilter.type === 'kind' && activeFilter.value) {
+      filteredActs = filteredActs.filter(act => act.kind === activeFilter.value);
+    }
+
+    // Tri
+    filteredActs.sort((actA, actB) => {
+      const valueA = getSortableValue(actA, sortConfig.key);
+      const valueB = getSortableValue(actB, sortConfig.key);
+
+      if (valueA === valueB) {
+        return 0;
       }
+
+      if (valueA === null) {
+        return sortConfig.direction === "asc" ? -1 : 1;
+      }
+
+      if (valueB === null) {
+        return sortConfig.direction === "asc" ? 1 : -1;
+      }
+
+      if (valueA < valueB) {
+        return sortConfig.direction === "asc" ? -1 : 1;
+      }
+
+      return sortConfig.direction === "asc" ? 1 : -1;
     });
 
-  // Export CSV
-  const exportToCSV = () => {
-    const headers = ['Commercial', 'Email', 'Actes', 'CA Total', 'CA Pondéré', 'Commissions', 'Taux', 'Seuil'];
-    const rows = filteredAndSorted.map(c => [
-      c.name,
-      c.email,
-      c.acts.length,
-      c.kpis.caTotal.toFixed(2),
-      c.kpis.caPondere.toFixed(2),
-      c.kpis.commissionsAcquises.toFixed(2),
-      `${(c.kpis.tauxCommission * 100).toFixed(0)}%`,
-      c.kpis.seuilAtteint,
-    ]);
+    return filteredActs;
+  }, [acts, sortConfig, activeFilter]);
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
+  const handleSortChange = (key: SortKey) => {
+    setSortConfig((current) => {
+      if (current.key === key) {
+        return {
+          key,
+          direction: current.direction === "asc" ? "desc" : "asc",
+        };
+      }
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `sante-individuelle-${selectedMonth}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success('Export CSV réussi !');
+      return {
+        key,
+        direction: key === "dateSaisie" ? "desc" : "asc",
+      };
+    });
   };
 
-  // Données pour graphiques
-  const evolutionData = historicalData.map(h => {
-    const total = h.data.reduce((sum, c) => sum + c.kpis.caPondere, 0);
-    const acts = h.data.reduce((sum, c) => sum + c.acts.length, 0);
-    const commissions = h.data.reduce((sum, c) => sum + c.kpis.commissionsAcquises, 0);
-    return {
-      month: format(new Date(h.monthKey + "-01"), "MMM yy", { locale: fr }),
-      'CA Pondéré': total,
-      'Actes': acts,
-      'Commissions': commissions,
-    };
-  });
+  const renderSortIcon = (key: SortKey) => {
+    if (sortConfig.key !== key) {
+      return <ArrowUpDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />;
+    }
 
-  const repartitionData = [
-    { name: 'Affaire Nouvelle', value: totaux.nbActes > 0 ? commerciaux.reduce((sum, c) => sum + c.kpis.nbAffaireNouvelle, 0) : 0, color: '#3b82f6' },
-    { name: 'Révision', value: totaux.nbActes > 0 ? commerciaux.reduce((sum, c) => sum + c.kpis.nbRevision, 0) : 0, color: '#a855f7' },
-    { name: 'Adhésion Salarié', value: totaux.nbActes > 0 ? commerciaux.reduce((sum, c) => sum + c.kpis.nbAdhesionSalarie, 0) : 0, color: '#f97316' },
-    { name: 'COURT → AZ', value: totaux.nbActes > 0 ? commerciaux.reduce((sum, c) => sum + c.kpis.nbCourtToAz, 0) : 0, color: '#06b6d4' },
-    { name: 'AZ → Courtage', value: totaux.nbActes > 0 ? commerciaux.reduce((sum, c) => sum + c.kpis.nbAzToCourtage, 0) : 0, color: '#10b981' },
-  ].filter(item => item.value > 0);
+    if (sortConfig.direction === "asc") {
+      return <ArrowUp className="h-4 w-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />;
+    }
 
-  const comparisonData = filteredAndSorted.map(c => ({
-    name: c.name.split(' ')[0], // Prénom seulement pour le graphique
-    'CA Pondéré': c.kpis.caPondere,
-    'Actes': c.acts.length,
-    'Commissions': c.kpis.commissionsAcquises,
-  }));
-
-  const getSeuilCouleur = (seuil: number) => {
-    const colors = [
-      "bg-gray-200 text-gray-700",
-      "bg-yellow-200 text-yellow-700",
-      "bg-blue-200 text-blue-700",
-      "bg-indigo-200 text-indigo-700",
-      "bg-green-200 text-green-700",
-    ];
-    return colors[seuil - 1] || colors[0];
+    return <ArrowDown className="h-4 w-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />;
   };
 
-  // Vérifier si commercial est nouveau (première fois qu'on le voit)
-  const isNewCommercial = (commercial: CommercialData) => {
-    const prev = commerciauxPrevMonth.find(c => c.id === commercial.id);
-    return !prev || prev.acts.length === 0;
-  };
+  // Données pour le camembert
+  const pieChartData = useMemo(() => {
+    return [
+      { name: 'AN', value: kpisByType.caAN, color: '#3b82f6' },
+      { name: 'Révisions', value: kpisByType.caRevision, color: '#10b981' },
+      { name: 'Adhésions', value: kpisByType.caAdhesion, color: '#f97316' },
+      { name: 'COURT → AZ', value: kpisByType.caCourtToAz, color: '#a855f7' },
+      { name: 'AZ → Courtage', value: kpisByType.caAzToCourtage, color: '#06b6d4' },
+    ].filter(item => item.value > 0);
+  }, [kpisByType]);
 
-  // Vérifier si en retard (performance faible)
-  const isUnderperforming = (commercial: CommercialData) => {
-    return commercial.kpis.caPondere < 5000 && commercial.acts.length < 3;
-  };
-
-  // Vérifier si excellent (dépassement objectif)
-  const isExcellent = (commercial: CommercialData) => {
-    return commercial.kpis.seuilAtteint >= 3 || commercial.kpis.caPondere >= 18000;
-  };
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 via-rose-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-3">
-            <Heart className="h-8 w-8 text-pink-600" />
-            Santé Individuelle
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Synthèse de l'activité des commerciaux
-          </p>
-        </div>
-
-        {/* Navigation mensuelle */}
-        <MonthSelector 
-          selectedMonth={selectedMonth}
-          onMonthChange={setSelectedMonth}
-        />
-      </div>
-
-      {/* KPIs Globaux */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-pink-700 dark:text-pink-400">
-              Commerciaux actifs
-            </CardTitle>
-            <Users className="h-4 w-4 text-pink-600 dark:text-pink-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-pink-900 dark:text-pink-100">
-              {commerciaux.length}
+    <div className="space-y-8">
+      {/* Section 1 : Activité Mensuelle */}
+      <Card className="relative shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-pink-50/50 via-rose-50/30 to-pink-50/50 dark:from-pink-950/20 dark:via-rose-950/10 dark:to-pink-950/20 border-b">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-pink-500 to-rose-600 shadow-md">
+              <Heart className="h-5 w-5 text-white" />
             </div>
-            <p className="text-xs text-pink-600/70 dark:text-pink-400/70 mt-1">
-              {format(new Date(selectedMonth), "MMMM yyyy", { locale: fr })}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-400">
-              Total actes
-            </CardTitle>
-            <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
-              {totaux.nbActes}
-            </div>
-            <p className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-1">
-              Ce mois-ci
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-400">
-              CA Pondéré total
-            </CardTitle>
-            <Target className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-purple-900 dark:text-purple-100">
-              {formatCurrency(totaux.caPondere)}
-            </div>
-            <p className="text-xs text-purple-600/70 dark:text-purple-400/70 mt-1">
-              Pour calcul commissions
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
-              Commissions totales
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-yellow-900 dark:text-yellow-100">
-              {formatCurrency(totaux.commissions)}
-            </div>
-            <p className="text-xs text-yellow-600/70 dark:text-yellow-400/70 mt-1">
-              À payer ce mois
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Graphiques */}
-      {showGraphs && commerciaux.length > 0 && (
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Évolution 6 mois */}
-          <Card className="border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-pink-600" />
-                Évolution sur 6 mois
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={evolutionData}>
-                  <defs>
-                    <linearGradient id="colorCaPondere" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#a855f7" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0.1}/>
-                    </linearGradient>
-                    <linearGradient id="colorCommissions" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#eab308" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#eab308" stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-                  <XAxis dataKey="month" className="text-xs" />
-                  <YAxis className="text-xs" />
-                  <Tooltip />
-                  <Legend />
-                  <Area type="monotone" dataKey="CA Pondéré" stroke="#a855f7" fill="url(#colorCaPondere)" />
-                  <Area type="monotone" dataKey="Commissions" stroke="#eab308" fill="url(#colorCommissions)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Répartition types d'actes */}
-          <Card className="border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <PieChart className="h-5 w-5 text-pink-600" />
-                Répartition des types d'actes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {repartitionData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <RechartsPieChart>
-                    <Tooltip />
-                    <Legend />
-                    <Pie
-                      data={repartitionData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {repartitionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </RechartsPieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                  Aucune donnée disponible
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Comparaison entre commerciaux */}
-      {showGraphs && filteredAndSorted.length > 1 && (
-        <Card className="border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-pink-600" />
-              Comparaison entre commerciaux
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={comparisonData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-                <XAxis dataKey="name" className="text-xs" />
-                <YAxis className="text-xs" />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="CA Pondéré" fill="#a855f7" />
-                <Bar dataKey="Commissions" fill="#eab308" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Filtres et actions */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader>
-          <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5 text-pink-600" />
-                Détail par commercial
+              <CardTitle className="text-xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
+                Santé Individuelle
               </CardTitle>
-              <CardDescription>
-                Performance individuelle des commerciaux santé individuelle
+              <CardDescription className="mt-1">
+                Navigation mensuelle affecte les KPIs, Timeline et Tableau ci-dessous
               </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowGraphs(!showGraphs)}
-              >
-                {showGraphs ? 'Masquer' : 'Afficher'} graphiques
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={exportToCSV}
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Export CSV
-              </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          {/* Barre de recherche et filtres */}
-          <div className="flex flex-wrap gap-4 mb-6">
-            <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher un commercial..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
+        <CardContent className="space-y-6 pt-6">
+          {/* Navigation mensuelle + Filtre */}
+          <div className="bg-gradient-to-r from-pink-50/50 via-rose-50/30 to-pink-50/50 dark:from-pink-950/20 dark:via-rose-950/10 dark:to-pink-950/20 p-5 rounded-xl border-2 border-pink-200/50 dark:border-pink-800/50 shadow-md">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={previousMonth}
+                  className="rounded-full border-2 hover:bg-gradient-to-r hover:from-pink-500 hover:to-rose-500 hover:text-white hover:border-pink-600 transition-all"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="px-6 py-2 rounded-full bg-gradient-to-r from-pink-600 to-rose-600 shadow-lg">
+                  <span className="text-lg font-bold text-white min-w-[160px] text-center block">
+                    {format(new Date(selectedMonth + "-01"), "MMMM yyyy", { locale: fr })}
+                  </span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={nextMonth}
+                  className="rounded-full border-2 hover:bg-gradient-to-r hover:from-pink-500 hover:to-rose-500 hover:text-white hover:border-pink-600 transition-all"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Label htmlFor="commercial-filter" className="font-semibold">Voir :</Label>
+                <Select value={selectedCommercial} onValueChange={setSelectedCommercial}>
+                  <SelectTrigger id="commercial-filter" className="w-[220px] border-2 focus:border-pink-500">
+                    <SelectValue placeholder="Sélectionner un commercial" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les commerciaux</SelectItem>
+                    {commerciaux.map((com) => (
+                      <SelectItem key={com.id} value={com.id}>
+                        {com.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <Select value={filterSeuil} onValueChange={setFilterSeuil}>
-              <SelectTrigger className="w-[180px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filtrer par seuil" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les seuils</SelectItem>
-                <SelectItem value="1">Seuil 1</SelectItem>
-                <SelectItem value="2">Seuil 2</SelectItem>
-                <SelectItem value="3">Seuil 3</SelectItem>
-                <SelectItem value="4">Seuil 4</SelectItem>
-                <SelectItem value="5">Seuil 5</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Trier par" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="caPondere">CA Pondéré</SelectItem>
-                <SelectItem value="acts">Nombre d'actes</SelectItem>
-                <SelectItem value="caTotal">CA Total</SelectItem>
-                <SelectItem value="commissions">Commissions</SelectItem>
-                <SelectItem value="name">Nom</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600" />
+
+          {/* KPI Cards - Première ligne */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-1.5 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600">
+                <DollarSign className="h-4 w-4 text-white" />
+              </div>
+              <h3 className="text-base font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                Indicateurs de performance par type
+              </h3>
             </div>
-          ) : commerciaux.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              Aucun commercial santé individuelle actif
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+              <KPICard
+                title="Total des actes"
+                value={kpisByType.total}
+                icon={FileText}
+                colorScheme="blue"
+              />
+              <KPICard
+                title="CA des AN"
+                value={formatCurrency(kpisByType.caAN)}
+                icon={Target}
+                colorScheme="blue"
+              />
+              <KPICard
+                title="CA des révisions"
+                value={formatCurrency(kpisByType.caRevision)}
+                icon={TrendingUp}
+                colorScheme="green"
+              />
+              <KPICard
+                title="CA des adhésions"
+                value={formatCurrency(kpisByType.caAdhesion)}
+                icon={Users}
+                colorScheme="orange"
+              />
+              <KPICard
+                title="CA COURT → AZ"
+                value={formatCurrency(kpisByType.caCourtToAz)}
+                icon={ArrowUpDown}
+                colorScheme="purple"
+              />
+              <KPICard
+                title="CA AZ → Courtage"
+                value={formatCurrency(kpisByType.caAzToCourtage)}
+                icon={ArrowUpDown}
+                colorScheme="teal"
+              />
             </div>
-          ) : filteredAndSorted.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              Aucun commercial ne correspond aux critères de recherche
+          </div>
+
+          {/* KPI Cards - Deuxième ligne */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <KPICard
+              title="CA brut"
+              value={formatCurrency(kpisByType.caBrut)}
+              icon={DollarSign}
+              colorScheme="green"
+            />
+            <KPICard
+              title="CA pondéré commission"
+              value={formatCurrency(kpisByType.caPondere)}
+              icon={Target}
+              colorScheme="purple"
+            />
+          </div>
+
+          {/* Timeline */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-1.5 rounded-lg bg-gradient-to-br from-pink-500 to-rose-600">
+                <FileText className="h-4 w-4 text-white" />
+              </div>
+              <h3 className="text-base font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
+                Timeline
+              </h3>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredAndSorted.map((commercial, index) => {
-                const trendActs = getTrend(commercial, 'acts');
-                const trendCa = getTrend(commercial, 'caPondere');
-                const trendCommissions = getTrend(commercial, 'commissions');
-                const progress = commercial.kpis.prochainSeuil > 0 
-                  ? (commercial.kpis.caPondere / commercial.kpis.prochainSeuil) * 100 
-                  : 100;
-                
-                return (
-                  <Card
-                    key={commercial.id}
-                    className="border-2 hover:shadow-lg transition-shadow"
+            <div ref={timelineContainerRef} className="overflow-x-auto scrollbar-thin">
+              <div className="flex gap-3 min-w-max p-2">
+                {timelineDays.map((day, index) => (
+                  <div
+                    key={index}
+                    data-timeline-day={day.isToday ? "today" : undefined}
+                    className={cn(
+                      "flex flex-col items-center rounded-xl min-w-[90px] p-4 transition-all duration-200 border-2 hover:scale-105 cursor-pointer",
+                      {
+                        "bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-orange-300 dark:border-orange-700": day.isSaturday && !day.isToday,
+                        "bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border-red-300 dark:border-red-700": day.isSunday && !day.isToday,
+                        "bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900/20 dark:to-slate-800/20 border-slate-200 dark:border-slate-700": !day.isSaturday && !day.isSunday && !day.isToday,
+                        "border-pink-500 bg-gradient-to-br from-pink-100 to-rose-100 dark:from-pink-900/40 dark:to-rose-900/40 shadow-xl shadow-pink-500/30": day.isToday,
+                      }
+                    )}
                   >
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
-                          {commercial.name.charAt(0)}
+                    <span className={cn(
+                      "text-xs font-bold uppercase tracking-wide",
+                      day.isToday ? "text-pink-600 dark:text-pink-400" : "text-muted-foreground"
+                    )}>
+                      {format(day.date, "EEE", { locale: fr }).substring(0, 3)}
+                    </span>
+                    <span className={cn(
+                      "text-3xl font-bold my-1",
+                      day.isToday && "bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent"
+                    )}>
+                      {format(day.date, "d")}
+                    </span>
+                    {day.acts.length > 0 ? (
+                      <span className={cn(
+                        "text-xs font-bold px-2 py-1 rounded-full",
+                        day.isToday 
+                          ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md"
+                          : "bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300"
+                      )}>
+                        {day.acts.length} acte{day.acts.length > 1 ? "s" : ""}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">0 acte</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Séparateur */}
+          <div className="border-t border-pink-200 dark:border-pink-800" />
+
+          {/* Progression seuils de commissions (conditionnel) */}
+          {selectedCommercial !== "all" && commissionInfo && (
+            <Card className="overflow-hidden border-2 border-pink-200 dark:border-pink-800 bg-gradient-to-br from-pink-50/50 via-rose-50/50 to-pink-50/50 dark:from-pink-950/20 dark:via-rose-950/20 dark:to-pink-950/20 shadow-lg hover:shadow-xl transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-2 rounded-lg bg-gradient-to-br from-pink-500 to-rose-600">
+                        <Target className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                          Progression vers le prochain seuil
+                        </CardTitle>
+                        <CardDescription className="text-xs mt-0.5">
+                          Seuil actuel : {commissionInfo.label} ({commissionInfo.taux * 100}%)
+                        </CardDescription>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 flex items-end gap-6">
+                      <div className="flex items-baseline gap-2">
+                        <div className="text-5xl font-bold bg-gradient-to-br from-pink-600 via-rose-600 to-pink-600 bg-clip-text text-transparent">
+                          {formatCurrency(kpisByType.caPondere)}
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-lg">{commercial.name}</h3>
-                            {isNewCommercial(commercial) && (
-                              <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs">
-                                <Sparkles className="h-3 w-3 mr-1" />
-                                Nouveau
-                              </Badge>
-                            )}
-                            {isExcellent(commercial) && (
-                              <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Excellent
-                              </Badge>
-                            )}
-                            {isUnderperforming(commercial) && (
-                              <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs">
-                                <AlertCircle className="h-3 w-3 mr-1" />
-                                En retard
-                              </Badge>
-                            )}
+                        <div className="text-lg font-medium text-muted-foreground mb-1">
+                          CA pondéré
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        {commissionInfo.prochainSeuil > 0 ? (
+                          <>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-sm font-medium text-foreground">
+                                Objectif restant : {formatCurrency(commissionInfo.objectifRestant)} pour atteindre le seuil suivant
+                              </span>
+                            </div>
+                            <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-pink-500 via-rose-500 to-pink-500 transition-all duration-500 ease-out rounded-full"
+                                style={{ 
+                                  width: `${Math.min((kpisByType.caPondere / commissionInfo.prochainSeuil) * 100, 100)}%` 
+                                }}
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-sm font-medium text-green-600 dark:text-green-400">
+                            Seuil maximum atteint !
                           </div>
-                          <p className="text-sm text-muted-foreground">{commercial.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {index === 0 && filteredAndSorted.length > 1 && (
-                          <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
-                            🏆 Meilleur
-                          </Badge>
                         )}
-                        <Badge className={cn("font-bold", getSeuilCouleur(commercial.kpis.seuilAtteint))}>
-                          Seuil {commercial.kpis.seuilAtteint}
-                        </Badge>
-                        {/* Actions rapides */}
-                        <div className="flex items-center gap-1 ml-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => window.open(`mailto:${commercial.email}`, '_blank')}
-                            title="Envoyer un email"
-                          >
-                            <Mail className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => window.open(`/sante-individuelle?commercial=${commercial.id}`, '_blank')}
-                            title="Voir les actes"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-                    {/* Barre de progression vers prochain seuil */}
-                    {commercial.kpis.prochainSeuil > 0 && (
-                      <div className="mb-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold text-muted-foreground">
-                            Progression vers Seuil {commercial.kpis.seuilAtteint + 1}
-                          </span>
-                          <span className="text-xs font-bold">
-                            {progress.toFixed(0)}% • {formatCurrency(commercial.kpis.objectifRestant)} restants
-                          </span>
-                        </div>
-                        <div className="h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-pink-500 to-rose-600 transition-all duration-500"
-                            style={{ width: `${Math.min(progress, 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
+          {/* Graphiques détaillés (conditionnel - uniquement si commercial sélectionné) */}
+          {selectedCommercial !== "all" && historicalData.length > 0 && (
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Graphique d'évolution des commissions */}
+              <Card className="border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-pink-600" />
+                    Évolution des commissions (6 mois)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <AreaChart data={historicalData}>
+                      <defs>
+                        <linearGradient id="colorCommissions" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#e11d48" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#e11d48" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
+                      <XAxis dataKey="month" className="text-xs" />
+                      <YAxis className="text-xs" />
+                      <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                      <Legend />
+                      <Area type="monotone" dataKey="commissions" stroke="#e11d48" fill="url(#colorCommissions)" name="Commissions" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-                    {/* KPIs du commercial avec tendances */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20">
-                        <div className="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-1 flex items-center justify-between">
-                          <span>Actes</span>
-                          {trendActs.value > 0 && (
-                            <div className={cn(
-                              "flex items-center gap-1 text-[10px]",
-                              trendActs.isPositive ? "text-green-600" : "text-red-600"
-                            )}>
-                              {trendActs.isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                              {trendActs.value.toFixed(0)}%
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                          {commercial.acts.length}
-                        </div>
-                      </div>
-
-                      <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20">
-                        <div className="text-xs text-green-600 dark:text-green-400 font-semibold mb-1">
-                          CA Total
-                        </div>
-                        <div className="text-2xl font-bold text-green-900 dark:text-green-100">
-                          {formatCurrency(commercial.kpis.caTotal)}
-                        </div>
-                      </div>
-
-                      <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/20">
-                        <div className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-1 flex items-center justify-between">
-                          <span>CA Pondéré</span>
-                          {trendCa.value > 0 && (
-                            <div className={cn(
-                              "flex items-center gap-1 text-[10px]",
-                              trendCa.isPositive ? "text-green-600" : "text-red-600"
-                            )}>
-                              {trendCa.isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                              {trendCa.value.toFixed(0)}%
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                          {formatCurrency(commercial.kpis.caPondere)}
-                        </div>
-                      </div>
-
-                      <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950/20">
-                        <div className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold mb-1 flex items-center justify-between">
-                          <span className="flex items-center gap-1">
-                            Commissions
-                            <span className="text-[10px]">({(commercial.kpis.tauxCommission * 100).toFixed(0)}%)</span>
-                          </span>
-                          {trendCommissions.value > 0 && (
-                            <div className={cn(
-                              "flex items-center gap-1 text-[10px]",
-                              trendCommissions.isPositive ? "text-green-600" : "text-red-600"
-                            )}>
-                              {trendCommissions.isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                              {trendCommissions.value.toFixed(0)}%
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-2xl font-bold text-yellow-900 dark:text-yellow-100">
-                          {formatCurrency(commercial.kpis.commissionsAcquises)}
-                        </div>
-                      </div>
+              {/* Camembert répartition CA par type */}
+              <Card className="border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <PieChartIcon className="h-5 w-5 text-pink-600" />
+                    Répartition du CA par type d'acte
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {pieChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                        <Legend />
+                        <Pie
+                          data={pieChartData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {pieChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                      Aucune donnée disponible
                     </div>
-
-                    {/* Répartition des types d'actes */}
-                    {commercial.acts.length > 0 && (
-                      <div className="mt-4 pt-4 border-t">
-                        <div className="text-xs text-muted-foreground font-semibold mb-2">
-                          Répartition par type :
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {commercial.kpis.nbAffaireNouvelle > 0 && (
-                            <Badge variant="outline" className="text-xs">
-                              🆕 AN: {commercial.kpis.nbAffaireNouvelle}
-                            </Badge>
-                          )}
-                          {commercial.kpis.nbRevision > 0 && (
-                            <Badge variant="outline" className="text-xs">
-                              🔄 Révision: {commercial.kpis.nbRevision}
-                            </Badge>
-                          )}
-                          {commercial.kpis.nbAdhesionSalarie > 0 && (
-                            <Badge variant="outline" className="text-xs">
-                              👥 Adhésion: {commercial.kpis.nbAdhesionSalarie}
-                            </Badge>
-                          )}
-                          {commercial.kpis.nbCourtToAz > 0 && (
-                            <Badge variant="outline" className="text-xs">
-                              ➡️ COURT→AZ: {commercial.kpis.nbCourtToAz}
-                            </Badge>
-                          )}
-                          {commercial.kpis.nbAzToCourtage > 0 && (
-                            <Badge variant="outline" className="text-xs">
-                              ⬅️ AZ→Court: {commercial.kpis.nbAzToCourtage}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                  </Card>
-                );
-              })}
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      {/* Historique mensuel */}
-      {historicalData.length > 0 && (
-        <Card className="border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 text-pink-600" />
-              Historique des 6 derniers mois
-            </CardTitle>
-            <CardDescription>
-              Évolution mensuelle de la performance globale
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Filtres de sélection des métriques */}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={selectedHistoricalMetrics.includes("commerciaux") ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setSelectedHistoricalMetrics(prev => 
-                    prev.includes("commerciaux") 
-                      ? prev.filter(m => m !== "commerciaux")
-                      : [...prev, "commerciaux"]
-                  );
-                }}
-                className="gap-2"
-              >
-                <Users className="h-4 w-4" />
-                Commerciaux
-              </Button>
-              <Button
-                variant={selectedHistoricalMetrics.includes("actes") ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setSelectedHistoricalMetrics(prev => 
-                    prev.includes("actes") 
-                      ? prev.filter(m => m !== "actes")
-                      : [...prev, "actes"]
-                  );
-                }}
-                className="gap-2"
-              >
-                <FileText className="h-4 w-4" />
-                Actes
-              </Button>
-              <Button
-                variant={selectedHistoricalMetrics.includes("caPondere") ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setSelectedHistoricalMetrics(prev => 
-                    prev.includes("caPondere") 
-                      ? prev.filter(m => m !== "caPondere")
-                      : [...prev, "caPondere"]
-                  );
-                }}
-                className="gap-2"
-              >
-                <TrendingUp className="h-4 w-4" />
-                CA Pondéré
-              </Button>
-              <Button
-                variant={selectedHistoricalMetrics.includes("commissions") ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setSelectedHistoricalMetrics(prev => 
-                    prev.includes("commissions") 
-                      ? prev.filter(m => m !== "commissions")
-                      : [...prev, "commissions"]
-                  );
-                }}
-                className="gap-2"
-              >
-                <DollarSign className="h-4 w-4" />
-                Commissions
-              </Button>
+          {/* Tableau des actes */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
+                  <ClipboardCheck className="h-4 w-4 text-white" />
+                </div>
+                <h3 className="text-base font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  Tableau récapitulatif des actes (avec actions admin)
+                </h3>
+              </div>
+              {sortedActs.length > 0 && (
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-foreground">{sortedActs.length}</div>
+                  <div className="text-xs text-muted-foreground">actes</div>
+                </div>
+              )}
             </div>
 
-            {/* Graphique histogramme */}
-            {selectedHistoricalMetrics.length > 0 ? (
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart 
-                  data={historicalData.map((h) => {
-                    const total = h.data.reduce((sum, c) => sum + c.kpis.caPondere, 0);
-                    const acts = h.data.reduce((sum, c) => sum + c.acts.length, 0);
-                    const commissions = h.data.reduce((sum, c) => sum + c.kpis.commissionsAcquises, 0);
-                    return {
-                      mois: h.month,
-                      Commerciaux: h.data.length,
-                      Actes: acts,
-                      "CA Pondéré": total,
-                      Commissions: commissions,
-                    };
-                  })}
-                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-                  <XAxis 
-                    dataKey="mois" 
-                    className="text-xs font-bold"
-                    tick={{ fill: 'currentColor', fontSize: 12 }}
-                    stroke="currentColor"
-                    strokeOpacity={0.3}
-                  />
-                  <YAxis 
-                    className="text-xs font-bold"
-                    tick={{ fill: 'currentColor', fontSize: 12 }}
-                    stroke="currentColor"
-                    strokeOpacity={0.3}
-                    tickFormatter={(value) => {
-                      if (selectedHistoricalMetrics.includes("caPondere") || selectedHistoricalMetrics.includes("commissions")) {
-                        return `${(value / 1000).toFixed(0)}k€`;
-                      }
-                      return value.toFixed(0);
-                    }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '12px',
-                      boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-                    }}
-                    labelStyle={{ 
-                      fontWeight: 'bold',
-                      marginBottom: '8px',
-                      color: 'hsl(var(--foreground))'
-                    }}
-                    formatter={(value: number, name: string) => {
-                      if (name === "CA Pondéré" || name === "Commissions") {
-                        return [formatCurrency(value), name];
-                      }
-                      return [value, name];
-                    }}
-                  />
-                  <Legend 
-                    wrapperStyle={{
-                      paddingTop: '20px',
-                    }}
-                  />
-                  {selectedHistoricalMetrics.includes("commerciaux") && (
-                    <Bar dataKey="Commerciaux" fill="#3b82f6" name="Commerciaux" />
+            {/* Filtres */}
+            {acts.length > 0 && (
+              <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-indigo-50/50 via-purple-50/30 to-indigo-50/50 dark:from-indigo-950/20 dark:via-purple-950/10 dark:to-indigo-950/20 border border-indigo-200/50 dark:border-indigo-800/50">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">Filtres :</span>
+                  
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={() => setActiveFilter({ type: null, value: null })}
+                      className={cn(
+                        "px-3 py-1 rounded-full text-xs font-medium transition-all",
+                        !activeFilter.type
+                          ? "bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-md"
+                          : "bg-muted hover:bg-muted/70"
+                      )}
+                    >
+                      Tous
+                    </button>
+                    {["AFFAIRE_NOUVELLE", "REVISION", "ADHESION_SALARIE", "COURT_TO_AZ", "AZ_TO_COURTAGE"].map((kind) => (
+                      <button
+                        key={kind}
+                        onClick={() => setActiveFilter({ type: 'kind', value: kind })}
+                        className={cn(
+                          "px-3 py-1 rounded-full text-xs font-medium transition-all",
+                          activeFilter.type === 'kind' && activeFilter.value === kind
+                            ? getKindBadgeColor(kind) + " shadow-md ring-2 ring-white dark:ring-slate-800"
+                            : "bg-muted hover:bg-muted/70"
+                        )}
+                      >
+                        {getHealthActKindLabel(kind)}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Bouton reset */}
+                  {activeFilter.type && (
+                    <button
+                      onClick={() => setActiveFilter({ type: null, value: null })}
+                      className="ml-auto px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-950/70 transition-all flex items-center gap-1"
+                    >
+                      <X className="h-3 w-3" />
+                      Réinitialiser
+                    </button>
                   )}
-                  {selectedHistoricalMetrics.includes("actes") && (
-                    <Bar dataKey="Actes" fill="#10b981" name="Actes" />
-                  )}
-                  {selectedHistoricalMetrics.includes("caPondere") && (
-                    <Bar dataKey="CA Pondéré" fill="#a855f7" name="CA Pondéré" />
-                  )}
-                  {selectedHistoricalMetrics.includes("commissions") && (
-                    <Bar dataKey="Commissions" fill="#eab308" name="Commissions" />
-                  )}
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-[350px] text-muted-foreground">
-                <div className="text-center">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>Sélectionnez au moins une métrique à afficher</p>
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
-      )}
+
+            {acts.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground">Aucun acte pour ce mois</p>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border-2 border-pink-200/50 dark:border-pink-800/50 shadow-2xl">
+                <table className="w-full border-collapse">
+                  <thead className="bg-gradient-to-r from-pink-50 via-rose-50/50 to-pink-50 dark:from-pink-950/40 dark:via-rose-950/20 dark:to-pink-950/40">
+                    <tr className="border-b-2 border-pink-200/50 dark:border-pink-800/50">
+                      <th
+                        className="text-center p-4 font-bold text-xs uppercase tracking-wider text-foreground/80 cursor-pointer hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors"
+                        aria-sort={getAriaSort("dateSaisie", sortConfig)}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleSortChange("dateSaisie")}
+                          className="flex w-full items-center justify-center gap-1.5 text-xs font-bold uppercase hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
+                        >
+                          Date de saisie
+                          {renderSortIcon("dateSaisie")}
+                        </button>
+                      </th>
+                      <th
+                        className="text-center p-4 font-bold text-xs uppercase tracking-wider text-foreground/80 cursor-pointer hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors"
+                        aria-sort={getAriaSort("kind", sortConfig)}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleSortChange("kind")}
+                          className="flex w-full items-center justify-center gap-1.5 text-xs font-bold uppercase hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
+                        >
+                          Type
+                          {renderSortIcon("kind")}
+                        </button>
+                      </th>
+                      <th
+                        className="text-center p-4 font-bold text-xs uppercase tracking-wider text-foreground/80 cursor-pointer hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors"
+                        aria-sort={getAriaSort("clientNom", sortConfig)}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleSortChange("clientNom")}
+                          className="flex w-full items-center justify-center gap-1.5 text-xs font-bold uppercase hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
+                        >
+                          Client
+                          {renderSortIcon("clientNom")}
+                        </button>
+                      </th>
+                      <th
+                        className="text-center p-4 font-bold text-xs uppercase tracking-wider text-foreground/80 cursor-pointer hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors"
+                        aria-sort={getAriaSort("numeroContrat", sortConfig)}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleSortChange("numeroContrat")}
+                          className="flex w-full items-center justify-center gap-1.5 text-xs font-bold uppercase hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
+                        >
+                          N° Contrat
+                          {renderSortIcon("numeroContrat")}
+                        </button>
+                      </th>
+                      <th
+                        className="text-center p-4 font-bold text-xs uppercase tracking-wider text-foreground/80 cursor-pointer hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors"
+                        aria-sort={getAriaSort("compagnie", sortConfig)}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleSortChange("compagnie")}
+                          className="flex w-full items-center justify-center gap-1.5 text-xs font-bold uppercase hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
+                        >
+                          Compagnie
+                          {renderSortIcon("compagnie")}
+                        </button>
+                      </th>
+                      <th
+                        className="text-center p-4 font-bold text-xs uppercase tracking-wider text-foreground/80 cursor-pointer hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors"
+                        aria-sort={getAriaSort("dateEffet", sortConfig)}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleSortChange("dateEffet")}
+                          className="flex w-full items-center justify-center gap-1.5 text-xs font-bold uppercase hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
+                        >
+                          Date effet
+                          {renderSortIcon("dateEffet")}
+                        </button>
+                      </th>
+                      <th
+                        className="text-center p-4 font-bold text-xs uppercase tracking-wider text-foreground/80 cursor-pointer hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors"
+                        aria-sort={getAriaSort("caAnnuel", sortConfig)}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleSortChange("caAnnuel")}
+                          className="flex w-full items-center justify-center gap-1.5 text-xs font-bold uppercase hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
+                        >
+                          CA Annuel
+                          {renderSortIcon("caAnnuel")}
+                        </button>
+                      </th>
+                      <th
+                        className="text-center p-4 font-bold text-xs uppercase tracking-wider text-foreground/80 cursor-pointer hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors"
+                        aria-sort={getAriaSort("caPondere", sortConfig)}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleSortChange("caPondere")}
+                          className="flex w-full items-center justify-center gap-1.5 text-xs font-bold uppercase hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
+                        >
+                          CA Pondéré
+                          {renderSortIcon("caPondere")}
+                        </button>
+                      </th>
+                      <th className="text-center p-4 font-bold text-xs uppercase tracking-wider text-foreground/80 w-32">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedActs.map((act) => {
+                      const dateSaisie = toDate(act.dateSaisie);
+                      const dateEffet = toDate(act.dateEffet);
+                      
+                      return (
+                        <tr
+                          key={act.id}
+                          className={cn(
+                            "border-b transition-all duration-200 group",
+                            "hover:bg-gradient-to-r hover:from-pink-50/50 hover:to-rose-50/50 dark:hover:from-pink-950/20 dark:hover:to-rose-950/20 hover:shadow-md"
+                          )}
+                        >
+                          <td className="p-4 text-sm text-center align-middle">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-medium">{format(dateSaisie, "dd/MM/yyyy")}</span>
+                              <span className="text-xs text-muted-foreground">{format(dateSaisie, "HH:mm")}</span>
+                            </div>
+                          </td>
+                          <td className="p-4 text-center align-middle">
+                            <span className={cn(
+                              "inline-flex px-2.5 py-1 rounded-full text-xs font-bold",
+                              getKindBadgeColor(act.kind)
+                            )}>
+                              {getHealthActKindLabel(act.kind)}
+                            </span>
+                          </td>
+                          <td className="p-4 text-sm font-semibold text-center align-middle">{act.clientNom}</td>
+                          <td className="p-4 text-sm text-center align-middle">
+                            <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{act.numeroContrat || "-"}</span>
+                          </td>
+                          <td className="p-4 text-sm text-center align-middle">
+                            <span className="font-medium">{act.compagnie}</span>
+                          </td>
+                          <td className="p-4 text-sm text-center align-middle">
+                            <span className="font-medium">{format(dateEffet, "dd/MM/yyyy")}</span>
+                          </td>
+                          <td className="p-4 text-sm text-center align-middle">
+                            <span className="font-semibold">{formatCurrency(act.caAnnuel)}</span>
+                          </td>
+                          <td className="p-4 text-center align-middle">
+                            <span className={cn(
+                              "inline-flex px-3 py-1.5 rounded-full text-sm font-bold transition-all",
+                              act.caPondere >= 1000
+                                ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md group-hover:shadow-lg group-hover:scale-105"
+                                : "bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300"
+                            )}>
+                              {formatCurrency(act.caPondere)}
+                            </span>
+                          </td>
+                          <td className="p-4 text-center align-middle">
+                            <div className="flex items-center justify-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setEditDialog({ open: true, act })}
+                                className="h-9 w-9 rounded-lg text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30 transition-all hover:scale-110 hover:shadow-md"
+                                title="Modifier l'acte"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setDeleteDialog({ open: true, act })}
+                                className="h-9 w-9 rounded-lg text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 transition-all hover:scale-110 hover:shadow-md"
+                                title="Supprimer l'acte"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Dialog d'édition */}
+      <EditHealthActDialog
+        open={editDialog.open}
+        onOpenChange={(open) => setEditDialog({ open, act: open ? editDialog.act : null })}
+        act={editDialog.act}
+        onSuccess={loadActs}
+      />
+
+      {/* Dialog de suppression */}
+      <DeleteHealthActDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog({ open, act: open ? deleteDialog.act : null })}
+        act={deleteDialog.act}
+        onSuccess={loadActs}
+      />
     </div>
   );
 }
-

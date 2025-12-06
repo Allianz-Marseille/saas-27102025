@@ -142,3 +142,38 @@ export function getThresholdBorderColor(seuil: number): string {
   return colors[seuil - 1] || colors[0];
 }
 
+/**
+ * Calcule les KPIs par type d'acte santé
+ */
+export function calculateHealthKPIsByType(acts: HealthAct[]): {
+  total: number;
+  caAN: number;
+  caRevision: number;
+  caAdhesion: number;
+  caCourtToAz: number;
+  caAzToCourtage: number;
+  caBrut: number;
+  caPondere: number;
+} {
+  return {
+    total: acts.length,
+    caAN: acts
+      .filter((a) => a.kind === "AFFAIRE_NOUVELLE")
+      .reduce((sum, a) => sum + a.caAnnuel, 0),
+    caRevision: acts
+      .filter((a) => a.kind === "REVISION")
+      .reduce((sum, a) => sum + a.caAnnuel, 0),
+    caAdhesion: acts
+      .filter((a) => a.kind === "ADHESION_SALARIE")
+      .reduce((sum, a) => sum + a.caAnnuel, 0),
+    caCourtToAz: acts
+      .filter((a) => a.kind === "COURT_TO_AZ")
+      .reduce((sum, a) => sum + a.caAnnuel, 0),
+    caAzToCourtage: acts
+      .filter((a) => a.kind === "AZ_TO_COURTAGE")
+      .reduce((sum, a) => sum + a.caAnnuel, 0),
+    caBrut: acts.reduce((sum, a) => sum + a.caAnnuel, 0),
+    caPondere: acts.reduce((sum, a) => sum + a.caPondere, 0),
+  };
+}
+

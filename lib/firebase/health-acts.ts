@@ -77,6 +77,37 @@ export const getHealthActsByMonth = async (userId: string, monthKey: string): Pr
 };
 
 /**
+ * Récupère les actes santé pour un mois donné, avec filtre utilisateur optionnel
+ * @param userId - ID de l'utilisateur ou null pour tous les utilisateurs
+ * @param monthKey - Clé du mois au format "yyyy-MM"
+ */
+export const getHealthActsByMonthFiltered = async (userId: string | null, monthKey: string): Promise<HealthAct[]> => {
+  if (!db) return [];
+  
+  let q;
+  if (userId === null) {
+    // Récupérer tous les actes du mois
+    q = query(
+      collection(db, "health_acts"),
+      where("moisKey", "==", monthKey)
+    );
+  } else {
+    // Récupérer les actes d'un utilisateur spécifique
+    q = query(
+      collection(db, "health_acts"),
+      where("userId", "==", userId),
+      where("moisKey", "==", monthKey)
+    );
+  }
+
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as HealthAct[];
+};
+
+/**
  * Supprime un acte santé
  */
 export const deleteHealthAct = async (actId: string): Promise<void> => {
