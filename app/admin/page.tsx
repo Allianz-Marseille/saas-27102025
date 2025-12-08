@@ -22,7 +22,7 @@ import { calculateKPI } from "@/lib/utils/kpi";
 import { calculateHealthKPI } from "@/lib/utils/health-kpi";
 import { calculateHealthCollectiveKPI } from "@/lib/utils/health-collective-kpi";
 import { toast } from "sonner";
-import type { KPI, HealthKPI, HealthAct, HealthCollectiveAct } from "@/types";
+import type { KPI, HealthKPI, HealthAct, HealthCollectiveAct, HealthCollectiveKPI } from "@/types";
 
 interface RoleSectionProps {
   title: string;
@@ -38,7 +38,7 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
   const [selectedUser, setSelectedUser] = useState<string>("all");
   const [users, setUsers] = useState<UserData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  type KPIData = (KPI | HealthKPI) & { 
+  type KPIData = (KPI | HealthKPI | HealthCollectiveKPI) & { 
     nbActes?: number; 
     nbUsers?: number;
     // Propriétés de HealthKPI (optionnelles pour compatibilité)
@@ -74,7 +74,11 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
     caAdhesionRenfort?: number;
     caCourtageToAllianz?: number;
     caAllianzToCourtage?: number;
+    caRevision?: number;
     caBrut?: number;
+    total?: number;
+    objectifRestant?: number;
+    prochainSeuil?: number;
   };
   const [kpis, setKPIs] = useState<KPIData | null>(null);
 
