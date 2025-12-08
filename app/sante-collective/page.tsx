@@ -29,7 +29,8 @@ import {
   Award,
   Crown,
   Flame,
-  Sparkles
+  Sparkles,
+  HelpCircle
 } from "lucide-react";
 
 // Composant de compteur animé
@@ -64,12 +65,18 @@ function AchievementBadge({ icon, label, achieved, color, target, description }:
     <div 
       className={`relative group transition-all duration-300 ${achieved ? 'scale-100' : 'scale-90 opacity-50 grayscale'}`}
     >
-      <div className={`p-4 rounded-xl ${achieved ? `bg-linear-to-br ${color} achievement-badge` : 'bg-slate-200 dark:bg-slate-800'} transition-all duration-300 hover:scale-110 relative overflow-hidden cursor-help`}>
-        <div className={achieved ? 'text-white' : 'text-slate-400'}>
-          {icon}
+      <div className={`p-4 rounded-xl ${achieved ? `bg-linear-to-br ${color} achievement-badge` : 'bg-slate-200 dark:bg-slate-800'} transition-all duration-300 hover:scale-110 relative overflow-visible cursor-help`}>
+        <div className="relative">
+          <div className={achieved ? 'text-white' : 'text-slate-400'}>
+            {icon}
+          </div>
+          {/* Indicateur point d'interrogation */}
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-white/90 dark:bg-slate-800 rounded-full flex items-center justify-center border border-slate-300 dark:border-slate-600 shadow-sm">
+            <HelpCircle className="h-3 w-3 text-slate-600 dark:text-slate-400" />
+          </div>
         </div>
         {/* Tooltip amélioré au hover */}
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-[60] scale-90 group-hover:scale-100 max-w-xs">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-[60] scale-90 group-hover:scale-100 max-w-xs whitespace-normal">
           <div className={`px-4 py-3 rounded-xl text-xs font-bold text-white ${achieved ? `bg-linear-to-r ${color}` : 'bg-slate-800'} shadow-2xl border-2 ${achieved ? 'border-white/30' : 'border-slate-600'} backdrop-blur-sm`}>
             <div className="font-black text-sm mb-1">{label}</div>
             <div className="text-white/90 text-[11px] font-semibold mb-1">{description}</div>
