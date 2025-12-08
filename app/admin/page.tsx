@@ -63,6 +63,18 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
     commissionsPotentielles?: number;
     commissionsReelles?: number;
     commissionValidee?: boolean;
+    // Propriétés de HealthCollectiveKPI (optionnelles pour compatibilité)
+    caIndANSante?: number;
+    caIndANPrevoyance?: number;
+    caIndANRetraite?: number;
+    caCollANSante?: number;
+    caCollANPrevoyance?: number;
+    caCollANRetraite?: number;
+    caCollAdhesionRenfort?: number;
+    caAdhesionRenfort?: number;
+    caCourtageToAllianz?: number;
+    caAllianzToCourtage?: number;
+    caBrut?: number;
   };
   const [kpis, setKPIs] = useState<KPIData | null>(null);
 
@@ -133,12 +145,12 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
         // Calculer les KPIs même si aucun acte n'est trouvé (pour afficher 0)
         const calculatedKPIs = calculateHealthCollectiveKPI(healthCollectiveActs);
         setKPIs({
-          caMensuel: calculatedKPIs.caBrut,
-          commissionsPotentielles: calculatedKPIs.commissionsAcquises,
+          ...calculatedKPIs,
           nbActes: calculatedKPIs.total,
           nbUsers: usersData.length,
-          caPondere: calculatedKPIs.caPondere,
-        } as KPI & { nbActes: number; nbUsers: number; caPondere?: number });
+          caTotal: calculatedKPIs.caBrut,
+          commissionsPotentielles: calculatedKPIs.commissionsAcquises,
+        });
       } else {
         // Autres rôles (en construction)
         setKPIs({
@@ -327,16 +339,16 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
               </>
             ) : role === "COMMERCIAL_SANTE_COLLECTIVE" ? (
               <>
-                {/* KPIs pour Santé Collective */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                {/* Ligne 1 : Compteurs d'actes principaux */}
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
                   <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30 border-emerald-200 dark:border-emerald-800">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Total Actes</p>
-                          <p className="text-2xl font-bold">{kpis?.nbActes || 0}</p>
+                          <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Coll AN Santé</p>
+                          <p className="text-2xl font-bold">{formatCurrency(kpis?.caCollANSante || 0)}</p>
                         </div>
-                        <FileText className="h-8 w-8 text-emerald-600 dark:text-emerald-400 opacity-50" />
+                        <Sparkles className="h-8 w-8 text-emerald-600 dark:text-emerald-400 opacity-50" />
                       </div>
                     </CardContent>
                   </Card>
@@ -345,10 +357,10 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">CA Brut</p>
-                          <p className="text-2xl font-bold">{formatCurrency(kpis?.caMensuel || 0)}</p>
+                          <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">Coll AN Prévoyance</p>
+                          <p className="text-2xl font-bold">{formatCurrency(kpis?.caCollANPrevoyance || 0)}</p>
                         </div>
-                        <DollarSign className="h-8 w-8 text-blue-600 dark:text-blue-400 opacity-50" />
+                        <FileText className="h-8 w-8 text-blue-600 dark:text-blue-400 opacity-50" />
                       </div>
                     </CardContent>
                   </Card>
@@ -357,36 +369,79 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-1">CA Pondéré</p>
-                          <p className="text-2xl font-bold">{formatCurrency((kpis as any)?.caPondere || 0)}</p>
+                          <p className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-1">Coll AN Retraite</p>
+                          <p className="text-2xl font-bold">{formatCurrency(kpis?.caCollANRetraite || 0)}</p>
                         </div>
-                        <TrendingUp className="h-8 w-8 text-purple-600 dark:text-purple-400 opacity-50" />
+                        <Users className="h-8 w-8 text-purple-600 dark:text-purple-400 opacity-50" />
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950/30 dark:to-yellow-900/30 border-yellow-200 dark:border-yellow-800">
+                  <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/30 dark:to-orange-900/30 border-orange-200 dark:border-orange-800">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-1">Commissions</p>
-                          <p className="text-2xl font-bold">{formatCurrency(kpis?.commissionsPotentielles || 0)}</p>
+                          <p className="text-xs font-medium text-orange-600 dark:text-orange-400 mb-1">Révisions</p>
+                          <p className="text-2xl font-bold">{formatCurrency(kpis?.caRevision || 0)}</p>
                         </div>
-                        <DollarSign className="h-8 w-8 text-yellow-600 dark:text-yellow-400 opacity-50" />
+                        <TrendingUp className="h-8 w-8 text-orange-600 dark:text-orange-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-950/30 dark:to-cyan-900/30 border-cyan-200 dark:border-cyan-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-cyan-600 dark:text-cyan-400 mb-1">Courtage → AZ</p>
+                          <p className="text-2xl font-bold">{formatCurrency(kpis?.caCourtageToAllianz || 0)}</p>
+                        </div>
+                        <TrendingUp className="h-8 w-8 text-cyan-600 dark:text-cyan-400 opacity-50" />
                       </div>
                     </CardContent>
                   </Card>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
-                  <Card className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-950/30 dark:to-teal-900/30 border-teal-200 dark:border-teal-800">
+                {/* Ligne 2 : CA */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/30 dark:to-indigo-900/30 border-indigo-200 dark:border-indigo-800">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-medium text-teal-600 dark:text-teal-400 mb-1">Commerciaux Actifs</p>
-                          <p className="text-2xl font-bold">{kpis?.nbUsers || 0}</p>
+                        <div className="w-full">
+                          <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 mb-1">CA Brut</p>
+                          <p className="text-2xl font-bold">{formatCurrency(kpis?.caBrut || kpis?.caTotal || 0)}</p>
                         </div>
-                        <Users className="h-8 w-8 text-teal-600 dark:text-teal-400 opacity-50" />
+                        <DollarSign className="h-8 w-8 text-indigo-600 dark:text-indigo-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-violet-50 to-violet-100 dark:from-violet-950/30 dark:to-violet-900/30 border-violet-200 dark:border-violet-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="w-full">
+                          <p className="text-xs font-medium text-violet-600 dark:text-violet-400 mb-1">CA Pondéré</p>
+                          <p className="text-2xl font-bold">{formatCurrency(kpis?.caPondere || 0)}</p>
+                        </div>
+                        <TrendingUp className="h-8 w-8 text-violet-600 dark:text-violet-400 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Ligne 3 : Commissions */}
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
+                  <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950/30 dark:to-yellow-900/30 border-yellow-200 dark:border-yellow-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="w-full">
+                          <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-1">Commissions Débloquées</p>
+                          <p className="text-2xl font-bold">{formatCurrency(kpis?.commissionsAcquises || kpis?.commissionsPotentielles || 0)}</p>
+                          <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-1">
+                            Seuil {kpis?.seuilAtteint || 1} - Taux : {((kpis?.tauxCommission || 0) * 100).toFixed(0)}%
+                          </p>
+                        </div>
+                        <DollarSign className="h-8 w-8 text-yellow-600 dark:text-yellow-400 opacity-50" />
                       </div>
                     </CardContent>
                   </Card>
@@ -669,7 +724,6 @@ export default function AdminHome() {
           selectedMonth={selectedMonth}
           linkHref="/admin/sante-collective"
           color="text-emerald-600"
-          underConstruction
         />
 
         <RoleSection
