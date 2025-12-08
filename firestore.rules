@@ -86,6 +86,14 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isCommercialSante() && resource.data.userId == request.auth.uid);
     }
     
+    // Health collective acts collection (Santé Collective)
+    match /health_collective_acts/{actId} {
+      allow read: if isAuthenticated();
+      allow create: if isCommercialSanteCollective() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (isCommercialSanteCollective() && resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (isCommercialSanteCollective() && resource.data.userId == request.auth.uid);
+    }
+    
     // Logs collection
     match /logs/{logId} {
       allow read: if isAdmin(); // Only admins can read logs
