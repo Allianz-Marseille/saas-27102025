@@ -63,7 +63,7 @@ function AnimatedCounter({ value, prefix = "", suffix = "" }: { value: number; p
 function AchievementBadge({ icon, label, achieved, color, target, description }: { icon: React.ReactNode; label: string; achieved: boolean; color: string; target: string; description: string }) {
   return (
     <div 
-      className={`relative group transition-all duration-300 ${achieved ? 'scale-100' : 'scale-90 opacity-50 grayscale'}`}
+      className={`relative group ${achieved ? 'opacity-100' : 'opacity-50 grayscale'}`}
     >
       <div className={`p-4 rounded-xl ${achieved ? `bg-linear-to-br ${color} achievement-badge` : 'bg-slate-200 dark:bg-slate-800'} transition-all duration-200 hover:scale-105 relative overflow-visible cursor-help`}>
         <div className="relative">
@@ -75,8 +75,8 @@ function AchievementBadge({ icon, label, achieved, color, target, description }:
             <HelpCircle className="h-3 w-3 text-slate-600 dark:text-slate-400" />
           </div>
         </div>
-        {/* Tooltip amélioré au hover - format large */}
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out pointer-events-none z-[60] whitespace-nowrap">
+        {/* Tooltip amélioré au hover - format large, positionné pour éviter la sidebar */}
+        <div className="absolute bottom-full left-0 mb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out pointer-events-none z-[60] whitespace-nowrap">
           <div className={`px-4 py-2.5 rounded-lg text-xs font-bold text-white ${achieved ? `bg-linear-to-r ${color}` : 'bg-slate-800'} shadow-2xl border-2 ${achieved ? 'border-white/30' : 'border-slate-600'} backdrop-blur-sm`}>
             <div className="flex items-center gap-3">
               <div className="flex-shrink-0">
@@ -102,8 +102,8 @@ function AchievementBadge({ icon, label, achieved, color, target, description }:
               </div>
             </div>
           </div>
-          {/* Flèche du tooltip */}
-          <div className={`absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] ${achieved ? 'border-t-white/30' : 'border-t-slate-600'}`} />
+          {/* Flèche du tooltip - positionnée à gauche */}
+          <div className={`absolute top-full left-4 -mt-[1px] w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] ${achieved ? 'border-t-white/30' : 'border-t-slate-600'}`} />
         </div>
       </div>
       {achieved && (
