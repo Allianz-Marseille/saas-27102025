@@ -59,7 +59,7 @@ function AnimatedCounter({ value, prefix = "", suffix = "" }: { value: number; p
 }
 
 // Composant de badge achievement avec tooltip amélioré
-function AchievementBadge({ icon, label, achieved, color, target }: { icon: React.ReactNode; label: string; achieved: boolean; color: string; target: string }) {
+function AchievementBadge({ icon, label, achieved, color, target, description }: { icon: React.ReactNode; label: string; achieved: boolean; color: string; target: string; description: string }) {
   return (
     <div 
       className={`relative group transition-all duration-300 ${achieved ? 'scale-100' : 'scale-90 opacity-50 grayscale'}`}
@@ -69,12 +69,19 @@ function AchievementBadge({ icon, label, achieved, color, target }: { icon: Reac
           {icon}
         </div>
         {/* Tooltip amélioré au hover */}
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-[60] scale-90 group-hover:scale-100">
-          <div className={`px-4 py-2 rounded-xl text-xs font-bold text-white ${achieved ? `bg-linear-to-r ${color}` : 'bg-slate-800'} shadow-2xl border-2 ${achieved ? 'border-white/30' : 'border-slate-600'} backdrop-blur-sm`}>
-            <div className="font-black text-sm mb-0.5">{label}</div>
-            <div className="text-white/90 text-[11px] font-semibold">{target}</div>
-            {achieved && <div className="text-white/90 text-[10px] mt-0.5">✓ Débloqué</div>}
-            {!achieved && <div className="text-white/70 text-[10px] mt-0.5">🔒 Verrouillé</div>}
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-[60] scale-90 group-hover:scale-100 max-w-xs">
+          <div className={`px-4 py-3 rounded-xl text-xs font-bold text-white ${achieved ? `bg-linear-to-r ${color}` : 'bg-slate-800'} shadow-2xl border-2 ${achieved ? 'border-white/30' : 'border-slate-600'} backdrop-blur-sm`}>
+            <div className="font-black text-sm mb-1">{label}</div>
+            <div className="text-white/90 text-[11px] font-semibold mb-1">{description}</div>
+            <div className="text-white/80 text-[10px] font-medium border-t border-white/20 pt-1 mt-1">
+              Objectif : {target}
+            </div>
+            {achieved && <div className="text-white/90 text-[10px] mt-1.5 flex items-center gap-1">
+              <span>✓</span> <span>Débloqué</span>
+            </div>}
+            {!achieved && <div className="text-white/70 text-[10px] mt-1.5 flex items-center gap-1">
+              <span>🔒</span> <span>Verrouillé</span>
+            </div>}
           </div>
           {/* Flèche du tooltip */}
           <div className={`absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] ${achieved ? 'border-t-white/30' : 'border-t-slate-600'}`} />
@@ -165,12 +172,54 @@ export default function SanteCollectivePage() {
 
   // Succès basés sur des objectifs de CA
   const achievements = [
-    { icon: <Flame className="h-5 w-5" />, label: "Premier pas", achieved: acts.length >= 1, color: "from-orange-500 to-red-500", target: "1er acte" },
-    { icon: <Zap className="h-5 w-5" />, label: "Démarrage", achieved: kpi.caPondere >= 6000, color: "from-yellow-500 to-orange-500", target: "6k€" },
-    { icon: <Trophy className="h-5 w-5" />, label: "Seuil 1", achieved: kpi.caPondere >= 10000, color: "from-blue-500 to-cyan-500", target: "10k€" },
-    { icon: <Star className="h-5 w-5" />, label: "Seuil 2", achieved: kpi.caPondere >= 14000, color: "from-indigo-500 to-purple-500", target: "14k€" },
-    { icon: <Award className="h-5 w-5" />, label: "Seuil 3", achieved: kpi.caPondere >= 18000, color: "from-purple-500 to-pink-500", target: "18k€" },
-    { icon: <Crown className="h-5 w-5" />, label: "Champion", achieved: kpi.caPondere >= 22000, color: "from-green-500 to-emerald-500", target: "22k€" },
+    { 
+      icon: <Flame className="h-5 w-5" />, 
+      label: "Premier pas", 
+      description: "Créez votre premier acte santé collective",
+      achieved: acts.length >= 1, 
+      color: "from-orange-500 to-red-500", 
+      target: "1er acte" 
+    },
+    { 
+      icon: <Zap className="h-5 w-5" />, 
+      label: "Démarrage", 
+      description: "Atteignez 6 000 € de CA pondéré",
+      achieved: kpi.caPondere >= 6000, 
+      color: "from-yellow-500 to-orange-500", 
+      target: "6 000 € de CA pondéré" 
+    },
+    { 
+      icon: <Trophy className="h-5 w-5" />, 
+      label: "Seuil 1", 
+      description: "Atteignez le premier seuil de commission (2%)",
+      achieved: kpi.caPondere >= 10000, 
+      color: "from-blue-500 to-cyan-500", 
+      target: "10 000 € de CA pondéré" 
+    },
+    { 
+      icon: <Star className="h-5 w-5" />, 
+      label: "Seuil 2", 
+      description: "Atteignez le deuxième seuil de commission (3%)",
+      achieved: kpi.caPondere >= 14000, 
+      color: "from-indigo-500 to-purple-500", 
+      target: "14 000 € de CA pondéré" 
+    },
+    { 
+      icon: <Award className="h-5 w-5" />, 
+      label: "Seuil 3", 
+      description: "Atteignez le troisième seuil de commission (4%)",
+      achieved: kpi.caPondere >= 18000, 
+      color: "from-purple-500 to-pink-500", 
+      target: "18 000 € de CA pondéré" 
+    },
+    { 
+      icon: <Crown className="h-5 w-5" />, 
+      label: "Champion", 
+      description: "Atteignez le niveau maximum (6% de commission)",
+      achieved: kpi.caPondere >= 22000, 
+      color: "from-green-500 to-emerald-500", 
+      target: "22 000 € de CA pondéré" 
+    },
   ];
 
   return (
