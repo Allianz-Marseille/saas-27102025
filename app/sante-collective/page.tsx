@@ -65,7 +65,7 @@ function AchievementBadge({ icon, label, achieved, color, target, description }:
     <div 
       className={`relative group transition-all duration-300 ${achieved ? 'scale-100' : 'scale-90 opacity-50 grayscale'}`}
     >
-      <div className={`p-4 rounded-xl ${achieved ? `bg-linear-to-br ${color} achievement-badge` : 'bg-slate-200 dark:bg-slate-800'} transition-all duration-300 hover:scale-110 relative overflow-visible cursor-help`}>
+      <div className={`p-4 rounded-xl ${achieved ? `bg-linear-to-br ${color} achievement-badge` : 'bg-slate-200 dark:bg-slate-800'} transition-all duration-200 hover:scale-105 relative overflow-visible cursor-help`}>
         <div className="relative">
           <div className={achieved ? 'text-white' : 'text-slate-400'}>
             {icon}
@@ -75,20 +75,32 @@ function AchievementBadge({ icon, label, achieved, color, target, description }:
             <HelpCircle className="h-3 w-3 text-slate-600 dark:text-slate-400" />
           </div>
         </div>
-        {/* Tooltip amélioré au hover */}
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-[60] scale-90 group-hover:scale-100 max-w-xs whitespace-normal">
-          <div className={`px-4 py-3 rounded-xl text-xs font-bold text-white ${achieved ? `bg-linear-to-r ${color}` : 'bg-slate-800'} shadow-2xl border-2 ${achieved ? 'border-white/30' : 'border-slate-600'} backdrop-blur-sm`}>
-            <div className="font-black text-sm mb-1">{label}</div>
-            <div className="text-white/90 text-[11px] font-semibold mb-1">{description}</div>
-            <div className="text-white/80 text-[10px] font-medium border-t border-white/20 pt-1 mt-1">
-              Objectif : {target}
+        {/* Tooltip amélioré au hover - format large */}
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out pointer-events-none z-[60] whitespace-nowrap">
+          <div className={`px-4 py-2.5 rounded-lg text-xs font-bold text-white ${achieved ? `bg-linear-to-r ${color}` : 'bg-slate-800'} shadow-2xl border-2 ${achieved ? 'border-white/30' : 'border-slate-600'} backdrop-blur-sm`}>
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <div className="font-black text-sm">{label}</div>
+              </div>
+              <div className="h-4 w-px bg-white/30"></div>
+              <div className="flex-1 min-w-0">
+                <div className="text-white/90 text-[11px] font-semibold">{description}</div>
+                <div className="text-white/80 text-[10px] font-medium mt-0.5">
+                  Objectif : {target}
+                </div>
+              </div>
+              <div className="flex-shrink-0">
+                {achieved ? (
+                  <div className="text-white/90 text-[10px] flex items-center gap-1">
+                    <span>✓</span> <span>Débloqué</span>
+                  </div>
+                ) : (
+                  <div className="text-white/70 text-[10px] flex items-center gap-1">
+                    <span>🔒</span> <span>Verrouillé</span>
+                  </div>
+                )}
+              </div>
             </div>
-            {achieved && <div className="text-white/90 text-[10px] mt-1.5 flex items-center gap-1">
-              <span>✓</span> <span>Débloqué</span>
-            </div>}
-            {!achieved && <div className="text-white/70 text-[10px] mt-1.5 flex items-center gap-1">
-              <span>🔒</span> <span>Verrouillé</span>
-            </div>}
           </div>
           {/* Flèche du tooltip */}
           <div className={`absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] ${achieved ? 'border-t-white/30' : 'border-t-slate-600'}`} />
