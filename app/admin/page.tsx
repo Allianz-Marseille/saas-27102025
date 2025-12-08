@@ -328,7 +328,7 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
                           <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-1">Commissions Débloquées</p>
                           <p className="text-2xl font-bold">{formatCurrency(kpis?.commissionsAcquises || 0)}</p>
                           <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-1">
-                            Seuil {kpis?.seuilAtteint || 1} - Taux : {kpis?.tauxCommission || 0}%
+                            Seuil {kpis?.seuilAtteint || 1} - Taux : {((kpis?.tauxCommission || 0) * 100).toFixed(0)}%
                           </p>
                         </div>
                         <DollarSign className="h-8 w-8 text-yellow-600 dark:text-yellow-400 opacity-50" />
