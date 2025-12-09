@@ -479,25 +479,25 @@ Et favoriser :
                 inList = false;
               }
               
-              // Créer la timeline avec les 3 images et texte explicatif
+              // Créer la timeline avec les 3 images et texte explicatif - ICÔNES RÉDUITES
               const timelineItems = [
                 { 
                   name: "Gmail", 
-                  icon: <GmailIcon className="h-6 w-6" />, 
+                  icon: <GmailIcon className="h-4 w-4" />, 
                   color: "from-red-500 to-red-600", 
                   description: "Le mail arrive dans la boîte Gmail dédiée",
                   src: src 
                 },
                 { 
                   name: "Trello", 
-                  icon: <TrelloIcon className="h-6 w-6" />, 
+                  icon: <TrelloIcon className="h-4 w-4" />, 
                   color: "from-blue-500 to-blue-600", 
                   description: "Création automatique d'une carte dans Trello / Entrée",
                   src: nextMatch1[2] 
                 },
                 { 
                   name: "Slack", 
-                  icon: <SlackIcon className="h-6 w-6" />, 
+                  icon: <SlackIcon className="h-4 w-4" />, 
                   color: "from-purple-500 to-purple-600", 
                   description: "Notification Slack : \"Qui le prend en charge ?\"",
                   src: nextMatch2[2] 
@@ -510,19 +510,19 @@ Et favoriser :
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
-                  className="my-8"
+                  className="my-6"
                 >
                   <Card className="border-2 bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
-                    <CardContent className="p-6">
-                      <div className="relative flex items-start justify-between gap-2">
+                    <CardContent className="p-4">
+                      <div className="relative flex items-start justify-between gap-3">
                         {timelineItems.map((item, i) => (
                           <div key={i} className="flex-1 flex flex-col items-center relative z-10">
                             <motion.div
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              transition={{ delay: i * 0.15, type: "spring", stiffness: 200 }}
+                              transition={{ delay: i * 0.1, type: "spring", stiffness: 200 }}
                               className={cn(
-                                "p-2.5 rounded-lg bg-gradient-to-br shadow-md mb-2",
+                                "p-2 rounded-md bg-gradient-to-br shadow-sm mb-2",
                                 item.color
                               )}
                             >
@@ -530,22 +530,22 @@ Et favoriser :
                                 {item.icon}
                               </div>
                             </motion.div>
-                            <p className="text-xs font-semibold text-foreground text-center mb-1.5">{item.name}</p>
-                            <p className="text-xs text-muted-foreground text-center leading-tight px-1">
+                            <p className="text-xs font-semibold text-foreground text-center mb-1">{item.name}</p>
+                            <p className="text-[10px] text-muted-foreground text-center leading-tight px-0.5">
                               {item.description}
                             </p>
                             {i < timelineItems.length - 1 && (
                               <div 
-                                className="absolute top-6 left-full w-full h-0.5 bg-gradient-to-r from-purple-300 to-purple-500 dark:from-purple-700 dark:to-purple-500 z-0"
-                                style={{ width: 'calc(100% - 1rem)' }}
+                                className="absolute top-4 left-full w-full h-0.5 bg-gradient-to-r from-purple-300 to-purple-500 dark:from-purple-700 dark:to-purple-500 z-0"
+                                style={{ width: 'calc(100% - 0.5rem)' }}
                               />
                             )}
                             {i < timelineItems.length - 1 && (
                               <div 
-                                className="absolute top-5.5 left-full -translate-x-1/2 z-20"
-                                style={{ left: 'calc(100% - 0.5rem)' }}
+                                className="absolute top-3.5 left-full -translate-x-1/2 z-20"
+                                style={{ left: 'calc(100% - 0.25rem)' }}
                               >
-                                <div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[8px] border-l-purple-500 dark:border-l-purple-400 border-b-[4px] border-b-transparent" />
+                                <div className="w-0 h-0 border-t-[3px] border-t-transparent border-l-[6px] border-l-purple-500 dark:border-l-purple-400 border-b-[3px] border-b-transparent" />
                               </div>
                             )}
                           </div>
@@ -556,13 +556,18 @@ Et favoriser :
                 </motion.div>
               );
               
-              // Marquer les 2 prochaines lignes à sauter
+              // Marquer les 2 prochaines lignes à sauter pour éviter d'afficher les images individuellement
               skipUntil = index + 3;
               return;
             }
           }
           
           // Si ce n'est pas une image de timeline ou pas dans un groupe de 3, traiter normalement
+          // MAIS on ne doit JAMAIS afficher les images gmail/trello/slack individuellement
+          if (src.includes("gmail") || src.includes("trello") || src.includes("slack")) {
+            // Ignorer ces images - elles sont déjà dans la timeline
+            return;
+          }
           // Si on est dans une liste, on la ferme temporairement pour ajouter l'image
           // mais on garde l'état pour permettre la reprise
           let wasInList = false;
