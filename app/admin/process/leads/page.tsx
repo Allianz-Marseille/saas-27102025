@@ -104,6 +104,37 @@ On travaille ensemble :
       });
   }, []);
 
+  // Fonction helper pour traiter le texte en gras (**texte**)
+  const processBoldText = (text: string): (string | ReactElement)[] => {
+    const parts: (string | ReactElement)[] = [];
+    let lastIndex = 0;
+    const regex = /\*\*([^*]+)\*\*/g;
+    let match;
+    let key = 0;
+
+    while ((match = regex.exec(text)) !== null) {
+      // Ajouter le texte avant le match
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+      // Ajouter le texte en gras (sans les **)
+      parts.push(
+        <strong key={key++} className="font-semibold text-blue-700 dark:text-blue-300">
+          {match[1]}
+        </strong>
+      );
+      lastIndex = regex.lastIndex;
+    }
+
+    // Ajouter le texte restant
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+
+    // Si aucun match, retourner le texte tel quel
+    return parts.length > 0 ? parts : [text];
+  };
+
   // Fonction pour parser le markdown basique
   const parseMarkdown = (text: string) => {
     const lines = text.split("\n");
@@ -324,14 +355,14 @@ On travaille ensemble :
                 <ul className="space-y-3">
                   {currentList.map((item, i) => {
                     const processText = (text: string) => {
-                      return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
-                        if (part.startsWith("**") && part.endsWith("**")) {
-                          return <strong key={j} className="font-semibold text-blue-700 dark:text-blue-300">{part.slice(2, -2)}</strong>;
-                        }
+                      // Traiter les emojis ❌ d'abord
+                      const parts = text.split(/(❌)/g);
+                      return parts.map((part, j) => {
                         if (part === "❌") {
                           return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
                         }
-                        return part;
+                        // Traiter le texte en gras
+                        return <span key={j}>{processBoldText(part)}</span>;
                       });
                     };
                     return (
@@ -373,14 +404,14 @@ On travaille ensemble :
                 <ol className="space-y-4">
                   {currentList.map((item, i) => {
                     const processText = (text: string) => {
-                      return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
-                        if (part.startsWith("**") && part.endsWith("**")) {
-                          return <strong key={j} className="font-semibold text-blue-700 dark:text-blue-300">{part.slice(2, -2)}</strong>;
-                        }
+                      // Traiter les emojis ❌ d'abord
+                      const parts = text.split(/(❌)/g);
+                      return parts.map((part, j) => {
                         if (part === "❌") {
                           return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
                         }
-                        return part;
+                        // Traiter le texte en gras
+                        return <span key={j}>{processBoldText(part)}</span>;
                       });
                     };
                     
@@ -440,14 +471,14 @@ On travaille ensemble :
                   <ul className="space-y-3">
                     {currentList.map((item, i) => {
                       const processText = (text: string) => {
-                        return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
-                          if (part.startsWith("**") && part.endsWith("**")) {
-                            return <strong key={j} className="font-semibold text-blue-700 dark:text-blue-300">{part.slice(2, -2)}</strong>;
-                          }
+                        // Traiter les emojis ❌ d'abord
+                        const parts = text.split(/(❌)/g);
+                        return parts.map((part, j) => {
                           if (part === "❌") {
                             return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
                           }
-                          return part;
+                          // Traiter le texte en gras
+                          return <span key={j}>{processBoldText(part)}</span>;
                         });
                       };
                       return (
@@ -466,14 +497,14 @@ On travaille ensemble :
                   <ol className="space-y-3 list-decimal list-inside">
                     {currentList.map((item, i) => {
                       const processText = (text: string) => {
-                        return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
-                          if (part.startsWith("**") && part.endsWith("**")) {
-                            return <strong key={j} className="font-semibold text-blue-700 dark:text-blue-300">{part.slice(2, -2)}</strong>;
-                          }
+                        // Traiter les emojis ❌ d'abord
+                        const parts = text.split(/(❌)/g);
+                        return parts.map((part, j) => {
                           if (part === "❌") {
                             return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
                           }
-                          return part;
+                          // Traiter le texte en gras
+                          return <span key={j}>{processBoldText(part)}</span>;
                         });
                       };
                       return (
@@ -492,15 +523,15 @@ On travaille ensemble :
         }
 
         // Gérer le texte en gras et emojis
-        const processedText = trimmed.split(/(\*\*[^*]+\*\*|❌)/g).map((part, i) => {
-          if (part.startsWith("**") && part.endsWith("**")) {
-            return <strong key={i} className="font-semibold text-blue-700 dark:text-blue-300">{part.slice(2, -2)}</strong>;
-          }
-          if (part === "❌") {
-            return <span key={i} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
-          }
-          return part;
-        });
+        const processedText = (() => {
+          const parts = trimmed.split(/(❌)/g);
+          return parts.map((part, i) => {
+            if (part === "❌") {
+              return <span key={i} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+            }
+            return <span key={i}>{processBoldText(part)}</span>;
+          });
+        })();
 
         elements.push(
           <motion.p
@@ -530,14 +561,14 @@ On travaille ensemble :
               <ul className="space-y-3">
                 {currentList.map((item, i) => {
                   const processText = (text: string) => {
-                    return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
-                      if (part.startsWith("**") && part.endsWith("**")) {
-                        return <strong key={j} className="font-semibold text-blue-700 dark:text-blue-300">{part.slice(2, -2)}</strong>;
-                      }
+                    // Traiter les emojis ❌ d'abord
+                    const parts = text.split(/(❌)/g);
+                    return parts.map((part, j) => {
                       if (part === "❌") {
                         return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
                       }
-                      return part;
+                      // Traiter le texte en gras
+                      return <span key={j}>{processBoldText(part)}</span>;
                     });
                   };
                   return (
@@ -556,14 +587,14 @@ On travaille ensemble :
               <ol className="space-y-3 list-decimal list-inside">
                 {currentList.map((item, i) => {
                   const processText = (text: string) => {
-                    return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
-                      if (part.startsWith("**") && part.endsWith("**")) {
-                        return <strong key={j} className="font-semibold text-blue-700 dark:text-blue-300">{part.slice(2, -2)}</strong>;
-                      }
+                    // Traiter les emojis ❌ d'abord
+                    const parts = text.split(/(❌)/g);
+                    return parts.map((part, j) => {
                       if (part === "❌") {
                         return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
                       }
-                      return part;
+                      // Traiter le texte en gras
+                      return <span key={j}>{processBoldText(part)}</span>;
                     });
                   };
                   return (
