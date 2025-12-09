@@ -1,90 +1,100 @@
-# Gestion des Leads
+# **Gestion des Leads**
 
-## Objectif
-
-Tous les leads sont traités rapidement et la personne qui prend en charge un lead respecte les bonnes pratiques :
-
-• être rapide
-
-• mettre le lead dans son tuyau
-
-• éviter aux autres de se poser la question : "pris ou pas pris ?" → c'est une perte de temps
-
-**Idée : gain de temps et efficacité**
+*Process commercial – Version pédagogique & moderne*
 
 ---
 
-## 2 chemins pour les leads
+<div class="section section-enjeux">
 
-• le chemin strictement Allianz
+## 🎯 Enjeux
 
-• le chemin développé par l'agence pour gagner en efficacité
+On a la possibilité de demander à Allianz d’orienter vers notre agence des prospects en recherche d’une solution, d’un tarif, d’un renseignement.
 
----
+Ce sont des **leads**, et la particularité de cette source est que les prospects sont souvent encore **devant leurs écrans** lorsqu’on reçoit la demande.
 
-## Le chemin Allianz
+👉 D’où la **nécessité d’appeler très rapidement**.
 
-• un mail arrive dans la b@l général
+La méthode Allianz étant trop figée, l’agence a développé un **process interne**, plus rapide, moderne et efficace.
 
-• une information descend dans Lagon seulement quand on recharge Lagon
-
-![Bouton de reload](/leads/reload.PNG)
-
-ou le lendemain à l'ouverture du poste
-
-![Interface Lagon - Opportunités commerciales](/leads/info-lagon.PNG)
-
-### Inconvénients
-
-• ce n'est **pas dynamique**
-
-• il faut y penser
-
-• et comme nous sommes nombreux, ça devient "tout le monde ou personne"
+</div>
 
 ---
 
-## La solution mise en place par l'agence
+<div class="section section-chemins">
 
-• le mail arrive dans un tableau Trello / entrée : Leads Allianz
+## 🧭 Les deux chemins possibles
 
-• tout le monde en est informé par Slack "qui le prend en charge" → ce n'est pas la peine d'y penser (pas de charge mentale)
+### ▶️ Chemin Allianz (méthode standard)
 
-![Gmail - Boîte de réception](/leads/gmail.webp)
+* Un mail arrive dans la boîte générale
 
-![Trello - Tableau Leads](/leads/trello.png)
+* Une information descend dans Lagon uniquement après **reload**
 
-![Slack - Notification](/leads/slack.png)
+  ![](/leads/reload.PNG){width=140}
+
+* Ou le lendemain à l’ouverture du poste
+
+  ![](/leads/info-lagon.PNG){width=200}
+
+### 🚀 Chemin optimisé (méthode agence)
+
+* Le mail Allianz est envoyé automatiquement vers un **tableau Trello**, colonne *Entrée*
+
+* Tout le monde est informé via **Slack** : « Qui le prend en charge ? »
+
+* Je prends la carte → je la déplace dans **ma colonne**
+
+</div>
 
 ---
 
-## Quand je prends un lead, une méthode à respecter
+<div class="section section-limitations">
 
-### Méthode simple en 4 étapes
+## ⚠️ Inconvénients du chemin Allianz
 
-**1) Je prends la carte Trello**
+* Process **non dynamique**
 
-• Je la glisse de **Entrée** → vers **ma colonne**
+* Nécessité d’y penser → **charge mentale**
 
-• Elle m'appartient : personne d'autre ne l'appellera
+* Quand "c'est tout le monde", au final **ce n'est personne**
 
-**2) Il faut créer la fiche prospect en Lagon pour gérer le devis**
+</div>
 
-• Je crée la fiche prospect dans Lagon
+---
 
-• Je peux ainsi gérer le devis
+<div class="section section-solution">
 
-**3) Je peux ainsi gérer le devis et en prendre connaissance**
+## ⭐ La solution mise en place par l'agence
 
-• Vérification
+### 1) Le mail arrive dans Trello
 
-• Ajustements
+→ Il ne se perd jamais.
 
-• Préparation à l'appel
+### 2) Slack prévient toute l'équipe
 
-**4) C'est seulement à ce moment que je peux téléphoner au client**
+→ Pas besoin d'y penser, aucune charge mentale.
 
-### Plan d'appel
+### 3) Je me positionne
+
+→ Je déplace la carte dans **ma colonne**, je deviens responsable du lead.
+
+### 4) Je traite le lead
+
+* Création de la fiche client dans **Lagon**
+
+* Suppression du mail Allianz / GED
+
+* Analyse de la demande
+
+* **Appel du client**
+
+</div>
+
+---
+
+<div class="section section-appels">
+
+## 📞 Plan d'appel
 
 | Jour | Appels | SMS                |
 | ---- | ------ | ------------------ |
@@ -92,56 +102,72 @@ ou le lendemain à l'ouverture du poste
 | 2    | 2      | Après chaque appel |
 | 3    | 1      | Après l'appel      |
 
-**Pourquoi ce rythme ?**
+### Pourquoi ce rythme ?
 
-Parce qu'il multiplie les chances d'avoir le client tout en restant respectueux.
+Parce qu'il **multiplie les chances** de joindre le prospect tout en restant **respectueux**.
+
+</div>
 
 ---
 
-## ⛔ Les deux choses qu'on ne doit **jamais** faire
+<div class="section section-interdictions">
 
-❌ Appeler sans avoir intégré la fiche Lagon
+## ⛔ Les deux choses qu'on ne doit jamais faire
+
+❌ **Appeler sans intégrer la fiche Lagon**
 
 → On perd la trace du lead et on crée du flou pour l'équipe.
 
-❌ Laisser la carte dans « Entrée » alors qu'on s'en occupe
+❌ **Laisser la carte dans "Entrée" après l'avoir prise**
 
-→ Les autres pensent qu'elle n'est pas prise.
+→ Les autres pensent qu'elle est libre et non prise en charge.
+
+</div>
+
+---
+
+<div class="section section-raisons">
+
+## 💡 Pourquoi ces règles ?
+
+Pour **éviter** :
+
+* les doublons d'appel
+
+* les oublis
+
+* la confusion
+
+* les "Je croyais que c'était toi…"
+
+Et pour **favoriser** :
+
+* la rapidité
+
+* la clarté
+
+* la répartition équitable
+
+* la satisfaction client
+
+* et de meilleurs résultats commerciaux
+
+</div>
 
 ---
 
-## 💡 Pourquoi ces règles existent ?
-
-Parce qu'on veut éviter :
-
-• les doublons d'appel
-
-• les oublis
-
-• la confusion
-
-• les "Je croyais que c'était toi…"
-
-Et favoriser :
-
-• la rapidité
-
-• la clarté
-
-• la répartition équitable
-
-• la satisfaction client
-
-• et nos résultats
-
----
+<div class="section section-resume">
 
 ## 📘 Résumé ultra simple
 
-✅ Je prends la carte Trello pour moi
+* ✅ Je prends la carte Trello pour moi
 
-✅ J'intègre la fiche client en Lagon
+* ✅ J'intègre la fiche client en Lagon
 
-✅ Je reprends le devis
+* ✅ Je reprends le devis
 
-✅ J'appelle (3/2/1)
+* ✅ J'appelle : **3 / 2 / 1**
+
+</div>
+
+---
