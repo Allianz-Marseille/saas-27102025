@@ -1,98 +1,80 @@
-# VERSION PÉDAGOGIQUE + LUDIQUE POUR LES COMMERCIAUX
+# Gestion des Leads
 
-(avec emplacement d'icônes `/public/leads/...`)
+## Objectif
 
----
+Tous les leads sont traités rapidement et la personne qui prend en charge un lead respecte les bonnes pratiques :
 
-## 🎯 Objectif du process
+• être rapide
 
-Assurer que chaque lead soit traité :
+• mettre le lead dans son tuyau
 
-• rapidement
+• éviter aux autres de se poser la question : "pris ou pas pris ?" → c'est une perte de temps
 
-• proprement
-
-• sans doublon
-
-• par la bonne personne
-
-L'idée : que tout le monde gagne du temps… et que personne ne rate une vente.
+**Idée : gain de temps et efficacité**
 
 ---
 
-## 🤝 Le principe clé
+## 2 chemins pour les leads
 
-> À l'agence, personne ne travaille seul : c'est la **coordination** qui nous rend efficaces.
+• le chemin strictement Allianz
+
+• le chemin développé par l'agence pour gagner en efficacité
 
 ---
 
-## 🛬 1. Comment arrivent les leads ?
+## Le chemin Allianz
 
-### 📩 Via les mails
+• un mail arrive dans la b@l général
 
-Tous les leads sont envoyés à une boîte Gmail dédiée.
-
-![Gmail - Boîte de réception](/leads/gmail.webp)
-
-### 🔄 Via Allianz (Lagon)
-
-Lagon affiche une opportunité, mais attention :
-
-• l'image n'est **pas dynamique**
-
-• pour actualiser → il faut **cliquer sur reload**
-
-![Interface Lagon - Opportunités commerciales](/leads/info-lagon.PNG)
+• une information descend dans Lagon seulement quand on recharge Lagon
 
 ![Bouton de reload](/leads/reload.PNG)
 
-Limite : on doit vérifier Lagon « à la main », donc ce n'est pas fiable pour la réactivité.
+ou le lendemain à l'ouverture du poste
+
+![Interface Lagon - Opportunités commerciales](/leads/info-lagon.PNG)
+
+### Inconvénients
+
+• ce n'est **pas dynamique**
+
+• il faut y penser
+
+• et comme nous sommes nombreux, ça devient "tout le monde ou personne"
 
 ---
 
-## ⚙️ 2. La solution de l'agence : tout devient fluide
+## La solution mise en place par l'agence
 
-### 📥 Trello : chaque lead crée une carte automatiquement
+• le mail arrive dans un tableau Trello / entrée : Leads Allianz
 
-• Les mails entrants → convertis en cartes Trello
+• tout le monde en est informé par Slack "qui le prend en charge" → ce n'est pas la peine d'y penser (pas de charge mentale)
 
-• Tout est stocké dans la colonne **Entrée**
+![Gmail - Boîte de réception](/leads/gmail.webp)
 
 ![Trello - Tableau Leads](/leads/trello.png)
 
-### 🔔 Slack : alerte immédiate
-
-Dès qu'un lead arrive :
-
-> « Qui le prend ? »
-
 ![Slack - Notification](/leads/slack.png)
 
-Ça évite qu'un lead reste seul dans un coin.
-
 ---
 
-## 🚀 3. Comment je prends un lead ?
+## Quand je prends un lead, une méthode à respecter
 
-Voici la **méthode simple**, en 4 étapes :
+### Méthode simple en 4 étapes
 
----
-
-### 1) Je prends la carte Trello
+**1) Je prends la carte Trello**
 
 • Je la glisse de **Entrée** → vers **ma colonne**
 
 • Elle m'appartient : personne d'autre ne l'appellera
 
-### 2) J'intègre la fiche dans Lagon
+**2) Il faut créer la fiche prospect en Lagon pour gérer le devis**
 
-• Je retrouve le lead dans Lagon
+• Je crée la fiche prospect dans Lagon
 
-• Je clique sur **Intégrer**
+• Je peux ainsi gérer le devis
 
-• Je vérifie que le devis est bien récupéré
-
-### 3) Je reprends le devis
+**3) Je peux ainsi gérer le devis et en prendre connaissance**
 
 • Vérification
 
@@ -100,9 +82,9 @@ Voici la **méthode simple**, en 4 étapes :
 
 • Préparation à l'appel
 
-### 4) J'appelle le client
+**4) C'est seulement à ce moment que je peux téléphoner au client**
 
-Plan d'appels :
+### Plan d'appel
 
 | Jour | Appels | SMS                |
 | ---- | ------ | ------------------ |
@@ -110,7 +92,7 @@ Plan d'appels :
 | 2    | 2      | Après chaque appel |
 | 3    | 1      | Après l'appel      |
 
-Pourquoi ce rythme ?
+**Pourquoi ce rythme ?**
 
 Parce qu'il multiplie les chances d'avoir le client tout en restant respectueux.
 
@@ -150,14 +132,16 @@ Et favoriser :
 
 • la satisfaction client
 
+• et nos résultats
+
 ---
 
 ## 📘 Résumé ultra simple
 
-✅ Je prends la carte
+✅ Je prends la carte Trello pour moi
 
-✅ J'intègre le lead
+✅ J'intègre la fiche client en Lagon
 
 ✅ Je reprends le devis
 
-✅ J'appelle (3–2–1)
+✅ J'appelle (3/2/1)
