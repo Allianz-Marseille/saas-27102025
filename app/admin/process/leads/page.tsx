@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import type { ReactElement } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Users, Mail, RefreshCw, AlertCircle, CheckCircle2, Phone, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 export default function LeadsProcessPage() {
   const router = useRouter();
@@ -107,9 +108,21 @@ On travaille ensemble :
     let currentList: string[] = [];
     let inList = false;
     let listType: "ul" | "ol" = "ul";
+    let sectionType: "principle" | "process" | "forbidden" | "procedure" | "default" = "default";
 
     lines.forEach((line, index) => {
       const trimmed = line.trim();
+
+      // Détecter le type de section pour le style
+      if (trimmed.includes("Principe fondamental")) {
+        sectionType = "principle";
+      } else if (trimmed.includes("Notre processus") || trimmed.includes("Solution spécifique")) {
+        sectionType = "process";
+      } else if (trimmed.includes("Ce qui n'est pas possible") || trimmed.includes("Interdictions")) {
+        sectionType = "forbidden";
+      } else if (trimmed.includes("Procédure de prise en charge")) {
+        sectionType = "procedure";
+      }
 
       // Images
       if (trimmed.startsWith("![") && trimmed.includes("](")) {
@@ -127,19 +140,40 @@ On travaille ensemble :
             currentList = [];
             inList = false;
           }
+          
+          // Image reload : plus petite
+          const isReload = src.includes("reload");
+          const imageWidth = isReload ? 200 : 1200;
+          const imageHeight = isReload ? 200 : 600;
+          
           elements.push(
-            <div key={`img-${index}`} className="my-6 flex justify-center">
-              <div className="relative w-full max-w-4xl">
+            <motion.div
+              key={`img-${index}`}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className={cn(
+                "my-6 flex justify-center",
+                isReload && "my-4"
+              )}
+            >
+              <div className={cn(
+                "relative rounded-xl border-2 shadow-xl overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-4",
+                isReload ? "w-fit" : "w-full max-w-4xl"
+              )}>
                 <Image
                   src={src}
                   alt={alt}
-                  width={1200}
-                  height={600}
-                  className="rounded-lg border shadow-lg w-full h-auto"
+                  width={imageWidth}
+                  height={imageHeight}
+                  className={cn(
+                    "rounded-lg w-full h-auto",
+                    isReload && "w-48 h-auto"
+                  )}
                   unoptimized
                 />
               </div>
-            </div>
+            </motion.div>
           );
         }
         return;
@@ -159,9 +193,14 @@ On travaille ensemble :
           inList = false;
         }
         elements.push(
-          <h1 key={`h1-${index}`} className="text-3xl font-bold mt-8 mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
+          <motion.h1
+            key={`h1-${index}`}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl font-bold mt-8 mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent"
+          >
             {trimmed.substring(2)}
-          </h1>
+          </motion.h1>
         );
         return;
       }
@@ -178,10 +217,40 @@ On travaille ensemble :
           currentList = [];
           inList = false;
         }
+        
+        const title = trimmed.substring(3);
+        let icon = null;
+        if (title.includes("Principe")) icon = <Users className="h-6 w-6" />;
+        else if (title.includes("Réception")) icon = <Mail className="h-6 w-6" />;
+        else if (title.includes("Information") || title.includes("Lagon")) icon = <RefreshCw className="h-6 w-6" />;
+        else if (title.includes("Solution")) icon = <CheckCircle2 className="h-6 w-6" />;
+        else if (title.includes("processus")) icon = <CheckCircle2 className="h-6 w-6" />;
+        else if (title.includes("possible") || title.includes("Interdictions")) icon = <AlertCircle className="h-6 w-6" />;
+        else if (title.includes("Procédure")) icon = <Phone className="h-6 w-6" />;
+        
         elements.push(
-          <h2 key={`h2-${index}`} className="text-2xl font-semibold mt-6 mb-3 text-foreground">
-            {trimmed.substring(3)}
-          </h2>
+          <motion.div
+            key={`h2-${index}`}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mt-8 mb-4"
+          >
+            <Card className="border-2 bg-gradient-to-br from-blue-50/50 via-purple-50/50 to-pink-50/50 dark:from-blue-950/20 dark:via-purple-950/20 dark:to-pink-950/20 border-blue-200 dark:border-blue-800">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  {icon && (
+                    <div className="p-3 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 text-white shadow-lg">
+                      {icon}
+                    </div>
+                  )}
+                  <h2 className="text-2xl font-bold text-foreground">
+                    {title}
+                  </h2>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         );
         return;
       }
@@ -199,7 +268,8 @@ On travaille ensemble :
           inList = false;
         }
         elements.push(
-          <h3 key={`h3-${index}`} className="text-xl font-semibold mt-4 mb-2 text-foreground">
+          <h3 key={`h3-${index}`} className="text-xl font-semibold mt-6 mb-3 text-foreground flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-600 to-purple-600" />
             {trimmed.substring(4)}
           </h3>
         );
@@ -212,7 +282,6 @@ On travaille ensemble :
           inList = true;
           listType = "ul";
         }
-        // Garder le formatage en gras
         currentList.push(trimmed.substring(2));
         return;
       }
@@ -222,55 +291,105 @@ On travaille ensemble :
           inList = true;
           listType = "ol";
         }
-        // Garder le formatage en gras
         currentList.push(trimmed.replace(/^\d+\. /, ""));
         return;
       }
 
       // Fermer la liste si on change de type
       if (inList && trimmed !== "") {
+        const isProcessList = sectionType === "process";
+        const isForbiddenList = sectionType === "forbidden";
+        const isProcedureList = sectionType === "procedure";
+        
         elements.push(
           listType === "ul" ? (
-            <ul key={`list-${index}`} className="list-disc list-inside space-y-2 mb-4 ml-4">
-              {currentList.map((item, i) => (
-                <li key={i} className="text-foreground">
-                  {item.includes("**") ? (
-                    <span>
-                      {item.split(/(\*\*[^*]+\*\*)/g).map((part, j) =>
-                        part.startsWith("**") && part.endsWith("**") ? (
-                          <strong key={j}>{part.slice(2, -2)}</strong>
+            <Card
+              key={`list-${index}`}
+              className={cn(
+                "mb-6 border-2",
+                isProcessList && "bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800",
+                isForbiddenList && "bg-gradient-to-br from-red-50/50 to-rose-50/50 dark:from-red-950/20 dark:to-rose-950/20 border-red-200 dark:border-red-800",
+                isProcedureList && "bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800",
+                !isProcessList && !isForbiddenList && !isProcedureList && "bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800"
+              )}
+            >
+              <CardContent className="p-6">
+                <ul className="space-y-3">
+                  {currentList.map((item, i) => {
+                    const processText = (text: string) => {
+                      return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
+                        if (part.startsWith("**") && part.endsWith("**")) {
+                          return <strong key={j} className="font-semibold text-blue-700 dark:text-blue-300">{part.slice(2, -2)}</strong>;
+                        }
+                        if (part === "❌") {
+                          return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                        }
+                        return part;
+                      });
+                    };
+                    return (
+                      <motion.li
+                        key={i}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        className={cn(
+                          "flex items-start gap-3 text-foreground leading-relaxed",
+                          isProcessList && "text-green-900 dark:text-green-100",
+                          isForbiddenList && "text-red-900 dark:text-red-100"
+                        )}
+                      >
+                        {isProcessList ? (
+                          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
+                        ) : isForbiddenList ? (
+                          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
                         ) : (
-                          part
-                        )
-                      )}
-                    </span>
-                  ) : (
-                    item
-                  )}
-                </li>
-              ))}
-            </ul>
+                          <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 mt-2 shrink-0" />
+                        )}
+                        <span className="flex-1">{processText(item)}</span>
+                      </motion.li>
+                    );
+                  })}
+                </ul>
+              </CardContent>
+            </Card>
           ) : (
-            <ol key={`list-${index}`} className="list-decimal list-inside space-y-2 mb-4 ml-4">
-              {currentList.map((item, i) => {
-                const processText = (text: string) => {
-                  return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
-                    if (part.startsWith("**") && part.endsWith("**")) {
-                      return <strong key={j} className="font-semibold">{part.slice(2, -2)}</strong>;
-                    }
-                    if (part === "❌") {
-                      return <span key={j} className="text-red-600 dark:text-red-400">{part}</span>;
-                    }
-                    return part;
-                  });
-                };
-                return (
-                  <li key={i} className="text-foreground">
-                    {processText(item)}
-                  </li>
-                );
-              })}
-            </ol>
+            <Card
+              key={`list-${index}`}
+              className={cn(
+                "mb-6 border-2",
+                isProcedureList && "bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800"
+              )}
+            >
+              <CardContent className="p-6">
+                <ol className="space-y-3 list-decimal list-inside">
+                  {currentList.map((item, i) => {
+                    const processText = (text: string) => {
+                      return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
+                        if (part.startsWith("**") && part.endsWith("**")) {
+                          return <strong key={j} className="font-semibold text-blue-700 dark:text-blue-300">{part.slice(2, -2)}</strong>;
+                        }
+                        if (part === "❌") {
+                          return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                        }
+                        return part;
+                      });
+                    };
+                    return (
+                      <motion.li
+                        key={i}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        className="text-foreground leading-relaxed"
+                      >
+                        {processText(item)}
+                      </motion.li>
+                    );
+                  })}
+                </ol>
+              </CardContent>
+            </Card>
           )
         );
         currentList = [];
@@ -282,47 +401,56 @@ On travaille ensemble :
         if (inList) {
           elements.push(
             listType === "ul" ? (
-              <ul key={`list-${index}`} className="list-disc list-inside space-y-2 mb-4 ml-4">
-                {currentList.map((item, i) => {
-                  const processText = (text: string) => {
-                    return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
-                      if (part.startsWith("**") && part.endsWith("**")) {
-                        return <strong key={j} className="font-semibold">{part.slice(2, -2)}</strong>;
-                      }
-                      if (part === "❌") {
-                        return <span key={j} className="text-red-600 dark:text-red-400">{part}</span>;
-                      }
-                      return part;
-                    });
-                  };
-                  return (
-                    <li key={i} className="text-foreground">
-                      {processText(item)}
-                    </li>
-                  );
-                })}
-              </ul>
+              <Card key={`list-${index}`} className="mb-6 border-2 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+                <CardContent className="p-6">
+                  <ul className="space-y-3">
+                    {currentList.map((item, i) => {
+                      const processText = (text: string) => {
+                        return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
+                          if (part.startsWith("**") && part.endsWith("**")) {
+                            return <strong key={j} className="font-semibold text-blue-700 dark:text-blue-300">{part.slice(2, -2)}</strong>;
+                          }
+                          if (part === "❌") {
+                            return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                          }
+                          return part;
+                        });
+                      };
+                      return (
+                        <li key={i} className="flex items-start gap-3 text-foreground leading-relaxed">
+                          <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 mt-2 shrink-0" />
+                          <span className="flex-1">{processText(item)}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </CardContent>
+              </Card>
             ) : (
-              <ol key={`list-${index}`} className="list-decimal list-inside space-y-2 mb-4 ml-4">
-                {currentList.map((item, i) => {
-                  const processText = (text: string) => {
-                    return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
-                      if (part.startsWith("**") && part.endsWith("**")) {
-                        return <strong key={j} className="font-semibold">{part.slice(2, -2)}</strong>;
-                      }
-                      if (part === "❌") {
-                        return <span key={j} className="text-red-600 dark:text-red-400">{part}</span>;
-                      }
-                      return part;
-                    });
-                  };
-                  return (
-                    <li key={i} className="text-foreground">
-                      {processText(item)}
-                    </li>
-                  );
-                })}
-              </ol>
+              <Card key={`list-${index}`} className="mb-6 border-2 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+                <CardContent className="p-6">
+                  <ol className="space-y-3 list-decimal list-inside">
+                    {currentList.map((item, i) => {
+                      const processText = (text: string) => {
+                        return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
+                          if (part.startsWith("**") && part.endsWith("**")) {
+                            return <strong key={j} className="font-semibold text-blue-700 dark:text-blue-300">{part.slice(2, -2)}</strong>;
+                          }
+                          if (part === "❌") {
+                            return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                          }
+                          return part;
+                        });
+                      };
+                      return (
+                        <li key={i} className="text-foreground leading-relaxed">
+                          {processText(item)}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </CardContent>
+              </Card>
             )
           );
           currentList = [];
@@ -332,18 +460,24 @@ On travaille ensemble :
         // Gérer le texte en gras et emojis
         const processedText = trimmed.split(/(\*\*[^*]+\*\*|❌)/g).map((part, i) => {
           if (part.startsWith("**") && part.endsWith("**")) {
-            return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>;
+            return <strong key={i} className="font-semibold text-blue-700 dark:text-blue-300">{part.slice(2, -2)}</strong>;
           }
           if (part === "❌") {
-            return <span key={i} className="text-red-600 dark:text-red-400">{part}</span>;
+            return <span key={i} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
           }
           return part;
         });
 
         elements.push(
-          <p key={`p-${index}`} className="mb-4 text-foreground leading-relaxed">
+          <motion.p
+            key={`p-${index}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="mb-6 text-foreground leading-relaxed text-lg"
+          >
             {processedText}
-          </p>
+          </motion.p>
         );
       }
 
@@ -357,47 +491,56 @@ On travaille ensemble :
     if (inList) {
       elements.push(
         listType === "ul" ? (
-          <ul key="list-final" className="list-disc list-inside space-y-2 mb-4 ml-4">
-            {currentList.map((item, i) => {
-              const processText = (text: string) => {
-                return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
-                  if (part.startsWith("**") && part.endsWith("**")) {
-                    return <strong key={j} className="font-semibold">{part.slice(2, -2)}</strong>;
-                  }
-                  if (part === "❌") {
-                    return <span key={j} className="text-red-600 dark:text-red-400">{part}</span>;
-                  }
-                  return part;
-                });
-              };
-              return (
-                <li key={i} className="text-foreground">
-                  {processText(item)}
-                </li>
-              );
-            })}
-          </ul>
+          <Card key="list-final" className="mb-6 border-2 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+            <CardContent className="p-6">
+              <ul className="space-y-3">
+                {currentList.map((item, i) => {
+                  const processText = (text: string) => {
+                    return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
+                      if (part.startsWith("**") && part.endsWith("**")) {
+                        return <strong key={j} className="font-semibold text-blue-700 dark:text-blue-300">{part.slice(2, -2)}</strong>;
+                      }
+                      if (part === "❌") {
+                        return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                      }
+                      return part;
+                    });
+                  };
+                  return (
+                    <li key={i} className="flex items-start gap-3 text-foreground leading-relaxed">
+                      <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 mt-2 shrink-0" />
+                      <span className="flex-1">{processText(item)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </CardContent>
+          </Card>
         ) : (
-          <ol key="list-final" className="list-decimal list-inside space-y-2 mb-4 ml-4">
-            {currentList.map((item, i) => {
-              const processText = (text: string) => {
-                return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
-                  if (part.startsWith("**") && part.endsWith("**")) {
-                    return <strong key={j} className="font-semibold">{part.slice(2, -2)}</strong>;
-                  }
-                  if (part === "❌") {
-                    return <span key={j} className="text-red-600 dark:text-red-400">{part}</span>;
-                  }
-                  return part;
-                });
-              };
-              return (
-                <li key={i} className="text-foreground">
-                  {processText(item)}
-                </li>
-              );
-            })}
-          </ol>
+          <Card key="list-final" className="mb-6 border-2 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+            <CardContent className="p-6">
+              <ol className="space-y-3 list-decimal list-inside">
+                {currentList.map((item, i) => {
+                  const processText = (text: string) => {
+                    return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
+                      if (part.startsWith("**") && part.endsWith("**")) {
+                        return <strong key={j} className="font-semibold text-blue-700 dark:text-blue-300">{part.slice(2, -2)}</strong>;
+                      }
+                      if (part === "❌") {
+                        return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                      }
+                      return part;
+                    });
+                  };
+                  return (
+                    <li key={i} className="text-foreground leading-relaxed">
+                      {processText(item)}
+                    </li>
+                  );
+                })}
+              </ol>
+            </CardContent>
+          </Card>
         )
       );
     }
@@ -408,7 +551,11 @@ On travaille ensemble :
   return (
     <div className="space-y-6">
       {/* Header avec bouton retour */}
-      <div className="flex items-center gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-4"
+      >
         <Button
           variant="ghost"
           size="icon"
@@ -418,28 +565,31 @@ On travaille ensemble :
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
             Gestion des leads
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-muted-foreground mt-2 text-lg">
             Processus de coordination pour la gestion des leads
           </p>
         </div>
-      </div>
+      </motion.div>
 
       {/* Contenu */}
       {isLoading ? (
-        <Card>
-          <CardContent className="p-8">
+        <Card className="border-2 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20">
+          <CardContent className="p-12">
             <div className="text-center text-muted-foreground">Chargement...</div>
           </CardContent>
         </Card>
       ) : (
-        <Card className="overflow-hidden">
-          <CardContent className="p-8 prose prose-slate dark:prose-invert max-w-none">
-            {parseMarkdown(content)}
-          </CardContent>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="space-y-6"
+        >
+          {parseMarkdown(content)}
+        </motion.div>
       )}
     </div>
   );
