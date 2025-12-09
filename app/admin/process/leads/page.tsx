@@ -185,18 +185,28 @@ export default function LeadsProcessPage() {
       );
     },
     // Tableaux avec composants Shadcn
-    table: ({ children }) => (
+    table: ({ children, ...props }: HTMLAttributes<HTMLTableElement>) => (
       <div className="my-6 overflow-x-auto">
-        <Table>
+        <Table {...props}>
           {children}
         </Table>
       </div>
     ),
-    thead: ({ children }) => <TableHeader>{children}</TableHeader>,
-    tbody: ({ children }) => <TableBody>{children}</TableBody>,
-    tr: ({ children }) => <TableRow>{children}</TableRow>,
-    th: ({ children }) => <TableHead>{children}</TableHead>,
-    td: ({ children }) => <TableCell>{children}</TableCell>,
+    thead: ({ children, ...props }: HTMLAttributes<HTMLTableSectionElement>) => (
+      <TableHeader {...props}>{children}</TableHeader>
+    ),
+    tbody: ({ children, ...props }: HTMLAttributes<HTMLTableSectionElement>) => (
+      <TableBody {...props}>{children}</TableBody>
+    ),
+    tr: ({ children, ...props }: HTMLAttributes<HTMLTableRowElement>) => (
+      <TableRow {...props}>{children}</TableRow>
+    ),
+    th: ({ children, ...props }: HTMLAttributes<HTMLTableCellElement>) => (
+      <TableHead {...props}>{children}</TableHead>
+    ),
+    td: ({ children, ...props }: HTMLAttributes<HTMLTableCellElement>) => (
+      <TableCell {...props}>{children}</TableCell>
+    ),
     // Listes avec styling
     ul: ({ children, ...props }: HTMLAttributes<HTMLUListElement>) => (
       <ul className="list-none space-y-2 my-4" {...props}>
@@ -228,20 +238,20 @@ export default function LeadsProcessPage() {
       </p>
     ),
     // Texte en gras
-    strong: ({ children }) => (
-      <strong className="font-semibold text-foreground">
+    strong: ({ children, ...props }: HTMLAttributes<HTMLElement>) => (
+      <strong className="font-semibold text-foreground" {...props}>
         {children}
       </strong>
     ),
     // Emphase
-    em: ({ children }) => (
-      <em className="italic text-muted-foreground">
+    em: ({ children, ...props }: HTMLAttributes<HTMLElement>) => (
+      <em className="italic text-muted-foreground" {...props}>
         {children}
       </em>
     ),
     // Ligne horizontale
-    hr: () => (
-      <hr className="my-8 border-t border-border" />
+    hr: (props: HTMLAttributes<HTMLHRElement>) => (
+      <hr className="my-8 border-t border-border" {...props} />
     ),
   };
 
