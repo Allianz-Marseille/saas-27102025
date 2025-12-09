@@ -9,6 +9,9 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { GmailIcon } from "@/components/icons/gmail-icon";
+import { TrelloIcon } from "@/components/icons/trello-icon";
+import { SlackIcon } from "@/components/icons/slack-icon";
 
 export default function LeadsProcessPage() {
   const router = useRouter();
@@ -108,7 +111,7 @@ On travaille ensemble :
     let currentList: string[] = [];
     let inList = false;
     let listType: "ul" | "ol" = "ul";
-    let sectionType: "principle" | "process" | "forbidden" | "procedure" | "default" = "default";
+    let sectionType: "principle" | "process" | "forbidden" | "procedure" | "solution" | "default" = "default";
 
     lines.forEach((line, index) => {
       const trimmed = line.trim();
@@ -116,7 +119,9 @@ On travaille ensemble :
       // Détecter le type de section pour le style
       if (trimmed.includes("Principe fondamental")) {
         sectionType = "principle";
-      } else if (trimmed.includes("Notre processus") || trimmed.includes("Solution spécifique")) {
+      } else if (trimmed.includes("Solution spécifique")) {
+        sectionType = "solution";
+      } else if (trimmed.includes("Notre processus")) {
         sectionType = "process";
       } else if (trimmed.includes("Ce qui n'est pas possible") || trimmed.includes("Interdictions")) {
         sectionType = "forbidden";
@@ -300,6 +305,7 @@ On travaille ensemble :
         const isProcessList = sectionType === "process";
         const isForbiddenList = sectionType === "forbidden";
         const isProcedureList = sectionType === "procedure";
+        const isSolutionList = sectionType === "solution";
         
         elements.push(
           listType === "ul" ? (
@@ -310,7 +316,8 @@ On travaille ensemble :
                 isProcessList && "bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800",
                 isForbiddenList && "bg-gradient-to-br from-red-50/50 to-rose-50/50 dark:from-red-950/20 dark:to-rose-950/20 border-red-200 dark:border-red-800",
                 isProcedureList && "bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800",
-                !isProcessList && !isForbiddenList && !isProcedureList && "bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800"
+                isSolutionList && "bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800",
+                !isProcessList && !isForbiddenList && !isProcedureList && !isSolutionList && "bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800"
               )}
             >
               <CardContent className="p-6">
@@ -358,11 +365,12 @@ On travaille ensemble :
               key={`list-${index}`}
               className={cn(
                 "mb-6 border-2",
-                isProcedureList && "bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800"
+                isProcedureList && "bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800",
+                isSolutionList && "bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800"
               )}
             >
               <CardContent className="p-6">
-                <ol className="space-y-3 list-decimal list-inside">
+                <ol className="space-y-4">
                   {currentList.map((item, i) => {
                     const processText = (text: string) => {
                       return text.split(/(\*\*[^*]+\*\*|❌)/g).map((part, j) => {
@@ -375,15 +383,41 @@ On travaille ensemble :
                         return part;
                       });
                     };
+                    
+                    // Déterminer l'icône pour la section Solution
+                    let appIcon = null;
+                    if (isSolutionList) {
+                      const itemLower = item.toLowerCase();
+                      if (itemLower.includes("gmail") || itemLower.includes("mail")) {
+                        appIcon = <GmailIcon className="h-6 w-6" />;
+                      } else if (itemLower.includes("trello")) {
+                        appIcon = <TrelloIcon className="h-6 w-6" />;
+                      } else if (itemLower.includes("slack")) {
+                        appIcon = <SlackIcon className="h-6 w-6" />;
+                      }
+                    }
+                    
                     return (
                       <motion.li
                         key={i}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        className="text-foreground leading-relaxed"
+                        className={cn(
+                          "flex items-start gap-4 text-foreground leading-relaxed",
+                          isSolutionList && "text-purple-900 dark:text-purple-100"
+                        )}
                       >
-                        {processText(item)}
+                        {appIcon ? (
+                          <div className="mt-0.5 shrink-0">
+                            {appIcon}
+                          </div>
+                        ) : (
+                          <span className="text-lg font-semibold text-purple-600 dark:text-purple-400 mt-0.5 shrink-0 min-w-[1.5rem]">
+                            {i + 1}.
+                          </span>
+                        )}
+                        <span className="flex-1">{processText(item)}</span>
                       </motion.li>
                     );
                   })}
