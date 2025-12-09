@@ -246,6 +246,277 @@ Et favoriser :
         const match = trimmed.match(/!\[([^\]]+)\]\(([^)]+)\)/);
         if (match) {
           const [, alt, src] = match;
+          
+          // Vérifier si c'est une image de la timeline (gmail, trello, slack)
+          const isTimelineImage = src.includes("gmail") || src.includes("trello") || src.includes("slack");
+          
+          // Si c'est une image de timeline, vérifier si les 2 prochaines lignes sont aussi des images de timeline
+          if (isTimelineImage) {
+            const nextLine1 = lines[index + 1]?.trim();
+            const nextLine2 = lines[index + 2]?.trim();
+            const nextMatch1 = nextLine1?.match(/!\[([^\]]+)\]\(([^)]+)\)/);
+            const nextMatch2 = nextLine2?.match(/!\[([^\]]+)\]\(([^)]+)\)/);
+            
+            const isNext1Timeline = nextMatch1 && (nextMatch1[2].includes("gmail") || nextMatch1[2].includes("trello") || nextMatch1[2].includes("slack"));
+            const isNext2Timeline = nextMatch2 && (nextMatch2[2].includes("gmail") || nextMatch2[2].includes("trello") || nextMatch2[2].includes("slack"));
+            
+            // Si on a 3 images de timeline consécutives, créer la timeline
+            if (isNext1Timeline && isNext2Timeline) {
+              // Fermer la liste si nécessaire
+              if (inList) {
+                elements.push(
+                  listType === "ul" ? (
+                    <Card key={`list-before-timeline-${index}`} className="mb-4 border-2 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+                      <CardContent className="p-6">
+                        <ul className="space-y-3">
+                          {currentList.map((item, i) => {
+                            const processText = (text: string) => {
+                              const parts = text.split(/(❌|✅)/g);
+                              return parts.map((part, j) => {
+                                if (part === "❌") {
+                                  return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                                }
+                                if (part === "✅") {
+                                  return <span key={j} className="text-green-600 dark:text-green-400 text-xl">{part}</span>;
+                                }
+                                return <span key={j}>{processBoldText(part)}</span>;
+                              });
+                            };
+                            return (
+                              <li key={i} className="flex items-start gap-3 text-foreground leading-relaxed">
+                                <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 mt-2 shrink-0" />
+                                <span className="flex-1">{processText(item)}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card key={`list-before-timeline-${index}`} className={cn(
+                      "mb-4 border-2",
+                      sectionType === "solution" && "bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800"
+                    )}>
+                      <CardContent className="p-6">
+                        <ol className="space-y-4">
+                          {currentList.map((item, i) => {
+                            const processText = (text: string) => {
+                              const parts = text.split(/(❌|✅)/g);
+                              return parts.map((part, j) => {
+                                if (part === "❌") {
+                                  return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                                }
+                                if (part === "✅") {
+                                  return <span key={j} className="text-green-600 dark:text-green-400 text-xl">{part}</span>;
+                                }
+                                return <span key={j}>{processBoldText(part)}</span>;
+                              });
+                            };
+                            
+                            let appIcon = null;
+                            if (sectionType === "solution") {
+                              const itemLower = item.toLowerCase();
+                              if (itemLower.includes("gmail") || itemLower.includes("mail")) {
+                                appIcon = <GmailIcon className="h-6 w-6" />;
+                              } else if (itemLower.includes("trello")) {
+                                appIcon = <TrelloIcon className="h-6 w-6" />;
+                              } else if (itemLower.includes("slack")) {
+                                appIcon = <SlackIcon className="h-6 w-6" />;
+                              }
+                            }
+                            
+                            return (
+                              <motion.li
+                                key={i}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.05 }}
+                                className={cn(
+                                  "flex items-start gap-4 text-foreground leading-relaxed",
+                                  sectionType === "solution" && "text-purple-900 dark:text-purple-100"
+                                )}
+                              >
+                                {appIcon ? (
+                                  <div className="mt-0.5 shrink-0">
+                                    {appIcon}
+                                  </div>
+                                ) : (
+                                  <span className="text-lg font-semibold text-purple-600 dark:text-purple-400 mt-0.5 shrink-0 min-w-[1.5rem]">
+                                    {i + 1}.
+                                  </span>
+                                )}
+                                <span className="flex-1">{processText(item)}</span>
+                              </motion.li>
+                            );
+                          })}
+                        </ol>
+                      </CardContent>
+                    </Card>
+                  )
+                );
+                currentList = [];
+                inList = false;
+              }
+              
+              // Fermer la liste si nécessaire
+              if (inList) {
+                elements.push(
+                  listType === "ul" ? (
+                    <Card key={`list-before-timeline-${index}`} className="mb-4 border-2 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+                      <CardContent className="p-6">
+                        <ul className="space-y-3">
+                          {currentList.map((item, i) => {
+                            const processText = (text: string) => {
+                              const parts = text.split(/(❌|✅)/g);
+                              return parts.map((part, j) => {
+                                if (part === "❌") {
+                                  return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                                }
+                                if (part === "✅") {
+                                  return <span key={j} className="text-green-600 dark:text-green-400 text-xl">{part}</span>;
+                                }
+                                return <span key={j}>{processBoldText(part)}</span>;
+                              });
+                            };
+                            return (
+                              <li key={i} className="flex items-start gap-3 text-foreground leading-relaxed">
+                                <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 mt-2 shrink-0" />
+                                <span className="flex-1">{processText(item)}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card key={`list-before-timeline-${index}`} className={cn(
+                      "mb-4 border-2",
+                      sectionType === "solution" && "bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800"
+                    )}>
+                      <CardContent className="p-6">
+                        <ol className="space-y-4">
+                          {currentList.map((item, i) => {
+                            const processText = (text: string) => {
+                              const parts = text.split(/(❌|✅)/g);
+                              return parts.map((part, j) => {
+                                if (part === "❌") {
+                                  return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                                }
+                                if (part === "✅") {
+                                  return <span key={j} className="text-green-600 dark:text-green-400 text-xl">{part}</span>;
+                                }
+                                return <span key={j}>{processBoldText(part)}</span>;
+                              });
+                            };
+                            
+                            let appIcon = null;
+                            if (sectionType === "solution") {
+                              const itemLower = item.toLowerCase();
+                              if (itemLower.includes("gmail") || itemLower.includes("mail")) {
+                                appIcon = <GmailIcon className="h-6 w-6" />;
+                              } else if (itemLower.includes("trello")) {
+                                appIcon = <TrelloIcon className="h-6 w-6" />;
+                              } else if (itemLower.includes("slack")) {
+                                appIcon = <SlackIcon className="h-6 w-6" />;
+                              }
+                            }
+                            
+                            return (
+                              <motion.li
+                                key={i}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.05 }}
+                                className={cn(
+                                  "flex items-start gap-4 text-foreground leading-relaxed",
+                                  sectionType === "solution" && "text-purple-900 dark:text-purple-100"
+                                )}
+                              >
+                                {appIcon ? (
+                                  <div className="mt-0.5 shrink-0">
+                                    {appIcon}
+                                  </div>
+                                ) : (
+                                  <span className="text-lg font-semibold text-purple-600 dark:text-purple-400 mt-0.5 shrink-0 min-w-[1.5rem]">
+                                    {i + 1}.
+                                  </span>
+                                )}
+                                <span className="flex-1">{processText(item)}</span>
+                              </motion.li>
+                            );
+                          })}
+                        </ol>
+                      </CardContent>
+                    </Card>
+                  )
+                );
+                currentList = [];
+                inList = false;
+              }
+              
+              // Créer la timeline avec les 3 images
+              const timelineItems = [
+                { name: "Gmail", icon: <GmailIcon className="h-10 w-10" />, color: "from-red-500 to-red-600", src: src },
+                { name: "Trello", icon: <TrelloIcon className="h-10 w-10" />, color: "from-blue-500 to-blue-600", src: nextMatch1[2] },
+                { name: "Slack", icon: <SlackIcon className="h-10 w-10" />, color: "from-purple-500 to-purple-600", src: nextMatch2[2] },
+              ];
+              
+              elements.push(
+                <motion.div
+                  key={`timeline-${index}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="my-8"
+                >
+                  <Card className="border-2 bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
+                    <CardContent className="p-8">
+                      <div className="relative flex items-center justify-between gap-4">
+                        {timelineItems.map((item, i) => (
+                          <div key={i} className="flex-1 flex flex-col items-center relative z-10">
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: i * 0.2, type: "spring", stiffness: 200 }}
+                              className={cn(
+                                "p-4 rounded-xl bg-gradient-to-br shadow-lg mb-3",
+                                item.color
+                              )}
+                            >
+                              <div className="text-white">
+                                {item.icon}
+                              </div>
+                            </motion.div>
+                            <p className="text-sm font-semibold text-foreground text-center">{item.name}</p>
+                            {i < timelineItems.length - 1 && (
+                              <div 
+                                className="absolute top-12 left-full w-full h-0.5 bg-gradient-to-r from-purple-300 to-purple-500 dark:from-purple-700 dark:to-purple-500 z-0"
+                                style={{ width: 'calc(100% - 2rem)' }}
+                              />
+                            )}
+                            {i < timelineItems.length - 1 && (
+                              <div 
+                                className="absolute top-10 left-full -translate-x-1/2 z-20"
+                                style={{ left: 'calc(100% - 1rem)' }}
+                              >
+                                <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-purple-500 dark:border-l-purple-400 border-b-[6px] border-b-transparent" />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+              
+              // Marquer les 2 prochaines lignes à sauter
+              skipUntil = index + 3;
+              return;
+            }
+          }
+          
+          // Si ce n'est pas une image de timeline ou pas dans un groupe de 3, traiter normalement
           // Si on est dans une liste, on la ferme temporairement pour ajouter l'image
           // mais on garde l'état pour permettre la reprise
           let wasInList = false;
