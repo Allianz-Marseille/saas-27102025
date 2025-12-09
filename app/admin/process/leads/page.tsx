@@ -241,7 +241,7 @@ Et favoriser :
     let currentList: string[] = [];
     let inList = false;
     let listType: "ul" | "ol" = "ul";
-    let sectionType: "principle" | "process" | "forbidden" | "procedure" | "solution" | "default" = "default";
+    let sectionType: "principle" | "process" | "forbidden" | "procedure" | "solution" | "paths" | "default" = "default";
     let skipUntil = -1; // Pour sauter les lignes déjà traitées (tableaux)
 
     lines.forEach((line, index) => {
@@ -254,6 +254,8 @@ Et favoriser :
       // Détecter le type de section pour le style
       if (trimmed.includes("Principe fondamental")) {
         sectionType = "principle";
+      } else if (trimmed.includes("2 chemins") || trimmed.includes("chemins pour les leads")) {
+        sectionType = "paths"; // Nouveau type pour la section des 2 chemins
       } else if (trimmed.includes("Solution spécifique") || trimmed.includes("solution mise en place")) {
         sectionType = "solution";
       } else if (trimmed.includes("Notre processus") || trimmed.includes("prends un lead") || trimmed.includes("méthode")) {
@@ -850,6 +852,7 @@ Et favoriser :
         const isForbiddenList = sectionType === "forbidden";
         const isProcedureList = sectionType === "procedure";
         const isSolutionList = sectionType === "solution";
+        const isPathsList = sectionType === "paths";
         
         elements.push(
           listType === "ul" ? (
@@ -861,7 +864,8 @@ Et favoriser :
                 isForbiddenList && "bg-gradient-to-br from-red-50/50 to-rose-50/50 dark:from-red-950/20 dark:to-rose-950/20 border-red-200 dark:border-red-800",
                 isProcedureList && "bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800",
                 isSolutionList && "bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800",
-                !isProcessList && !isForbiddenList && !isProcedureList && !isSolutionList && "bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800"
+                isPathsList && "bg-gradient-to-br from-indigo-50/50 to-blue-50/50 dark:from-indigo-950/20 dark:to-blue-950/20 border-indigo-200 dark:border-indigo-800",
+                !isProcessList && !isForbiddenList && !isProcedureList && !isSolutionList && !isPathsList && "bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800"
               )}
             >
               <CardContent className="p-6">
@@ -886,6 +890,9 @@ Et favoriser :
                       bulletIcon = <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />;
                     } else if (isForbiddenList) {
                       bulletIcon = <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />;
+                    } else if (isPathsList) {
+                      // Pour la section "2 chemins", utiliser la même icône Route pour tous les éléments
+                      bulletIcon = <Route className="h-4 w-4 text-indigo-500 dark:text-indigo-400 mt-1.5 shrink-0" />;
                     } else {
                       // Icônes contextuelles selon le contenu
                       if (itemLower.includes("rapide") || itemLower.includes("temps") || itemLower.includes("efficacité")) {
