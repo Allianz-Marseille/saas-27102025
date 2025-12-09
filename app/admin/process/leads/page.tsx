@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type { ReactElement } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
@@ -102,7 +103,7 @@ On travaille ensemble :
   // Fonction pour parser le markdown basique
   const parseMarkdown = (text: string) => {
     const lines = text.split("\n");
-    const elements: JSX.Element[] = [];
+    const elements: ReactElement[] = [];
     let currentList: string[] = [];
     let inList = false;
     let listType: "ul" | "ol" = "ul";
