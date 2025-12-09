@@ -363,10 +363,10 @@ Et favoriser :
           
           // Image reload : plus petite
           const isReload = src.includes("reload");
-          // Pour les images de la section Solution (gmail, trello, slack), utiliser une taille moyenne
+          // Pour les images de la section Solution (gmail, trello, slack), utiliser une taille réduite
           const isSolutionImage = src.includes("gmail") || src.includes("trello") || src.includes("slack");
-          const imageWidth = isReload ? 200 : isSolutionImage ? 800 : 1200;
-          const imageHeight = isReload ? 200 : isSolutionImage ? 600 : 600;
+          const imageWidth = isReload ? 200 : isSolutionImage ? 400 : 1200;
+          const imageHeight = isReload ? 200 : isSolutionImage ? 300 : 600;
           
           elements.push(
             <motion.div
@@ -382,7 +382,7 @@ Et favoriser :
             >
               <div className={cn(
                 "relative rounded-xl border-2 shadow-xl overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-4",
-                isReload ? "w-fit" : isSolutionImage ? "w-full max-w-2xl" : "w-full max-w-4xl"
+                isReload ? "w-fit" : isSolutionImage ? "w-fit max-w-md" : "w-full max-w-4xl"
               )}>
                 <Image
                   src={src}
@@ -390,8 +390,9 @@ Et favoriser :
                   width={imageWidth}
                   height={imageHeight}
                   className={cn(
-                    "rounded-lg w-full h-auto object-contain",
-                    isReload && "w-48 h-auto"
+                    "rounded-lg h-auto object-contain",
+                    isReload && "w-48 h-auto",
+                    isSolutionImage && "w-80 h-auto"
                   )}
                   unoptimized
                 />
