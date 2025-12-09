@@ -30,11 +30,11 @@ La méthode Allianz étant trop figée, l’agence a développé un **process in
 
 * Une information descend dans Lagon uniquement après **reload**
 
-  ![](/leads/reload.PNG){width=140}
+  ![](/leads/reload.PNG)
 
 * Ou le lendemain à l’ouverture du poste
 
-  ![](/leads/info-lagon.PNG){width=200}
+  ![](/leads/info-lagon.PNG)
 
 ### 🚀 Chemin optimisé (méthode agence)
 
