@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { ReactElement } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Users, Mail, RefreshCw, AlertCircle, CheckCircle2, Phone, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -28,86 +29,169 @@ export default function LeadsProcessPage() {
       })
       .catch(() => {
         // Si le fetch échoue, utiliser le contenu directement
-        setContent(`# Travailler ensemble avec les leads
+        setContent(`# VERSION PÉDAGOGIQUE + LUDIQUE POUR LES COMMERCIAUX
 
-## Principe fondamental
+(avec emplacement d'icônes \`/public/leads/...\`)
 
-Personne ne travaille seul à l'agence et nous sommes efficaces "ensemble" seulement si nous travaillons de manière coordonnée, en appliquant les mêmes règles.
+---
 
-## Réception des leads
+## 🎯 Objectif du process
 
-Tous les leads arrivent par mail.
+Assurer que chaque lead soit traité :
 
-## Information Allianz via Lagon
+• rapidement
 
-Il y a déjà une information Allianz qui n'est pas dynamique mais qui existe.
+• proprement
 
-### Accès à l'information via Lagon
+• sans doublon
 
-On a l'information via Lagon :
+• par la bonne personne
 
-![Interface Lagon - Opportunités commerciales](/leads/info-lagon.PNG)
+L'idée : que tout le monde gagne du temps… et que personne ne rate une vente.
 
-### Mise à jour de Lagon
+---
 
-Pour mettre à jour Lagon car l'image affichée est "fixe", il faut faire un reload :
+## 🤝 Le principe clé
 
-![Bouton de reload](/leads/reload.PNG)
+> À l'agence, personne ne travaille seul : c'est la **coordination** qui nous rend efficaces.
 
-### Limites de cette méthode
+---
 
-- Il faut en permanence penser à "regarder" Lagon
-- Il faut en permanence faire du "reload"
+## 🛬 1. Comment arrivent les leads ?
 
-## Solution spécifique à l'agence
+### 📩 Via les mails
 
-Pour rappeler les clients le plus rapidement possible dès l'arrivée du Leads, on a mis en place une solution spécifique à l'agence :
-
-1. Tous les mails relatifs aux Leads arrivent "en même temps" sur une b@l Gmail
+Tous les leads sont envoyés à une boîte Gmail dédiée.
 
 ![Gmail - Boîte de réception](/leads/gmail.webp)
 
-2. Ils sont "routés" vers le tableau Trello / Leads dans la colonne Trello
+### 🔄 Via Allianz (Lagon)
+
+Lagon affiche une opportunité, mais attention :
+
+• l'image n'est **pas dynamique**
+
+• pour actualiser → il faut **cliquer sur reload**
+
+![Interface Lagon - Opportunités commerciales](/leads/info-lagon.PNG)
+
+![Bouton de reload](/leads/reload.PNG)
+
+Limite : on doit vérifier Lagon « à la main », donc ce n'est pas fiable pour la réactivité.
+
+---
+
+## ⚙️ 2. La solution de l'agence : tout devient fluide
+
+### 📥 Trello : chaque lead crée une carte automatiquement
+
+• Les mails entrants → convertis en cartes Trello
+
+• Tout est stocké dans la colonne **Entrée**
 
 ![Trello - Tableau Leads](/leads/trello.png)
 
-3. Un message Slack est envoyé immédiatement : "Qui le prend en charge ?"
+### 🔔 Slack : alerte immédiate
+
+Dès qu'un lead arrive :
+
+> « Qui le prend ? »
 
 ![Slack - Notification](/leads/slack.png)
 
-## Notre processus
+Ça évite qu'un lead reste seul dans un coin.
 
-Quelque soit la manière dont vous avez l'information sur le leads à exploiter (Système compagnie ou système agence), il faut :
+---
 
-1. **Récupérer la carte Trello** et la mettre dans votre colonne
-2. **Intégrer la fiche client depuis Lagon** pour récupérer le devis
-3. **Reprendre le devis**
-4. **Prendre contact avec le client**
+## 🚀 3. Comment je prends un lead ?
 
-## Ce qui n'est pas possible
+Voici la **méthode simple**, en 4 étapes :
 
-### Interdictions
+---
 
-- ❌ Prendre contact avec le client sans avoir intégré la fiche Lagon
-- ❌ Prendre contact avec le client sans avoir transféré la carte Trello de la colonne "entrée" à "sa propre" colonne, celle qui est à votre nom
+### 1) Je prends la carte Trello
 
-### Pourquoi ces règles ?
+• Je la glisse de **Entrée** → vers **ma colonne**
 
-On travaille ensemble :
+• Elle m'appartient : personne d'autre ne l'appellera
 
-- Si on est 10 à se connecter sur le Trello, on va être 10 à passer en revue toutes les entrées pour savoir ce qui a été fait ou pas
-- Si on laisse le client "à intégrer" en Lagon, celui qui arrive derrière ne sait pas ce qui a été fait ou non
+### 2) J'intègre la fiche dans Lagon
 
-## Procédure de prise en charge d'un lead
+• Je retrouve le lead dans Lagon
 
-### À faire quand je prends un leads
+• Je clique sur **Intégrer**
 
-1. **Téléphoner avec un portable**
-2. **Planification des appels** :
-   - 3 appels le premier jour
-   - 2 appels le deuxième jour
-   - 1 appel le 3ème jour
-3. **SMS à chaque fois** (après chaque appel)`);
+• Je vérifie que le devis est bien récupéré
+
+### 3) Je reprends le devis
+
+• Vérification
+
+• Ajustements
+
+• Préparation à l'appel
+
+### 4) J'appelle le client
+
+Plan d'appels :
+
+| Jour | Appels | SMS                |
+| ---- | ------ | ------------------ |
+| 1    | 3      | Après chaque appel |
+| 2    | 2      | Après chaque appel |
+| 3    | 1      | Après l'appel      |
+
+Pourquoi ce rythme ?
+
+Parce qu'il multiplie les chances d'avoir le client tout en restant respectueux.
+
+---
+
+## ⛔ Les deux choses qu'on ne doit **jamais** faire
+
+❌ Appeler sans avoir intégré la fiche Lagon
+
+→ On perd la trace du lead et on crée du flou pour l'équipe.
+
+❌ Laisser la carte dans « Entrée » alors qu'on s'en occupe
+
+→ Les autres pensent qu'elle n'est pas prise.
+
+---
+
+## 💡 Pourquoi ces règles existent ?
+
+Parce qu'on veut éviter :
+
+• les doublons d'appel
+
+• les oublis
+
+• la confusion
+
+• les "Je croyais que c'était toi…"
+
+Et favoriser :
+
+• la rapidité
+
+• la clarté
+
+• la répartition équitable
+
+• la satisfaction client
+
+---
+
+## 📘 Résumé ultra simple
+
+✅ Je prends la carte
+
+✅ J'intègre le lead
+
+✅ Je reprends le devis
+
+✅ J'appelle (3–2–1)`);
         setIsLoading(false);
       });
   }, []);
@@ -151,8 +235,13 @@ On travaille ensemble :
     let inList = false;
     let listType: "ul" | "ol" = "ul";
     let sectionType: "principle" | "process" | "forbidden" | "procedure" | "solution" | "default" = "default";
+    let skipUntil = -1; // Pour sauter les lignes déjà traitées (tableaux)
 
     lines.forEach((line, index) => {
+      // Skip les lignes déjà traitées
+      if (index < skipUntil) {
+        return;
+      }
       const trimmed = line.trim();
 
       // Détecter le type de section pour le style
@@ -562,8 +651,270 @@ On travaille ensemble :
         inList = false;
       }
 
+      // Lignes horizontales
+      if (trimmed.match(/^---+$/)) {
+        if (inList) {
+          elements.push(
+            listType === "ul" ? (
+              <Card key={`list-${index}`} className="mb-6 border-2 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+                <CardContent className="p-6">
+                  <ul className="space-y-3">
+                    {currentList.map((item, i) => {
+                      const processText = (text: string) => {
+                        const parts = text.split(/(❌|✅)/g);
+                        return parts.map((part, j) => {
+                          if (part === "❌") {
+                            return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                          }
+                          if (part === "✅") {
+                            return <span key={j} className="text-green-600 dark:text-green-400 text-xl">{part}</span>;
+                          }
+                          return <span key={j}>{processBoldText(part)}</span>;
+                        });
+                      };
+                      return (
+                        <li key={i} className="flex items-start gap-3 text-foreground leading-relaxed">
+                          <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 mt-2 shrink-0" />
+                          <span className="flex-1">{processText(item)}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card key={`list-${index}`} className="mb-6 border-2 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+                <CardContent className="p-6">
+                  <ol className="space-y-3 list-decimal list-inside">
+                    {currentList.map((item, i) => {
+                      const processText = (text: string) => {
+                        const parts = text.split(/(❌|✅)/g);
+                        return parts.map((part, j) => {
+                          if (part === "❌") {
+                            return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                          }
+                          if (part === "✅") {
+                            return <span key={j} className="text-green-600 dark:text-green-400 text-xl">{part}</span>;
+                          }
+                          return <span key={j}>{processBoldText(part)}</span>;
+                        });
+                      };
+                      return (
+                        <li key={i} className="text-foreground leading-relaxed">
+                          {processText(item)}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </CardContent>
+              </Card>
+            )
+          );
+          currentList = [];
+          inList = false;
+        }
+        elements.push(
+          <hr key={`hr-${index}`} className="my-8 border-t-2 border-gradient-to-r from-blue-200 via-purple-200 to-blue-200 dark:from-blue-800 dark:via-purple-800 dark:to-blue-800" />
+        );
+        return;
+      }
+
+      // Blockquotes
+      if (trimmed.startsWith("> ")) {
+        if (inList) {
+          elements.push(
+            listType === "ul" ? (
+              <Card key={`list-${index}`} className="mb-6 border-2 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+                <CardContent className="p-6">
+                  <ul className="space-y-3">
+                    {currentList.map((item, i) => {
+                      const processText = (text: string) => {
+                        const parts = text.split(/(❌|✅)/g);
+                        return parts.map((part, j) => {
+                          if (part === "❌") {
+                            return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                          }
+                          if (part === "✅") {
+                            return <span key={j} className="text-green-600 dark:text-green-400 text-xl">{part}</span>;
+                          }
+                          return <span key={j}>{processBoldText(part)}</span>;
+                        });
+                      };
+                      return (
+                        <li key={i} className="flex items-start gap-3 text-foreground leading-relaxed">
+                          <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 mt-2 shrink-0" />
+                          <span className="flex-1">{processText(item)}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card key={`list-${index}`} className="mb-6 border-2 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+                <CardContent className="p-6">
+                  <ol className="space-y-3 list-decimal list-inside">
+                    {currentList.map((item, i) => {
+                      const processText = (text: string) => {
+                        const parts = text.split(/(❌|✅)/g);
+                        return parts.map((part, j) => {
+                          if (part === "❌") {
+                            return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                          }
+                          if (part === "✅") {
+                            return <span key={j} className="text-green-600 dark:text-green-400 text-xl">{part}</span>;
+                          }
+                          return <span key={j}>{processBoldText(part)}</span>;
+                        });
+                      };
+                      return (
+                        <li key={i} className="text-foreground leading-relaxed">
+                          {processText(item)}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </CardContent>
+              </Card>
+            )
+          );
+          currentList = [];
+          inList = false;
+        }
+        const quoteText = trimmed.substring(2);
+        elements.push(
+          <Card key={`blockquote-${index}`} className="my-6 border-l-4 border-blue-500 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-950/20">
+            <CardContent className="p-4 pl-6">
+              <p className="text-foreground italic leading-relaxed">
+                {processBoldText(quoteText)}
+              </p>
+            </CardContent>
+          </Card>
+        );
+        return;
+      }
+
+      // Tableaux
+      if (trimmed.includes("|") && trimmed.split("|").length >= 3) {
+        if (inList) {
+          elements.push(
+            listType === "ul" ? (
+              <Card key={`list-${index}`} className="mb-6 border-2 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+                <CardContent className="p-6">
+                  <ul className="space-y-3">
+                    {currentList.map((item, i) => {
+                      const processText = (text: string) => {
+                        const parts = text.split(/(❌|✅)/g);
+                        return parts.map((part, j) => {
+                          if (part === "❌") {
+                            return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                          }
+                          if (part === "✅") {
+                            return <span key={j} className="text-green-600 dark:text-green-400 text-xl">{part}</span>;
+                          }
+                          return <span key={j}>{processBoldText(part)}</span>;
+                        });
+                      };
+                      return (
+                        <li key={i} className="flex items-start gap-3 text-foreground leading-relaxed">
+                          <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 mt-2 shrink-0" />
+                          <span className="flex-1">{processText(item)}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card key={`list-${index}`} className="mb-6 border-2 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+                <CardContent className="p-6">
+                  <ol className="space-y-3 list-decimal list-inside">
+                    {currentList.map((item, i) => {
+                      const processText = (text: string) => {
+                        const parts = text.split(/(❌|✅)/g);
+                        return parts.map((part, j) => {
+                          if (part === "❌") {
+                            return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                          }
+                          if (part === "✅") {
+                            return <span key={j} className="text-green-600 dark:text-green-400 text-xl">{part}</span>;
+                          }
+                          return <span key={j}>{processBoldText(part)}</span>;
+                        });
+                      };
+                      return (
+                        <li key={i} className="text-foreground leading-relaxed">
+                          {processText(item)}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </CardContent>
+              </Card>
+            )
+          );
+          currentList = [];
+          inList = false;
+        }
+        
+        // Collecter toutes les lignes du tableau
+        const tableLines: string[] = [trimmed];
+        let tableIndex = index + 1;
+        while (tableIndex < lines.length) {
+          const nextLine = lines[tableIndex]?.trim();
+          if (nextLine && nextLine.includes("|") && nextLine.split("|").length >= 3) {
+            tableLines.push(nextLine);
+            tableIndex++;
+          } else if (nextLine && nextLine.match(/^[\s|-]+$/)) {
+            // Ligne de séparation du tableau (ignorée)
+            tableIndex++;
+          } else {
+            break;
+          }
+        }
+        
+        // Parser le tableau
+        const headers = tableLines[0].split("|").map(h => h.trim()).filter(h => h);
+        const rows = tableLines.slice(1).filter(line => !line.match(/^[\s|-]+$/)).map(line => 
+          line.split("|").map(cell => cell.trim()).filter(cell => cell)
+        );
+        
+        elements.push(
+          <Card key={`table-${index}`} className="my-6 border-2 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+            <CardContent className="p-6 overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b-2 border-slate-300 dark:border-slate-700">
+                    {headers.map((header, i) => (
+                      <th key={i} className="px-4 py-2 text-left font-semibold text-foreground">
+                        {processBoldText(header)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, i) => (
+                    <tr key={i} className="border-b border-slate-200 dark:border-slate-800">
+                      {row.map((cell, j) => (
+                        <td key={j} className="px-4 py-2 text-foreground">
+                          {processBoldText(cell)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        );
+        
+        // Marquer les lignes à sauter
+        skipUntil = tableIndex;
+        return;
+      }
+
       // Paragraphes
-      if (trimmed !== "" && !trimmed.startsWith("#") && !trimmed.startsWith("!")) {
+      if (trimmed !== "" && !trimmed.startsWith("#") && !trimmed.startsWith("!") && !trimmed.startsWith(">") && !trimmed.includes("|")) {
         if (inList) {
           elements.push(
             listType === "ul" ? (
@@ -625,10 +976,13 @@ On travaille ensemble :
 
         // Gérer le texte en gras et emojis
         const processedText = (() => {
-          const parts = trimmed.split(/(❌)/g);
+          const parts = trimmed.split(/(❌|✅)/g);
           return parts.map((part, i) => {
             if (part === "❌") {
               return <span key={i} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+            }
+            if (part === "✅") {
+              return <span key={i} className="text-green-600 dark:text-green-400 text-xl">{part}</span>;
             }
             return <span key={i}>{processBoldText(part)}</span>;
           });

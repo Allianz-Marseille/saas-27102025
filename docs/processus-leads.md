@@ -1,80 +1,163 @@
-# Travailler ensemble avec les leads
+# VERSION PÉDAGOGIQUE + LUDIQUE POUR LES COMMERCIAUX
 
-## Principe fondamental
+(avec emplacement d'icônes `/public/leads/...`)
 
-Personne ne travaille seul à l'agence et nous sommes efficaces "ensemble" seulement si nous travaillons de manière coordonnée, en appliquant les mêmes règles.
+---
 
-## Réception des leads
+## 🎯 Objectif du process
 
-Tous les leads arrivent par mail.
+Assurer que chaque lead soit traité :
 
-## Information Allianz via Lagon
+• rapidement
 
-Il y a déjà une information Allianz qui n'est pas dynamique mais qui existe.
+• proprement
 
-### Accès à l'information via Lagon
+• sans doublon
 
-On a l'information via Lagon :
+• par la bonne personne
 
-![Interface Lagon - Opportunités commerciales](/leads/info-lagon.PNG)
+L'idée : que tout le monde gagne du temps… et que personne ne rate une vente.
 
-### Mise à jour de Lagon
+---
 
-Pour mettre à jour Lagon car l'image affichée est "fixe", il faut faire un reload :
+## 🤝 Le principe clé
 
-![Bouton de reload](/leads/reload.PNG)
+> À l'agence, personne ne travaille seul : c'est la **coordination** qui nous rend efficaces.
 
-### Limites de cette méthode
+---
 
-- Il faut en permanence penser à "regarder" Lagon
-- Il faut en permanence faire du "reload"
+## 🛬 1. Comment arrivent les leads ?
 
-## Solution spécifique à l'agence
+### 📩 Via les mails
 
-Pour rappeler les clients le plus rapidement possible dès l'arrivée du Leads, on a mis en place une solution spécifique à l'agence :
-
-1. Tous les mails relatifs aux Leads arrivent "en même temps" sur une b@l Gmail
+Tous les leads sont envoyés à une boîte Gmail dédiée.
 
 ![Gmail - Boîte de réception](/leads/gmail.webp)
 
-2. Ils sont "routés" vers le tableau Trello / Leads dans la colonne Trello
+### 🔄 Via Allianz (Lagon)
+
+Lagon affiche une opportunité, mais attention :
+
+• l'image n'est **pas dynamique**
+
+• pour actualiser → il faut **cliquer sur reload**
+
+![Interface Lagon - Opportunités commerciales](/leads/info-lagon.PNG)
+
+![Bouton de reload](/leads/reload.PNG)
+
+Limite : on doit vérifier Lagon « à la main », donc ce n'est pas fiable pour la réactivité.
+
+---
+
+## ⚙️ 2. La solution de l'agence : tout devient fluide
+
+### 📥 Trello : chaque lead crée une carte automatiquement
+
+• Les mails entrants → convertis en cartes Trello
+
+• Tout est stocké dans la colonne **Entrée**
 
 ![Trello - Tableau Leads](/leads/trello.png)
 
-3. Un message Slack est envoyé immédiatement : "Qui le prend en charge ?"
+### 🔔 Slack : alerte immédiate
+
+Dès qu'un lead arrive :
+
+> « Qui le prend ? »
 
 ![Slack - Notification](/leads/slack.png)
 
-## Notre processus
+Ça évite qu'un lead reste seul dans un coin.
 
-Quelque soit la manière dont vous avez l'information sur le leads à exploiter (Système compagnie ou système agence), il faut :
+---
 
-1. **Récupérer la carte Trello** et la mettre dans votre colonne
-2. **Intégrer la fiche client depuis Lagon** pour récupérer le devis
-3. **Reprendre le devis**
-4. **Prendre contact avec le client**
+## 🚀 3. Comment je prends un lead ?
 
-## Ce qui n'est pas possible
+Voici la **méthode simple**, en 4 étapes :
 
-### Interdictions
+---
 
-- ❌ Prendre contact avec le client sans avoir intégré la fiche Lagon
-- ❌ Prendre contact avec le client sans avoir transféré la carte Trello de la colonne "entrée" à "sa propre" colonne, celle qui est à votre nom
+### 1) Je prends la carte Trello
 
-### Pourquoi ces règles ?
+• Je la glisse de **Entrée** → vers **ma colonne**
 
-On travaille ensemble :
+• Elle m'appartient : personne d'autre ne l'appellera
 
-- Si on est 10 à se connecter sur le Trello, on va être 10 à passer en revue toutes les entrées pour savoir ce qui a été fait ou pas
-- Si on laisse le client "à intégrer" en Lagon, celui qui arrive derrière ne sait pas ce qui a été fait ou non
+### 2) J'intègre la fiche dans Lagon
 
-## Procédure de prise en charge d'un lead
+• Je retrouve le lead dans Lagon
 
-### À faire quand je prends un leads
+• Je clique sur **Intégrer**
 
-1. **Téléphoner avec un portable**
-2. **Planification des appels** :
-   - 3 appels le premier jour
-   - 2 appels le deuxième jour
-   - 1 appel le 3ème jour
-3. **SMS à chaque fois** (après chaque appel)
+• Je vérifie que le devis est bien récupéré
+
+### 3) Je reprends le devis
+
+• Vérification
+
+• Ajustements
+
+• Préparation à l'appel
+
+### 4) J'appelle le client
+
+Plan d'appels :
+
+| Jour | Appels | SMS                |
+| ---- | ------ | ------------------ |
+| 1    | 3      | Après chaque appel |
+| 2    | 2      | Après chaque appel |
+| 3    | 1      | Après l'appel      |
+
+Pourquoi ce rythme ?
+
+Parce qu'il multiplie les chances d'avoir le client tout en restant respectueux.
+
+---
+
+## ⛔ Les deux choses qu'on ne doit **jamais** faire
+
+❌ Appeler sans avoir intégré la fiche Lagon
+
+→ On perd la trace du lead et on crée du flou pour l'équipe.
+
+❌ Laisser la carte dans « Entrée » alors qu'on s'en occupe
+
+→ Les autres pensent qu'elle n'est pas prise.
+
+---
+
+## 💡 Pourquoi ces règles existent ?
+
+Parce qu'on veut éviter :
+
+• les doublons d'appel
+
+• les oublis
+
+• la confusion
+
+• les "Je croyais que c'était toi…"
+
+Et favoriser :
+
+• la rapidité
+
+• la clarté
+
+• la répartition équitable
+
+• la satisfaction client
+
+---
+
+## 📘 Résumé ultra simple
+
+✅ Je prends la carte
+
+✅ J'intègre le lead
+
+✅ Je reprends le devis
+
+✅ J'appelle (3–2–1)
