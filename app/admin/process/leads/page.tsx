@@ -115,7 +115,7 @@ export default function LeadsProcessPage() {
   // Composants custom pour react-markdown
   const markdownComponents: Components = {
     // Sections avec classes → Cards colorées
-    div: ({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) => {
+    div: ({ className, children }: HTMLAttributes<HTMLDivElement>) => {
       if (className?.includes("section")) {
         const gradientClass = getSectionGradient(className);
         return (
@@ -133,7 +133,7 @@ export default function LeadsProcessPage() {
           </motion.div>
         );
       }
-      return <div className={className} {...props}>{children}</div>;
+      return <div className={className}>{children}</div>;
     },
     // Images avec sizing
     img: ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
@@ -161,7 +161,7 @@ export default function LeadsProcessPage() {
       );
     },
     // Titres avec icônes
-    h2: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => {
+    h2: ({ children, className, ...props }: HTMLAttributes<HTMLHeadingElement>) => {
       // Extraire le texte pour l'icône - gérer les cas où children est un array ou un objet
       let text = '';
       if (typeof children === 'string') {
@@ -177,8 +177,7 @@ export default function LeadsProcessPage() {
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3 }}
-          className="text-2xl font-bold text-foreground mb-4 mt-6 flex items-center gap-3"
-          {...props}
+          className={cn("text-2xl font-bold text-foreground mb-4 mt-6 flex items-center gap-3", className)}
         >
           {icon}
           <span>{children}</span>
