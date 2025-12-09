@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import DecryptedText from "@/components/DecryptedText";
 
 export default function LeadsProcessPage() {
   const router = useRouter();
@@ -18,7 +19,17 @@ export default function LeadsProcessPage() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Retour
         </Button>
-        <h1 className="text-3xl font-bold text-foreground">Gestion des Leads</h1>
+        <h1 className="text-3xl font-bold text-foreground">
+          <DecryptedText
+            text="Gestion des Leads"
+            animateOn="view"
+            revealDirection="center"
+            speed={30}
+            maxIterations={15}
+            className="text-foreground"
+            encryptedClassName="text-muted-foreground opacity-50"
+          />
+        </h1>
       </div>
     </div>
   );
