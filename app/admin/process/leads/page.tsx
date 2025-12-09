@@ -503,12 +503,12 @@ Et favoriser :
       }
 
       // Listes
-      if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+      if (trimmed.startsWith("- ") || trimmed.startsWith("* ") || trimmed.startsWith("• ")) {
         if (!inList) {
           inList = true;
           listType = "ul";
         }
-        currentList.push(trimmed.substring(2));
+        currentList.push(trimmed.replace(/^[-*•]\s+/, ""));
         return;
       }
 
