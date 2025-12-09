@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Target, Route, AlertCircle, CheckCircle2, Phone, Zap, Lightbulb, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -137,7 +137,7 @@ export default function LeadsProcessPage() {
     },
     // Images avec sizing
     img: ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
-      if (!src) return null;
+      if (!src || typeof src !== 'string') return null;
       const cleanSrc = cleanImageSrc(src);
       const width = extractImageWidth(src) || 400;
       const height = Math.round(width * 0.75); // Ratio 4:3 par défaut
@@ -162,7 +162,15 @@ export default function LeadsProcessPage() {
     },
     // Titres avec icônes
     h2: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => {
-      const text = typeof children === 'string' ? children : String(children);
+      // Extraire le texte pour l'icône - gérer les cas où children est un array ou un objet
+      let text = '';
+      if (typeof children === 'string') {
+        text = children;
+      } else if (Array.isArray(children)) {
+        text = children.map(c => typeof c === 'string' ? c : '').join('');
+      } else {
+        text = String(children || '');
+      }
       const icon = getTitleIcon(text);
       return (
         <motion.h2
@@ -214,7 +222,22 @@ export default function LeadsProcessPage() {
       </ul>
     ),
     li: ({ children, ...props }: HTMLAttributes<HTMLLIElement>) => {
-      const content = String(children);
+      // Extraire le contenu texte pour détecter les emojis
+      let content = '';
+      if (typeof children === 'string') {
+        content = children;
+      } else if (Array.isArray(children)) {
+        content = children.map(c => {
+          if (typeof c === 'string') return c;
+          if (typeof c === 'object' && c !== null && 'props' in c) {
+            // Extraire le texte des éléments React
+            return String(c);
+          }
+          return String(c);
+        }).join('');
+      } else {
+        content = String(children || '');
+      }
       const isCheck = content.includes("✅");
       const isCross = content.includes("❌");
       
