@@ -14,6 +14,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { Components } from "react-markdown";
+import type { HTMLAttributes } from "react";
 
 // Mapping des classes de section vers les gradients Tailwind
 const getSectionGradient = (className: string | undefined): string => {
@@ -114,7 +115,7 @@ export default function LeadsProcessPage() {
   // Composants custom pour react-markdown
   const markdownComponents: Components = {
     // Sections avec classes → Cards colorées
-    div: ({ className, children, ...props }: { className?: string; children?: React.ReactNode; [key: string]: unknown }) => {
+    div: ({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) => {
       if (className?.includes("section")) {
         const gradientClass = getSectionGradient(className);
         return (
@@ -135,7 +136,7 @@ export default function LeadsProcessPage() {
       return <div className={className} {...props}>{children}</div>;
     },
     // Images avec sizing
-    img: ({ src, alt, ...props }: { src?: string; alt?: string; [key: string]: unknown }) => {
+    img: ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
       if (!src) return null;
       const cleanSrc = cleanImageSrc(src);
       const width = extractImageWidth(src) || 400;
@@ -160,7 +161,7 @@ export default function LeadsProcessPage() {
       );
     },
     // Titres avec icônes
-    h2: ({ children }: { children?: React.ReactNode }) => {
+    h2: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => {
       const text = typeof children === 'string' ? children : String(children);
       const icon = getTitleIcon(text);
       return (
@@ -169,15 +170,16 @@ export default function LeadsProcessPage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3 }}
           className="text-2xl font-bold text-foreground mb-4 mt-6 flex items-center gap-3"
+          {...props}
         >
           {icon}
           <span>{children}</span>
         </motion.h2>
       );
     },
-    h3: ({ children }: { children?: React.ReactNode }) => {
+    h3: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => {
       return (
-        <h3 className="text-xl font-semibold text-foreground mb-3 mt-4">
+        <h3 className="text-xl font-semibold text-foreground mb-3 mt-4" {...props}>
           {children}
         </h3>
       );
@@ -196,18 +198,18 @@ export default function LeadsProcessPage() {
     th: ({ children }) => <TableHead>{children}</TableHead>,
     td: ({ children }) => <TableCell>{children}</TableCell>,
     // Listes avec styling
-    ul: ({ children }: { children?: React.ReactNode }) => (
-      <ul className="list-none space-y-2 my-4">
+    ul: ({ children, ...props }: HTMLAttributes<HTMLUListElement>) => (
+      <ul className="list-none space-y-2 my-4" {...props}>
         {children}
       </ul>
     ),
-    li: ({ children }: { children?: React.ReactNode }) => {
+    li: ({ children, ...props }: HTMLAttributes<HTMLLIElement>) => {
       const content = String(children);
       const isCheck = content.includes("✅");
       const isCross = content.includes("❌");
       
       return (
-        <li className="flex items-start gap-3 text-foreground leading-relaxed">
+        <li className="flex items-start gap-3 text-foreground leading-relaxed" {...props}>
           {isCheck ? (
             <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
           ) : isCross ? (
@@ -220,8 +222,8 @@ export default function LeadsProcessPage() {
       );
     },
     // Paragraphes
-    p: ({ children }: { children?: React.ReactNode }) => (
-      <p className="text-foreground leading-relaxed mb-4">
+    p: ({ children, ...props }: HTMLAttributes<HTMLParagraphElement>) => (
+      <p className="text-foreground leading-relaxed mb-4" {...props}>
         {children}
       </p>
     ),
