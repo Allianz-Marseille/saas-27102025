@@ -173,13 +173,100 @@ On travaille ensemble :
         const match = trimmed.match(/!\[([^\]]+)\]\(([^)]+)\)/);
         if (match) {
           const [, alt, src] = match;
+          // Si on est dans une liste, on la ferme temporairement pour ajouter l'image
+          // mais on garde l'état pour permettre la reprise
+          let wasInList = false;
+          let savedListType: "ul" | "ol" = "ul";
+          let savedList: string[] = [];
+          
           if (inList) {
+            wasInList = true;
+            savedListType = listType;
+            savedList = [...currentList];
+            // Fermer la liste actuelle
             elements.push(
-              <ul key={`list-${index}`} className="list-disc list-inside space-y-1 mb-4">
-                {currentList.map((item, i) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
+              savedListType === "ul" ? (
+                <Card key={`list-before-img-${index}`} className="mb-4 border-2 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+                  <CardContent className="p-6">
+                    <ul className="space-y-3">
+                      {savedList.map((item, i) => {
+                        const processText = (text: string) => {
+                          const parts = text.split(/(❌)/g);
+                          return parts.map((part, j) => {
+                            if (part === "❌") {
+                              return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                            }
+                            return <span key={j}>{processBoldText(part)}</span>;
+                          });
+                        };
+                        return (
+                          <li key={i} className="flex items-start gap-3 text-foreground leading-relaxed">
+                            <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 mt-2 shrink-0" />
+                            <span className="flex-1">{processText(item)}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card key={`list-before-img-${index}`} className={cn(
+                  "mb-4 border-2",
+                  sectionType === "solution" && "bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800"
+                )}>
+                  <CardContent className="p-6">
+                    <ol className="space-y-4">
+                      {savedList.map((item, i) => {
+                        const processText = (text: string) => {
+                          const parts = text.split(/(❌)/g);
+                          return parts.map((part, j) => {
+                            if (part === "❌") {
+                              return <span key={j} className="text-red-600 dark:text-red-400 text-xl">{part}</span>;
+                            }
+                            return <span key={j}>{processBoldText(part)}</span>;
+                          });
+                        };
+                        
+                        let appIcon = null;
+                        if (sectionType === "solution") {
+                          const itemLower = item.toLowerCase();
+                          if (itemLower.includes("gmail") || itemLower.includes("mail")) {
+                            appIcon = <GmailIcon className="h-6 w-6" />;
+                          } else if (itemLower.includes("trello")) {
+                            appIcon = <TrelloIcon className="h-6 w-6" />;
+                          } else if (itemLower.includes("slack")) {
+                            appIcon = <SlackIcon className="h-6 w-6" />;
+                          }
+                        }
+                        
+                        return (
+                          <motion.li
+                            key={i}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.05 }}
+                            className={cn(
+                              "flex items-start gap-4 text-foreground leading-relaxed",
+                              sectionType === "solution" && "text-purple-900 dark:text-purple-100"
+                            )}
+                          >
+                            {appIcon ? (
+                              <div className="mt-0.5 shrink-0">
+                                {appIcon}
+                              </div>
+                            ) : (
+                              <span className="text-lg font-semibold text-purple-600 dark:text-purple-400 mt-0.5 shrink-0 min-w-[1.5rem]">
+                                {i + 1}.
+                              </span>
+                            )}
+                            <span className="flex-1">{processText(item)}</span>
+                          </motion.li>
+                        );
+                      })}
+                    </ol>
+                  </CardContent>
+                </Card>
+              )
             );
             currentList = [];
             inList = false;
@@ -187,8 +274,10 @@ On travaille ensemble :
           
           // Image reload : plus petite
           const isReload = src.includes("reload");
-          const imageWidth = isReload ? 200 : 1200;
-          const imageHeight = isReload ? 200 : 600;
+          // Pour les images de la section Solution (gmail, trello, slack), utiliser une taille moyenne
+          const isSolutionImage = src.includes("gmail") || src.includes("trello") || src.includes("slack");
+          const imageWidth = isReload ? 200 : isSolutionImage ? 800 : 1200;
+          const imageHeight = isReload ? 200 : isSolutionImage ? 600 : 600;
           
           elements.push(
             <motion.div
@@ -198,12 +287,13 @@ On travaille ensemble :
               transition={{ duration: 0.3 }}
               className={cn(
                 "my-6 flex justify-center",
-                isReload && "my-4"
+                isReload && "my-4",
+                isSolutionImage && "my-4"
               )}
             >
               <div className={cn(
                 "relative rounded-xl border-2 shadow-xl overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-4",
-                isReload ? "w-fit" : "w-full max-w-4xl"
+                isReload ? "w-fit" : isSolutionImage ? "w-full max-w-2xl" : "w-full max-w-4xl"
               )}>
                 <Image
                   src={src}
@@ -211,7 +301,7 @@ On travaille ensemble :
                   width={imageWidth}
                   height={imageHeight}
                   className={cn(
-                    "rounded-lg w-full h-auto",
+                    "rounded-lg w-full h-auto object-contain",
                     isReload && "w-48 h-auto"
                   )}
                   unoptimized
@@ -219,6 +309,9 @@ On travaille ensemble :
               </div>
             </motion.div>
           );
+          
+          // Note: On ne reprend pas la liste automatiquement après l'image
+          // car le prochain élément de liste créera une nouvelle liste
         }
         return;
       }
