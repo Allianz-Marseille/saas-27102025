@@ -81,7 +81,7 @@ Quelque soit la manière dont vous avez l'information sur le leads à exploiter 
 ### Interdictions
 
 - ❌ Prendre contact avec le client sans avoir intégré la fiche Lagon
-- ❌ Prendre contact avec le client et ne pas avoir transféré la fiche client dans sa colonne
+- ❌ Prendre contact avec le client sans avoir transféré la carte Trello de la colonne "entrée" à "sa propre" colonne, celle qui est à votre nom
 
 ### Pourquoi ces règles ?
 
