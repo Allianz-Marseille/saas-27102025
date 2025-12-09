@@ -5,7 +5,30 @@ import type { ReactElement } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Users, Mail, RefreshCw, AlertCircle, CheckCircle2, Phone, MessageSquare } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Users, 
+  Mail, 
+  RefreshCw, 
+  AlertCircle, 
+  CheckCircle2, 
+  Phone, 
+  MessageSquare,
+  Target,
+  Route,
+  Building2,
+  Zap,
+  Clock,
+  FileText,
+  UserPlus,
+  ArrowRight,
+  Ban,
+  Lightbulb,
+  ListChecks,
+  TrendingUp,
+  Shield,
+  Sparkles
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -231,11 +254,11 @@ Et favoriser :
       // Détecter le type de section pour le style
       if (trimmed.includes("Principe fondamental")) {
         sectionType = "principle";
-      } else if (trimmed.includes("Solution spécifique")) {
+      } else if (trimmed.includes("Solution spécifique") || trimmed.includes("solution mise en place")) {
         sectionType = "solution";
-      } else if (trimmed.includes("Notre processus")) {
+      } else if (trimmed.includes("Notre processus") || trimmed.includes("prends un lead") || trimmed.includes("méthode")) {
         sectionType = "process";
-      } else if (trimmed.includes("Ce qui n'est pas possible") || trimmed.includes("Interdictions")) {
+      } else if (trimmed.includes("Ce qui n'est pas possible") || trimmed.includes("Interdictions") || trimmed.includes("jamais")) {
         sectionType = "forbidden";
       } else if (trimmed.includes("Procédure de prise en charge")) {
         sectionType = "procedure";
@@ -702,10 +725,17 @@ Et favoriser :
         
         const title = trimmed.substring(3);
         let icon = null;
-        if (title.includes("Principe")) icon = <Users className="h-6 w-6" />;
+        if (title.includes("Objectif")) icon = <Target className="h-6 w-6" />;
+        else if (title.includes("chemins") || title.includes("chemin")) icon = <Route className="h-6 w-6" />;
+        else if (title.includes("Allianz")) icon = <Building2 className="h-6 w-6" />;
+        else if (title.includes("solution") || title.includes("Solution")) icon = <Zap className="h-6 w-6" />;
+        else if (title.includes("prends un lead") || title.includes("méthode")) icon = <ListChecks className="h-6 w-6" />;
+        else if (title.includes("jamais") || title.includes("ne doit")) icon = <Ban className="h-6 w-6" />;
+        else if (title.includes("Pourquoi") || title.includes("règles")) icon = <Lightbulb className="h-6 w-6" />;
+        else if (title.includes("Résumé")) icon = <Sparkles className="h-6 w-6" />;
+        else if (title.includes("Principe")) icon = <Users className="h-6 w-6" />;
         else if (title.includes("Réception")) icon = <Mail className="h-6 w-6" />;
         else if (title.includes("Information") || title.includes("Lagon")) icon = <RefreshCw className="h-6 w-6" />;
-        else if (title.includes("Solution")) icon = <CheckCircle2 className="h-6 w-6" />;
         else if (title.includes("processus")) icon = <CheckCircle2 className="h-6 w-6" />;
         else if (title.includes("possible") || title.includes("Interdictions")) icon = <AlertCircle className="h-6 w-6" />;
         else if (title.includes("Procédure")) icon = <Phone className="h-6 w-6" />;
@@ -749,10 +779,26 @@ Et favoriser :
           currentList = [];
           inList = false;
         }
+        
+        const h3Title = trimmed.substring(4);
+        let h3Icon = null;
+        if (h3Title.includes("Inconvénients")) h3Icon = <AlertCircle className="h-5 w-5 text-orange-500" />;
+        else if (h3Title.includes("Méthode") || h3Title.includes("étapes")) h3Icon = <ListChecks className="h-5 w-5 text-blue-500" />;
+        else if (h3Title.includes("Plan d'appel") || h3Title.includes("appel")) h3Icon = <Phone className="h-5 w-5 text-green-500" />;
+        else if (h3Title.includes("Via les mails") || h3Title.includes("mails")) h3Icon = <Mail className="h-5 w-5 text-red-500" />;
+        else if (h3Title.includes("Via Allianz") || h3Title.includes("Lagon")) h3Icon = <RefreshCw className="h-5 w-5 text-blue-500" />;
+        else if (h3Title.includes("Trello")) h3Icon = <TrelloIcon className="h-5 w-5" />;
+        else if (h3Title.includes("Slack")) h3Icon = <SlackIcon className="h-5 w-5" />;
+        
         elements.push(
-          <h3 key={`h3-${index}`} className="text-xl font-semibold mt-6 mb-3 text-foreground flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-600 to-purple-600" />
-            {trimmed.substring(4)}
+          <h3 key={`h3-${index}`} className="text-xl font-semibold mt-6 mb-3 text-foreground flex items-center gap-3">
+            {h3Icon && (
+              <div className="p-2 rounded-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30">
+                {h3Icon}
+              </div>
+            )}
+            {!h3Icon && <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-600 to-purple-600" />}
+            <span>{h3Title}</span>
           </h3>
         );
         return;
@@ -811,6 +857,39 @@ Et favoriser :
                         return <span key={j}>{processBoldText(part)}</span>;
                       });
                     };
+                    // Déterminer l'icône pour les listes à puces selon le contenu
+                    let bulletIcon = null;
+                    const itemLower = item.toLowerCase();
+                    
+                    if (isProcessList) {
+                      bulletIcon = <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />;
+                    } else if (isForbiddenList) {
+                      bulletIcon = <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />;
+                    } else {
+                      // Icônes contextuelles selon le contenu
+                      if (itemLower.includes("rapide") || itemLower.includes("temps") || itemLower.includes("efficacité")) {
+                        bulletIcon = <Zap className="h-4 w-4 text-yellow-500 dark:text-yellow-400 mt-1.5 shrink-0" />;
+                      } else if (itemLower.includes("tuyau") || itemLower.includes("colonne") || itemLower.includes("carte")) {
+                        bulletIcon = <ArrowRight className="h-4 w-4 text-blue-500 dark:text-blue-400 mt-1.5 shrink-0" />;
+                      } else if (itemLower.includes("éviter") || itemLower.includes("perte")) {
+                        bulletIcon = <Shield className="h-4 w-4 text-orange-500 dark:text-orange-400 mt-1.5 shrink-0" />;
+                      } else if (itemLower.includes("mail") || itemLower.includes("gmail")) {
+                        bulletIcon = <Mail className="h-4 w-4 text-red-500 dark:text-red-400 mt-1.5 shrink-0" />;
+                      } else if (itemLower.includes("lagon") || itemLower.includes("reload") || itemLower.includes("recharge")) {
+                        bulletIcon = <RefreshCw className="h-4 w-4 text-blue-500 dark:text-blue-400 mt-1.5 shrink-0" />;
+                      } else if (itemLower.includes("dynamique") || itemLower.includes("penser") || itemLower.includes("nombreux")) {
+                        bulletIcon = <Clock className="h-4 w-4 text-purple-500 dark:text-purple-400 mt-1.5 shrink-0" />;
+                      } else if (itemLower.includes("trello") || itemLower.includes("tableau")) {
+                        bulletIcon = <TrelloIcon className="h-4 w-4" />;
+                      } else if (itemLower.includes("slack") || itemLower.includes("informé")) {
+                        bulletIcon = <SlackIcon className="h-4 w-4" />;
+                      } else if (itemLower.includes("doublons") || itemLower.includes("oublis") || itemLower.includes("confusion")) {
+                        bulletIcon = <AlertCircle className="h-4 w-4 text-orange-500 dark:text-orange-400 mt-1.5 shrink-0" />;
+                      } else if (itemLower.includes("rapidité") || itemLower.includes("clarté") || itemLower.includes("satisfaction") || itemLower.includes("résultats")) {
+                        bulletIcon = <TrendingUp className="h-4 w-4 text-green-500 dark:text-green-400 mt-1.5 shrink-0" />;
+                      }
+                    }
+                    
                     return (
                       <motion.li
                         key={i}
@@ -823,11 +902,7 @@ Et favoriser :
                           isForbiddenList && "text-red-900 dark:text-red-100"
                         )}
                       >
-                        {isProcessList ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
-                        ) : isForbiddenList ? (
-                          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
-                        ) : (
+                        {bulletIcon || (
                           <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 mt-2 shrink-0" />
                         )}
                         <span className="flex-1">{processText(item)}</span>
@@ -861,18 +936,37 @@ Et favoriser :
                       });
                     };
                     
-                    // Déterminer l'icône pour la section Solution
-                    let appIcon = null;
+                    // Déterminer l'icône selon le contenu
+                    let stepIcon = null;
+                    const itemLower = item.toLowerCase();
+                    
                     if (isSolutionList) {
-                      const itemLower = item.toLowerCase();
                       if (itemLower.includes("gmail") || itemLower.includes("mail")) {
-                        appIcon = <GmailIcon className="h-6 w-6" />;
+                        stepIcon = <GmailIcon className="h-6 w-6" />;
                       } else if (itemLower.includes("trello")) {
-                        appIcon = <TrelloIcon className="h-6 w-6" />;
+                        stepIcon = <TrelloIcon className="h-6 w-6" />;
                       } else if (itemLower.includes("slack")) {
-                        appIcon = <SlackIcon className="h-6 w-6" />;
+                        stepIcon = <SlackIcon className="h-6 w-6" />;
+                      }
+                    } else if (sectionType === "process" || sectionType === "procedure") {
+                      // Icônes pour les étapes de la méthode
+                      if (itemLower.includes("prends la carte") || itemLower.includes("carte trello")) {
+                        stepIcon = <TrelloIcon className="h-6 w-6" />;
+                      } else if (itemLower.includes("créer la fiche") || itemLower.includes("intègre") || itemLower.includes("fiche client") || itemLower.includes("lagon")) {
+                        stepIcon = <UserPlus className="h-6 w-6" />;
+                      } else if (itemLower.includes("gérer le devis") || itemLower.includes("reprends le devis") || itemLower.includes("devis")) {
+                        stepIcon = <FileText className="h-6 w-6" />;
+                      } else if (itemLower.includes("téléphoner") || itemLower.includes("appelle") || itemLower.includes("appel")) {
+                        stepIcon = <Phone className="h-6 w-6" />;
                       }
                     }
+                    
+                    // Si pas d'icône spécifique, utiliser un badge numéroté avec icône par défaut
+                    const defaultStepIcon = !stepIcon ? (
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white font-bold text-sm shadow-lg">
+                        {i + 1}
+                      </div>
+                    ) : null;
                     
                     return (
                       <motion.li
@@ -882,13 +976,16 @@ Et favoriser :
                         transition={{ delay: i * 0.05 }}
                         className={cn(
                           "flex items-start gap-4 text-foreground leading-relaxed",
-                          isSolutionList && "text-purple-900 dark:text-purple-100"
+                          isSolutionList && "text-purple-900 dark:text-purple-100",
+                          (sectionType === "process" || sectionType === "procedure") && "text-blue-900 dark:text-blue-100"
                         )}
                       >
-                        {appIcon ? (
-                          <div className="mt-0.5 shrink-0">
-                            {appIcon}
+                        {stepIcon ? (
+                          <div className="mt-0.5 shrink-0 p-2 rounded-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border border-blue-200 dark:border-blue-800">
+                            {stepIcon}
                           </div>
+                        ) : defaultStepIcon ? (
+                          defaultStepIcon
                         ) : (
                           <span className="text-lg font-semibold text-purple-600 dark:text-purple-400 mt-0.5 shrink-0 min-w-[1.5rem]">
                             {i + 1}.
