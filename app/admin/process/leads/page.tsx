@@ -64,8 +64,16 @@ Pour mettre à jour Lagon car l'image affichée est "fixe", il faut faire un rel
 Pour rappeler les clients le plus rapidement possible dès l'arrivée du Leads, on a mis en place une solution spécifique à l'agence :
 
 1. Tous les mails relatifs aux Leads arrivent "en même temps" sur une b@l Gmail
+
+![Gmail - Boîte de réception](/leads/gmail.webp)
+
 2. Ils sont "routés" vers le tableau Trello / Leads dans la colonne Trello
+
+![Trello - Tableau Leads](/leads/trello.png)
+
 3. Un message Slack est envoyé immédiatement : "Qui le prend en charge ?"
+
+![Slack - Notification](/leads/slack.png)
 
 ## Notre processus
 
