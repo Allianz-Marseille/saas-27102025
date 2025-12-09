@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, Building2, LogOut, Users, User, ScrollText, ChevronLeft, ChevronRight, Heart, AlertTriangle, Coins } from "lucide-react";
+import { Home, Building2, LogOut, Users, User, ScrollText, ChevronLeft, ChevronRight, Heart, AlertTriangle, Coins, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -45,6 +45,11 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
       href: "/admin/sinistre",
       label: "Sinistre",
       icon: AlertTriangle,
+    },
+    {
+      href: "/admin/process",
+      label: "Process",
+      icon: Workflow,
     },
     {
       href: "/admin/commissions-agence",
