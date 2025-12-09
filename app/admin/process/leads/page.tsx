@@ -477,11 +477,29 @@ Et favoriser :
                 inList = false;
               }
               
-              // Créer la timeline avec les 3 images
+              // Créer la timeline avec les 3 images et texte explicatif
               const timelineItems = [
-                { name: "Gmail", icon: <GmailIcon className="h-10 w-10" />, color: "from-red-500 to-red-600", src: src },
-                { name: "Trello", icon: <TrelloIcon className="h-10 w-10" />, color: "from-blue-500 to-blue-600", src: nextMatch1[2] },
-                { name: "Slack", icon: <SlackIcon className="h-10 w-10" />, color: "from-purple-500 to-purple-600", src: nextMatch2[2] },
+                { 
+                  name: "Gmail", 
+                  icon: <GmailIcon className="h-6 w-6" />, 
+                  color: "from-red-500 to-red-600", 
+                  description: "Le mail arrive dans la boîte Gmail dédiée",
+                  src: src 
+                },
+                { 
+                  name: "Trello", 
+                  icon: <TrelloIcon className="h-6 w-6" />, 
+                  color: "from-blue-500 to-blue-600", 
+                  description: "Création automatique d'une carte dans Trello / Entrée",
+                  src: nextMatch1[2] 
+                },
+                { 
+                  name: "Slack", 
+                  icon: <SlackIcon className="h-6 w-6" />, 
+                  color: "from-purple-500 to-purple-600", 
+                  description: "Notification Slack : \"Qui le prend en charge ?\"",
+                  src: nextMatch2[2] 
+                },
               ];
               
               elements.push(
@@ -493,16 +511,16 @@ Et favoriser :
                   className="my-8"
                 >
                   <Card className="border-2 bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
-                    <CardContent className="p-8">
-                      <div className="relative flex items-center justify-between gap-4">
+                    <CardContent className="p-6">
+                      <div className="relative flex items-start justify-between gap-2">
                         {timelineItems.map((item, i) => (
                           <div key={i} className="flex-1 flex flex-col items-center relative z-10">
                             <motion.div
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              transition={{ delay: i * 0.2, type: "spring", stiffness: 200 }}
+                              transition={{ delay: i * 0.15, type: "spring", stiffness: 200 }}
                               className={cn(
-                                "p-4 rounded-xl bg-gradient-to-br shadow-lg mb-3",
+                                "p-2.5 rounded-lg bg-gradient-to-br shadow-md mb-2",
                                 item.color
                               )}
                             >
@@ -510,19 +528,22 @@ Et favoriser :
                                 {item.icon}
                               </div>
                             </motion.div>
-                            <p className="text-sm font-semibold text-foreground text-center">{item.name}</p>
+                            <p className="text-xs font-semibold text-foreground text-center mb-1.5">{item.name}</p>
+                            <p className="text-xs text-muted-foreground text-center leading-tight px-1">
+                              {item.description}
+                            </p>
                             {i < timelineItems.length - 1 && (
                               <div 
-                                className="absolute top-12 left-full w-full h-0.5 bg-gradient-to-r from-purple-300 to-purple-500 dark:from-purple-700 dark:to-purple-500 z-0"
-                                style={{ width: 'calc(100% - 2rem)' }}
+                                className="absolute top-6 left-full w-full h-0.5 bg-gradient-to-r from-purple-300 to-purple-500 dark:from-purple-700 dark:to-purple-500 z-0"
+                                style={{ width: 'calc(100% - 1rem)' }}
                               />
                             )}
                             {i < timelineItems.length - 1 && (
                               <div 
-                                className="absolute top-10 left-full -translate-x-1/2 z-20"
-                                style={{ left: 'calc(100% - 1rem)' }}
+                                className="absolute top-5.5 left-full -translate-x-1/2 z-20"
+                                style={{ left: 'calc(100% - 0.5rem)' }}
                               >
-                                <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-purple-500 dark:border-l-purple-400 border-b-[6px] border-b-transparent" />
+                                <div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[8px] border-l-purple-500 dark:border-l-purple-400 border-b-[4px] border-b-transparent" />
                               </div>
                             )}
                           </div>
