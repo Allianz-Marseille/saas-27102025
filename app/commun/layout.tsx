@@ -451,7 +451,7 @@ export default function CommunLayout({
           isCommercialUser && !isAdminUser && "lg:ml-64",
           (isHealthIndividuelUser || isHealthCollectiveUser) && !isAdminUser && (isSidebarCollapsed ? "lg:ml-16" : "lg:ml-64")
         )}>
-          <div className="container mx-auto px-4 py-6">
+          <div className="w-full py-6">
             {children}
           </div>
         </main>

@@ -40,9 +40,9 @@ export default function ProcessPage() {
   const router = useRouter();
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="w-full max-w-7xl mx-auto px-6 lg:px-8">
       {/* Header */}
-      <div className="text-center lg:text-left">
+      <div className="text-center lg:text-left mb-8">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
           Processus
         </h1>
@@ -51,7 +51,7 @@ export default function ProcessPage() {
         </p>
       </div>
 
-      {/* Grille de cartes */}
+      {/* Grille de cartes avec espacements égaux */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
         {processes.map((process, index) => {
           const Icon = process.icon;
