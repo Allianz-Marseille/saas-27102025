@@ -2,11 +2,33 @@
 
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Workflow, Users, FileText, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/firebase/use-auth";
+import { 
+  isAdmin, 
+  isCommercial, 
+  isCommercialSanteIndividuel, 
+  isCommercialSanteCollective,
+  ROLES
+} from "@/lib/utils/roles";
 
-const processes = [
+export type ProcessTag = "commercial" | "sante-individuel" | "sante-collective" | "vie-agence" | "sinistre";
+
+interface Process {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  href: string;
+  color: string;
+  hoverColor: string;
+  tags: ProcessTag[];
+}
+
+const processes: Process[] = [
   {
     id: "leads",
     title: "Gestion des leads",
@@ -15,6 +37,7 @@ const processes = [
     href: "/commun/process/leads",
     color: "from-blue-600 via-purple-600 to-blue-600",
     hoverColor: "hover:from-blue-700 hover:via-purple-700 hover:to-blue-700",
+    tags: ["commercial"],
   },
   {
     id: "declaration-affaires",
@@ -24,6 +47,7 @@ const processes = [
     href: "/commun/process/declaration-affaires",
     color: "from-emerald-600 via-teal-600 to-emerald-600",
     hoverColor: "hover:from-emerald-700 hover:via-teal-700 hover:to-emerald-700",
+    tags: ["commercial"],
   },
   {
     id: "strategie-regularite",
@@ -33,11 +57,66 @@ const processes = [
     href: "/commun/process/strategie-regularite",
     color: "from-purple-600 via-pink-600 to-purple-600",
     hoverColor: "hover:from-purple-700 hover:via-pink-700 hover:to-purple-700",
+    tags: ["commercial"],
   },
 ];
 
+const tagLabels: Record<ProcessTag, string> = {
+  "commercial": "Commercial",
+  "sante-individuel": "Santé Individuel",
+  "sante-collective": "Santé Collective",
+  "vie-agence": "Vie Agence",
+  "sinistre": "Sinistre",
+};
+
+const tagColors: Record<ProcessTag, string> = {
+  "commercial": "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700",
+  "sante-individuel": "bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700",
+  "sante-collective": "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700",
+  "vie-agence": "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700",
+  "sinistre": "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700",
+};
+
+function getUserProcessTags(userData: any): ProcessTag[] | null {
+  if (!userData) return null;
+  
+  if (isAdmin(userData)) {
+    return null; // Admin voit tous les processus
+  }
+  
+  if (isCommercial(userData)) {
+    return ["commercial"];
+  }
+  
+  if (isCommercialSanteIndividuel(userData)) {
+    return ["sante-individuel"];
+  }
+  
+  if (isCommercialSanteCollective(userData)) {
+    return ["sante-collective"];
+  }
+  
+  // Gestionnaire sinistre
+  if (userData.role === ROLES.GESTIONNAIRE_SINISTRE) {
+    return ["sinistre"];
+  }
+  
+  return [];
+}
+
 export default function ProcessPage() {
   const router = useRouter();
+  const { userData } = useAuth();
+  
+  const userTags = getUserProcessTags(userData);
+  
+  // Filtrer les processus selon les tags de l'utilisateur
+  // Si userTags est null (admin), on affiche tous les processus
+  const filteredProcesses = userTags === null 
+    ? processes 
+    : processes.filter(process => 
+        process.tags.some(tag => userTags.includes(tag))
+      );
 
   return (
     <div className="w-full px-6 lg:px-12 xl:px-16">
@@ -53,7 +132,7 @@ export default function ProcessPage() {
 
       {/* Grille de cartes avec espacements égaux */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
-        {processes.map((process, index) => {
+        {filteredProcesses.map((process, index) => {
           const Icon = process.icon;
           return (
             <motion.div
@@ -97,6 +176,18 @@ export default function ProcessPage() {
                   <CardTitle className="mt-4 text-xl group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {process.title}
                   </CardTitle>
+                  {/* Tags */}
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {process.tags.map((tag) => (
+                      <Badge
+                        key={tag}
+                        variant="outline"
+                        className={cn("text-xs", tagColors[tag])}
+                      >
+                        {tagLabels[tag]}
+                      </Badge>
+                    ))}
+                  </div>
                 </CardHeader>
                 <CardContent className="relative z-10 flex-1 flex flex-col">
                   <CardDescription className="text-base leading-relaxed flex-1">
