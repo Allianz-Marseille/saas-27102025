@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 
 interface NewFeatureArrowProps {
-  targetButtonRef?: React.RefObject<HTMLButtonElement>;
+  targetButtonRef?: React.RefObject<HTMLButtonElement | null>;
   featureStartDate: Date;
   daysToShow?: number;
   targetHref?: string;
