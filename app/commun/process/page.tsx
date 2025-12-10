@@ -40,7 +40,7 @@ export default function ProcessPage() {
   const router = useRouter();
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-6 lg:px-8">
+    <div className="w-full px-6 lg:px-12 xl:px-16">
       {/* Header */}
       <div className="text-center lg:text-left mb-8">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
