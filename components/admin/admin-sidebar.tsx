@@ -8,6 +8,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/firebase/use-auth";
 import Image from "next/image";
+import { ProcessMenu } from "@/components/navigation/process-menu";
 
 interface AdminSidebarProps {
   onLogout: () => void;
@@ -45,11 +46,6 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
       href: "/admin/sinistre",
       label: "Sinistre",
       icon: AlertTriangle,
-    },
-    {
-      href: "/admin/process",
-      label: "Process",
-      icon: Workflow,
     },
     {
       href: "/admin/commissions-agence",
@@ -163,6 +159,11 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
               );
             })}
           </nav>
+
+          {/* Menu Process */}
+          <div className="px-4 pb-2 border-b border-muted">
+            <ProcessMenu isCollapsed={isCollapsed} variant="admin" />
+          </div>
 
           {/* Utilisateur connecté et déconnexion */}
           <div className="mt-auto shrink-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 dark:from-blue-600/10 dark:via-purple-600/10 dark:to-pink-600/10">

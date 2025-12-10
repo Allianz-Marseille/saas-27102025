@@ -45,11 +45,6 @@ const adminNavItems = [
     icon: AlertTriangle,
   },
   {
-    href: "/admin/process",
-    label: "Process",
-    icon: Workflow,
-  },
-  {
     href: "/admin/commissions-agence",
     label: "Commissions Agence",
     icon: Coins,

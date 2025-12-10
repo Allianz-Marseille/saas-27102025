@@ -12,6 +12,7 @@ import { logUserLogout } from "@/lib/firebase/logs";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useAuth } from "@/lib/firebase/use-auth";
+import { ProcessMenu } from "@/components/navigation/process-menu";
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -158,6 +159,11 @@ export function CommercialSidebar() {
           );
         })}
       </nav>
+
+      {/* Menu Process */}
+      <div className="px-4 pb-2 border-b border-muted">
+        <ProcessMenu isCollapsed={isCollapsed} variant="commercial" />
+      </div>
 
       {/* Footer avec utilisateur connecté, notifications, thème et déconnexion */}
       <div className="border-t bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 dark:from-blue-600/10 dark:via-purple-600/10 dark:to-pink-600/10">

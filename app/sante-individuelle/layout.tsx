@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
+import { ProcessMenu } from "@/components/navigation/process-menu";
 
 const healthNavItems = [
   {
@@ -179,6 +180,11 @@ export default function SanteIndividuelleLayout({
               })}
             </ul>
           </nav>
+
+          {/* Menu Process */}
+          <div className="px-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+            <ProcessMenu isCollapsed={isCollapsed} variant="health" />
+          </div>
 
           {/* User info et actions */}
           <div className="border-t border-slate-200 dark:border-slate-800">
