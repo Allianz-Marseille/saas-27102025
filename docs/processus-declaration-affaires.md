@@ -6,7 +6,7 @@
 
 <div class="section section-enjeux">
 
-## 🎯 Quand et comment déclarer une affaire dans son tableau de production ?
+## Quand et comment déclarer une affaire dans son tableau de production ?
 
 On a des clés de répartition.
 
@@ -16,7 +16,7 @@ On a des clés de répartition.
 
 <div class="section section-chemins">
 
-## 🔑 Clés de répartition
+## Clés de répartition
 
 ### H91358
 
@@ -30,7 +30,7 @@ On a des clés de répartition.
 * **Joelle** : A à H
 * **Astrid** : I à Z
 
-### 📌 Règles importantes
+### Règles importantes
 
 * Quand on a une **société**, la clé porte sur le **nom du gérant**.
 * S'il est nécessaire de faire un **transfert entre les agences**, un **arbitrage** : cf Jean-Michel / Julien
@@ -42,7 +42,7 @@ On a des clés de répartition.
 
 <div class="section section-solution">
 
-## 📊 Volume et gestion
+## Volume et gestion
 
 * Cette répartition implique un **volume en gestion** et en **potentiel commercial**.
 * Emma a le plus faible volume, car elle est en alternance.
@@ -60,7 +60,7 @@ On a des clés de répartition.
 
 <div class="section section-appels">
 
-## 👥 Comment on travaille en équipe ?
+## Comment on travaille en équipe ?
 
 ### Règles générales
 
@@ -82,7 +82,7 @@ On a des clés de répartition.
 
 <div class="section section-raisons">
 
-## 🏥 Pour la santé
+## Pour la santé
 
 ### Répartition des responsabilités
 
@@ -108,7 +108,7 @@ On a des clés de répartition.
 
 <div class="section section-interdictions">
 
-## ✅ Je fais une nouvelle affaire, je la déclare dans ma production quelles sont mes obligations ?
+## Je fais une nouvelle affaire, je la déclare dans ma production quelles sont mes obligations ?
 
 ### Obligations de déclaration
 
@@ -126,7 +126,7 @@ On a des clés de répartition.
 
 <div class="section section-limitations">
 
-## 🔄 Évolutions possibles
+## Évolutions possibles
 
 * On peut être amené à **revoir les clés** si déformations du volume.
 * A minima **une fois par an** on fait un "point" sur le **volume par chargé de clientèle**.
