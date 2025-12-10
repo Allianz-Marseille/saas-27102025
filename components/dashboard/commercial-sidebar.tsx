@@ -78,13 +78,14 @@ export function CommercialSidebar() {
     <>
     <aside
       className={cn(
-          "flex flex-col h-screen border-r transition-all duration-300 relative",
+          "border-r h-screen fixed left-0 top-0 z-40 transition-all duration-300",
           "bg-gradient-to-b from-white via-blue-50/30 to-purple-50/30",
           "dark:from-slate-950 dark:via-blue-950/10 dark:to-purple-950/10",
-          "hidden lg:flex", // Masquer sur mobile/tablette
+          "hidden lg:block", // Masquer sur mobile/tablette
         isCollapsed ? "w-16" : "w-64"
       )}
     >
+      <div className="flex flex-col h-full">
       {/* Header avec logo */}
       <div className="p-4 border-b flex items-center justify-between bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-600/20 dark:via-purple-600/20 dark:to-pink-600/20 backdrop-blur-sm">
         {!isCollapsed ? (
@@ -229,6 +230,7 @@ export function CommercialSidebar() {
           )}
           </div>
         </div>
+      </div>
       </div>
     </aside>
 

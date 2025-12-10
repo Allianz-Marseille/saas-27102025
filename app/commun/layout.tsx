@@ -253,10 +253,12 @@ export default function CommunLayout({
         )}
         {(isHealthIndividuelUser || isHealthCollectiveUser) && !isAdminUser && (
           <aside className={cn(
-            "bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex-col transition-all duration-300 relative",
-            "hidden lg:flex",
+            "border-r h-screen fixed left-0 top-0 z-40 transition-all duration-300",
+            "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800",
+            "hidden lg:block",
             isSidebarCollapsed ? "w-16" : "w-64"
           )}>
+            <div className="flex flex-col h-full">
             {/* Logo / Header */}
             <div className={cn(
               "p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between backdrop-blur-sm",
@@ -414,6 +416,7 @@ export default function CommunLayout({
                   {!isSidebarCollapsed && "Se déconnecter"}
                 </Button>
               </div>
+            </div>
             </div>
           </aside>
         )}
