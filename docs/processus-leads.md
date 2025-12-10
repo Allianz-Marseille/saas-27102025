@@ -6,13 +6,13 @@
 
 ## 🎯 Enjeux
 
-On a la possibilité de demander à Allianz d’orienter vers notre agence des prospects en recherche d’une solution, d’un tarif, d’un renseignement.
+On a la possibilité de demander à Allianz d'orienter vers notre agence des prospects en recherche d'une solution, d'un tarif, d'un renseignement.
 
-Ce sont des **leads**, et la particularité de cette source est que les prospects sont souvent encore **devant leurs écrans** lorsqu’on reçoit la demande.
+Ce sont des **leads**, et la particularité de cette source est que les prospects sont souvent encore **devant leurs écrans** lorsqu'on reçoit la demande.
 
-👉 D’où la **nécessité d’appeler très rapidement**.
+👉 D'où la **nécessité d'appeler très rapidement**.
 
-La méthode Allianz étant trop figée, l’agence a développé un **process interne**, plus rapide, moderne et efficace.
+La méthode Allianz étant trop figée, l'agence a développé un **process interne**, plus rapide, moderne et efficace.
 
 </div>
 
@@ -30,7 +30,7 @@ La méthode Allianz étant trop figée, l’agence a développé un **process in
 
   ![](/leads/reload.PNG)
 
-* Ou le lendemain à l’ouverture du poste
+* Ou le lendemain à l'ouverture du poste
 
   ![](/leads/info-lagon.PNG)
 
@@ -52,7 +52,7 @@ La méthode Allianz étant trop figée, l’agence a développé un **process in
 
 * Process **non dynamique**
 
-* Nécessité d’y penser → **charge mentale**
+* Nécessité d'y penser → **charge mentale**
 
 * Quand "c'est tout le monde", au final **ce n'est personne**
 
@@ -85,24 +85,6 @@ La méthode Allianz étant trop figée, l’agence a développé un **process in
 * Analyse de la demande
 
 * **Appel du client**
-
-</div>
-
----
-
-<div class="section section-appels">
-
-## 📞 Plan d'appel
-
-| Jour | Appels | SMS                |
-| ---- | ------ | ------------------ |
-| 1    | 3      | Après chaque appel |
-| 2    | 2      | Après chaque appel |
-| 3    | 1      | Après l'appel      |
-
-### Pourquoi ce rythme ?
-
-Parce qu'il **multiplie les chances** de joindre le prospect tout en restant **respectueux**.
 
 </div>
 
@@ -154,6 +136,24 @@ Et pour **favoriser** :
 
 ---
 
+<div class="section section-appels">
+
+## 📞 Plan d'appel
+
+| Jour | Appels | SMS                |
+| ---- | ------ | ------------------ |
+| 1    | 3      | Après chaque appel |
+| 2    | 2      | Après chaque appel |
+| 3    | 1      | Après l'appel      |
+
+### Pourquoi ce rythme ?
+
+Parce qu'il **multiplie les chances** de joindre le prospect tout en restant **respectueux**.
+
+</div>
+
+---
+
 <div class="section section-resume">
 
 ## 📘 Résumé ultra simple
@@ -165,6 +165,28 @@ Et pour **favoriser** :
 * ✅ Je reprends le devis
 
 * ✅ J'appelle : **3 / 2 / 1**
+
+</div>
+
+---
+
+<div class="section section-investissement">
+
+## 💰 Les leads : un investissement à gérer précisément
+
+Les leads représentent un **investissement** pour l'agence.
+
+On doit être **précis** dans notre gestion.
+
+### Prendre position sur un lead
+
+Pour chaque lead, il faut prendre position :
+
+* Soit depuis la **fiche Lagon** client par client
+
+* Soit depuis **Lagon / Projets / Suivi / To do lead**
+
+⚠️ **Attention** : Refus du client si téléphone et mail erronnés ou faux.
 
 </div>
 
