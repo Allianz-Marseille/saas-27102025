@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Workflow, Users } from "lucide-react";
+import { Workflow, Users, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,15 @@ const processes = [
     href: "/admin/process/leads",
     color: "from-blue-600 via-purple-600 to-blue-600",
     hoverColor: "hover:from-blue-700 hover:via-purple-700 hover:to-blue-700",
+  },
+  {
+    id: "declaration-affaires",
+    title: "Déclaration d'affaires",
+    description: "Processus de déclaration d'affaires : clés de répartition par agence, règles de travail en équipe, obligations de déclaration et répartition santé.",
+    icon: FileText,
+    href: "/admin/process/declaration-affaires",
+    color: "from-emerald-600 via-teal-600 to-emerald-600",
+    hoverColor: "hover:from-emerald-700 hover:via-teal-700 hover:to-emerald-700",
   },
 ];
 
