@@ -1,7 +1,5 @@
 # **Gestion des Leads**
 
-*Process commercial – Version pédagogique & moderne*
-
 ---
 
 <div class="section section-enjeux">
