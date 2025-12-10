@@ -181,13 +181,12 @@ export default function SanteIndividuelleLayout({
             </ul>
           </nav>
 
-          {/* Menu Process */}
-          <div className="px-4 pb-2 border-b border-slate-200 dark:border-slate-800">
-            <ProcessMenu isCollapsed={isCollapsed} variant="health" />
-          </div>
-
           {/* User info et actions */}
-          <div className="border-t border-slate-200 dark:border-slate-800">
+          <div className="mt-auto border-t border-slate-200 dark:border-slate-800">
+            {/* Menu Process */}
+            <div className="px-4 pt-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+              <ProcessMenu isCollapsed={isCollapsed} variant="health" />
+            </div>
             {userData && !isCollapsed && (
               <div className="p-4 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-3">

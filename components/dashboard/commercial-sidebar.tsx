@@ -160,13 +160,13 @@ export function CommercialSidebar() {
         })}
       </nav>
 
-      {/* Menu Process */}
-      <div className="px-4 pb-2 border-b border-muted">
-        <ProcessMenu isCollapsed={isCollapsed} variant="commercial" />
-      </div>
-
       {/* Footer avec utilisateur connecté, notifications, thème et déconnexion */}
-      <div className="border-t bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 dark:from-blue-600/10 dark:via-purple-600/10 dark:to-pink-600/10">
+      <div className="mt-auto border-t bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 dark:from-blue-600/10 dark:via-purple-600/10 dark:to-pink-600/10">
+        {/* Menu Process */}
+        <div className="px-4 pt-4 pb-2 border-b border-muted">
+          <ProcessMenu isCollapsed={isCollapsed} variant="commercial" />
+        </div>
+
         {/* Info utilisateur */}
         {userData && !isCollapsed && (
           <div className="p-4 border-b">
