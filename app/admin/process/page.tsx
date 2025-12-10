@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Workflow, Users, FileText } from "lucide-react";
+import { Workflow, Users, FileText, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +24,15 @@ const processes = [
     href: "/admin/process/declaration-affaires",
     color: "from-emerald-600 via-teal-600 to-emerald-600",
     hoverColor: "hover:from-emerald-700 hover:via-teal-700 hover:to-emerald-700",
+  },
+  {
+    id: "strategie-regularite",
+    title: "Stratégie Process : L'art de la régularité",
+    description: "Un rappel essentiel pour votre succès et celui de l'agence. Objectif quotidien : 4 process par jour minimum (M+3, Préterme Auto, Préterme IRD).",
+    icon: Target,
+    href: "/admin/process/strategie-regularite",
+    color: "from-purple-600 via-pink-600 to-purple-600",
+    hoverColor: "hover:from-purple-700 hover:via-pink-700 hover:to-purple-700",
   },
 ];
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Workflow, ChevronDown, ChevronRight, Users, FileText } from "lucide-react";
+import { Workflow, ChevronDown, ChevronRight, Users, FileText, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -22,6 +22,11 @@ const processItems = [
     href: "/admin/process/declaration-affaires",
     label: "Déclaration d'affaires",
     icon: FileText,
+  },
+  {
+    href: "/admin/process/strategie-regularite",
+    label: "Stratégie : L'art de la régularité",
+    icon: Target,
   },
 ];
 

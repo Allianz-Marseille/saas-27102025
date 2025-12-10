@@ -19,7 +19,6 @@ import { getActsByMonth } from "@/lib/firebase/acts";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { Timestamp } from "firebase/firestore";
 import { MonthSelector } from "@/components/dashboard/month-selector";
-import { ProcessDisclaimerModal } from "@/components/dashboard/process-disclaimer-modal";
 
 export default function DashboardPage() {
   const { user, userData } = useAuth();
@@ -74,9 +73,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-      {/* Modale de disclaimer process */}
-      <ProcessDisclaimerModal />
-      
       {/* Header */}
       <header className="border-b bg-white dark:bg-slate-950 sticky top-16 lg:top-0 z-10 shadow-md">
         <div className="container mx-auto px-6 py-4">
