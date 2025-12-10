@@ -110,8 +110,11 @@ export default function AdminLayout({
     setIsMobileMenuOpen(false);
   };
 
+  // Les pages Process sont accessibles à tous les utilisateurs authentifiés
+  const isProcessPage = pathname?.startsWith("/admin/process");
+  
   return (
-    <RouteGuard allowedRoles={["ADMINISTRATEUR"]}>
+    <RouteGuard allowedRoles={isProcessPage ? undefined : ["ADMINISTRATEUR"]}>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
         {/* Sidebar Desktop - masquée sur mobile/tablette */}
         <AdminSidebar 
