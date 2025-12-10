@@ -10,9 +10,8 @@ import { cn } from "@/lib/utils";
 import { logout } from "@/lib/firebase/auth";
 import { logUserLogout } from "@/lib/firebase/logs";
 import { toast } from "sonner";
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/firebase/use-auth";
-import { NewFeatureArrow } from "@/components/dashboard/new-feature-arrow";
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -57,7 +56,16 @@ export function CommercialSidebar() {
   const router = useRouter();
   const { user, userData } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const processButtonRef = useRef<HTMLButtonElement>(null);
+  const [showProcessCapsule, setShowProcessCapsule] = useState(false);
+
+  // Vérifier si on est dans la fenêtre de 7 jours
+  useEffect(() => {
+    const today = new Date();
+    const daysDiff = Math.floor(
+      (today.getTime() - PROCESS_FEATURE_START_DATE.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    setShowProcessCapsule(daysDiff < 7);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -81,15 +89,6 @@ export function CommercialSidebar() {
 
   return (
     <>
-    {/* Flèche animée pour le nouveau bouton Process */}
-    {!isCollapsed && (
-      <NewFeatureArrow
-        targetButtonRef={processButtonRef}
-        featureStartDate={PROCESS_FEATURE_START_DATE}
-        daysToShow={7}
-        targetHref="/commun/process"
-      />
-    )}
     <aside
       className={cn(
           "border-r h-screen fixed left-0 top-0 z-40 transition-all duration-300",
@@ -157,29 +156,39 @@ export function CommercialSidebar() {
           const isProcessButton = item.href === "/commun/process";
 
           return (
-            <Button
+            <div
               key={item.href}
-              ref={isProcessButton ? processButtonRef : null}
-              data-href={item.href}
-              variant={isActive ? "default" : "ghost"}
               className={cn(
-                "w-full justify-start gap-3 transition-all relative overflow-visible",
-                isActive && "bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 hover:from-blue-700 hover:via-purple-700 hover:to-blue-700 text-white shadow-md shadow-blue-500/20",
-                !isActive && "hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30",
-                isCollapsed && "justify-center px-2"
+                "relative",
+                isProcessButton && showProcessCapsule && !isCollapsed && "p-1"
               )}
-              onClick={() => router.push(item.href)}
             >
-              <Icon className="h-5 w-5 shrink-0" />
-              {!isCollapsed && (
-                <span className="font-medium">{item.label}</span>
+              {isProcessButton && showProcessCapsule && !isCollapsed && (
+                <div className="absolute inset-0 rounded-lg bg-red-500 border-2 border-red-600 shadow-lg shadow-red-500/50 animate-pulse" />
               )}
-              {!isCollapsed && item.badge && (
-                <span className="ml-auto text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
-                  {item.badge}
-                </span>
-              )}
-            </Button>
+              <Button
+                data-href={item.href}
+                variant={isActive ? "default" : "ghost"}
+                className={cn(
+                  "w-full justify-start gap-3 transition-all relative",
+                  isProcessButton && showProcessCapsule && !isCollapsed && "z-10",
+                  isActive && "bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 hover:from-blue-700 hover:via-purple-700 hover:to-blue-700 text-white shadow-md shadow-blue-500/20",
+                  !isActive && "hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30",
+                  isCollapsed && "justify-center px-2"
+                )}
+                onClick={() => router.push(item.href)}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                {!isCollapsed && (
+                  <span className="font-medium">{item.label}</span>
+                )}
+                {!isCollapsed && item.badge && (
+                  <span className="ml-auto text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
+                    {item.badge}
+                  </span>
+                )}
+              </Button>
+            </div>
           );
         })}
       </nav>
