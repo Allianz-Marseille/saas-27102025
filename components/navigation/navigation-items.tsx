@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ProcessMenu } from "@/components/navigation/process-menu";
 
 interface NavItem {
   href: string;
@@ -69,9 +68,11 @@ export function NavigationItems({
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {items.map((item) => {
           const Icon = item.icon;
-          const isActive = item.exact
-            ? currentPath === item.href
-            : currentPath?.startsWith(item.href);
+          const isActive = item.href === "/admin/process"
+            ? currentPath?.startsWith("/admin/process")
+            : item.exact
+              ? currentPath === item.href
+              : currentPath?.startsWith(item.href);
 
           return (
             <div key={item.href}>
@@ -96,11 +97,6 @@ export function NavigationItems({
           );
         })}
       </nav>
-
-      {/* Menu Process */}
-      <div className="px-4 pb-2 border-b border-muted">
-        <ProcessMenu isCollapsed={false} variant={variant} />
-      </div>
 
       {/* User Section */}
       <div className="mt-auto border-t bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 dark:from-blue-600/10 dark:via-purple-600/10 dark:to-pink-600/10">

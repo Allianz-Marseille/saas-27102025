@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, FileText, User, LogOut, ChevronLeft, Coins } from "lucide-react";
+import { Home, FileText, User, LogOut, ChevronLeft, Coins, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { NotificationCenter } from "@/components/dashboard/notification-center";
@@ -12,7 +12,6 @@ import { logUserLogout } from "@/lib/firebase/logs";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useAuth } from "@/lib/firebase/use-auth";
-import { ProcessMenu } from "@/components/navigation/process-menu";
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -36,6 +35,11 @@ const menuItems: SidebarItem[] = [
     icon: Coins,
     label: "Commissions",
     href: "/dashboard/commissions",
+  },
+  {
+    icon: Workflow,
+    label: "Process",
+    href: "/admin/process",
   },
   {
     icon: User,
@@ -132,7 +136,9 @@ export function CommercialSidebar() {
       <nav className="flex-1 p-4 space-y-2">
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href;
+          const isActive = item.href === "/admin/process" 
+            ? pathname?.startsWith("/admin/process")
+            : pathname === item.href;
 
           return (
             <Button
@@ -162,11 +168,6 @@ export function CommercialSidebar() {
 
       {/* Footer avec utilisateur connecté, notifications, thème et déconnexion */}
       <div className="mt-auto border-t bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 dark:from-blue-600/10 dark:via-purple-600/10 dark:to-pink-600/10">
-        {/* Menu Process */}
-        <div className="px-4 pt-4 pb-2 border-b border-muted">
-          <ProcessMenu isCollapsed={isCollapsed} variant="commercial" />
-        </div>
-
         {/* Info utilisateur */}
         {userData && !isCollapsed && (
           <div className="p-4 border-b">

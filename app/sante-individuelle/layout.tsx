@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LayoutDashboard, FileText, User, BarChart3, ChevronLeft } from "lucide-react";
+import { LayoutDashboard, FileText, User, BarChart3, ChevronLeft, Workflow } from "lucide-react";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { useAutoLogout } from "@/lib/hooks/use-auto-logout";
@@ -17,7 +17,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
-import { ProcessMenu } from "@/components/navigation/process-menu";
 
 const healthNavItems = [
   {
@@ -35,6 +34,11 @@ const healthNavItems = [
     href: "/sante-individuelle/comparaison",
     label: "Comparaison",
     icon: BarChart3,
+  },
+  {
+    href: "/admin/process",
+    label: "Process",
+    icon: Workflow,
   },
   {
     href: "/sante-individuelle/profile",
@@ -152,9 +156,11 @@ export default function SanteIndividuelleLayout({
           <nav className="flex-1 p-4 overflow-y-auto">
             <ul className="space-y-2">
               {healthNavItems.map((item) => {
-                const isActive = item.exact 
-                  ? pathname === item.href
-                  : pathname?.startsWith(item.href);
+                const isActive = item.href === "/admin/process"
+                  ? pathname?.startsWith("/admin/process")
+                  : item.exact 
+                    ? pathname === item.href
+                    : pathname?.startsWith(item.href);
                 const Icon = item.icon;
                 
                 return (
@@ -183,10 +189,6 @@ export default function SanteIndividuelleLayout({
 
           {/* User info et actions */}
           <div className="mt-auto border-t border-slate-200 dark:border-slate-800">
-            {/* Menu Process */}
-            <div className="px-4 pt-4 pb-2 border-b border-slate-200 dark:border-slate-800">
-              <ProcessMenu isCollapsed={isCollapsed} variant="health" />
-            </div>
             {userData && !isCollapsed && (
               <div className="p-4 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-3">
