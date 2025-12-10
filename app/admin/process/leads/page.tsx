@@ -44,6 +44,9 @@ const getSectionGradient = (className: string | undefined): string => {
   if (className.includes("section-resume")) {
     return "bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-950/20 dark:to-teal-950/20 border-green-200 dark:border-green-800";
   }
+  if (className.includes("section-investissement")) {
+    return "bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 border-amber-200 dark:border-amber-800";
+  }
   return "";
 };
 
@@ -84,6 +87,9 @@ const getTitleIcon = (text: string) => {
   }
   if (lowerText.includes("résumé") || lowerText.includes("resume")) {
     return <Sparkles className="h-5 w-5 text-green-600 dark:text-green-400" />;
+  }
+  if (lowerText.includes("investissement") || lowerText.includes("investir")) {
+    return <Target className="h-5 w-5 text-amber-600 dark:text-amber-400" />;
   }
   return null;
 };
