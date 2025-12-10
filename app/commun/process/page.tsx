@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Workflow, Users, FileText, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -107,15 +109,28 @@ function getUserProcessTags(userData: any): ProcessTag[] | null {
 export default function ProcessPage() {
   const router = useRouter();
   const { userData } = useAuth();
+  const [selectedTag, setSelectedTag] = useState<ProcessTag | "all">("all");
   
   const userTags = getUserProcessTags(userData);
   
-  // Filtrer les processus selon les tags de l'utilisateur
-  // Si userTags est null (admin), on affiche tous les processus
-  const filteredProcesses = userTags === null 
+  // Déterminer les tags disponibles pour le filtre
+  // Si userTags est null (admin), on affiche tous les tags possibles
+  const availableTagsForFilter: ProcessTag[] = userTags === null
+    ? ["commercial", "sante-individuel", "sante-collective", "vie-agence", "sinistre"]
+    : userTags;
+  
+  // Filtrer les processus selon les tags de l'utilisateur (base)
+  const baseFilteredProcesses = userTags === null 
     ? processes 
     : processes.filter(process => 
         process.tags.some(tag => userTags.includes(tag))
+      );
+  
+  // Filtrer selon le tag sélectionné
+  const filteredProcesses = selectedTag === "all"
+    ? baseFilteredProcesses
+    : baseFilteredProcesses.filter(process => 
+        process.tags.includes(selectedTag)
       );
 
   return (
@@ -130,9 +145,47 @@ export default function ProcessPage() {
         </p>
       </div>
 
+      {/* Filtres par tag */}
+      <div className="mb-8 flex flex-wrap gap-3 items-center">
+        <span className="text-sm font-medium text-muted-foreground">Filtrer par :</span>
+        <Button
+          variant={selectedTag === "all" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setSelectedTag("all")}
+          className={cn(
+            selectedTag === "all" 
+              ? "bg-blue-600 hover:bg-blue-700 text-white" 
+              : "hover:bg-accent"
+          )}
+        >
+          Tous
+        </Button>
+        {availableTagsForFilter.map((tag) => (
+          <Button
+            key={tag}
+            variant={selectedTag === tag ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSelectedTag(tag)}
+            className={cn(
+              selectedTag === tag
+                ? cn("text-white border-transparent", tag === "commercial" && "bg-blue-600 hover:bg-blue-700", tag === "sante-individuel" && "bg-green-600 hover:bg-green-700", tag === "sante-collective" && "bg-emerald-600 hover:bg-emerald-700", tag === "vie-agence" && "bg-purple-600 hover:bg-purple-700", tag === "sinistre" && "bg-orange-600 hover:bg-orange-700")
+                : "hover:bg-accent",
+              "transition-all"
+            )}
+          >
+            {tagLabels[tag]}
+          </Button>
+        ))}
+      </div>
+
       {/* Grille de cartes avec espacements égaux */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
-        {filteredProcesses.map((process, index) => {
+      {filteredProcesses.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Aucun processus trouvé pour ce filtre.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
+          {filteredProcesses.map((process, index) => {
           const Icon = process.icon;
           return (
             <motion.div
@@ -214,7 +267,8 @@ export default function ProcessPage() {
             </motion.div>
           );
         })}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
