@@ -35,7 +35,7 @@ const healthCollectiveNavItems = [
     icon: BarChart3,
   },
   {
-    href: "/admin/process",
+    href: "/commun/process",
     label: "Process",
     icon: Workflow,
   },
@@ -149,8 +149,8 @@ export default function SanteCollectiveLayout({
           <nav className="flex-1 p-4 overflow-y-auto">
             <ul className="space-y-2">
               {healthCollectiveNavItems.map((item) => {
-                const isActive = item.href === "/admin/process"
-                  ? pathname?.startsWith("/admin/process")
+                const isActive = item.href === "/commun/process"
+                  ? pathname?.startsWith("/commun/process")
                   : item.exact 
                     ? pathname === item.href
                     : pathname?.startsWith(item.href);

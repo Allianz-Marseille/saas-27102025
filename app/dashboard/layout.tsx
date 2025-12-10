@@ -34,7 +34,7 @@ const commercialNavItems = [
   {
     icon: Workflow,
     label: "Process",
-    href: "/admin/process",
+    href: "/commun/process",
   },
   {
     icon: User,

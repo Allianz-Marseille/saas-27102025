@@ -52,7 +52,13 @@ export function RouteGuard({
     }
 
     // Vérifier l'accès selon le chemin
-    // Les pages /admin/process sont accessibles à tous les utilisateurs authentifiés
+    // Les pages /commun/* sont accessibles à tous les utilisateurs authentifiés
+    if (pathname.startsWith("/commun")) {
+      // Pas de restriction, accessible à tous les utilisateurs authentifiés
+      return;
+    }
+    
+    // Les pages /admin/process sont accessibles à tous les utilisateurs authentifiés (déprécié, utiliser /commun/process)
     if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/process")) {
       if (!canAccessAdmin(userData)) {
         toast.error("Accès refusé : droits administrateur requis");
@@ -132,7 +138,13 @@ export function RouteGuard({
       return null;
     }
 
-    // Les pages /admin/process sont accessibles à tous les utilisateurs authentifiés
+    // Les pages /commun/* sont accessibles à tous les utilisateurs authentifiés
+    if (pathname.startsWith("/commun")) {
+      // Pas de restriction
+      return <>{children}</>;
+    }
+
+    // Les pages /admin/process sont accessibles à tous les utilisateurs authentifiés (déprécié)
     if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/process") && !canAccessAdmin(userData)) {
       return null;
     }

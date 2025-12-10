@@ -39,7 +39,7 @@ const menuItems: SidebarItem[] = [
   {
     icon: Workflow,
     label: "Process",
-    href: "/admin/process",
+    href: "/commun/process",
   },
   {
     icon: User,
@@ -136,8 +136,8 @@ export function CommercialSidebar() {
       <nav className="flex-1 p-4 space-y-2">
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = item.href === "/admin/process" 
-            ? pathname?.startsWith("/admin/process")
+          const isActive = item.href === "/commun/process" 
+            ? pathname?.startsWith("/commun/process")
             : pathname === item.href;
 
           return (

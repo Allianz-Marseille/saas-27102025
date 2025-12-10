@@ -47,7 +47,7 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
       icon: AlertTriangle,
     },
     {
-      href: "/admin/process",
+      href: "/commun/process",
       label: "Process",
       icon: Workflow,
     },
@@ -134,8 +134,8 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = item.href === "/admin/process"
-                ? pathname?.startsWith("/admin/process")
+              const isActive = item.href === "/commun/process"
+                ? pathname?.startsWith("/commun/process")
                 : item.exact 
                   ? pathname === item.href
                   : pathname?.startsWith(item.href);

@@ -68,8 +68,8 @@ export function NavigationItems({
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {items.map((item) => {
           const Icon = item.icon;
-          const isActive = item.href === "/admin/process"
-            ? currentPath?.startsWith("/admin/process")
+          const isActive = item.href === "/commun/process"
+            ? currentPath?.startsWith("/commun/process")
             : item.exact
               ? currentPath === item.href
               : currentPath?.startsWith(item.href);
