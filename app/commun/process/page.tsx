@@ -9,13 +9,6 @@ import { Workflow, Users, FileText, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/firebase/use-auth";
-import { 
-  isAdmin, 
-  isCommercial, 
-  isCommercialSanteIndividuel, 
-  isCommercialSanteCollective,
-  ROLES
-} from "@/lib/utils/roles";
 
 export type ProcessTag = "commercial" | "sante-individuel" | "sante-collective" | "vie-agence" | "sinistre";
 
@@ -79,57 +72,19 @@ const tagColors: Record<ProcessTag, string> = {
   "sinistre": "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700",
 };
 
-function getUserProcessTags(userData: any): ProcessTag[] | null {
-  if (!userData) return null;
-  
-  if (isAdmin(userData)) {
-    return null; // Admin voit tous les processus
-  }
-  
-  if (isCommercial(userData)) {
-    return ["commercial"];
-  }
-  
-  if (isCommercialSanteIndividuel(userData)) {
-    return ["sante-individuel"];
-  }
-  
-  if (isCommercialSanteCollective(userData)) {
-    return ["sante-collective"];
-  }
-  
-  // Gestionnaire sinistre
-  if (userData.role === ROLES.GESTIONNAIRE_SINISTRE) {
-    return ["sinistre"];
-  }
-  
-  return [];
-}
-
 export default function ProcessPage() {
   const router = useRouter();
-  const { userData } = useAuth();
   const [selectedTag, setSelectedTag] = useState<ProcessTag | "all">("all");
   
-  const userTags = getUserProcessTags(userData);
+  // Toujours afficher tous les tags disponibles pour le filtre
+  // Même s'ils ne sont pas encore utilisés, ils seront nécessaires pour les futurs processus
+  const availableTagsForFilter: ProcessTag[] = ["commercial", "sante-individuel", "sante-collective", "vie-agence", "sinistre"];
   
-  // Déterminer les tags disponibles pour le filtre
-  // Si userTags est null (admin), on affiche tous les tags possibles
-  const availableTagsForFilter: ProcessTag[] = userTags === null
-    ? ["commercial", "sante-individuel", "sante-collective", "vie-agence", "sinistre"]
-    : userTags;
-  
-  // Filtrer les processus selon les tags de l'utilisateur (base)
-  const baseFilteredProcesses = userTags === null 
-    ? processes 
-    : processes.filter(process => 
-        process.tags.some(tag => userTags.includes(tag))
-      );
-  
-  // Filtrer selon le tag sélectionné
+  // Tous les processus sont visibles par tous les utilisateurs (base de référence commune)
+  // Filtrer uniquement selon le tag sélectionné
   const filteredProcesses = selectedTag === "all"
-    ? baseFilteredProcesses
-    : baseFilteredProcesses.filter(process => 
+    ? processes
+    : processes.filter(process => 
         process.tags.includes(selectedTag)
       );
 
