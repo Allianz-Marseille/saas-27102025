@@ -115,7 +115,7 @@ export default function DashboardLayout({
           showNotifications={true}
         />
 
-        <main className="flex-1 overflow-y-auto bg-background pt-16 lg:pt-0">
+        <main className="flex-1 overflow-y-auto bg-background pt-16 lg:pt-0 lg:ml-64">
           {children}
         </main>
       </div>
