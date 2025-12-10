@@ -40,21 +40,19 @@ export default function ProcessPage() {
   const router = useRouter();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
-            Processus
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Consultez les processus et procédures de l'agence
-          </p>
-        </div>
+      <div className="text-center lg:text-left">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
+          Processus
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          Consultez les processus et procédures de l'agence
+        </p>
       </div>
 
       {/* Grille de cartes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
         {processes.map((process, index) => {
           const Icon = process.icon;
           return (
@@ -66,7 +64,7 @@ export default function ProcessPage() {
             >
               <Card
                 className={cn(
-                  "cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] group relative overflow-hidden h-full",
+                  "cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] group relative overflow-hidden h-full flex flex-col",
                   "border-2 hover:border-blue-300 dark:hover:border-blue-700"
                 )}
                 onClick={() => router.push(process.href)}
@@ -100,11 +98,11 @@ export default function ProcessPage() {
                     {process.title}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="relative z-10">
-                  <CardDescription className="text-base leading-relaxed">
+                <CardContent className="relative z-10 flex-1 flex flex-col">
+                  <CardDescription className="text-base leading-relaxed flex-1">
                     {process.description}
                   </CardDescription>
-                  <div className="mt-4 flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 group-hover:translate-x-2 transition-transform">
+                  <div className="mt-6 flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 group-hover:translate-x-2 transition-transform">
                     Consulter le processus
                     <svg
                       className="ml-2 h-4 w-4"
