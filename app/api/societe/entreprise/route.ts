@@ -54,10 +54,11 @@ export async function POST(request: NextRequest) {
 
     // Si recherche par nom, d'abord rechercher le SIREN
     if (nom && !siren) {
-      // Essayer plusieurs endpoints possibles pour la recherche
+      // Essayer plusieurs endpoints possibles pour la recherche par nom
       const searchUrls = [
         `${baseUrl}/entreprise/search?nom=${encodeURIComponent(nom)}`,
         `${baseUrl}/societe/search?nom=${encodeURIComponent(nom)}`,
+        `${baseUrl}/search?nom=${encodeURIComponent(nom)}`,
       ];
 
       let searchData: any = null;
@@ -146,63 +147,17 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Si aucun résultat via Societe.com, essayer l'API Sirene (gouvernementale) comme fallback
+      // Si aucun résultat via Societe.com, retourner une erreur
       if (!numId) {
-        console.log(`Recherche Societe.com échouée pour "${nom}". Tentative avec l'API Sirene (INSEE)...`);
-        
-        const sireneApiKey = process.env.SIRENE_API_KEY;
-        if (sireneApiKey) {
-          try {
-            const sireneUrl = `https://api.insee.fr/api-sirene/3.11/siren?q=raisonSociale:${encodeURIComponent(nom)}&nombre=10&debut=0`;
-            const sireneResponse = await fetch(sireneUrl, {
-              headers: {
-                "Authorization": `Bearer ${sireneApiKey}`,
-                "Accept": "application/json",
-              },
-            });
-
-            if (sireneResponse.ok) {
-              const sireneData = await sireneResponse.json();
-              console.log("Réponse API Sirene:", JSON.stringify(sireneData, null, 2));
-              
-              if (sireneData.unitesLegales && sireneData.unitesLegales.length > 0) {
-                // Prendre le premier résultat
-                const firstResult = sireneData.unitesLegales[0];
-                const sirenFromSirene = firstResult.siren;
-                
-                if (sirenFromSirene) {
-                  console.log(`✅ SIREN trouvé via API Sirene: ${sirenFromSirene}`);
-                  numId = sirenFromSirene;
-                  // On continue avec ce SIREN pour récupérer les infos via Societe.com
-                } else {
-                  console.error("SIREN introuvable dans la réponse Sirene");
-                }
-              } else {
-                console.log("Aucun résultat trouvé via API Sirene");
-              }
-            } else {
-              const errorText = await sireneResponse.text();
-              console.error(`Erreur API Sirene (${sireneResponse.status}):`, errorText);
-            }
-          } catch (sireneError) {
-            console.error("Erreur lors de l'appel à l'API Sirene:", sireneError);
-          }
-        } else {
-          console.log("SIRENE_API_KEY non configurée, skip de l'API Sirene");
-        }
-
-        // Si toujours pas de SIREN trouvé, retourner une erreur
-        if (!numId) {
-          console.error(`Aucune donnée trouvée pour "${nom}". Dernière erreur:`, lastError);
-          return NextResponse.json(
-            { 
-              error: `Aucune entreprise trouvée pour le nom "${nom}"`,
-              details: lastError || "Vérifiez que la recherche par nom est incluse dans votre abonnement API Societe.com. Cette fonctionnalité peut nécessiter un abonnement payant.",
-              suggestion: "Essayez de rechercher par SIREN/SIRET si vous le connaissez. La recherche par SIREN/SIRET est généralement disponible sans abonnement supplémentaire."
-            },
-            { status: 404 }
-          );
-        }
+        console.error(`Aucune donnée trouvée pour "${nom}". Dernière erreur:`, lastError);
+        return NextResponse.json(
+          { 
+            error: `Aucune entreprise trouvée pour le nom "${nom}"`,
+            details: lastError || "Vérifiez que la recherche par nom est incluse dans votre abonnement API Societe.com. Cette fonctionnalité peut nécessiter un abonnement payant.",
+            suggestion: "Essayez de rechercher par SIREN/SIRET si vous le connaissez. La recherche par SIREN/SIRET est généralement disponible sans abonnement supplémentaire."
+          },
+          { status: 404 }
+        );
       }
     } else {
       // Recherche par SIREN/SIRET
