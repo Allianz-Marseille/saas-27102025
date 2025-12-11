@@ -118,66 +118,91 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Si aucun endpoint n'a fonctionné
-      if (!searchData) {
-        console.error(`Aucune donnée trouvée pour "${nom}". Dernière erreur:`, lastError);
-        return NextResponse.json(
-          { 
-            error: `Aucune entreprise trouvée pour le nom "${nom}"`,
-            details: lastError || "Vérifiez que la recherche par nom est incluse dans votre abonnement API Societe.com. Cette fonctionnalité peut nécessiter un abonnement payant.",
-            suggestion: "Essayez de rechercher par SIREN/SIRET si vous le connaissez. La recherche par SIREN/SIRET est généralement disponible sans abonnement supplémentaire."
-          },
-          { status: 404 }
-        );
-      }
-      
-      // Log de la structure complète pour diagnostic
-      console.log("Structure complète de searchData:", JSON.stringify(searchData, null, 2));
-      
-      // Vérifier la structure de la réponse (plusieurs formats possibles)
-      let entreprises: any[] = [];
-      
-      if (searchData.data?.entreprises) {
-        entreprises = searchData.data.entreprises;
-      } else if (searchData.entreprises) {
-        entreprises = searchData.entreprises;
-      } else if (Array.isArray(searchData.data)) {
-        entreprises = searchData.data;
-      } else if (Array.isArray(searchData)) {
-        entreprises = searchData;
-      }
-      
-      // Vérifier si des résultats sont trouvés
-      if (!entreprises || entreprises.length === 0) {
-        return NextResponse.json(
-          { 
-            error: `Aucune entreprise trouvée pour le nom "${nom}"`,
-            details: "Aucun résultat ne correspond à votre recherche. Vérifiez l'orthographe ou essayez une recherche par SIREN/SIRET.",
-            suggestion: "Essayez de rechercher par SIREN/SIRET si vous le connaissez."
-          },
-          { status: 404 }
-        );
+      // Si on a des données de Societe.com, extraire le SIREN
+      if (searchData) {
+        // Log de la structure complète pour diagnostic
+        console.log("Structure complète de searchData:", JSON.stringify(searchData, null, 2));
+        
+        // Vérifier la structure de la réponse (plusieurs formats possibles)
+        let entreprises: any[] = [];
+        
+        if (searchData.data?.entreprises) {
+          entreprises = searchData.data.entreprises;
+        } else if (searchData.entreprises) {
+          entreprises = searchData.entreprises;
+        } else if (Array.isArray(searchData.data)) {
+          entreprises = searchData.data;
+        } else if (Array.isArray(searchData)) {
+          entreprises = searchData;
+        }
+        
+        // Si on a des résultats, prendre le premier
+        if (entreprises && entreprises.length > 0) {
+          if (entreprises.length > 1) {
+            console.log(`${entreprises.length} entreprises trouvées pour "${nom}". Utilisation du premier résultat.`);
+          }
+          const firstResult = entreprises[0];
+          numId = firstResult.siren || firstResult.numid || firstResult.siret?.substring(0, 9);
+        }
       }
 
-      // Si plusieurs résultats, prendre le premier mais logger les autres
-      if (entreprises.length > 1) {
-        console.log(`${entreprises.length} entreprises trouvées pour "${nom}". Utilisation du premier résultat.`);
-      }
-
-      // Prendre le premier résultat
-      const firstResult = entreprises[0];
-      numId = firstResult.siren || firstResult.numid || firstResult.siret?.substring(0, 9);
-
+      // Si aucun résultat via Societe.com, essayer l'API Sirene (gouvernementale) comme fallback
       if (!numId) {
-        console.error("Structure de réponse inattendue:", JSON.stringify(firstResult, null, 2));
-        return NextResponse.json(
-          { 
-            error: "SIREN introuvable dans les résultats de recherche",
-            details: "La structure de la réponse API est inattendue. Contactez le support si le problème persiste.",
-            rawResult: firstResult
-          },
-          { status: 500 }
-        );
+        console.log(`Recherche Societe.com échouée pour "${nom}". Tentative avec l'API Sirene (INSEE)...`);
+        
+        const sireneApiKey = process.env.SIRENE_API_KEY;
+        if (sireneApiKey) {
+          try {
+            const sireneUrl = `https://api.insee.fr/api-sirene/3.11/siren?q=raisonSociale:${encodeURIComponent(nom)}&nombre=10&debut=0`;
+            const sireneResponse = await fetch(sireneUrl, {
+              headers: {
+                "Authorization": `Bearer ${sireneApiKey}`,
+                "Accept": "application/json",
+              },
+            });
+
+            if (sireneResponse.ok) {
+              const sireneData = await sireneResponse.json();
+              console.log("Réponse API Sirene:", JSON.stringify(sireneData, null, 2));
+              
+              if (sireneData.unitesLegales && sireneData.unitesLegales.length > 0) {
+                // Prendre le premier résultat
+                const firstResult = sireneData.unitesLegales[0];
+                const sirenFromSirene = firstResult.siren;
+                
+                if (sirenFromSirene) {
+                  console.log(`✅ SIREN trouvé via API Sirene: ${sirenFromSirene}`);
+                  numId = sirenFromSirene;
+                  // On continue avec ce SIREN pour récupérer les infos via Societe.com
+                } else {
+                  console.error("SIREN introuvable dans la réponse Sirene");
+                }
+              } else {
+                console.log("Aucun résultat trouvé via API Sirene");
+              }
+            } else {
+              const errorText = await sireneResponse.text();
+              console.error(`Erreur API Sirene (${sireneResponse.status}):`, errorText);
+            }
+          } catch (sireneError) {
+            console.error("Erreur lors de l'appel à l'API Sirene:", sireneError);
+          }
+        } else {
+          console.log("SIRENE_API_KEY non configurée, skip de l'API Sirene");
+        }
+
+        // Si toujours pas de SIREN trouvé, retourner une erreur
+        if (!numId) {
+          console.error(`Aucune donnée trouvée pour "${nom}". Dernière erreur:`, lastError);
+          return NextResponse.json(
+            { 
+              error: `Aucune entreprise trouvée pour le nom "${nom}"`,
+              details: lastError || "Vérifiez que la recherche par nom est incluse dans votre abonnement API Societe.com. Cette fonctionnalité peut nécessiter un abonnement payant.",
+              suggestion: "Essayez de rechercher par SIREN/SIRET si vous le connaissez. La recherche par SIREN/SIRET est généralement disponible sans abonnement supplémentaire."
+            },
+            { status: 404 }
+          );
+        }
       }
     } else {
       // Recherche par SIREN/SIRET
