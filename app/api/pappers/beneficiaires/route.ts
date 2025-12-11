@@ -16,21 +16,27 @@ interface PappersEntrepriseResponse {
     code_postal?: string;
     ville?: string;
   };
+  siege?: {
+    adresse_ligne_1?: string;
+    adresse_ligne_2?: string;
+    code_postal?: string;
+    ville?: string;
+  };
   siren?: string;
+  beneficiaires_effectifs?: PappersBeneficiaire[];
 }
 
 interface PappersBeneficiaire {
   nom?: string;
   prenom?: string;
-  date_naissance?: string;
+  nom_complet?: string;
+  date_de_naissance_formatee?: string;
+  date_de_naissance_complete_formatee?: string;
   nationalite?: string;
-  qualite?: string;
   pourcentage_parts?: number;
   pourcentage_votes?: number;
-}
-
-interface PappersBeneficiairesResponse {
-  beneficiaires?: PappersBeneficiaire[];
+  pourcentage_parts_directes?: number;
+  pourcentage_parts_indirectes?: number;
 }
 
 /**
@@ -81,8 +87,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Appel API Pappers pour les informations de l'entreprise
-    const entrepriseUrl = `https://api.pappers.fr/v2/entreprise?api_token=${apiKey}&siren=${siren}`;
-    const entrepriseResponse = await fetch(entrepriseUrl);
+    // Utilisation du header api-key (recommandé) au lieu du paramètre query api_token (déconseillé)
+    const entrepriseUrl = `https://api.pappers.fr/v2/entreprise?siren=${siren}`;
+    const entrepriseResponse = await fetch(entrepriseUrl, {
+      headers: {
+        "api-key": apiKey,
+      },
+    });
 
     if (!entrepriseResponse.ok) {
       const errorText = await entrepriseResponse.text();
@@ -116,34 +127,31 @@ export async function POST(request: NextRequest) {
 
     const entrepriseData: PappersEntrepriseResponse = await entrepriseResponse.json();
 
-    // Appel API Pappers pour les bénéficiaires effectifs
-    const beneficiairesUrl = `https://api.pappers.fr/v2/beneficiaires?api_token=${apiKey}&siren=${siren}`;
-    const beneficiairesResponse = await fetch(beneficiairesUrl);
+    // Les bénéficiaires effectifs sont inclus dans la réponse de /entreprise
+    // dans le champ beneficiaires_effectifs (nécessite une habilitation pour les données complètes)
+    const beneficiaires: PappersBeneficiaire[] = entrepriseData.beneficiaires_effectifs || [];
 
-    let beneficiaires: PappersBeneficiaire[] = [];
-
-    if (beneficiairesResponse.ok) {
-      const beneficiairesData: PappersBeneficiairesResponse = await beneficiairesResponse.json();
-      beneficiaires = beneficiairesData.beneficiaires || [];
-    } else {
-      // Si l'endpoint bénéficiaires n'est pas disponible ou retourne une erreur,
-      // on continue avec les données de l'entreprise seulement
-      console.warn("Impossible de récupérer les bénéficiaires effectifs:", beneficiairesResponse.status);
+    // Formater l'adresse (priorité au siège, sinon adresse directe)
+    let adresse = "";
+    if (entrepriseData.siege) {
+      const adresseParts = [
+        entrepriseData.siege.adresse_ligne_1,
+        entrepriseData.siege.adresse_ligne_2,
+        entrepriseData.siege.code_postal,
+        entrepriseData.siege.ville,
+      ].filter(Boolean);
+      adresse = adresseParts.join(" ");
+    } else if (entrepriseData.adresse) {
+      adresse = [
+        entrepriseData.adresse.numero_voie,
+        entrepriseData.adresse.type_voie,
+        entrepriseData.adresse.libelle_voie,
+      ]
+        .filter(Boolean)
+        .join(" ") +
+        (entrepriseData.adresse.code_postal ? " " + entrepriseData.adresse.code_postal : "") +
+        (entrepriseData.adresse.ville ? " " + entrepriseData.adresse.ville : "");
     }
-
-    // Formater l'adresse
-    const adresse = entrepriseData.adresse
-      ? [
-          entrepriseData.adresse.numero_voie,
-          entrepriseData.adresse.type_voie,
-          entrepriseData.adresse.libelle_voie,
-        ]
-          .filter(Boolean)
-          .join(" ") +
-        (entrepriseData.adresse.code_postal || "") +
-        " " +
-        (entrepriseData.adresse.ville || "")
-      : "";
 
     // Retourner les données structurées
     return NextResponse.json({
@@ -158,10 +166,12 @@ export async function POST(request: NextRequest) {
         beneficiaires: beneficiaires.map((b) => ({
           nom: b.nom || "Non disponible",
           prenom: b.prenom || "Non disponible",
-          date_naissance: b.date_naissance || "Non disponible",
+          nom_complet: b.nom_complet || `${b.prenom || ""} ${b.nom || ""}`.trim() || "Non disponible",
+          date_naissance: b.date_de_naissance_complete_formatee || b.date_de_naissance_formatee || "Non disponible",
           nationalite: b.nationalite || "Non disponible",
-          qualite: b.qualite || "Non disponible",
           pourcentage_parts: b.pourcentage_parts || 0,
+          pourcentage_parts_directes: b.pourcentage_parts_directes || 0,
+          pourcentage_parts_indirectes: b.pourcentage_parts_indirectes || 0,
           pourcentage_votes: b.pourcentage_votes || 0,
         })),
       },

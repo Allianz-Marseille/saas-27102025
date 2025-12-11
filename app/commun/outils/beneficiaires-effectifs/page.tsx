@@ -20,10 +20,12 @@ interface EntrepriseData {
 interface BeneficiaireData {
   nom: string;
   prenom: string;
+  nom_complet: string;
   date_naissance: string;
   nationalite: string;
-  qualite: string;
   pourcentage_parts: number;
+  pourcentage_parts_directes: number;
+  pourcentage_parts_indirectes: number;
   pourcentage_votes: number;
 }
 
@@ -289,7 +291,7 @@ export default function BeneficiairesEffectifsPage() {
                             Nom complet
                           </p>
                           <p className="text-base font-semibold">
-                            {beneficiaire.prenom} {beneficiaire.nom}
+                            {beneficiaire.nom_complet}
                           </p>
                         </div>
                         <div>
@@ -304,21 +306,35 @@ export default function BeneficiairesEffectifsPage() {
                           </p>
                           <p className="text-base">{beneficiaire.nationalite}</p>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground mb-1">
-                            Qualité
-                          </p>
-                          <p className="text-base">{beneficiaire.qualite}</p>
-                        </div>
-                        {(beneficiaire.pourcentage_parts > 0 || beneficiaire.pourcentage_votes > 0) && (
+                        {(beneficiaire.pourcentage_parts > 0 || beneficiaire.pourcentage_votes > 0 || beneficiaire.pourcentage_parts_directes > 0 || beneficiaire.pourcentage_parts_indirectes > 0) && (
                           <>
                             {beneficiaire.pourcentage_parts > 0 && (
                               <div>
                                 <p className="text-sm font-medium text-muted-foreground mb-1">
-                                  Pourcentage de parts
+                                  Pourcentage de parts (total)
                                 </p>
                                 <p className="text-base font-semibold text-primary">
                                   {beneficiaire.pourcentage_parts.toFixed(2)}%
+                                </p>
+                              </div>
+                            )}
+                            {beneficiaire.pourcentage_parts_directes > 0 && (
+                              <div>
+                                <p className="text-sm font-medium text-muted-foreground mb-1">
+                                  Parts directes
+                                </p>
+                                <p className="text-base text-primary/80">
+                                  {beneficiaire.pourcentage_parts_directes.toFixed(2)}%
+                                </p>
+                              </div>
+                            )}
+                            {beneficiaire.pourcentage_parts_indirectes > 0 && (
+                              <div>
+                                <p className="text-sm font-medium text-muted-foreground mb-1">
+                                  Parts indirectes
+                                </p>
+                                <p className="text-base text-primary/80">
+                                  {beneficiaire.pourcentage_parts_indirectes.toFixed(2)}%
                                 </p>
                               </div>
                             )}
