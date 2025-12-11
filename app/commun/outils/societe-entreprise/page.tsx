@@ -121,7 +121,23 @@ export default function SocieteEntreprisePage() {
       const data: ApiResponse = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || data.details || "Erreur lors de la recherche");
+        // Construire un message d'erreur détaillé
+        let errorMessage = data.error || "Erreur lors de la recherche";
+        
+        if (data.details) {
+          errorMessage += `\n\n${data.details}`;
+        }
+        
+        if (data.suggestion) {
+          errorMessage += `\n\n💡 ${data.suggestion}`;
+        }
+        
+        // Si erreur 401, c'est probablement un problème d'abonnement
+        if (response.status === 401) {
+          errorMessage = `🔒 ${errorMessage}\n\nLa recherche par nom peut nécessiter un abonnement payant à l'API Societe.com. Vérifiez votre abonnement ou contactez le support.`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       if (data.data) {
@@ -279,7 +295,16 @@ export default function SocieteEntreprisePage() {
             <CardContent className="pt-6">
               <div className="flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-                <p className="text-sm font-medium">{error}</p>
+                <div className="flex-1">
+                  <p className="text-sm font-medium whitespace-pre-line">{error}</p>
+                  {error.includes("abonnement") && (
+                    <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                      <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                        💡 <strong>Astuce :</strong> Essayez de rechercher par SIREN/SIRET si vous connaissez le numéro. Cette fonctionnalité est généralement disponible sans abonnement supplémentaire.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

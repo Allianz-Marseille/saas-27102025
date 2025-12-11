@@ -54,43 +54,115 @@ export async function POST(request: NextRequest) {
 
     // Si recherche par nom, d'abord rechercher le SIREN
     if (nom && !siren) {
-      const searchUrl = `${baseUrl}/entreprise/search?nom=${encodeURIComponent(nom)}`;
-      const searchResponse = await fetch(searchUrl, { headers });
+      // Essayer plusieurs endpoints possibles pour la recherche
+      const searchUrls = [
+        `${baseUrl}/entreprise/search?nom=${encodeURIComponent(nom)}`,
+        `${baseUrl}/societe/search?nom=${encodeURIComponent(nom)}`,
+      ];
 
-      if (!searchResponse.ok) {
-        if (searchResponse.status === 401 || searchResponse.status === 403) {
-          return NextResponse.json(
-            {
-              error: "Erreur d'authentification API Societe.com",
-              details: "Vérifiez votre clé API et votre abonnement.",
-            },
-            { status: 401 }
-          );
+      let searchData: any = null;
+      let lastError: string | null = null;
+
+      for (const searchUrl of searchUrls) {
+        try {
+          const searchResponse = await fetch(searchUrl, { headers });
+
+          if (!searchResponse.ok) {
+            if (searchResponse.status === 401 || searchResponse.status === 403) {
+              return NextResponse.json(
+                {
+                  error: "Erreur d'authentification API Societe.com",
+                  details: "Vérifiez votre clé API et votre abonnement. Certaines fonctionnalités peuvent nécessiter un abonnement payant.",
+                },
+                { status: 401 }
+              );
+            }
+            
+            // Si 404, essayer l'autre endpoint
+            if (searchResponse.status === 404) {
+              lastError = `Endpoint ${searchUrl} retourne 404`;
+              continue;
+            }
+
+            const errorText = await searchResponse.text();
+            console.error(`Erreur recherche Societe.com (${searchResponse.status}):`, errorText);
+            
+            return NextResponse.json(
+              { 
+                error: "Erreur lors de la recherche par nom",
+                details: `Status: ${searchResponse.status}. Vérifiez votre abonnement API Societe.com.`,
+              },
+              { status: searchResponse.status }
+            );
+          }
+
+          searchData = await searchResponse.json();
+          console.log("Réponse recherche Societe.com:", JSON.stringify(searchData, null, 2));
+          
+          // Si on a des données, sortir de la boucle
+          if (searchData) break;
+        } catch (err) {
+          console.error(`Erreur lors de l'appel à ${searchUrl}:`, err);
+          lastError = err instanceof Error ? err.message : "Erreur inconnue";
+          continue;
         }
-        return NextResponse.json(
-          { error: "Erreur lors de la recherche par nom" },
-          { status: searchResponse.status }
-        );
       }
 
-      const searchData = await searchResponse.json();
+      // Si aucun endpoint n'a fonctionné
+      if (!searchData) {
+        return NextResponse.json(
+          { 
+            error: `Aucune entreprise trouvée pour le nom "${nom}"`,
+            details: lastError || "Vérifiez que la recherche par nom est incluse dans votre abonnement API Societe.com.",
+            suggestion: "Essayez de rechercher par SIREN/SIRET si vous le connaissez."
+          },
+          { status: 404 }
+        );
+      }
+      
+      // Vérifier la structure de la réponse (plusieurs formats possibles)
+      let entreprises: any[] = [];
+      
+      if (searchData.data?.entreprises) {
+        entreprises = searchData.data.entreprises;
+      } else if (searchData.entreprises) {
+        entreprises = searchData.entreprises;
+      } else if (Array.isArray(searchData.data)) {
+        entreprises = searchData.data;
+      } else if (Array.isArray(searchData)) {
+        entreprises = searchData;
+      }
       
       // Vérifier si des résultats sont trouvés
-      if (!searchData.data || !searchData.data.entreprises || searchData.data.entreprises.length === 0) {
+      if (!entreprises || entreprises.length === 0) {
         return NextResponse.json(
-          { error: `Aucune entreprise trouvée pour le nom "${nom}"` },
+          { 
+            error: `Aucune entreprise trouvée pour le nom "${nom}"`,
+            details: "Aucun résultat ne correspond à votre recherche. Vérifiez l'orthographe ou essayez une recherche par SIREN/SIRET.",
+            suggestion: "Essayez de rechercher par SIREN/SIRET si vous le connaissez."
+          },
           { status: 404 }
         );
       }
 
-      // Prendre le premier résultat (ou on pourrait retourner une liste pour que l'utilisateur choisisse)
-      const firstResult = searchData.data.entreprises[0];
-      numId = firstResult.siren || firstResult.numid;
+      // Si plusieurs résultats, prendre le premier mais logger les autres
+      if (entreprises.length > 1) {
+        console.log(`${entreprises.length} entreprises trouvées pour "${nom}". Utilisation du premier résultat.`);
+      }
+
+      // Prendre le premier résultat
+      const firstResult = entreprises[0];
+      numId = firstResult.siren || firstResult.numid || firstResult.siret?.substring(0, 9);
 
       if (!numId) {
+        console.error("Structure de réponse inattendue:", JSON.stringify(firstResult, null, 2));
         return NextResponse.json(
-          { error: "SIREN introuvable dans les résultats de recherche" },
-          { status: 404 }
+          { 
+            error: "SIREN introuvable dans les résultats de recherche",
+            details: "La structure de la réponse API est inattendue. Contactez le support si le problème persiste.",
+            rawResult: firstResult
+          },
+          { status: 500 }
         );
       }
     } else {
