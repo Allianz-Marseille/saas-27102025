@@ -1,6 +1,6 @@
 /**
  * API Route pour la recherche d'informations complètes d'entreprise via Societe.com
- * POST : Récupère toutes les informations disponibles sur une entreprise par SIREN/SIRET
+ * POST : Récupère toutes les informations disponibles sur une entreprise par SIREN/SIRET ou nom
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -9,6 +9,7 @@ import { verifyAuth } from "@/lib/utils/auth-utils";
 /**
  * POST /api/societe/entreprise
  * Récupère toutes les informations disponibles sur une entreprise
+ * Accepte soit un SIREN/SIRET, soit un nom d'entreprise
  */
 export async function POST(request: NextRequest) {
   try {
@@ -18,25 +19,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: 401 });
     }
 
-    // Récupérer le SIREN depuis le body
+    // Récupérer les paramètres depuis le body
     const body = await request.json();
-    const { siren } = body;
+    const { siren, nom } = body;
 
-    // Validation du SIREN
-    if (!siren || typeof siren !== "string") {
+    // Validation : au moins un paramètre requis
+    if (!siren && !nom) {
       return NextResponse.json(
-        { error: "SIREN manquant ou invalide" },
-        { status: 400 }
-      );
-    }
-
-    // Validation format SIREN (9 chiffres) ou SIRET (14 chiffres)
-    const cleanedSiren = siren.replace(/\s+/g, "").replace(/\D/g, "");
-    const numId = cleanedSiren.length === 14 ? cleanedSiren : cleanedSiren.substring(0, 9);
-    
-    if (numId.length !== 9 && cleanedSiren.length !== 14) {
-      return NextResponse.json(
-        { error: "Le SIREN doit contenir 9 chiffres ou le SIRET 14 chiffres" },
+        { error: "SIREN/SIRET ou nom d'entreprise requis" },
         { status: 400 }
       );
     }
@@ -60,6 +50,69 @@ export async function POST(request: NextRequest) {
     };
 
     const baseUrl = "https://api.societe.com/api/v1";
+    let numId: string;
+
+    // Si recherche par nom, d'abord rechercher le SIREN
+    if (nom && !siren) {
+      const searchUrl = `${baseUrl}/entreprise/search?nom=${encodeURIComponent(nom)}`;
+      const searchResponse = await fetch(searchUrl, { headers });
+
+      if (!searchResponse.ok) {
+        if (searchResponse.status === 401 || searchResponse.status === 403) {
+          return NextResponse.json(
+            {
+              error: "Erreur d'authentification API Societe.com",
+              details: "Vérifiez votre clé API et votre abonnement.",
+            },
+            { status: 401 }
+          );
+        }
+        return NextResponse.json(
+          { error: "Erreur lors de la recherche par nom" },
+          { status: searchResponse.status }
+        );
+      }
+
+      const searchData = await searchResponse.json();
+      
+      // Vérifier si des résultats sont trouvés
+      if (!searchData.data || !searchData.data.entreprises || searchData.data.entreprises.length === 0) {
+        return NextResponse.json(
+          { error: `Aucune entreprise trouvée pour le nom "${nom}"` },
+          { status: 404 }
+        );
+      }
+
+      // Prendre le premier résultat (ou on pourrait retourner une liste pour que l'utilisateur choisisse)
+      const firstResult = searchData.data.entreprises[0];
+      numId = firstResult.siren || firstResult.numid;
+
+      if (!numId) {
+        return NextResponse.json(
+          { error: "SIREN introuvable dans les résultats de recherche" },
+          { status: 404 }
+        );
+      }
+    } else {
+      // Recherche par SIREN/SIRET
+      if (!siren || typeof siren !== "string") {
+        return NextResponse.json(
+          { error: "SIREN manquant ou invalide" },
+          { status: 400 }
+        );
+      }
+
+      // Validation format SIREN (9 chiffres) ou SIRET (14 chiffres)
+      const cleanedSiren = siren.replace(/\s+/g, "").replace(/\D/g, "");
+      numId = cleanedSiren.length === 14 ? cleanedSiren : cleanedSiren.substring(0, 9);
+      
+      if (numId.length !== 9 && cleanedSiren.length !== 14) {
+        return NextResponse.json(
+          { error: "Le SIREN doit contenir 9 chiffres ou le SIRET 14 chiffres" },
+          { status: 400 }
+        );
+      }
+    }
 
     // Appels API en parallèle pour toutes les informations
     const [

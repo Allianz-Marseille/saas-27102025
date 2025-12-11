@@ -58,6 +58,8 @@ export default function SocieteEntreprisePage() {
   const router = useRouter();
   const { user } = useAuth();
   const [sirenInput, setSirenInput] = useState("");
+  const [nomInput, setNomInput] = useState("");
+  const [searchType, setSearchType] = useState<"siren" | "nom">("siren");
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<ApiResponse["data"] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,15 +81,23 @@ export default function SocieteEntreprisePage() {
     setError(null);
     setResults(null);
 
-    const siren = validateAndExtractSiren(sirenInput);
-    if (!siren) {
-      setError("Veuillez saisir un SIREN (9 chiffres) ou un SIRET (14 chiffres) valide");
-      return;
-    }
-
     if (!user) {
       setError("Vous devez être connecté pour effectuer une recherche");
       return;
+    }
+
+    // Validation selon le type de recherche
+    if (searchType === "siren") {
+      const siren = validateAndExtractSiren(sirenInput);
+      if (!siren) {
+        setError("Veuillez saisir un SIREN (9 chiffres) ou un SIRET (14 chiffres) valide");
+        return;
+      }
+    } else {
+      if (!nomInput.trim()) {
+        setError("Veuillez saisir un nom d'entreprise");
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -95,13 +105,17 @@ export default function SocieteEntreprisePage() {
     try {
       const token = await user.getIdToken();
 
+      const requestBody = searchType === "siren" 
+        ? { siren: validateAndExtractSiren(sirenInput) }
+        : { nom: nomInput.trim() };
+
       const response = await fetch("/api/societe/entreprise", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ siren }),
+        body: JSON.stringify(requestBody),
       });
 
       const data: ApiResponse = await response.json();
@@ -170,39 +184,84 @@ export default function SocieteEntreprisePage() {
           <CardHeader>
             <CardTitle className="text-xl">Recherche</CardTitle>
             <CardDescription>
-              Saisissez un SIREN (9 chiffres) ou un SIRET (14 chiffres)
+              Recherchez une entreprise par SIREN/SIRET ou par nom
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <Input
-                  type="text"
-                  placeholder="Ex: 123456789 ou 12345678901234"
-                  value={sirenInput}
-                  onChange={(e) => setSirenInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  disabled={isLoading}
-                  className="w-full"
-                />
+            <div className="space-y-4">
+              {/* Sélecteur de type de recherche */}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={searchType === "siren" ? "default" : "outline"}
+                  onClick={() => {
+                    setSearchType("siren");
+                    setNomInput("");
+                  }}
+                  className="flex-1"
+                >
+                  Par SIREN/SIRET
+                </Button>
+                <Button
+                  type="button"
+                  variant={searchType === "nom" ? "default" : "outline"}
+                  onClick={() => {
+                    setSearchType("nom");
+                    setSirenInput("");
+                  }}
+                  className="flex-1"
+                >
+                  Par nom
+                </Button>
               </div>
-              <Button
-                onClick={handleSearch}
-                disabled={isLoading || !sirenInput.trim()}
-                className="w-full sm:w-auto"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Recherche...
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-4 w-4 mr-2" />
-                    Rechercher
-                  </>
-                )}
-              </Button>
+
+              {/* Champ de recherche */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  {searchType === "siren" ? (
+                    <Input
+                      type="text"
+                      placeholder="Ex: 123456789 ou 12345678901234"
+                      value={sirenInput}
+                      onChange={(e) => setSirenInput(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      disabled={isLoading}
+                      className="w-full"
+                    />
+                  ) : (
+                    <Input
+                      type="text"
+                      placeholder="Ex: Société Générale"
+                      value={nomInput}
+                      onChange={(e) => setNomInput(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      disabled={isLoading}
+                      className="w-full"
+                    />
+                  )}
+                </div>
+                <Button
+                  onClick={handleSearch}
+                  disabled={
+                    isLoading ||
+                    (searchType === "siren" && !sirenInput.trim()) ||
+                    (searchType === "nom" && !nomInput.trim())
+                  }
+                  className="w-full sm:w-auto"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Recherche...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-4 w-4 mr-2" />
+                      Rechercher
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
