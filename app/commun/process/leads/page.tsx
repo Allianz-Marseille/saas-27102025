@@ -1,341 +1,384 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Target, Route, AlertCircle, CheckCircle2, Phone, Zap, Lightbulb, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  Users,
+  AlertTriangle,
+  RefreshCw,
+  Bell,
+  UserCheck,
+  FolderOpen,
+  AlertCircle,
+  ClipboardList,
+  CheckCircle2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import DecryptedText from "@/components/DecryptedText";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
-import Image from "next/image";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import type { Components } from "react-markdown";
-import type { HTMLAttributes } from "react";
 
-// Mapping des classes de section vers les gradients Tailwind
-const getSectionGradient = (className: string | undefined): string => {
-  if (!className) return "";
-  
-  if (className.includes("section-enjeux")) {
-    return "bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-800";
-  }
-  if (className.includes("section-chemins")) {
-    return "bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-indigo-200 dark:border-indigo-800";
-  }
-  if (className.includes("section-limitations")) {
-    return "bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border-red-200 dark:border-red-800";
-  }
-  if (className.includes("section-solution")) {
-    return "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800";
-  }
-  if (className.includes("section-appels")) {
-    return "bg-gradient-to-br from-blue-50 to-sky-50 dark:from-blue-950/20 dark:to-sky-950/20 border-blue-200 dark:border-blue-800";
-  }
-  if (className.includes("section-interdictions")) {
-    return "bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-950/20 dark:to-pink-950/20 border-red-200 dark:border-red-800";
-  }
-  if (className.includes("section-raisons")) {
-    return "bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/20 dark:to-blue-950/20 border-cyan-200 dark:border-cyan-800";
-  }
-  if (className.includes("section-resume")) {
-    return "bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-950/20 dark:to-teal-950/20 border-green-200 dark:border-green-800";
-  }
-  if (className.includes("section-investissement")) {
-    return "bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 border-amber-200 dark:border-amber-800";
-  }
-  return "";
+const PEOPLE = [
+  "Corentin",
+  "Donia",
+  "Emma",
+  "Audrey",
+  "Gwendal",
+  "Joëlle",
+  "Astrid",
+];
+
+const WORKFLOW_STEPS = [
+  {
+    number: 1,
+    title: "Automatisation de la réception",
+    icon: RefreshCw,
+    description:
+      "Les mails Allianz sont automatiquement transférés dans Trello, colonne &quot;Entrée&quot;. Aucun lead n&apos;est perdu et il n&apos;est plus nécessaire de surveiller Lagon en continu.",
+    color: "from-blue-500 to-cyan-500",
+    bgGradient: "from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20",
+    borderColor: "border-blue-200 dark:border-blue-800",
+  },
+  {
+    number: 2,
+    title: "Notification instantanée de l&apos;équipe",
+    icon: Bell,
+    description:
+      "Slack informe immédiatement tout le monde de l&apos;arrivée d&apos;un lead. Résultat : plus de charge mentale, chacun sait en temps réel qu&apos;un nouveau contact est disponible.",
+    color: "from-purple-500 to-pink-500",
+    bgGradient: "from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20",
+    borderColor: "border-purple-200 dark:border-purple-800",
+  },
+  {
+    number: 3,
+    title: "Attribution claire",
+    icon: UserCheck,
+    description:
+      "Le collaborateur qui prend le lead déplace la carte dans sa propre colonne. Cela garantit une attribution visible, explicite et sans ambiguïté, empêchant les doublons ou les oublis.",
+    color: "from-green-500 to-emerald-500",
+    bgGradient: "from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20",
+    borderColor: "border-green-200 dark:border-green-800",
+  },
+  {
+    number: 4,
+    title: "Traitement structuré dans Lagon",
+    icon: FolderOpen,
+    description: "Actions à effectuer :",
+    actions: [
+      "création de la fiche client dans Lagon",
+      "reprise du devis / analyse de la demande",
+      "suppression du mail Allianz / GED",
+      "application du plan d'appel 3 / 2 / 1",
+    ],
+    color: "from-indigo-500 to-blue-500",
+    bgGradient: "from-indigo-50 to-blue-50 dark:from-indigo-950/20 dark:to-blue-950/20",
+    borderColor: "border-indigo-200 dark:border-indigo-800",
+  },
+  {
+    number: 5,
+    title: "Deux règles incontournables",
+    icon: AlertCircle,
+    description: "Règles à respecter absolument :",
+    rules: [
+      "ne jamais appeler un prospect sans avoir créé la fiche Lagon",
+      "ne jamais laisser une carte dans &quot;Entrée&quot; après prise en charge",
+    ],
+    color: "from-red-500 to-orange-500",
+    bgGradient: "from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20",
+    borderColor: "border-red-200 dark:border-red-800",
+  },
+];
+
+const MEMO_STEPS = [
+  "Je vois l&apos;arrivée du lead sur Slack.",
+  "Je prends la carte Trello dans ma colonne.",
+  "Je crée la fiche Lagon avant tout contact.",
+  "Je supprime le mail Allianz / GED.",
+  "J&apos;appelle selon le plan 3 / 2 / 1.",
+];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
 };
 
-// Fonction pour extraire la largeur depuis les attributs d'image
-const extractImageWidth = (src: string): number | undefined => {
-  const match = src.match(/\{width=(\d+)\}/);
-  return match ? parseInt(match[1], 10) : undefined;
-};
-
-// Fonction pour nettoyer le src de l'image
-const cleanImageSrc = (src: string): string => {
-  return src.replace(/\{width=\d+\}/g, "");
-};
-
-// Fonction pour obtenir l'icône selon le titre
-const getTitleIcon = (text: string) => {
-  const lowerText = text.toLowerCase();
-  if (lowerText.includes("enjeux") || lowerText.includes("objectif")) {
-    return <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />;
-  }
-  if (lowerText.includes("chemins") || lowerText.includes("chemin")) {
-    return <Route className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />;
-  }
-  if (lowerText.includes("inconvénients") || lowerText.includes("limitations")) {
-    return <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />;
-  }
-  if (lowerText.includes("solution")) {
-    return <Zap className="h-5 w-5 text-green-600 dark:text-green-400" />;
-  }
-  if (lowerText.includes("appel") || lowerText.includes("appels")) {
-    return <Phone className="h-5 w-5 text-blue-600 dark:text-blue-400" />;
-  }
-  if (lowerText.includes("interdictions") || lowerText.includes("jamais")) {
-    return <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />;
-  }
-  if (lowerText.includes("pourquoi") || lowerText.includes("raisons")) {
-    return <Lightbulb className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />;
-  }
-  if (lowerText.includes("résumé") || lowerText.includes("resume")) {
-    return <Sparkles className="h-5 w-5 text-green-600 dark:text-green-400" />;
-  }
-  if (lowerText.includes("investissement") || lowerText.includes("investir")) {
-    return <Target className="h-5 w-5 text-amber-600 dark:text-amber-400" />;
-  }
-  return null;
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+    },
+  },
 };
 
 export default function LeadsProcessPage() {
   const router = useRouter();
-  const [content, setContent] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/process/leads")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          setError(data.error);
-        } else {
-          setContent(data.content || "");
-        }
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        setError("Erreur lors du chargement du contenu");
-        setIsLoading(false);
-        console.error("Error fetching markdown:", err);
-      });
-  }, []);
-
-  // Composants custom pour react-markdown
-  const markdownComponents: Components = {
-    // Sections avec classes → Cards colorées
-    div: ({ className, children }: HTMLAttributes<HTMLDivElement>) => {
-      if (className?.includes("section")) {
-        const gradientClass = getSectionGradient(className);
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="mb-6"
-          >
-            <Card className={cn("border-2", gradientClass)}>
-              <CardContent className="p-6">
-                {children}
-              </CardContent>
-            </Card>
-          </motion.div>
-        );
-      }
-      return <div className={className}>{children}</div>;
-    },
-    // Images avec sizing
-    img: ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
-      if (!src || typeof src !== 'string') return null;
-      const cleanSrc = cleanImageSrc(src);
-      const width = extractImageWidth(src) || 400;
-      const height = Math.round(width * 0.75); // Ratio 4:3 par défaut
-      
-      return (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="my-4 flex justify-center"
-        >
-          <Image
-            src={cleanSrc}
-            alt={alt || ""}
-            width={width}
-            height={height}
-            className="rounded-lg shadow-md"
-            unoptimized={cleanSrc.endsWith('.PNG') || cleanSrc.endsWith('.png')}
-          />
-        </motion.div>
-      );
-    },
-    // Titres avec icônes
-    h2: ({ children, className, ...props }: HTMLAttributes<HTMLHeadingElement>) => {
-      // Extraire le texte pour l'icône - gérer les cas où children est un array ou un objet
-      let text = '';
-      if (typeof children === 'string') {
-        text = children;
-      } else if (Array.isArray(children)) {
-        text = children.map(c => typeof c === 'string' ? c : '').join('');
-      } else {
-        text = String(children || '');
-      }
-      const icon = getTitleIcon(text);
-      return (
-        <motion.h2
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3 }}
-          className={cn("text-2xl font-bold text-foreground mb-4 mt-6 flex items-center gap-3", className)}
-        >
-          {icon}
-          <span>{children}</span>
-        </motion.h2>
-      );
-    },
-    h3: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => {
-      return (
-        <h3 className="text-xl font-semibold text-foreground mb-3 mt-4" {...props}>
-          {children}
-        </h3>
-      );
-    },
-    // Tableaux avec composants Shadcn
-    table: ({ children, ...props }: HTMLAttributes<HTMLTableElement>) => (
-      <div className="my-6 overflow-x-auto">
-        <Table {...props}>
-          {children}
-        </Table>
-      </div>
-    ),
-    thead: ({ children, ...props }: HTMLAttributes<HTMLTableSectionElement>) => (
-      <TableHeader {...props}>{children}</TableHeader>
-    ),
-    tbody: ({ children, ...props }: HTMLAttributes<HTMLTableSectionElement>) => (
-      <TableBody {...props}>{children}</TableBody>
-    ),
-    tr: ({ children, ...props }: HTMLAttributes<HTMLTableRowElement>) => (
-      <TableRow {...props}>{children}</TableRow>
-    ),
-    th: ({ children, ...props }: HTMLAttributes<HTMLTableCellElement>) => (
-      <TableHead {...props}>{children}</TableHead>
-    ),
-    td: ({ children, ...props }: HTMLAttributes<HTMLTableCellElement>) => (
-      <TableCell {...props}>{children}</TableCell>
-    ),
-    // Listes avec styling
-    ul: ({ children, ...props }: HTMLAttributes<HTMLUListElement>) => (
-      <ul className="list-none space-y-2 my-4" {...props}>
-        {children}
-      </ul>
-    ),
-    li: ({ children, ...props }: HTMLAttributes<HTMLLIElement>) => {
-      // Extraire le contenu texte pour détecter les emojis
-      let content = '';
-      if (typeof children === 'string') {
-        content = children;
-      } else if (Array.isArray(children)) {
-        content = children.map(c => {
-          if (typeof c === 'string') return c;
-          if (typeof c === 'object' && c !== null && 'props' in c) {
-            // Extraire le texte des éléments React
-            return String(c);
-          }
-          return String(c);
-        }).join('');
-      } else {
-        content = String(children || '');
-      }
-      const isCheck = content.includes("✅");
-      const isCross = content.includes("❌");
-      
-      return (
-        <li className="flex items-start gap-3 text-foreground leading-relaxed" {...props}>
-          {isCheck ? (
-            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
-          ) : isCross ? (
-            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
-          ) : (
-            <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 mt-2 shrink-0" />
-          )}
-          <span className="flex-1">{children}</span>
-        </li>
-      );
-    },
-    // Paragraphes
-    p: ({ children, ...props }: HTMLAttributes<HTMLParagraphElement>) => (
-      <p className="text-foreground leading-relaxed mb-4" {...props}>
-        {children}
-      </p>
-    ),
-    // Texte en gras
-    strong: ({ children, ...props }: HTMLAttributes<HTMLElement>) => (
-      <strong className="font-semibold text-foreground" {...props}>
-        {children}
-      </strong>
-    ),
-    // Emphase
-    em: ({ children, ...props }: HTMLAttributes<HTMLElement>) => (
-      <em className="italic text-muted-foreground" {...props}>
-        {children}
-      </em>
-    ),
-    // Ligne horizontale
-    hr: (props: HTMLAttributes<HTMLHRElement>) => (
-      <hr className="my-8 border-t border-border" {...props} />
-    ),
-  };
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <div className="mb-6">
+    <div className="container mx-auto py-8 px-4 max-w-5xl">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="mb-8"
+      >
         <Button
           variant="ghost"
           onClick={() => router.back()}
-          className="mb-4"
+          className="mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Retour
         </Button>
-        <h1 className="text-3xl font-bold text-foreground mb-8">
-          <DecryptedText
-            text="Gestion des Leads"
-            animateOn="view"
-            revealDirection="center"
-            speed={30}
-            maxIterations={15}
-            className="text-foreground"
-            encryptedClassName="text-muted-foreground opacity-50"
-          />
-        </h1>
-      </div>
 
-      {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-muted-foreground">Chargement...</div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
+            Leads Allianz – Workflow Optimisé de Prise en Charge
+          </h1>
+          <Badge variant="secondary" className="text-sm px-3 py-1 w-fit">
+            Commercial
+          </Badge>
         </div>
-      )}
+      </motion.div>
 
-      {error && (
-        <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
-          <CardContent className="p-6">
-            <p className="text-red-600 dark:text-red-400">{error}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {!isLoading && !error && content && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeRaw]}
-            components={markdownComponents}
-          >
-            {content}
-          </ReactMarkdown>
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="space-y-6"
+      >
+        {/* Personnes concernées */}
+        <motion.div variants={itemVariants}>
+          <Card className="border-2 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-950/20 dark:to-gray-950/20 border-slate-200 dark:border-slate-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <Users className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                Personnes concernées
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {PEOPLE.map((person) => (
+                  <Badge
+                    key={person}
+                    variant="outline"
+                    className="text-sm px-3 py-1"
+                  >
+                    {person}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
-      )}
+
+        {/* Enjeux */}
+        <motion.div variants={itemVariants}>
+          <Card className="border-2 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <AlertTriangle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                Enjeux
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-foreground leading-relaxed">
+                Allianz nous donne la possibilité de recevoir des leads. Le
+                choix d&apos;en profiter ou non dépend directement de notre stratégie
+                : c&apos;est un investissement lorsqu&apos;il est bien géré, mais un coût
+                inutile lorsqu&apos;il est mal exploité.
+              </p>
+              <p className="text-foreground leading-relaxed font-semibold">
+                La compagnie met à disposition un mode d&apos;arrivée des leads qui
+                reste imparfait et contraignant :
+              </p>
+              <ul className="list-none space-y-2">
+                <li className="flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 mt-2 shrink-0" />
+                  <span className="text-foreground leading-relaxed">
+                    nécessité de consulter régulièrement Lagon pour repérer les
+                    alertes → forte charge mentale, risque d&apos;oublier ;
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 mt-2 shrink-0" />
+                  <span className="text-foreground leading-relaxed">
+                    réception des mails dans la boîte commune → manque
+                    d&apos;attribution claire : qui s&apos;en occupe ? est-ce déjà traité
+                    ? risque de doublons, de délais trop longs ou de non-prise
+                    en charge.
+                  </span>
+                </li>
+              </ul>
+              <p className="text-foreground leading-relaxed pt-2 border-t border-blue-200 dark:border-blue-800">
+                <strong>Conséquence :</strong> un investissement potentiellement
+                rentable devient insatisfaisant et mal utilisé, avec perte
+                d&apos;efficacité commerciale et risque de mauvaise expérience client.
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Notre réponse - Timeline */}
+        <motion.div variants={itemVariants}>
+          <Card className="border-2 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                Notre réponse
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="relative">
+                {/* Timeline verticale */}
+                <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-green-200 via-green-300 to-green-200 dark:from-green-800 dark:via-green-700 dark:to-green-800 hidden md:block" />
+
+                <div className="space-y-8">
+                  {WORKFLOW_STEPS.map((step, index) => {
+                    const Icon = step.icon;
+                    const isLast = index === WORKFLOW_STEPS.length - 1;
+
+                    return (
+                      <motion.div
+                        key={step.number}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.4, delay: index * 0.1 }}
+                        className="relative"
+                      >
+                        {/* Point de la timeline */}
+                        <div className="flex items-start gap-4 md:gap-6">
+                          <div className="relative z-10 flex-shrink-0">
+                            <div
+                              className={cn(
+                                "w-16 h-16 rounded-full bg-gradient-to-br flex items-center justify-center shadow-lg border-2 border-white dark:border-gray-900",
+                                `bg-gradient-to-br ${step.color}`
+                              )}
+                            >
+                              <Icon className="h-7 w-7 text-white" />
+                            </div>
+                            <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white dark:bg-gray-900 border-2 border-green-600 dark:border-green-400 flex items-center justify-center">
+                              <span className="text-xs font-bold text-green-600 dark:text-green-400">
+                                {step.number}
+                              </span>
+                            </div>
+                          </div>
+
+                          <Card
+                            className={cn(
+                              "flex-1 border-2",
+                              step.bgGradient,
+                              step.borderColor
+                            )}
+                          >
+                            <CardHeader>
+                              <CardTitle className="text-lg font-semibold">
+                                {step.title}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              <p className="text-foreground leading-relaxed">
+                                {step.description}
+                              </p>
+                              {step.actions && (
+                                <ul className="list-none space-y-2 mt-3">
+                                  {step.actions.map((action, actionIndex) => (
+                                    <li
+                                      key={actionIndex}
+                                      className="flex items-start gap-3"
+                                    >
+                                      <CheckCircle2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400 mt-1 shrink-0" />
+                                      <span className="text-foreground leading-relaxed text-sm">
+                                        {action}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                              {step.rules && (
+                                <ul className="list-none space-y-2 mt-3">
+                                  {step.rules.map((rule, ruleIndex) => (
+                                    <li
+                                      key={ruleIndex}
+                                      className="flex items-start gap-3"
+                                    >
+                                      <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 mt-1 shrink-0" />
+                                      <span className="text-foreground leading-relaxed text-sm font-medium">
+                                        {rule}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </div>
+
+                        {/* Flèche de connexion (sauf pour le dernier) */}
+                        {!isLast && (
+                          <div className="hidden md:block absolute left-8 top-16 w-0.5 h-8 bg-gradient-to-b from-green-300 to-green-200 dark:from-green-700 dark:to-green-800" />
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Mémo / Pour la route */}
+        <motion.div variants={itemVariants}>
+          <Card className="border-2 bg-gradient-to-br from-teal-50 to-green-50 dark:from-teal-950/20 dark:to-green-950/20 border-teal-200 dark:border-teal-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <ClipboardList className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                Mémo / Pour la route
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ol className="list-none space-y-3">
+                {MEMO_STEPS.map((step, index) => (
+                  <motion.li
+                    key={index}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className="flex items-start gap-4"
+                  >
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-green-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                      {index + 1}
+                    </div>
+                    <span className="text-foreground leading-relaxed pt-1.5">
+                      {step}
+                    </span>
+                  </motion.li>
+                ))}
+              </ol>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.5 }}
+                className="mt-6 pt-4 border-t border-teal-200 dark:border-teal-800"
+              >
+                <p className="text-foreground font-semibold text-center italic">
+                  En bref : rapide, clair, sans doublon.
+                </p>
+              </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
