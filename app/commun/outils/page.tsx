@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, ArrowRight } from "lucide-react";
+import { ArrowLeft, Users, ArrowRight, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { motion } from "framer-motion";
@@ -18,7 +18,14 @@ export default function OutilsPage() {
       icon: Users,
       href: "/commun/outils/beneficiaires-effectifs",
     },
-  ];
+    {
+      id: "societe-entreprise",
+      title: "Informations entreprise",
+      description: "Consultez toutes les informations disponibles sur une entreprise (légales, dirigeants, bilans, établissements, etc.)",
+      icon: Building2,
+      href: "/commun/outils/societe-entreprise",
+    },
+  ] as const;
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
