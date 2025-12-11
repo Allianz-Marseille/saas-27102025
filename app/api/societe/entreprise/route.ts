@@ -96,8 +96,18 @@ export async function POST(request: NextRequest) {
             );
           }
 
-          searchData = await searchResponse.json();
-          console.log("Réponse recherche Societe.com:", JSON.stringify(searchData, null, 2));
+          const responseText = await searchResponse.text();
+          console.log(`Réponse brute recherche Societe.com (${searchUrl}):`, responseText);
+          
+          try {
+            searchData = JSON.parse(responseText);
+            console.log("Réponse parsée recherche Societe.com:", JSON.stringify(searchData, null, 2));
+          } catch (parseError) {
+            console.error("Erreur parsing JSON:", parseError);
+            console.error("Réponse texte:", responseText);
+            lastError = `Réponse non-JSON de l'API: ${responseText.substring(0, 200)}`;
+            continue;
+          }
           
           // Si on a des données, sortir de la boucle
           if (searchData) break;
@@ -110,15 +120,19 @@ export async function POST(request: NextRequest) {
 
       // Si aucun endpoint n'a fonctionné
       if (!searchData) {
+        console.error(`Aucune donnée trouvée pour "${nom}". Dernière erreur:`, lastError);
         return NextResponse.json(
           { 
             error: `Aucune entreprise trouvée pour le nom "${nom}"`,
-            details: lastError || "Vérifiez que la recherche par nom est incluse dans votre abonnement API Societe.com.",
-            suggestion: "Essayez de rechercher par SIREN/SIRET si vous le connaissez."
+            details: lastError || "Vérifiez que la recherche par nom est incluse dans votre abonnement API Societe.com. Cette fonctionnalité peut nécessiter un abonnement payant.",
+            suggestion: "Essayez de rechercher par SIREN/SIRET si vous le connaissez. La recherche par SIREN/SIRET est généralement disponible sans abonnement supplémentaire."
           },
           { status: 404 }
         );
       }
+      
+      // Log de la structure complète pour diagnostic
+      console.log("Structure complète de searchData:", JSON.stringify(searchData, null, 2));
       
       // Vérifier la structure de la réponse (plusieurs formats possibles)
       let entreprises: any[] = [];
