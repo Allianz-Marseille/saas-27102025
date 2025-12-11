@@ -21,10 +21,22 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les paramètres depuis le body
     const body = await request.json();
-    const { siren, nom } = body;
+    const { siren, nom, selectedSiren } = body;
 
-    // Validation : au moins un paramètre requis
-    if (!siren && !nom) {
+    // Si un SIREN a été sélectionné depuis les résultats de recherche, l'utiliser
+    if (selectedSiren) {
+      const cleanedSiren = selectedSiren.replace(/\s+/g, "").replace(/\D/g, "");
+      numId = cleanedSiren.length === 14 ? cleanedSiren : cleanedSiren.substring(0, 9);
+      
+      if (numId.length !== 9 && cleanedSiren.length !== 14) {
+        return NextResponse.json(
+          { error: "Le SIREN sélectionné est invalide" },
+          { status: 400 }
+        );
+      }
+    }
+    // Validation : au moins un paramètre requis (sauf si selectedSiren est fourni)
+    else if (!siren && !nom) {
       return NextResponse.json(
         { error: "SIREN/SIRET ou nom d'entreprise requis" },
         { status: 400 }
@@ -50,12 +62,13 @@ export async function POST(request: NextRequest) {
     };
 
     const baseUrl = "https://api.societe.com/api/v1";
-    let numId: string;
+    let numId: string | undefined;
 
-    // Si recherche par nom, d'abord rechercher le SIREN
-    if (nom && !siren) {
+    // Si recherche par nom, retourner tous les résultats pour que l'utilisateur choisisse
+    if (nom && !siren && !selectedSiren) {
       // Utiliser l'endpoint officiel selon la documentation : /entreprise/search
-      const searchUrl = `${baseUrl}/entreprise/search?nom=${encodeURIComponent(nom)}&debut=1&nbrep=10`;
+      // Augmenter nbrep pour avoir plus de résultats (max 1000 selon la doc)
+      const searchUrl = `${baseUrl}/entreprise/search?nom=${encodeURIComponent(nom)}&debut=1&nbrep=50`;
 
       try {
         const searchResponse = await fetch(searchUrl, { headers });
@@ -100,26 +113,14 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Si plusieurs résultats, prendre le premier mais logger les autres
-        if (results.length > 1) {
-          console.log(`${results.length} entreprises trouvées pour "${nom}". Utilisation du premier résultat.`);
-        }
-
-        // Prendre le premier résultat - selon la doc, le champ est "siren"
-        const firstResult = results[0];
-        numId = firstResult.siren;
-
-        if (!numId) {
-          console.error("Structure de réponse inattendue:", JSON.stringify(firstResult, null, 2));
-          return NextResponse.json(
-            { 
-              error: "SIREN introuvable dans les résultats de recherche",
-              details: "La structure de la réponse API est inattendue. Contactez le support si le problème persiste.",
-              rawResult: firstResult
-            },
-            { status: 500 }
-          );
-        }
+        // Retourner tous les résultats pour que l'utilisateur choisisse
+        return NextResponse.json({
+          success: true,
+          searchResults: results,
+          total: searchData.data?.nbtot || results.length,
+          page: searchData.data?.page || 1,
+          totalPages: searchData.data?.totalpages || 1,
+        });
       } catch (err) {
         console.error(`Erreur lors de l'appel à ${searchUrl}:`, err);
         return NextResponse.json(
@@ -130,7 +131,8 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
-    } else {
+    // Si recherche par SIREN/SIRET (pas de recherche par nom et pas de SIREN sélectionné)
+    if (!selectedSiren && (!nom || siren)) {
       // Recherche par SIREN/SIRET
       if (!siren || typeof siren !== "string") {
         return NextResponse.json(

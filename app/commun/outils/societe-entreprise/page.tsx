@@ -35,6 +35,17 @@ import { useAuth } from "@/lib/firebase/use-auth";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+interface SearchResult {
+  nomcommercial: string;
+  siren: string;
+  nafcode?: string;
+  naflib?: string;
+  cpville?: string;
+  dep?: string;
+  longitude?: string;
+  latitude?: string;
+}
+
 interface ApiResponse {
   success: boolean;
   data?: {
@@ -50,6 +61,10 @@ interface ApiResponse {
     marques: any;
     documents: any;
   };
+  searchResults?: SearchResult[];
+  total?: number;
+  page?: number;
+  totalPages?: number;
   error?: string;
   details?: string;
   suggestion?: string;
@@ -64,6 +79,7 @@ export default function SocieteEntreprisePage() {
   const [searchType, setSearchType] = useState<"siren" | "nom">("siren");
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<ApiResponse["data"] | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Validation et conversion SIRET → SIREN
@@ -82,6 +98,7 @@ export default function SocieteEntreprisePage() {
   const handleSearch = async () => {
     setError(null);
     setResults(null);
+    setSearchResults(null);
 
     if (!user) {
       setError("Vous devez être connecté pour effectuer une recherche");
@@ -122,7 +139,7 @@ export default function SocieteEntreprisePage() {
 
       const data: ApiResponse = await response.json();
 
-      if (!response.ok || !data.success) {
+      if (!response.ok) {
         // Construire un message d'erreur détaillé
         let errorMessage = data.error || "Erreur lors de la recherche";
         
@@ -142,9 +159,53 @@ export default function SocieteEntreprisePage() {
         throw new Error(errorMessage);
       }
 
-      if (data.data) {
+      // Si recherche par nom, on a des résultats de recherche à afficher
+      if (searchType === "nom" && data.searchResults) {
+        setSearchResults(data.searchResults);
+        toast.success(`${data.searchResults.length} entreprise(s) trouvée(s)`);
+      } 
+      // Sinon, on a directement les données complètes
+      else if (data.data) {
         setResults(data.data);
         toast.success("Recherche effectuée avec succès");
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Une erreur est survenue";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSelectCompany = async (siren: string) => {
+    if (!user) return;
+
+    setIsLoading(true);
+    setError(null);
+    setSearchResults(null);
+
+    try {
+      const token = await user.getIdToken();
+
+      const response = await fetch("/api/societe/entreprise", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ selectedSiren: siren }),
+      });
+
+      const data: ApiResponse = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Erreur lors de la récupération des informations");
+      }
+
+      if (data.data) {
+        setResults(data.data);
+        toast.success("Informations récupérées avec succès");
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Une erreur est survenue";
@@ -307,6 +368,86 @@ export default function SocieteEntreprisePage() {
                     </div>
                   )}
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Résultats de recherche par nom */}
+      {searchResults && searchResults.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mb-6"
+        >
+          <Card className="bg-card text-card-foreground rounded-xl border shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl">
+                Résultats de recherche ({searchResults.length})
+              </CardTitle>
+              <CardDescription>
+                Sélectionnez l'entreprise pour voir ses informations complètes
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {searchResults.map((result, index) => (
+                  <motion.div
+                    key={result.siren}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                  >
+                    <Card
+                      className="cursor-pointer hover:shadow-md transition-all hover:border-primary/50 border bg-muted/30"
+                      onClick={() => handleSelectCompany(result.siren)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-base mb-1 truncate">
+                              {result.nomcommercial || "Nom non disponible"}
+                            </h3>
+                            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                              <div>
+                                <span className="font-medium">SIREN:</span>{" "}
+                                <span className="font-mono">{result.siren}</span>
+                              </div>
+                              {result.cpville && (
+                                <div>
+                                  <span className="font-medium">Localisation:</span>{" "}
+                                  {result.cpville}
+                                </div>
+                              )}
+                              {result.naflib && (
+                                <div className="w-full">
+                                  <span className="font-medium">Activité:</span>{" "}
+                                  {result.nafcode} - {result.naflib}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectCompany(result.siren);
+                            }}
+                            disabled={isLoading}
+                          >
+                            {isLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Voir détails"
+                            )}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
               </div>
             </CardContent>
           </Card>
