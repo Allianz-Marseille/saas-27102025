@@ -47,6 +47,9 @@ const healthNavItems = [
   },
 ];
 
+// Date de création du bouton Process - à partir d'aujourd'hui
+const PROCESS_FEATURE_START_DATE = new Date();
+
 export default function SanteIndividuelleLayout({
   children,
 }: {
@@ -57,6 +60,16 @@ export default function SanteIndividuelleLayout({
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showProcessCapsule, setShowProcessCapsule] = useState(false);
+
+  // Vérifier si on est dans la fenêtre de 7 jours
+  useEffect(() => {
+    const today = new Date();
+    const daysDiff = Math.floor(
+      (today.getTime() - PROCESS_FEATURE_START_DATE.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    setShowProcessCapsule(daysDiff < 7);
+  }, []);
 
   // Déconnexion automatique après 10 minutes d'inactivité
   useAutoLogout({
@@ -162,25 +175,37 @@ export default function SanteIndividuelleLayout({
                     ? pathname === item.href
                     : pathname?.startsWith(item.href);
                 const Icon = item.icon;
+                const isProcessButton = item.href === "/commun/process";
                 
                 return (
                   <li key={item.href}>
-                    <Link
-                      href={item.href}
+                    <div
                       className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
-                        isActive
-                          ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30"
-                          : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50",
-                        isCollapsed && "justify-center px-2"
+                        "relative",
+                        isProcessButton && showProcessCapsule && !isCollapsed && "p-1"
                       )}
-                      title={isCollapsed ? item.label : undefined}
                     >
-                      <Icon className="h-5 w-5 shrink-0" />
-                      {!isCollapsed && (
-                        <span className="font-medium">{item.label}</span>
+                      {isProcessButton && showProcessCapsule && !isCollapsed && (
+                        <div className="absolute inset-0 rounded-lg bg-red-500 border-2 border-red-600 shadow-lg shadow-red-500/50 animate-pulse" />
                       )}
-                    </Link>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 relative",
+                          isProcessButton && showProcessCapsule && !isCollapsed && "z-10",
+                          isActive
+                            ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30"
+                            : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50",
+                          isCollapsed && "justify-center px-2"
+                        )}
+                        title={isCollapsed ? item.label : undefined}
+                      >
+                        <Icon className="h-5 w-5 shrink-0" />
+                        {!isCollapsed && (
+                          <span className="font-medium">{item.label}</span>
+                        )}
+                      </Link>
+                    </div>
                   </li>
                 );
               })}

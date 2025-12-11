@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react/no-unescaped-entities */
+
 import React from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -36,17 +38,17 @@ const WORKFLOW_STEPS = [
     title: "Automatisation de la réception",
     icon: RefreshCw,
     description:
-      "Les mails Allianz sont automatiquement transférés dans Trello, colonne &quot;Entrée&quot;. Aucun lead n&apos;est perdu et il n&apos;est plus nécessaire de surveiller Lagon en continu.",
+      'Les mails Allianz sont automatiquement transférés dans Trello, colonne "Entrée". Aucun lead n\'est perdu et il n\'est plus nécessaire de surveiller Lagon en continu.',
     color: "from-blue-500 to-cyan-500",
     bgGradient: "from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20",
     borderColor: "border-blue-200 dark:border-blue-800",
   },
   {
     number: 2,
-    title: "Notification instantanée de l&apos;équipe",
+    title: "Notification instantanée de l'équipe",
     icon: Bell,
     description:
-      "Slack informe immédiatement tout le monde de l&apos;arrivée d&apos;un lead. Résultat : plus de charge mentale, chacun sait en temps réel qu&apos;un nouveau contact est disponible.",
+      "Slack informe immédiatement tout le monde de l'arrivée d'un lead. Résultat : plus de charge mentale, chacun sait en temps réel qu'un nouveau contact est disponible.",
     color: "from-purple-500 to-pink-500",
     bgGradient: "from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20",
     borderColor: "border-purple-200 dark:border-purple-800",
@@ -83,7 +85,7 @@ const WORKFLOW_STEPS = [
     description: "Règles à respecter absolument :",
     rules: [
       "ne jamais appeler un prospect sans avoir créé la fiche Lagon",
-      "ne jamais laisser une carte dans &quot;Entrée&quot; après prise en charge",
+      'ne jamais laisser une carte dans "Entrée" après prise en charge',
     ],
     color: "from-red-500 to-orange-500",
     bgGradient: "from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20",
@@ -92,11 +94,11 @@ const WORKFLOW_STEPS = [
 ];
 
 const MEMO_STEPS = [
-  "Je vois l&apos;arrivée du lead sur Slack.",
+  "Je vois l'arrivée du lead sur Slack.",
   "Je prends la carte Trello dans ma colonne.",
   "Je crée la fiche Lagon avant tout contact.",
   "Je supprime le mail Allianz / GED.",
-  "J&apos;appelle selon le plan 3 / 2 / 1.",
+  "J'appelle selon le plan 3 / 2 / 1.",
 ];
 
 const containerVariants = {
@@ -194,12 +196,12 @@ export default function LeadsProcessPage() {
             <CardContent className="space-y-4">
               <p className="text-foreground leading-relaxed">
                 Allianz nous donne la possibilité de recevoir des leads. Le
-                choix d&apos;en profiter ou non dépend directement de notre stratégie
-                : c&apos;est un investissement lorsqu&apos;il est bien géré, mais un coût
-                inutile lorsqu&apos;il est mal exploité.
+                choix d'en profiter ou non dépend directement de notre stratégie
+                : c'est un investissement lorsqu'il est bien géré, mais un coût
+                inutile lorsqu'il est mal exploité.
               </p>
               <p className="text-foreground leading-relaxed font-semibold">
-                La compagnie met à disposition un mode d&apos;arrivée des leads qui
+                La compagnie met à disposition un mode d'arrivée des leads qui
                 reste imparfait et contraignant :
               </p>
               <ul className="list-none space-y-2">
@@ -207,14 +209,14 @@ export default function LeadsProcessPage() {
                   <div className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 mt-2 shrink-0" />
                   <span className="text-foreground leading-relaxed">
                     nécessité de consulter régulièrement Lagon pour repérer les
-                    alertes → forte charge mentale, risque d&apos;oublier ;
+                    alertes → forte charge mentale, risque d'oublier ;
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 mt-2 shrink-0" />
                   <span className="text-foreground leading-relaxed">
                     réception des mails dans la boîte commune → manque
-                    d&apos;attribution claire : qui s&apos;en occupe ? est-ce déjà traité
+                    d'attribution claire : qui s'en occupe ? est-ce déjà traité
                     ? risque de doublons, de délais trop longs ou de non-prise
                     en charge.
                   </span>
@@ -223,7 +225,7 @@ export default function LeadsProcessPage() {
               <p className="text-foreground leading-relaxed pt-2 border-t border-blue-200 dark:border-blue-800">
                 <strong>Conséquence :</strong> un investissement potentiellement
                 rentable devient insatisfaisant et mal utilisé, avec perte
-                d&apos;efficacité commerciale et risque de mauvaise expérience client.
+                d'efficacité commerciale et risque de mauvaise expérience client.
               </p>
             </CardContent>
           </Card>

@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { useAutoLogout } from "@/lib/hooks/use-auto-logout";
@@ -164,6 +164,9 @@ const adminNavItems = [
   },
 ];
 
+// Date de création du bouton Process - à partir d'aujourd'hui
+const PROCESS_FEATURE_START_DATE = new Date();
+
 export default function CommunLayout({
   children,
 }: {
@@ -174,6 +177,16 @@ export default function CommunLayout({
   const pathname = usePathname();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showProcessCapsule, setShowProcessCapsule] = useState(false);
+
+  // Vérifier si on est dans la fenêtre de 7 jours
+  useEffect(() => {
+    const today = new Date();
+    const daysDiff = Math.floor(
+      (today.getTime() - PROCESS_FEATURE_START_DATE.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    setShowProcessCapsule(daysDiff < 7);
+  }, []);
 
   // Déconnexion automatique après 10 minutes d'inactivité
   useAutoLogout({
@@ -330,27 +343,39 @@ export default function CommunLayout({
                       ? pathname === item.href
                       : pathname?.startsWith(item.href);
                   const Icon = item.icon;
+                  const isProcessButton = item.href === "/commun/process";
                   
                   return (
                     <li key={item.href}>
-                      <Link
-                        href={item.href}
+                      <div
                         className={cn(
-                          "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
-                          isActive
-                            ? isHealthIndividuelUser
-                              ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30"
-                              : "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30"
-                            : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50",
-                          isSidebarCollapsed && "justify-center px-2"
+                          "relative",
+                          isProcessButton && showProcessCapsule && !isSidebarCollapsed && "p-1"
                         )}
-                        title={isSidebarCollapsed ? item.label : undefined}
                       >
-                        <Icon className="h-5 w-5 shrink-0" />
-                        {!isSidebarCollapsed && (
-                          <span className="font-medium">{item.label}</span>
+                        {isProcessButton && showProcessCapsule && !isSidebarCollapsed && (
+                          <div className="absolute inset-0 rounded-lg bg-red-500 border-2 border-red-600 shadow-lg shadow-red-500/50 animate-pulse" />
                         )}
-                      </Link>
+                        <Link
+                          href={item.href}
+                          className={cn(
+                            "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 relative",
+                            isProcessButton && showProcessCapsule && !isSidebarCollapsed && "z-10",
+                            isActive
+                              ? isHealthIndividuelUser
+                                ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30"
+                                : "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30"
+                              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50",
+                            isSidebarCollapsed && "justify-center px-2"
+                          )}
+                          title={isSidebarCollapsed ? item.label : undefined}
+                        >
+                          <Icon className="h-5 w-5 shrink-0" />
+                          {!isSidebarCollapsed && (
+                            <span className="font-medium">{item.label}</span>
+                          )}
+                        </Link>
+                      </div>
                     </li>
                   );
                 })}
