@@ -29,7 +29,8 @@ import {
   Coins, 
   Workflow,
   LayoutDashboard,
-  BarChart3
+  BarChart3,
+  Wrench
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -58,6 +59,11 @@ const commercialNavItems = [
     icon: Workflow,
     label: "Process",
     href: "/commun/process",
+  },
+  {
+    icon: Wrench,
+    label: "Outils",
+    href: "/commun/outils",
   },
   {
     icon: User,
@@ -89,6 +95,11 @@ const healthNavItems = [
     icon: Workflow,
   },
   {
+    href: "/commun/outils",
+    label: "Outils",
+    icon: Wrench,
+  },
+  {
     href: "/sante-individuelle/profile",
     label: "Mon profil",
     icon: User,
@@ -116,6 +127,11 @@ const healthCollectiveNavItems = [
     href: "/commun/process",
     label: "Process",
     icon: Workflow,
+  },
+  {
+    href: "/commun/outils",
+    label: "Outils",
+    icon: Wrench,
   },
   {
     href: "/sante-collective/profile",
@@ -155,6 +171,11 @@ const adminNavItems = [
     href: "/commun/process",
     label: "Process",
     icon: Workflow,
+  },
+  {
+    href: "/commun/outils",
+    label: "Outils",
+    icon: Wrench,
   },
   {
     href: "/admin/commissions-agence",

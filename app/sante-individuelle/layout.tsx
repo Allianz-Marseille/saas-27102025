@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LayoutDashboard, FileText, User, BarChart3, ChevronLeft, Workflow } from "lucide-react";
+import { LayoutDashboard, FileText, User, BarChart3, ChevronLeft, Workflow, Wrench } from "lucide-react";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { useAutoLogout } from "@/lib/hooks/use-auto-logout";
@@ -39,6 +39,11 @@ const healthNavItems = [
     href: "/commun/process",
     label: "Process",
     icon: Workflow,
+  },
+  {
+    href: "/commun/outils",
+    label: "Outils",
+    icon: Wrench,
   },
   {
     href: "/sante-individuelle/profile",

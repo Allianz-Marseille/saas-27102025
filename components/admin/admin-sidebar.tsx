@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Home, Building2, LogOut, Users, User, ScrollText, ChevronLeft, ChevronRight, Heart, AlertTriangle, Coins, Workflow } from "lucide-react";
+import { Home, Building2, LogOut, Users, User, ScrollText, ChevronLeft, ChevronRight, Heart, AlertTriangle, Coins, Workflow, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -63,6 +63,11 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
       href: "/commun/process",
       label: "Process",
       icon: Workflow,
+    },
+    {
+      href: "/commun/outils",
+      label: "Outils",
+      icon: Wrench,
     },
     {
       href: "/admin/commissions-agence",
