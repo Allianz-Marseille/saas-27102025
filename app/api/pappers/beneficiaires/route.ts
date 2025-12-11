@@ -70,8 +70,12 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.PAPPERS_API_KEY;
     if (!apiKey) {
       console.error("PAPPERS_API_KEY manquante dans les variables d'environnement");
+      console.error("Variables d'environnement disponibles:", Object.keys(process.env).filter(k => k.includes('PAPPERS')));
       return NextResponse.json(
-        { error: "Configuration API manquante" },
+        { 
+          error: "Configuration API manquante",
+          details: "La clé API Pappers n'est pas configurée. Vérifiez que PAPPERS_API_KEY est définie dans .env.local et que le serveur a été redémarré."
+        },
         { status: 500 }
       );
     }
@@ -84,6 +88,16 @@ export async function POST(request: NextRequest) {
       const errorText = await entrepriseResponse.text();
       console.error("Erreur API Pappers (entreprise):", entrepriseResponse.status, errorText);
       
+      if (entrepriseResponse.status === 401 || entrepriseResponse.status === 403) {
+        return NextResponse.json(
+          { 
+            error: "Erreur d'authentification API Pappers",
+            details: "Votre clé API est invalide ou votre abonnement Pappers n'est pas actif. Vérifiez votre abonnement sur https://www.pappers.fr"
+          },
+          { status: 401 }
+        );
+      }
+      
       if (entrepriseResponse.status === 404) {
         return NextResponse.json(
           { error: "Entreprise non trouvée pour ce SIREN" },
@@ -92,7 +106,10 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json(
-        { error: "Erreur lors de la récupération des informations de l'entreprise" },
+        { 
+          error: "Erreur lors de la récupération des informations de l'entreprise",
+          details: `Erreur API Pappers (${entrepriseResponse.status}): ${errorText}`
+        },
         { status: entrepriseResponse.status }
       );
     }
