@@ -23,26 +23,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { siren, nom, selectedSiren } = body;
 
-    // Si un SIREN a été sélectionné depuis les résultats de recherche, l'utiliser
-    if (selectedSiren) {
-      const cleanedSiren = selectedSiren.replace(/\s+/g, "").replace(/\D/g, "");
-      numId = cleanedSiren.length === 14 ? cleanedSiren : cleanedSiren.substring(0, 9);
-      
-      if (numId.length !== 9 && cleanedSiren.length !== 14) {
-        return NextResponse.json(
-          { error: "Le SIREN sélectionné est invalide" },
-          { status: 400 }
-        );
-      }
-    }
-    // Validation : au moins un paramètre requis (sauf si selectedSiren est fourni)
-    else if (!siren && !nom) {
-      return NextResponse.json(
-        { error: "SIREN/SIRET ou nom d'entreprise requis" },
-        { status: 400 }
-      );
-    }
-
     // Vérifier la clé API Societe.com
     const apiKey = process.env.SOCIETE_API_KEY;
     if (!apiKey) {
@@ -64,8 +44,22 @@ export async function POST(request: NextRequest) {
     const baseUrl = "https://api.societe.com/api/v1";
     let numId: string | undefined;
 
+    // Si un SIREN a été sélectionné depuis les résultats de recherche, l'utiliser
+    if (selectedSiren) {
+      const cleanedSiren = selectedSiren.replace(/\s+/g, "").replace(/\D/g, "");
+      const extractedSiren = cleanedSiren.length === 14 ? cleanedSiren : cleanedSiren.substring(0, 9);
+      
+      if (extractedSiren.length !== 9 && cleanedSiren.length !== 14) {
+        return NextResponse.json(
+          { error: "Le SIREN sélectionné est invalide" },
+          { status: 400 }
+        );
+      }
+      
+      numId = extractedSiren;
+    }
     // Si recherche par nom, retourner tous les résultats pour que l'utilisateur choisisse
-    if (nom && !siren && !selectedSiren) {
+    else if (nom && !siren) {
       // Utiliser l'endpoint officiel selon la documentation : /entreprise/search
       // Augmenter nbrep pour avoir plus de résultats (max 1000 selon la doc)
       const searchUrl = `${baseUrl}/entreprise/search?nom=${encodeURIComponent(nom)}&debut=1&nbrep=50`;
@@ -131,26 +125,36 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
-    // Si recherche par SIREN/SIRET (pas de recherche par nom et pas de SIREN sélectionné)
-    if (!selectedSiren && (!nom || siren)) {
-      // Recherche par SIREN/SIRET
-      if (!siren || typeof siren !== "string") {
-        return NextResponse.json(
-          { error: "SIREN manquant ou invalide" },
-          { status: 400 }
-        );
-      }
-
+    }
+    // Si recherche par SIREN/SIRET
+    else if (siren) {
       // Validation format SIREN (9 chiffres) ou SIRET (14 chiffres)
       const cleanedSiren = siren.replace(/\s+/g, "").replace(/\D/g, "");
-      numId = cleanedSiren.length === 14 ? cleanedSiren : cleanedSiren.substring(0, 9);
+      const extractedSiren = cleanedSiren.length === 14 ? cleanedSiren : cleanedSiren.substring(0, 9);
       
-      if (numId.length !== 9 && cleanedSiren.length !== 14) {
+      if (extractedSiren.length !== 9 && cleanedSiren.length !== 14) {
         return NextResponse.json(
           { error: "Le SIREN doit contenir 9 chiffres ou le SIRET 14 chiffres" },
           { status: 400 }
         );
       }
+      
+      numId = extractedSiren;
+    }
+    // Validation : au moins un paramètre requis
+    else {
+      return NextResponse.json(
+        { error: "SIREN/SIRET ou nom d'entreprise requis" },
+        { status: 400 }
+      );
+    }
+
+    // Si numId n'est pas défini à ce stade, c'est une erreur
+    if (!numId) {
+      return NextResponse.json(
+        { error: "SIREN/SIRET manquant ou invalide" },
+        { status: 400 }
+      );
     }
 
     // Appels API en parallèle pour toutes les informations
