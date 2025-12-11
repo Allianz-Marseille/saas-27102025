@@ -36,8 +36,8 @@ const processes: Process[] = [
   },
   {
     id: "declaration-affaires",
-    title: "Déclaration d'affaires",
-    description: "Processus de déclaration d'affaires : clés de répartition par agence, règles de travail en équipe, obligations de déclaration et répartition santé.",
+    title: "Production : saisie des affaires nouvelles",
+    description: "Clés de répartition par portefeuille, règles de travail en équipe, répartition équitable et gestion collective des affaires nouvelles.",
     icon: FileText,
     href: "/commun/process/declaration-affaires",
     color: "from-emerald-600 via-teal-600 to-emerald-600",
