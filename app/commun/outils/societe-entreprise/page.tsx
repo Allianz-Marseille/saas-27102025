@@ -52,6 +52,8 @@ interface ApiResponse {
   };
   error?: string;
   details?: string;
+  suggestion?: string;
+  rawResult?: any;
 }
 
 export default function SocieteEntreprisePage() {
