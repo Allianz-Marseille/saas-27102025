@@ -39,8 +39,8 @@ export default function OutilsPage() {
   const outils = [
     {
       id: "beneficiaires-effectifs",
-      title: "Bénéficiaires effectifs",
-      description: "Recherchez les bénéficiaires effectifs d'une entreprise par SIREN/SIRET",
+      title: "Informations entreprise (Pappers)",
+      description: "Consultez toutes les informations disponibles sur une entreprise (légales, dirigeants, bilans, établissements, bénéficiaires effectifs, etc.) via Pappers",
       icon: Users,
       href: "/commun/outils/beneficiaires-effectifs",
     },
