@@ -541,7 +541,7 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
             </div>
 
             {/* KPIs Grid - Ligne 3 : Commissions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className={`grid gap-4 mb-6 ${role === "CDC_COMMERCIAL" ? "grid-cols-1 md:grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}>
               <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950/30 dark:to-yellow-900/30 border-yellow-200 dark:border-yellow-800">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -559,40 +559,34 @@ function RoleSection({ title, role, icon: Icon, selectedMonth, underConstruction
                 </CardContent>
               </Card>
 
-              <Card className={`bg-gradient-to-br ${
-                kpis?.commissionValidee 
-                  ? 'from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 border-green-200 dark:border-green-800' 
-                  : 'from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30 border-red-200 dark:border-red-800'
-              }`}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="w-full">
-                      <p className={`text-xs font-medium mb-1 ${
-                        kpis?.commissionValidee 
-                          ? 'text-green-600 dark:text-green-400' 
-                          : 'text-red-600 dark:text-red-400'
-                      }`}>
-                        Commissions Réelles
-                      </p>
-                      <p className="text-2xl font-bold">{formatCurrency(kpis?.commissionsReelles || 0)}</p>
-                      {role === "CDC_COMMERCIAL" && (
-                        <p className={`text-xs mt-1 ${
+              {/* Commissions Réelles : affichées uniquement pour les autres rôles, pas pour CDC_COMMERCIAL */}
+              {role !== "CDC_COMMERCIAL" && (
+                <Card className={`bg-gradient-to-br ${
+                  kpis?.commissionValidee 
+                    ? 'from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 border-green-200 dark:border-green-800' 
+                    : 'from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30 border-red-200 dark:border-red-800'
+                }`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="w-full">
+                        <p className={`text-xs font-medium mb-1 ${
                           kpis?.commissionValidee 
-                            ? 'text-green-600 dark:text-green-500' 
-                            : 'text-red-600 dark:text-red-500'
+                            ? 'text-green-600 dark:text-green-400' 
+                            : 'text-red-600 dark:text-red-400'
                         }`}>
-                          {kpis?.commissionValidee ? '✓ Objectifs validés' : '✗ Objectifs non validés'}
+                          Commissions Réelles
                         </p>
+                        <p className="text-2xl font-bold">{formatCurrency(kpis?.commissionsReelles || 0)}</p>
+                      </div>
+                      {kpis?.commissionValidee ? (
+                        <Sparkles className="h-8 w-8 text-green-600 dark:text-green-400 opacity-50" />
+                      ) : (
+                        <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400 opacity-50" />
                       )}
                     </div>
-                    {kpis?.commissionValidee ? (
-                      <Sparkles className="h-8 w-8 text-green-600 dark:text-green-400 opacity-50" />
-                    ) : (
-                      <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400 opacity-50" />
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </div>
               </>
             )}
