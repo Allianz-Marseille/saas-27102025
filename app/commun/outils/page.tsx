@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, ArrowRight, Building2 } from "lucide-react";
+import { ArrowLeft, Users, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { motion } from "framer-motion";
@@ -43,13 +43,6 @@ export default function OutilsPage() {
       description: "Consultez toutes les informations disponibles sur une entreprise (légales, dirigeants, bilans, établissements, bénéficiaires effectifs, etc.) via Pappers",
       icon: Users,
       href: "/commun/outils/beneficiaires-effectifs",
-    },
-    {
-      id: "societe-entreprise",
-      title: "Informations entreprise (Societe.com)",
-      description: "Consultez toutes les informations disponibles sur une entreprise (légales, dirigeants, bilans, établissements, etc.) via Societe.com",
-      icon: Building2,
-      href: "/commun/outils/societe-entreprise",
     },
   ] as const;
 
