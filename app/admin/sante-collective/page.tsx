@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, FileText as FileTextIcon, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Filter, X, Heart, DollarSign, FileText, ClipboardCheck, Target, TrendingUp, BarChart3, PieChart as PieChartIcon, Users, Building2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText as FileTextIcon, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Filter, X, Heart, DollarSign, FileText, ClipboardCheck, Target, TrendingUp, BarChart3, PieChart as PieChartIcon, Users, Building2, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -654,6 +654,19 @@ export default function AdminSanteCollectivePage() {
               icon={Target}
               colorScheme="purple"
             />
+            {selectedCommercial !== "all" && commissionInfo && (
+              <KPICard
+                title="Commissions du mois"
+                value={formatCurrency(kpisByType.caPondere * commissionInfo.taux)}
+                subtitle={
+                  kpisByType.caPondere * commissionInfo.taux === 0
+                    ? "Production pondérée < 10 000€"
+                    : `Taux : ${(commissionInfo.taux * 100).toFixed(0)}% - ${commissionInfo.label}`
+                }
+                icon={Coins}
+                colorScheme="teal"
+              />
+            )}
           </div>
 
           {/* Timeline */}

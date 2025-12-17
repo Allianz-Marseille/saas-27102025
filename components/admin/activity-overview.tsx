@@ -485,6 +485,23 @@ export function ActivityOverview({ initialMonth }: ActivityOverviewProps) {
           icon={Target}
           colorScheme="pink"
         />
+        {selectedCommercial !== "all" && (
+          <>
+            <KPICard
+              title="Commissions potentielles"
+              value={formatCurrency(kpi.commissionsPotentielles)}
+              icon={Coins}
+              colorScheme="orange"
+            />
+            <KPICard
+              title="Commissions réelles"
+              value={formatCurrency(kpi.commissionsReelles)}
+              subtitle={kpi.commissionValidee ? "Objectifs validés ✓" : "Objectifs non validés"}
+              icon={Coins}
+              colorScheme="green"
+            />
+          </>
+        )}
             </div>
           </div>
 
