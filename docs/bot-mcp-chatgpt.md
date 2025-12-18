@@ -21,7 +21,9 @@ L'agence a besoin d'un **assistant IA interne** pour améliorer la productivité
 * La sidebar de l'application contient déjà un bouton **"Outils"**
 * La page `/commun/outils` existe avec actuellement **1 outil** :
   1. **Informations entreprise** (Pappers)
-* L'**Assistant IA** sera le **2ème outil** ajouté à cette liste
+* L'**Assistant IA** sera accessible de **deux manières** :
+  1. **Carte "outil"** : 2ème outil ajouté dans `/commun/outils` (page dédiée)
+  2. **Bot flottant** : Bulle en bas à droite présente sur toutes les pages
 
 </div>
 
@@ -100,24 +102,81 @@ Réponses multimodales (texte, images, fichiers)
 
 ### 3. Interface utilisateur
 
-**Réflexion** : Comment présenter l'outil dans `/commun/outils` ?
+**Réflexion** : Comment présenter l'assistant IA aux utilisateurs ?
 
-**Commentaire** :
+**Objectif** : Fournir **deux méthodes d'accès** pour maximiser l'accessibilité et l'utilisation de l'assistant IA.
+
+#### Méthode 1 : Accès via la section Outils
+
 - **Ajout dans la liste existante** : Ajouter l'Assistant IA comme 2ème outil dans `/commun/outils/page.tsx`
   * Même structure que les outils existants (Informations entreprise)
   * Même style de Card avec animations
   * Nouvelle couleur de schéma (ex: orange/amber pour le 2ème outil)
 - **Page dédiée** : Créer `/commun/outils/assistant-ia/page.tsx`
-- **Interface de chat** : Interface professionnelle avec toutes les fonctionnalités
-  * Zone de chat avec historique des messages
-  * Input pour les messages avec support multimédia
-  * **Zone de collage d'images** : Drag & drop ou bouton pour coller/uploader des images
-  * **Zone de téléversement de fichiers** : Support drag & drop pour un ou plusieurs fichiers
-  * Bouton d'envoi
-  * Indicateur de chargement
-  * **Prévisualisation des fichiers/images** : Afficher les fichiers/images avant envoi
-  * **Formatage élégant des réponses** : Support Markdown complet avec rendu professionnel
-  * Design cohérent avec le reste de l'application
+  * Interface de chat complète en pleine page
+  * Toutes les fonctionnalités disponibles
+  * Navigation via le menu Outils
+
+#### Méthode 2 : Bot flottant (bulle) sur toutes les pages
+
+- **Composant flottant** : Créer un composant `FloatingAssistant` présent sur toutes les pages
+- **Position** : En bas à droite de l'écran (fixed position)
+- **Design** :
+  * **État fermé** : Bouton/bulle avec icône (ex: `MessageSquare`, `Bot`, `Sparkles`)
+    * Animation au survol (scale, glow)
+    * Badge de notification si nouveau message (optionnel)
+    * Style cohérent avec le thème de l'application
+  * **État ouvert** : Fenêtre de chat flottante
+    * Taille adaptative (ex: 400x600px par défaut, redimensionnable)
+    * Positionnable par drag & drop (optionnel)
+    * Bouton de fermeture/minimisation
+    * Header avec titre "Assistant IA"
+    * Zone de chat avec historique
+    * Input en bas avec toutes les fonctionnalités
+- **Comportement** :
+  * Persistance de l'état (ouvert/fermé) dans le localStorage
+  * Historique partagé avec la page dédiée (même collection Firestore)
+  * Animation d'ouverture/fermeture fluide
+  * Responsive : s'adapte sur mobile (plein écran ou adaptatif)
+- **Intégration** :
+  * Ajouter le composant dans le layout principal (`app/layout.tsx`)
+  * Disponible sur toutes les pages sauf exceptions (login, etc.)
+  * Z-index élevé pour rester au-dessus du contenu
+
+#### Interface de chat commune
+
+Les deux méthodes d'accès partagent la même interface de chat avec :
+- Zone de chat avec historique des messages
+- Input pour les messages avec support multimédia
+- **Zone de collage d'images** : Drag & drop ou bouton pour coller/uploader des images
+- **Zone de téléversement de fichiers** : Support drag & drop pour un ou plusieurs fichiers
+- Bouton d'envoi
+- Indicateur de chargement
+- **Prévisualisation des fichiers/images** : Afficher les fichiers/images avant envoi
+- **Formatage élégant des réponses** : Support Markdown complet avec rendu professionnel
+- Design cohérent avec le reste de l'application
+
+**Avantages des deux méthodes** :
+- ✅ **Accessibilité maximale** : L'assistant est accessible depuis n'importe quelle page
+- ✅ **Flexibilité** : Les utilisateurs choisissent leur méthode préférée
+- ✅ **Productivité** : Le bot flottant permet d'utiliser l'assistant sans quitter la page actuelle
+- ✅ **Découvrabilité** : La carte dans Outils permet de découvrir la fonctionnalité
+
+**Implémentation technique du bot flottant** :
+
+- **Composant** : `components/assistant/FloatingAssistant.tsx`
+- **Intégration** : Ajouter dans `app/layout.tsx` (après `<Toaster />`)
+- **État** : Utiliser `useState` pour open/closed, `useEffect` pour localStorage
+- **Position** : `fixed bottom-4 right-4` (ou `bottom-6 right-6` pour plus d'espace)
+- **Z-index** : `z-50` ou supérieur pour rester au-dessus du contenu
+- **Responsive** : 
+  * Desktop : Fenêtre flottante 400x600px
+  * Mobile : Plein écran ou adaptatif selon préférence
+- **Animations** : Utiliser `framer-motion` (déjà dans le projet) pour les transitions
+- **Accessibilité** : 
+  * Support clavier (Escape pour fermer, Tab pour navigation)
+  * ARIA labels pour les lecteurs d'écran
+  * Focus trap dans la fenêtre ouverte
 
 ### 3.5. Formatage élégant des réponses
 
@@ -567,20 +626,37 @@ interface FileReference {
 6. ✅ Tester la connexion et les réponses simples
 
 ### Phase 2 : UI Chat
-1. ✅ Créer la page `/commun/outils/assistant-ia/page.tsx`
-2. ✅ **Ajouter l'outil dans la liste** (`/commun/outils/page.tsx`) :
-   * Ajouter l'entrée dans le tableau `outils`
-   * Choisir une icône appropriée (ex: `MessageSquare`, `Bot`, `Sparkles`)
-   * Définir un nouveau schéma de couleurs (ex: orange/amber pour le 2ème outil)
-3. ✅ Implémenter l'interface de chat de base (input, historique, envoi)
-4. ✅ Ajouter le streaming des réponses (Server-Sent Events)
-5. ✅ **Formatage élégant des réponses** :
+1. ✅ **Composant de chat réutilisable** :
+   * Créer un composant `ChatInterface` partagé
+   * Interface de chat de base (input, historique, envoi)
+   * Support du streaming des réponses (Server-Sent Events)
+   * Formatage élégant des réponses (Markdown, syntax highlighting, tableaux)
+   
+2. ✅ **Méthode 1 : Page dédiée** :
+   * Créer la page `/commun/outils/assistant-ia/page.tsx`
+   * Utiliser le composant `ChatInterface` en pleine page
+   * Ajouter l'outil dans la liste (`/commun/outils/page.tsx`) :
+     * Ajouter l'entrée dans le tableau `outils`
+     * Choisir une icône appropriée (ex: `MessageSquare`, `Bot`, `Sparkles`)
+     * Définir un nouveau schéma de couleurs (ex: orange/amber pour le 2ème outil)
+
+3. ✅ **Méthode 2 : Bot flottant** :
+   * Créer le composant `FloatingAssistant`
+   * Bouton/bulle flottant en bas à droite (état fermé)
+   * Fenêtre de chat flottante (état ouvert)
+   * Animations d'ouverture/fermeture
+   * Intégrer dans le layout principal (`app/layout.tsx`)
+   * Persistance de l'état dans localStorage
+   * Responsive design (mobile-friendly)
+
+4. ✅ **Formatage élégant des réponses** :
    * Intégrer une bibliothèque Markdown (`react-markdown`)
    * Implémenter le syntax highlighting pour les blocs de code
    * Créer des composants pour tableaux, citations, alertes
    * Styliser avec Tailwind CSS pour cohérence visuelle
    * Ajouter boutons de copie pour les blocs de code
    * Tester le rendu pendant le streaming
+   * Adapter le rendu pour la fenêtre flottante (scroll, taille)
 
 ### Phase 3 : Multimodalité
 1. ✅ **Support des images** :
@@ -780,8 +856,10 @@ interface FileReference {
    * L'upload d'images avec Vision API (OCR)
    * L'upload et l'analyse de fichiers
 5. **Développement** : Implémenter la solution complète (API + Interface avec toutes les fonctionnalités)
-6. **Intégration** : Ajouter l'outil dans la liste des outils existants (`/commun/outils/page.tsx`)
-7. **Tests** : Tester toutes les fonctionnalités et valider la performance
+6. **Intégration** : 
+   * Ajouter l'outil dans la liste des outils existants (`/commun/outils/page.tsx`)
+   * Intégrer le bot flottant dans le layout principal (`app/layout.tsx`)
+7. **Tests** : Tester toutes les fonctionnalités et valider la performance (page dédiée + bot flottant)
 
 </div>
 
