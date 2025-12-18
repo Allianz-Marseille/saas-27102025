@@ -1,4 +1,4 @@
-# **Bot MCP ChatGPT - Contournement limitation Allianz**
+# **Assistant IA - Intégration OpenAI API**
 
 *Marseille le 27/10/2025*
 
@@ -8,23 +8,20 @@
 
 ## 🎯 Enjeux
 
-Allianz a mis en place une mesure de limitation qui **empêche de se connecter à ChatGPT depuis leur site**.
-
-Cette restriction bloque l'utilisation de ChatGPT pour :
+L'agence a besoin d'un **assistant IA interne** pour améliorer la productivité quotidienne dans :
 * L'assistance dans la rédaction de devis
 * L'analyse de contrats
 * La génération de réponses client
-* Toute autre fonctionnalité ChatGPT utile au quotidien
+* Toute autre tâche nécessitant une assistance IA
 
-👉 **Objectif** : Développer une fonctionnalité dans la section **Outils** de l'application qui permet de contourner cette limitation via un **client MCP (Model Context Protocol)**.
+👉 **Objectif** : Développer une fonctionnalité dans la section **Outils** de l'application qui fournit un **assistant IA professionnel** via l'API OpenAI officielle.
 
 ### Contexte d'intégration
 
 * La sidebar de l'application contient déjà un bouton **"Outils"**
-* La page `/commun/outils` existe avec actuellement **2 outils** :
-  1. **Bénéficiaires effectifs** (Pappers)
-  2. **Informations entreprise** (Societe.com)
-* Le **ChatGPT Assistant** sera le **3ème outil** ajouté à cette liste
+* La page `/commun/outils` existe avec actuellement **1 outil** :
+  1. **Informations entreprise** (Pappers)
+* L'**Assistant IA** sera le **2ème outil** ajouté à cette liste
 
 </div>
 
@@ -32,30 +29,31 @@ Cette restriction bloque l'utilisation de ChatGPT pour :
 
 <div class="section section-solution">
 
-## 💡 Solution proposée : Client MCP
+## 💡 Solution proposée : Assistant IA via OpenAI API
 
 ### Concept
 
-Développer un **client MCP** qui se connecte à ChatGPT et **autorise toutes les fonctionnalités** de ChatGPT, indépendamment des restrictions d'Allianz.
+Développer un **assistant IA interne** qui utilise l'**API OpenAI officielle** pour fournir toutes les fonctionnalités nécessaires à l'agence, de manière stable, sécurisée et conforme.
 
 ### Architecture envisagée
 
 ```
-Application Next.js
+UI Chat (Next.js / React)
     ↓
-Client MCP (serveur intermédiaire)
+API Route /api/assistant (Server only)
     ↓
-API ChatGPT (via MCP Protocol)
+OpenAI Responses API
     ↓
-Réponses ChatGPT complètes
+Réponses multimodales (texte, images, fichiers)
 ```
 
-### Avantages du MCP
+### Avantages de l'API OpenAI
 
-* ✅ **Contournement des restrictions réseau** : Le client MCP agit comme un proxy/intermédiaire
-* ✅ **Accès complet aux fonctionnalités ChatGPT** : Pas de limitation côté API
-* ✅ **Intégration propre** : Le MCP peut être intégré comme un outil dans `/commun/outils`
-* ✅ **Sécurité** : Les requêtes passent par notre infrastructure, pas directement depuis le navigateur
+* ✅ **Stabilité et conformité** : Utilisation de l'API officielle, garantie de pérennité
+* ✅ **Accès complet aux fonctionnalités** : Chat, Vision (OCR), analyse de fichiers, streaming
+* ✅ **Intégration propre** : Route API Next.js suivant le pattern existant (comme Pappers/Societe.com)
+* ✅ **Sécurité** : Clé API côté serveur uniquement, authentification Firebase Auth
+* ✅ **Scalabilité** : Gestion native de la charge et des limites par l'API OpenAI
 
 </div>
 
@@ -65,67 +63,161 @@ Réponses ChatGPT complètes
 
 ## 🤔 Réflexions techniques
 
-### 1. Architecture MCP
+### 1. Architecture API OpenAI
 
-**Réflexion** : Le client MCP doit être un serveur séparé qui :
+**Réflexion** : L'assistant IA doit être implémenté comme une route API Next.js qui :
 * Écoute les requêtes de l'application Next.js
-* Se connecte à l'API ChatGPT via le protocole MCP
-* Retourne les réponses formatées
+* Se connecte à l'API OpenAI via le SDK officiel
+* Retourne les réponses formatées en streaming
 
 **Commentaire** : 
-- Le MCP peut être implémenté comme une **route API Next.js** (`/api/mcp-chatgpt`)
-- Ou comme un **service séparé** (Node.js/Express) si besoin de plus de contrôle
-- Pour commencer, une route API Next.js sera plus simple et intégrée
+- Implémentation comme **route API Next.js** (`/api/assistant`)
+- Pattern similaire aux routes existantes (`/api/pappers`, `/api/societe`)
+- Utilisation du SDK OpenAI officiel (`openai`)
+- Clé API stockée dans `OPENAI_API_KEY` (variables d'environnement)
+- Authentification utilisateur via Firebase Auth (comme les autres routes API)
 
-### 2. Authentification ChatGPT
+### 2. Configuration API OpenAI
 
-**Réflexion** : Comment gérer l'authentification ChatGPT ?
-* Utiliser une clé API OpenAI partagée ?
-* Permettre à chaque utilisateur de connecter son propre compte ?
-* Un compte ChatGPT dédié pour l'agence ?
+**Réflexion** : Comment gérer l'authentification et la configuration de l'API OpenAI ?
 
 **Décision** : 
-- ✅ **Utiliser un compte ChatGPT existant** (déjà disponible)
-- ✅ **Compte partagé** : Tous les utilisateurs de l'application utilisent le même compte ChatGPT
+- ✅ **Clé API OpenAI partagée** : Une clé API pour toute l'agence
+- ✅ **Stockage sécurisé** : Clé API dans les variables d'environnement côté serveur uniquement
 - ✅ **Accès via authentification utilisateur** : Seuls les utilisateurs connectés à l'application peuvent accéder à l'outil
 
 **Commentaire** :
 - **Avantages** :
-  - Pas besoin de créer un nouveau compte ou une clé API
-  - Utilisation du compte existant
+  - Configuration centralisée et simple
   - Tous les utilisateurs bénéficient de l'outil sans configuration individuelle
+  - Gestion des coûts centralisée
 - **Implémentation** :
-  - Stocker les credentials du compte ChatGPT dans les variables d'environnement (sécurisé)
+  - Stocker la clé API dans `OPENAI_API_KEY` (variables d'environnement)
   - L'authentification se fait côté serveur (route API Next.js)
-  - Les utilisateurs n'ont pas besoin de connaître les credentials
-- **Note** : Si le compte ChatGPT utilise une authentification par session/cookies, il faudra gérer la persistance de session côté serveur
+  - Vérification de l'authentification utilisateur via Firebase Auth (pattern identique aux autres routes API)
+  - Les utilisateurs n'ont jamais accès à la clé API
+- **Modèle recommandé** : `gpt-4o` ou `gpt-4-turbo` pour les meilleures performances
 
 ### 3. Interface utilisateur
 
 **Réflexion** : Comment présenter l'outil dans `/commun/outils` ?
 
 **Commentaire** :
-- **Ajout dans la liste existante** : Ajouter le ChatGPT Assistant comme 3ème outil dans `/commun/outils/page.tsx`
-  * Même structure que les outils existants (Bénéficiaires effectifs, Informations entreprise)
+- **Ajout dans la liste existante** : Ajouter l'Assistant IA comme 2ème outil dans `/commun/outils/page.tsx`
+  * Même structure que les outils existants (Informations entreprise)
   * Même style de Card avec animations
-  * Nouvelle couleur de schéma (ex: orange/amber pour le 3ème outil)
-- **Page dédiée** : Créer `/commun/outils/chatgpt-assistant/page.tsx`
-- **Interface de chat** : Similaire à ChatGPT avec toutes les fonctionnalités
+  * Nouvelle couleur de schéma (ex: orange/amber pour le 2ème outil)
+- **Page dédiée** : Créer `/commun/outils/assistant-ia/page.tsx`
+- **Interface de chat** : Interface professionnelle avec toutes les fonctionnalités
   * Zone de chat avec historique des messages
   * Input pour les messages avec support multimédia
   * **Zone de collage d'images** : Drag & drop ou bouton pour coller/uploader des images
   * **Zone de téléversement de fichiers** : Support drag & drop pour un ou plusieurs fichiers
-  * **Indicateur de connexion web** : Afficher si ChatGPT utilise la recherche web
   * Bouton d'envoi
   * Indicateur de chargement
   * **Prévisualisation des fichiers/images** : Afficher les fichiers/images avant envoi
+  * **Formatage élégant des réponses** : Support Markdown complet avec rendu professionnel
   * Design cohérent avec le reste de l'application
 
-### 4. Fonctionnalités ChatGPT à activer
+### 3.5. Formatage élégant des réponses
 
-**Réflexion** : Quelles fonctionnalités ChatGPT sont essentielles ?
+**Réflexion** : Comment rendre les réponses de l'assistant IA élégantes et professionnelles ?
 
-**Objectif** : S'assurer que **toutes les fonctionnalités** de ChatGPT soient accessibles depuis le bot.
+**Objectif** : Fournir un rendu riche et professionnel des réponses, similaire à ChatGPT, pour améliorer la lisibilité et l'expérience utilisateur.
+
+**Formats de réponse à supporter** :
+
+- ✅ **Markdown complet** :
+  * **Titres** : H1 à H6 avec hiérarchie visuelle claire
+  * **Texte formaté** : Gras, italique, souligné, barré
+  * **Listes** : Listes à puces et numérotées avec indentation
+  * **Listes de tâches** : Checkboxes interactives (optionnel)
+  * **Citations** : Blocs de citation avec style distinct
+  * **Liens** : Liens cliquables avec prévisualisation (optionnel)
+  * **Séparateurs** : Lignes horizontales pour structurer
+
+- ✅ **Code et syntaxe** :
+  * **Blocs de code** : Avec syntax highlighting (prism.js ou highlight.js)
+  * **Code inline** : Texte monospace avec fond coloré
+  * **Langages supportés** : JavaScript, TypeScript, Python, SQL, JSON, YAML, Bash, etc.
+  * **Copie rapide** : Bouton de copie pour chaque bloc de code
+
+- ✅ **Tableaux** :
+  * **Tableaux Markdown** : Rendu avec bordures et style professionnel
+  * **Tableaux responsives** : Scroll horizontal sur mobile si nécessaire
+  * **Alignement** : Colonnes alignées (gauche, centre, droite)
+  * **Style alterné** : Lignes alternées pour meilleure lisibilité
+
+- ✅ **Éléments visuels** :
+  * **Alertes/Notes** : Blocs d'information, warning, erreur avec icônes
+  * **Badges** : Tags et badges pour catégoriser l'information
+  * **Emojis** : Support des emojis pour rendre les réponses plus vivantes (optionnel)
+
+- ✅ **Structure avancée** :
+  * **Accordéons** : Sections repliables pour les réponses longues
+  * **Onglets** : Si l'assistant génère plusieurs sections (optionnel)
+  * **Timeline** : Pour afficher des étapes ou processus
+
+**Implémentation technique** :
+
+- **Bibliothèque Markdown** : 
+  * ✅ `react-markdown` (déjà installé dans le projet)
+  * ✅ `remark-gfm` (déjà installé) pour GitHub Flavored Markdown (tableaux, listes de tâches, etc.)
+  * ✅ `rehype-raw` (déjà installé) pour le HTML brut si nécessaire
+  * ⚠️ Ajouter `DOMPurify` pour la sécurité (sanitization du HTML)
+- **Syntax highlighting** : 
+  * Installer `react-syntax-highlighter` ou `prism-react-renderer`
+  * Installer les thèmes correspondants (ex: `prism-themes` pour Prism)
+  * Configurer les langages supportés (JS, TS, Python, SQL, JSON, YAML, Bash, etc.)
+- **Composants personnalisés** : 
+  * Créer des composants React pour chaque type d'élément (tableaux, citations, alertes)
+  * Utiliser les composants UI existants (Card, Badge, Alert) pour cohérence
+- **Thème cohérent** : 
+  * Utiliser les couleurs et styles de l'application (Tailwind CSS)
+  * Adapter les thèmes de syntax highlighting au thème sombre/clair de l'app
+- **Accessibilité** : 
+  * S'assurer que le contenu est accessible (ARIA, navigation clavier)
+  * Support des lecteurs d'écran pour le contenu Markdown
+
+**Exemples de rendu** :
+
+```
+# Titre principal
+
+Voici un **texte en gras** et un *texte en italique*.
+
+## Liste à puces
+- Point 1
+- Point 2
+  - Sous-point
+
+## Code
+```typescript
+function example() {
+  return "Hello World";
+}
+```
+
+## Tableau
+| Colonne 1 | Colonne 2 | Colonne 3 |
+|-----------|-----------|-----------|
+| Donnée 1   | Donnée 2  | Donnée 3  |
+
+> Citation importante
+```
+
+**Commentaire** :
+- Le formatage élégant améliore significativement la lisibilité des réponses
+- Les tableaux sont particulièrement utiles pour les devis, comparatifs, et analyses
+- Le code avec syntax highlighting est essentiel pour les réponses techniques
+- Les alertes/notes permettent de mettre en évidence des informations importantes
+- Le rendu doit être fluide même pendant le streaming
+
+### 4. Fonctionnalités de l'assistant IA
+
+**Réflexion** : Quelles fonctionnalités sont essentielles pour l'assistant IA ?
+
+**Objectif** : S'assurer que **toutes les fonctionnalités nécessaires** soient accessibles depuis l'assistant.
 
 **Fonctionnalités de base** :
 - ✅ **Chat classique** : Messages texte
@@ -135,10 +227,9 @@ Réponses ChatGPT complètes
 
 **Fonctionnalités avancées (OBLIGATOIRES)** :
 - ✅ **Coller une image** : Permettre le collage d'images dans le chat
-- ✅ **Lecture OCR** : Analyse et extraction de texte depuis les images
-- ✅ **Connexion sur le web** : Accès à Internet pour rechercher des informations en temps réel
+- ✅ **Lecture OCR** : Analyse et extraction de texte depuis les images via Vision API
 - ✅ **Téléversement de fichiers** : Support d'un ou plusieurs fichiers (PDF, Word, Excel, etc.)
-- ✅ **Analyse de fichiers** : ChatGPT peut lire et analyser le contenu des fichiers téléversés
+- ✅ **Analyse de fichiers** : L'assistant peut lire et analyser le contenu des fichiers téléversés
 
 **Fonctionnalités supplémentaires (RECOMMANDÉES)** :
 - 🔄 **Historique des conversations** : Sauvegarder et rechercher dans les conversations passées
@@ -155,28 +246,34 @@ Réponses ChatGPT complètes
 - 🔄 **Génération de tableaux** : Créer des tableaux formatés (devis, comparatifs, etc.)
 - 🔄 **Traduction** : Traduire des documents ou messages
 - 🔄 **Génération de code** : Créer des scripts, formules Excel, requêtes SQL si nécessaire
-- 🔄 **Plugins/Extensions** : Utiliser des plugins ChatGPT disponibles (si supportés)
-- 🔄 **Mode voix** : Si disponible dans ChatGPT (pour dictée vocale)
+- 🔄 **Mode voix** : Si disponible via l'API OpenAI (pour dictée vocale)
 - 🔄 **Suggestions de réponses** : Proposer des réponses rapides basées sur le contexte
 
 **Commentaire** :
-- Les fonctionnalités avancées sont **essentielles** pour un usage complet de ChatGPT
+- Les fonctionnalités avancées sont **essentielles** pour un usage complet de l'assistant IA
 - Les fonctionnalités supplémentaires améliorent la productivité et l'expérience utilisateur
-- Le client MCP doit supporter le format multimédia (images, fichiers)
+- L'API OpenAI supporte nativement le format multimédia (images via Vision API, fichiers via File API)
 - L'interface utilisateur doit permettre le drag & drop et le collage d'images
-- La connexion web nécessite que le compte ChatGPT ait accès à cette fonctionnalité (ChatGPT Plus/Pro)
+- Le streaming est supporté nativement par le SDK OpenAI pour une meilleure UX
 - Les templates de prompts sont particulièrement utiles pour standardiser les usages dans l'agence
 
-### 5. Sécurité et limitations
+### 5. Sécurité et conformité
 
-**Réflexion** : Comment sécuriser l'outil ?
+**Réflexion** : Comment sécuriser l'outil et garantir la conformité ?
 
 **Commentaire** :
-- ✅ **Authentification utilisateur** : Seuls les utilisateurs connectés peuvent accéder
-- ✅ **Rate limiting** : Limiter le nombre de requêtes par utilisateur/jour
-- ✅ **Validation des inputs** : Sanitizer les messages avant envoi
-- ✅ **Logs** : Tracer l'utilisation pour monitoring
-- ⚠️ **Coûts** : Surveiller la consommation API OpenAI (peut être coûteux)
+- ✅ **Authentification utilisateur** : Seuls les utilisateurs connectés via Firebase Auth peuvent accéder
+- ✅ **Clé API sécurisée** : Clé API stockée côté serveur uniquement, jamais exposée au client
+- ✅ **Rate limiting** : Limiter le nombre de requêtes par utilisateur/jour pour contrôler les coûts
+- ✅ **Validation des inputs** : Sanitizer et valider tous les messages, fichiers et images avant envoi
+- ✅ **Validation des fichiers** : 
+  * Vérifier les types MIME réels (pas seulement l'extension)
+  * Limiter les types de fichiers acceptés
+  * Limiter la taille des fichiers
+- ✅ **Logs** : Tracer l'utilisation pour monitoring et audit
+- ✅ **Données sensibles** : Avertir les utilisateurs de ne pas envoyer de données clients sensibles
+- ✅ **Nettoyage des fichiers** : Supprimer les fichiers temporaires après traitement
+- ⚠️ **Coûts** : Surveiller la consommation API OpenAI (tokens utilisés, coûts par requête)
 
 ### 6. Stockage des conversations
 
@@ -195,7 +292,7 @@ Réponses ChatGPT complètes
   - Export de conversations
   - **Recommandation** : Commencer par Option 1, ajouter Option 2 en Phase 4
 - **Structure de stockage** (si Option 2) :
-  * Collection `chatgpt_conversations`
+  * Collection `assistant_conversations`
   * Document par conversation avec :
     - `userId` : ID de l'utilisateur
     - `title` : Titre de la conversation (généré ou manuel)
@@ -205,20 +302,144 @@ Réponses ChatGPT complètes
     - `updatedAt` : Date de dernière mise à jour
     - `tags` : Tags pour organisation (optionnel)
 
-### 7. Intégration MCP Protocol
+### 7. Intégration OpenAI SDK
 
-**Réflexion** : Comment implémenter le protocole MCP ?
+**Réflexion** : Comment implémenter l'intégration avec l'API OpenAI ?
 
 **Commentaire** :
-- Le **MCP (Model Context Protocol)** est un protocole standardisé pour connecter des applications aux modèles LLM
-- Utiliser une bibliothèque MCP existante si disponible
-- Ou implémenter un client MCP simple qui :
-  * Formate les requêtes selon le protocole MCP
-  * Gère les réponses streaming
-  * Gère les erreurs et reconnexions
-  * **Support des fichiers multimédias** : Images, PDF, documents
-  * **Support de la recherche web** : Activation et gestion des requêtes web
-- **Bibliothèque potentielle** : `@modelcontextprotocol/sdk` (à vérifier)
+- Utiliser le **SDK OpenAI officiel** (`openai`) pour Node.js
+- Installation : `npm install openai`
+- Configuration du client :
+  * Initialiser avec la clé API depuis les variables d'environnement
+  * Configurer le modèle par défaut (`gpt-4o` ou `gpt-4-turbo`)
+  * Gérer le streaming des réponses pour une meilleure UX
+- Fonctionnalités supportées :
+  * **Chat complet** : Messages texte avec historique conversationnel
+  * **Vision API** : Analyse d'images avec OCR natif
+  * **File API** : Upload et analyse de fichiers (PDF, Word, Excel, etc.)
+  * **Streaming** : Réponses en temps réel via Server-Sent Events
+- Gestion des erreurs :
+  * Gérer les erreurs API (rate limits, tokens, etc.)
+  * Retry automatique pour les erreurs temporaires
+  * Messages d'erreur clairs pour l'utilisateur
+
+### 7.6. Gestion des erreurs spécifiques OpenAI
+
+**Réflexion** : Comment gérer les erreurs spécifiques de l'API OpenAI ?
+
+**Types d'erreurs à gérer** :
+
+- ✅ **Rate Limit (429)** :
+  * Détecter le header `Retry-After` si présent
+  * Afficher un message clair : "Trop de requêtes. Réessayez dans X secondes."
+  * Implémenter un backoff exponentiel pour les retries
+  * Limiter le nombre de retries (ex: 3 max)
+
+- ✅ **Quota Exceeded (429)** :
+  * Message : "Quota API dépassé. Contactez l'administrateur."
+  * Logger l'erreur pour monitoring
+  * Ne pas retry automatiquement (erreur permanente)
+
+- ✅ **Invalid API Key (401)** :
+  * Message : "Erreur de configuration API. Contactez l'administrateur."
+  * Logger l'erreur côté serveur uniquement (ne pas exposer la clé)
+  * Vérifier la configuration au démarrage
+
+- ✅ **Invalid Request (400)** :
+  * Parser le message d'erreur OpenAI
+  * Afficher un message utilisateur-friendly
+  * Logger les détails pour debug
+
+- ✅ **Context Length Exceeded (400)** :
+  * Détecter l'erreur "context_length_exceeded"
+  * Message : "Conversation trop longue. Créer une nouvelle conversation."
+  * Proposer de tronquer l'historique automatiquement
+
+- ✅ **Timeout** :
+  * Définir un timeout (ex: 60 secondes pour requêtes normales, 120s pour fichiers)
+  * Message : "La requête a pris trop de temps. Réessayez."
+  * Logger pour identifier les problèmes de performance
+
+- ✅ **Network Errors** :
+  * Retry automatique avec backoff
+  * Message : "Problème de connexion. Nouvelle tentative..."
+  * Limiter les retries (ex: 2-3 max)
+
+**Implémentation** :
+
+```typescript
+// Exemple de gestion d'erreurs
+try {
+  const response = await openai.chat.completions.create(...);
+} catch (error) {
+  if (error.status === 429) {
+    // Rate limit
+    const retryAfter = error.headers?.['retry-after'];
+    // Gérer le retry
+  } else if (error.status === 401) {
+    // Invalid API key
+    // Logger et notifier l'admin
+  } else if (error.message?.includes('context_length')) {
+    // Tronquer l'historique
+  }
+  // etc.
+}
+```
+
+**Commentaire** :
+- Toutes les erreurs doivent être loggées côté serveur pour debugging
+- Les messages utilisateur doivent être clairs et actionnables
+- Ne jamais exposer les détails techniques ou la clé API dans les messages d'erreur
+
+### 7.5. Structure des données et formats
+
+**Réflexion** : Quels formats de données utiliser pour les messages et réponses ?
+
+**Structure des messages** :
+
+```typescript
+interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string | MessageContent[];
+  timestamp: Date;
+  files?: FileReference[];
+  images?: ImageReference[];
+}
+
+interface MessageContent {
+  type: 'text' | 'image_url';
+  text?: string;
+  image_url?: {
+    url: string; // Base64 data URL
+  };
+}
+
+interface FileReference {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url?: string; // Si stocké dans Firebase Storage
+}
+```
+
+**Format des réponses API** :
+
+- **Streaming** : Server-Sent Events (SSE) avec chunks de texte
+- **Format des chunks** : `data: {"choices": [{"delta": {"content": "..."}}]}\n\n`
+- **Fin de stream** : `[DONE]` ou chunk avec `finish_reason`
+
+**Gestion de l'historique** :
+
+- **Format conversationnel** : Array de messages avec rôles
+- **Limite de tokens** : Tronquer l'historique si nécessaire (garder les N derniers messages)
+- **Résumé intelligent** : Pour conversations très longues, résumer les anciens messages
+
+**Commentaire** :
+- La structure doit être compatible avec l'API OpenAI Chat Completions
+- Le streaming nécessite un parsing spécial des chunks SSE
+- L'historique doit être géré intelligemment pour éviter de dépasser les limites de tokens
 
 ### 8. Gestion des fichiers et images
 
@@ -227,10 +448,11 @@ Réponses ChatGPT complètes
 **Commentaire** :
 - **Upload côté client** : Les fichiers/images sont uploadés vers notre serveur (route API Next.js)
 - **Stockage temporaire** : Stocker les fichiers dans un storage temporaire (Firebase Storage ou système de fichiers)
-- **Conversion/Formatage** : Convertir les fichiers en format compatible avec ChatGPT API
-  * Images : Base64 ou URL selon l'API
-  * PDF/Documents : Extraction du texte ou conversion en format texte
-- **Envoi à ChatGPT** : Transmettre les fichiers via l'API ChatGPT avec le message
+- **Conversion/Formatage** : Convertir les fichiers en format compatible avec l'API OpenAI
+  * Images : Base64 pour Vision API (modèles avec support vision)
+  * PDF/Documents : Utiliser File API d'OpenAI ou extraction texte côté serveur
+  * Fichiers volumineux : Découper si nécessaire selon les limites de l'API
+- **Envoi à l'API OpenAI** : Transmettre les fichiers via l'API OpenAI avec le message
 - **Nettoyage** : Supprimer les fichiers temporaires après traitement
 - **Limites** :
   * Taille maximale par fichier (ex: 10-20 MB)
@@ -242,22 +464,33 @@ Réponses ChatGPT complètes
 **Réflexion** : Comment gérer l'OCR et l'analyse d'images ?
 
 **Commentaire** :
-- **OCR natif ChatGPT** : ChatGPT peut analyser les images et extraire le texte (Vision API)
-- **Activation automatique** : Détecter automatiquement les images et activer l'analyse
+- **OCR via Vision API** : L'API OpenAI Vision peut analyser les images et extraire le texte
+- **Modèles supportés** : Utiliser `gpt-4o` ou `gpt-4-turbo` qui supportent nativement la vision
+- **Activation automatique** : Détecter automatiquement les images et utiliser le modèle vision
 - **Format des images** : S'assurer que les images sont dans un format supporté (PNG, JPG, WebP)
-- **Résolution** : Optimiser la résolution des images (pas trop grande, pas trop petite)
+- **Résolution** : Optimiser la résolution des images (pas trop grande pour limiter les coûts, pas trop petite pour la qualité)
 - **Combinaison texte + image** : Permettre d'envoyer du texte avec des images dans le même message
+- **Coûts** : L'analyse d'images consomme plus de tokens, surveiller la consommation
 
-### 10. Connexion web et recherche
+### 10. Limitations de l'API OpenAI
 
-**Réflexion** : Comment activer et gérer la recherche web ?
+**Réflexion** : Quelles sont les limitations de l'API OpenAI standard ?
 
 **Commentaire** :
-- **Activation** : Le compte ChatGPT doit avoir accès à la fonctionnalité de recherche web (ChatGPT Plus/Pro)
-- **Indicateur visuel** : Afficher quand ChatGPT utilise la recherche web
-- **Gestion des résultats** : Afficher les sources et liens utilisés par ChatGPT
-- **Performance** : La recherche web peut ralentir les réponses (gérer les timeouts)
-- **Erreurs** : Gérer les cas où la recherche web échoue (fallback sur réponse sans web)
+- **Recherche web** : Non disponible via l'API standard (fonctionnalité réservée à ChatGPT Plus/Pro web uniquement)
+- **Alternatives** : 
+  * Utiliser des outils externes si nécessaire (webhooks, plugins)
+  * Intégrer des sources de données spécifiques si besoin
+- **Limites de tokens** : 
+  * Limites par modèle (ex: 128k tokens pour gpt-4-turbo)
+  * Gérer les conversations longues (tronquer l'historique si nécessaire)
+- **Rate limits** : 
+  * Limites de requêtes par minute/heure selon le plan OpenAI
+  * Implémenter un rate limiting côté application pour éviter les erreurs
+- **Coûts** : 
+  * Coûts par token (input + output)
+  * Images et fichiers volumineux augmentent les coûts
+  * Surveiller la consommation régulièrement
 
 ### 11. Templates de prompts
 
@@ -308,14 +541,14 @@ Réponses ChatGPT complètes
   * Conserver les références aux sections originales
 - **Comparaison de documents** :
   * Upload de deux documents
-  * Analyse comparative par ChatGPT
+  * Analyse comparative par l'assistant IA
   * Mise en évidence des différences
   * Génération d'un rapport de comparaison
 - **Analyse de données** :
   * Support des fichiers Excel/CSV
-  * Extraction et analyse des données
-  * Génération de visualisations (si ChatGPT le supporte)
-  * Réponses basées sur les données
+  * Extraction et analyse des données via File API
+  * Réponses basées sur les données extraites
+  * Génération de tableaux formatés si nécessaire
 
 </div>
 
@@ -325,59 +558,58 @@ Réponses ChatGPT complètes
 
 ## 🧭 Plan d'implémentation
 
-### Phase 1 : Setup de base
-1. ✅ Créer la route API `/api/mcp-chatgpt` (ou `/api/chatgpt`)
-2. ✅ Configurer les credentials du compte ChatGPT dans les variables d'environnement
-3. ✅ Implémenter un client MCP basique pour se connecter au compte ChatGPT
-4. ✅ Gérer l'authentification/session du compte ChatGPT côté serveur
-5. ✅ Tester la connexion et les réponses simples
+### Phase 1 : Backend API
+1. ✅ Créer la route API `/api/assistant`
+2. ✅ Configurer la clé API OpenAI (`OPENAI_API_KEY`) dans les variables d'environnement
+3. ✅ Installer et configurer le SDK OpenAI (`openai`)
+4. ✅ Implémenter le client OpenAI avec gestion du streaming
+5. ✅ Gérer l'authentification utilisateur via Firebase Auth (pattern identique aux autres routes API)
+6. ✅ Tester la connexion et les réponses simples
 
-### Phase 2 : Interface utilisateur
-1. ✅ Créer la page `/commun/outils/chatgpt-assistant/page.tsx`
+### Phase 2 : UI Chat
+1. ✅ Créer la page `/commun/outils/assistant-ia/page.tsx`
 2. ✅ **Ajouter l'outil dans la liste** (`/commun/outils/page.tsx`) :
    * Ajouter l'entrée dans le tableau `outils`
    * Choisir une icône appropriée (ex: `MessageSquare`, `Bot`, `Sparkles`)
-   * Définir un nouveau schéma de couleurs (ex: orange/amber)
+   * Définir un nouveau schéma de couleurs (ex: orange/amber pour le 2ème outil)
 3. ✅ Implémenter l'interface de chat de base (input, historique, envoi)
-4. ✅ Ajouter le streaming des réponses
+4. ✅ Ajouter le streaming des réponses (Server-Sent Events)
+5. ✅ **Formatage élégant des réponses** :
+   * Intégrer une bibliothèque Markdown (`react-markdown`)
+   * Implémenter le syntax highlighting pour les blocs de code
+   * Créer des composants pour tableaux, citations, alertes
+   * Styliser avec Tailwind CSS pour cohérence visuelle
+   * Ajouter boutons de copie pour les blocs de code
+   * Tester le rendu pendant le streaming
 
-### Phase 2.5 : Fonctionnalités avancées (OBLIGATOIRE)
+### Phase 3 : Multimodalité
 1. ✅ **Support des images** :
    * Zone de collage d'images (drag & drop, bouton upload, collage depuis presse-papier)
    * Prévisualisation des images avant envoi
-   * Conversion des images en format compatible avec l'API ChatGPT
+   * Conversion des images en Base64 pour Vision API
+   * Utilisation du modèle `gpt-4o` ou `gpt-4-turbo` avec support vision
 2. ✅ **Support des fichiers** :
    * Zone de téléversement (drag & drop, bouton upload)
    * Support de plusieurs fichiers simultanés
    * Prévisualisation des fichiers téléversés
    * Validation des types de fichiers acceptés (PDF, Word, Excel, images, etc.)
+   * Upload vers OpenAI File API ou extraction texte côté serveur
 3. ✅ **Lecture OCR** :
-   * Activation automatique de l'OCR pour les images
+   * Activation automatique de l'OCR via Vision API pour les images
+   * Analyse et extraction de texte depuis les images
    * Affichage du texte extrait (optionnel, pour debug)
-4. ✅ **Connexion web** :
-   * Activation de la recherche web dans ChatGPT
-   * Indicateur visuel quand ChatGPT utilise le web
-   * Gestion des résultats de recherche web
 
-### Phase 3 : Améliorations
-1. ✅ Gestion d'erreurs robuste (notamment pour les fichiers volumineux)
-2. ✅ Rate limiting (avec gestion spéciale pour les fichiers/images)
-3. ✅ Logs et monitoring
-4. ✅ **Gestion des fichiers volumineux** :
-   * Limite de taille par fichier
-   * Compression si nécessaire
-   * Indicateur de progression pour les uploads
-5. ✅ (Optionnel) Stockage des conversations avec fichiers/images
-
-### Phase 4 : Fonctionnalités supplémentaires (RECOMMANDÉES)
+### Phase 4 : Templates & Historique
 1. ✅ **Historique et recherche** :
-   * Sauvegarder les conversations dans Firestore
+   * Sauvegarder les conversations dans Firestore (collection `assistant_conversations`)
    * Interface de recherche dans l'historique
    * Filtres par date, utilisateur, tags
+   * Reprendre une conversation existante
 2. ✅ **Templates de prompts** :
    * Créer une bibliothèque de prompts pour l'agence
    * Interface pour sélectionner/appliquer un template
    * Prompts personnalisables par l'utilisateur
+   * Stockage dans Firestore ou fichier de configuration
 3. ✅ **Export et partage** :
    * Export PDF/Word des conversations
    * Génération de lien de partage (si stockage activé)
@@ -385,18 +617,51 @@ Réponses ChatGPT complètes
 4. ✅ **Analyse avancée** :
    * Résumé automatique de documents longs
    * Comparaison de deux documents
-   * Analyse de données Excel/CSV avec visualisation
-5. ✅ **Améliorations UX** :
-   * Suggestions de réponses rapides
-   * Mode sombre/clair
-   * Raccourcis clavier
-   * Notifications (si conversations sauvegardées)
+   * Analyse de données Excel/CSV
 
 ### Phase 5 : Optimisations
-1. ✅ Cache des réponses fréquentes (si pertinent)
-2. ✅ Personnalisation de l'interface
-3. ✅ Performance : Optimisation du chargement et du streaming
-4. ✅ Analytics : Suivi de l'utilisation par fonctionnalité
+1. ✅ **Gestion d'erreurs robuste** :
+   * Gestion des erreurs API OpenAI spécifiques (rate limits, quota, context length, etc.)
+   * Retry automatique avec backoff exponentiel
+   * Messages d'erreur clairs et actionnables pour l'utilisateur
+   * Gestion spéciale pour les fichiers volumineux
+   * Timeout et gestion des requêtes longues
+2. ✅ **Rate limiting** :
+   * Limiter le nombre de requêtes par utilisateur/jour
+   * Gestion spéciale pour les fichiers/images (plus coûteux)
+   * Affichage des limites restantes à l'utilisateur
+3. ✅ **Logs et monitoring** :
+   * Tracer l'utilisation pour monitoring
+   * Suivi des coûts (tokens utilisés, coûts par requête)
+   * Analytics par fonctionnalité
+   * **Alertes budget** : Notifier si le budget mensuel est dépassé
+   * **Métriques à suivre** :
+     - Tokens utilisés par jour/semaine/mois
+     - Coûts par jour/semaine/mois
+     - Nombre de requêtes par utilisateur
+     - Taux d'erreur
+     - Temps de réponse moyen
+   * **Dashboard de monitoring** (optionnel) : Interface admin pour visualiser les métriques
+4. ✅ **Performance** :
+   * Optimisation du streaming
+   * Cache des réponses fréquentes (si pertinent)
+   * **Troncature intelligente de l'historique** :
+     * Garder les N derniers messages (ex: 10-20)
+     * Résumer les anciens messages si conversation très longue
+     * Utiliser un modèle plus petit pour le résumé (ex: gpt-3.5-turbo)
+   * **Compression des images** :
+     * Réduire la résolution avant envoi (max 2048x2048)
+     * Optimiser le format (WebP si possible)
+     * Limiter la taille (ex: max 5MB par image)
+   * **Timeout et requêtes longues** :
+     * Timeout de 60s pour requêtes normales
+     * Timeout de 120s pour requêtes avec fichiers
+     * Indicateur de progression pour l'utilisateur
+5. ✅ **Améliorations UX** :
+   * Suggestions de réponses rapides
+   * Raccourcis clavier
+   * Indicateur de progression pour les uploads
+   * Notifications (si conversations sauvegardées)
 
 </div>
 
@@ -407,33 +672,46 @@ Réponses ChatGPT complètes
 ## ⚠️ Limitations et considérations
 
 ### Techniques
-* **Limites du compte ChatGPT** : Le compte partagé peut avoir des limites d'utilisation (nombre de messages/jour, etc.)
-* **Gestion de session** : Si le compte utilise une authentification par session, il faut gérer la persistance et le renouvellement
-* **Concurrence** : Plusieurs utilisateurs simultanés peuvent utiliser le même compte (à gérer si nécessaire)
-* **Latence** : Les réponses peuvent prendre quelques secondes (encore plus avec fichiers/images/recherche web)
-* **Dépendance externe** : Dépendance à ChatGPT (disponibilité, changements)
+* **Limites de l'API OpenAI** : 
+  * Rate limits selon le plan OpenAI (requêtes par minute/heure)
+  * Limites de tokens par modèle (ex: 128k pour gpt-4-turbo)
+  * Gestion de la concurrence : plusieurs utilisateurs simultanés partagent les mêmes limites
+* **Latence** : Les réponses peuvent prendre quelques secondes (encore plus avec fichiers/images)
+* **Dépendance externe** : Dépendance à l'API OpenAI (disponibilité, changements de pricing)
 * **Taille des fichiers** : Les fichiers volumineux peuvent ralentir les réponses et augmenter les coûts
 * **Stockage temporaire** : Besoin d'espace de stockage pour les fichiers uploadés (Firebase Storage ou autre)
-* **Recherche web** : Nécessite un compte ChatGPT avec accès à cette fonctionnalité (ChatGPT Plus/Pro)
 * **OCR** : Peut être coûteux en tokens selon la taille et le nombre d'images
+* **Coûts** : 
+  * Coûts par token (input + output)
+  * Images et fichiers volumineux augmentent significativement les coûts
+  * Surveiller régulièrement la consommation
 
-### Légales/Éthiques
-* ⚠️ **Contournement de restriction** : S'assurer que le contournement est légal et éthique
-* ⚠️ **Données sensibles** : Ne pas envoyer de données clients sensibles à ChatGPT
-* ⚠️ **Politique d'entreprise** : Vérifier que l'utilisation de ChatGPT est autorisée par Allianz (même via contournement)
+### Conformité et éthique
+* ⚠️ **Données sensibles** : Ne pas envoyer de données clients sensibles à l'API OpenAI
+* ⚠️ **Politique d'entreprise** : Vérifier que l'utilisation de l'API OpenAI est autorisée par Allianz
+* ⚠️ **RGPD** : S'assurer que les données envoyées respectent les réglementations en vigueur
 
 ### Sécurité
-* 🔒 **Credentials** : Ne jamais exposer les credentials du compte ChatGPT côté client
-* 🔒 **Session** : Gérer la session ChatGPT de manière sécurisée côté serveur
+* 🔒 **Clé API** : Ne jamais exposer la clé API OpenAI côté client (stockage serveur uniquement)
+* 🔒 **Authentification** : Limiter l'accès aux utilisateurs connectés via Firebase Auth
 * 🔒 **Validation** : Valider et sanitizer tous les inputs (texte, fichiers, images)
 * 🔒 **Validation des fichiers** : 
   * Vérifier les types MIME réels (pas seulement l'extension)
-  * Scanner les fichiers pour détecter les malwares (si possible)
   * Limiter les types de fichiers acceptés
-* 🔒 **Authentification** : Limiter l'accès aux utilisateurs connectés à l'application
-* 🔒 **Rate limiting** : Limiter l'utilisation pour éviter la surcharge du compte partagé
-* 🔒 **Données sensibles dans les fichiers** : Avertir les utilisateurs de ne pas envoyer de données clients sensibles
+  * Limiter la taille des fichiers
+* 🔒 **Rate limiting** : Limiter l'utilisation par utilisateur pour contrôler les coûts
+* 🔒 **Données sensibles** : Avertir les utilisateurs de ne pas envoyer de données clients sensibles
 * 🔒 **Nettoyage des fichiers** : Supprimer les fichiers temporaires après traitement pour éviter les fuites de données
+* 🔒 **Logs** : Tracer l'utilisation pour audit et monitoring (sans stocker de données sensibles)
+* 🔒 **Audit trail** : 
+  * Logger toutes les actions (création conversation, envoi message, upload fichier)
+  * Stocker userId, timestamp, action, métadonnées (sans contenu sensible)
+  * Collection Firestore `assistant_audit_logs` pour traçabilité
+* 🔒 **Validation renforcée des fichiers** :
+  * Scanner les fichiers pour détecter les malwares (si service disponible)
+  * Vérifier la signature MIME réelle (pas seulement l'extension)
+  * Limiter strictement les types de fichiers acceptés
+  * Quarantaine temporaire pour fichiers suspects
 
 </div>
 
@@ -441,24 +719,23 @@ Réponses ChatGPT complètes
 
 <div class="section section-alternatives">
 
-## 🔄 Alternatives à considérer
+## 🔄 Approche technique retenue
 
-### Alternative 1 : API OpenAI directe (sans MCP)
-* **Avantage** : Plus simple, pas besoin d'implémenter MCP
-* **Inconvénient** : Moins flexible, pas de standardisation
+**Solution choisie** : API OpenAI officielle via SDK Node.js
 
-### Alternative 2 : Proxy simple
-* **Avantage** : Très simple à implémenter
-* **Inconvénient** : Moins de fonctionnalités, moins robuste
+**Avantages** :
+* ✅ **Stabilité** : API officielle, garantie de pérennité et de support
+* ✅ **Conformité** : Solution légale et conforme, pas de contournement
+* ✅ **Fonctionnalités complètes** : Chat, Vision (OCR), analyse de fichiers, streaming
+* ✅ **Sécurité** : Clé API côté serveur uniquement, authentification Firebase Auth
+* ✅ **Scalabilité** : Gestion native de la charge par l'API OpenAI
+* ✅ **Intégration simple** : Pattern identique aux autres routes API (Pappers, Societe.com)
 
-### Alternative 3 : Service externe
-* **Avantage** : Pas de maintenance
-* **Inconvénient** : Coûts supplémentaires, moins de contrôle
-
-**Recommandation** : 
-- Utiliser le compte ChatGPT existant via un client MCP ou une bibliothèque de scraping/automation
-- Implémenter via route API Next.js pour la sécurité
-- Le MCP permet de standardiser l'accès et d'ajouter des fonctionnalités avancées si nécessaire
+**Implémentation** :
+- Route API Next.js `/api/assistant` (server-side uniquement)
+- SDK OpenAI officiel (`openai`)
+- Authentification utilisateur via Firebase Auth
+- Streaming des réponses pour une meilleure UX
 
 </div>
 
@@ -468,20 +745,20 @@ Réponses ChatGPT complètes
 
 ## ❓ Questions ouvertes
 
-1. **Limites du compte** : Quelles sont les limites d'utilisation du compte ChatGPT (messages/jour, etc.) ?
-2. **Usage** : Combien d'utilisateurs simultanés prévus ? (pour gérer la charge sur le compte partagé)
-3. **Cas d'usage** : Quels sont les principaux cas d'usage ChatGPT dans l'agence ?
-4. **Compliance** : Le contournement est-il autorisé par la direction ?
+1. **Modèle OpenAI** : Quel modèle utiliser ? (`gpt-4o`, `gpt-4-turbo`, ou autre ?)
+2. **Budget API** : Quel budget mensuel est alloué pour l'utilisation de l'API OpenAI ?
+3. **Usage** : Combien d'utilisateurs simultanés prévus ? (pour dimensionner les rate limits)
+4. **Cas d'usage** : Quels sont les principaux cas d'usage de l'assistant IA dans l'agence ?
 5. **Priorité** : Quelle est la priorité de cette fonctionnalité vs autres développements ?
-6. **Authentification compte** : Le compte ChatGPT utilise-t-il une authentification par session/cookies ou par clé API ?
-7. **Type de compte** : Le compte ChatGPT est-il un compte Plus/Pro avec accès à la recherche web ?
-8. **Types de fichiers** : Quels types de fichiers sont les plus utilisés dans l'agence ? (PDF, Word, Excel, images, etc.)
-9. **Taille des fichiers** : Quelle est la taille moyenne des fichiers à analyser ? (pour définir les limites)
-10. **Stockage** : Où stocker les fichiers temporaires ? (Firebase Storage, système de fichiers, autre ?)
-11. **Templates** : Quels sont les cas d'usage les plus fréquents pour créer des templates de prompts ?
-12. **Historique** : Faut-il sauvegarder toutes les conversations ou seulement certaines ?
-13. **Partage** : Les conversations doivent-elles être partageables entre utilisateurs de l'agence ?
-14. **Export** : Quels formats d'export sont les plus utiles ? (PDF, Word, Excel, autre ?)
+6. **Types de fichiers** : Quels types de fichiers sont les plus utilisés dans l'agence ? (PDF, Word, Excel, images, etc.)
+7. **Taille des fichiers** : Quelle est la taille moyenne des fichiers à analyser ? (pour définir les limites)
+8. **Stockage** : Où stocker les fichiers temporaires ? (Firebase Storage, système de fichiers, autre ?)
+9. **Templates** : Quels sont les cas d'usage les plus fréquents pour créer des templates de prompts ?
+10. **Historique** : Faut-il sauvegarder toutes les conversations ou seulement certaines ?
+11. **Partage** : Les conversations doivent-elles être partageables entre utilisateurs de l'agence ?
+12. **Export** : Quels formats d'export sont les plus utiles ? (PDF, Word, Excel, autre ?)
+13. **Rate limiting** : Quelles limites par utilisateur/jour sont appropriées ? (pour contrôler les coûts)
+14. **Monitoring** : Quel niveau de monitoring et d'analytics est nécessaire ?
 
 </div>
 
@@ -492,19 +769,163 @@ Réponses ChatGPT complètes
 ## 🚀 Prochaines étapes
 
 1. **Validation** : Valider l'approche avec l'équipe
-2. **Vérification du compte** : Vérifier que le compte ChatGPT a accès à toutes les fonctionnalités (recherche web, Vision/OCR, fichiers)
-3. **Setup compte** : Configurer les credentials du compte ChatGPT existant dans les variables d'environnement
+2. **Configuration API** : 
+   * Créer un compte OpenAI ou utiliser un compte existant
+   * Générer une clé API
+   * Configurer `OPENAI_API_KEY` dans les variables d'environnement
+3. **Choix du modèle** : Déterminer le modèle à utiliser (`gpt-4o` recommandé pour meilleures performances)
 4. **POC** : Développer un Proof of Concept simple pour tester :
-   * La connexion au compte ChatGPT
-   * L'envoi de messages texte
-   * L'upload d'images avec OCR
-   * L'upload de fichiers
-   * La recherche web
-5. **Test** : Tester depuis le réseau Allianz pour confirmer le contournement de la limitation
-6. **Développement** : Implémenter la solution complète (API + Interface avec toutes les fonctionnalités)
-7. **Intégration** : Ajouter l'outil dans la liste des outils existants
+   * La connexion à l'API OpenAI
+   * L'envoi de messages texte avec streaming
+   * L'upload d'images avec Vision API (OCR)
+   * L'upload et l'analyse de fichiers
+5. **Développement** : Implémenter la solution complète (API + Interface avec toutes les fonctionnalités)
+6. **Intégration** : Ajouter l'outil dans la liste des outils existants (`/commun/outils/page.tsx`)
+7. **Tests** : Tester toutes les fonctionnalités et valider la performance
 
 </div>
+
+---
+
+<div class="section section-tests">
+
+## 🧪 Tests et validation
+
+### Tests unitaires
+
+**Objectifs** :
+- Tester les fonctions utilitaires (formatage, validation, parsing)
+- Tester la gestion des erreurs
+- Tester la troncature de l'historique
+- Tester la conversion des fichiers/images
+
+**Outils** : Jest, Vitest, ou framework de test Next.js
+
+### Tests d'intégration
+
+**Objectifs** :
+- Tester la route API `/api/assistant` avec différents scénarios
+- Tester l'authentification et l'autorisation
+- Tester le streaming des réponses
+- Tester l'upload de fichiers et images
+- Tester la gestion des erreurs API OpenAI
+
+**Outils** : Tests API avec `supertest` ou tests E2E
+
+### Tests E2E (End-to-End)
+
+**Objectifs** :
+- Tester le flux complet : envoi message → réception réponse
+- Tester l'upload de fichiers → analyse → réponse
+- Tester l'upload d'images → OCR → réponse
+- Tester le streaming en temps réel
+- Tester le formatage Markdown des réponses
+- Tester la gestion des erreurs côté UI
+
+**Outils** : Playwright, Cypress, ou framework E2E Next.js
+
+### Tests de performance
+
+**Objectifs** :
+- Mesurer le temps de réponse moyen
+- Tester avec des fichiers volumineux
+- Tester avec des conversations longues
+- Tester la charge (plusieurs utilisateurs simultanés)
+
+### Tests de sécurité
+
+**Objectifs** :
+- Tester que la clé API n'est jamais exposée côté client
+- Tester la validation des fichiers (types MIME, taille)
+- Tester l'authentification (accès non autorisé)
+- Tester l'injection de code dans les messages
+- Tester la sanitization du Markdown
+
+### Scénarios de test prioritaires
+
+1. ✅ **Chat simple** : Envoi message texte → réception réponse
+2. ✅ **Streaming** : Vérifier que le streaming fonctionne correctement
+3. ✅ **Images** : Upload image → OCR → réponse avec analyse
+4. ✅ **Fichiers** : Upload PDF → analyse → réponse
+5. ✅ **Erreurs** : Tester tous les types d'erreurs (rate limit, quota, etc.)
+6. ✅ **Formatage** : Vérifier le rendu Markdown (tableaux, code, etc.)
+7. ✅ **Historique** : Tester la gestion de l'historique long
+8. ✅ **Authentification** : Tester l'accès non autorisé
+
+</div>
+
+---
+
+<div class="section section-monitoring">
+
+## 📊 Monitoring et coûts
+
+### Suivi des coûts
+
+**Métriques à collecter** :
+
+- **Tokens utilisés** :
+  * Tokens input par requête
+  * Tokens output par requête
+  * Total tokens par jour/semaine/mois
+  * Par utilisateur (optionnel)
+
+- **Coûts** :
+  * Coût par requête (calculé selon le modèle utilisé)
+  * Coût total par jour/semaine/mois
+  * Coût par utilisateur (optionnel)
+  * Coût par fonctionnalité (chat, images, fichiers)
+
+- **Utilisation** :
+  * Nombre de requêtes par jour/semaine/mois
+  * Nombre de requêtes par utilisateur
+  * Taux d'utilisation (requêtes réussies vs échouées)
+
+**Implémentation** :
+
+- Logger chaque requête dans Firestore (collection `assistant_usage_logs`)
+- Calculer les coûts en temps réel (selon pricing OpenAI)
+- Stocker les métriques agrégées (par jour/semaine/mois)
+
+### Alertes budget
+
+**Seuils à configurer** :
+
+- ⚠️ **Avertissement** : 80% du budget mensuel atteint
+- 🚨 **Alerte critique** : 95% du budget mensuel atteint
+- 🔴 **Blocage** : 100% du budget mensuel atteint (optionnel)
+
+**Notifications** :
+
+- Email à l'administrateur
+- Notification dans l'interface admin
+- Affichage dans le dashboard de monitoring
+
+### Dashboard de monitoring (optionnel)
+
+**Fonctionnalités** :
+
+- Graphiques de consommation (tokens, coûts)
+- Graphiques d'utilisation (requêtes par jour)
+- Liste des utilisateurs les plus actifs
+- Taux d'erreur
+- Temps de réponse moyen
+- Alertes et notifications
+
+**Implémentation** : Page admin `/admin/assistant-monitoring`
+
+### Optimisation des coûts
+
+**Recommandations** :
+
+- Utiliser `gpt-4o` pour meilleur rapport qualité/prix
+- Limiter la taille des images (compression)
+- Tronquer l'historique pour réduire les tokens input
+- Mettre en cache les réponses fréquentes (si pertinent)
+- Limiter le nombre de requêtes par utilisateur/jour
+
+</div>
+
 
 ---
 
