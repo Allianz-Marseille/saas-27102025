@@ -1,0 +1,353 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Bot, X, Minimize2, Maximize2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/firebase/use-auth";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Send } from "lucide-react";
+import { toast } from "sonner";
+import { MarkdownRenderer } from "./MarkdownRenderer";
+
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}
+
+export function FloatingAssistant() {
+  const { user } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Charger l'état depuis localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem("floating-assistant-open");
+    if (savedState === "true") {
+      setIsOpen(true);
+    }
+  }, []);
+
+  // Sauvegarder l'état dans localStorage
+  useEffect(() => {
+    if (isOpen) {
+      localStorage.setItem("floating-assistant-open", "true");
+    } else {
+      localStorage.setItem("floating-assistant-open", "false");
+    }
+  }, [isOpen]);
+
+  // Scroll vers le bas quand de nouveaux messages arrivent
+  useEffect(() => {
+    if (isOpen && !isMinimized) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isOpen, isMinimized]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [input]);
+
+  const handleSendMessage = async () => {
+    if (!input.trim() || isLoading || !user) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: input,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    const messageText = input;
+    setInput("");
+    setIsLoading(true);
+
+    // Créer le message assistant initial
+    const assistantMessageId = (Date.now() + 1).toString();
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: "assistant",
+      content: "",
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, assistantMessage]);
+
+    try {
+      const response = await fetch("/api/assistant/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${await user.getIdToken()}`,
+        },
+        body: JSON.stringify({
+          message: messageText,
+          stream: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erreur lors de l'envoi du message");
+      }
+
+      // Vérifier si c'est un stream
+      const contentType = response.headers.get("content-type");
+      if (contentType?.includes("text/event-stream")) {
+        // Mode streaming
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let accumulatedContent = "";
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const data = line.slice(6);
+                if (data === "[DONE]") {
+                  continue;
+                }
+
+                try {
+                  const parsed = JSON.parse(data);
+                  
+                  if (parsed.type === "content" && parsed.content) {
+                    accumulatedContent += parsed.content;
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === assistantMessageId
+                          ? { ...msg, content: accumulatedContent }
+                          : msg
+                      )
+                    );
+                  } else if (parsed.type === "error") {
+                    throw new Error(parsed.error);
+                  } else if (parsed.content) {
+                    // Format simple sans type
+                    accumulatedContent += parsed.content;
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === assistantMessageId
+                          ? { ...msg, content: accumulatedContent }
+                          : msg
+                      )
+                    );
+                  }
+                } catch (e) {
+                  console.error("Erreur parsing SSE:", e);
+                }
+              }
+            }
+          }
+        }
+      } else {
+        // Mode non-streaming (fallback)
+        const data = await response.json();
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessageId
+              ? {
+                  ...msg,
+                  content: data.response || data.message || "Aucune réponse reçue",
+                }
+              : msg
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Erreur lors de l'envoi du message"
+      );
+      setMessages((prev) => prev.filter((msg) => msg.id !== assistantMessageId));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+    if (e.key === "Escape" && isOpen) {
+      setIsOpen(false);
+    }
+  };
+
+  if (!user) return null;
+
+  return (
+    <>
+      {/* Bouton flottant */}
+      <AnimatePresence>
+        {!isOpen && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            className="fixed bottom-6 right-6 z-50"
+          >
+            <Button
+              onClick={() => {
+                setIsOpen(true);
+                setIsMinimized(false);
+              }}
+              size="lg"
+              className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+              aria-label="Ouvrir l'assistant IA"
+            >
+              <Bot className="h-6 w-6" />
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Fenêtre de chat */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ 
+              opacity: 1, 
+              scale: 1, 
+              y: 0,
+              height: isMinimized ? "auto" : "600px"
+            }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            className="fixed bottom-6 right-6 z-50 w-[400px] max-w-[calc(100vw-3rem)] bg-background border border-border rounded-lg shadow-2xl flex flex-col overflow-hidden"
+            style={{ maxHeight: "calc(100vh - 3rem)" }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b bg-muted/50">
+              <div className="flex items-center gap-2">
+                <Bot className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold">Assistant IA</h3>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsMinimized(!isMinimized)}
+                  aria-label={isMinimized ? "Agrandir" : "Réduire"}
+                >
+                  {isMinimized ? (
+                    <Maximize2 className="h-4 w-4" />
+                  ) : (
+                    <Minimize2 className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsOpen(false)}
+                  aria-label="Fermer"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Messages */}
+            {!isMinimized && (
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messages.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
+                  </div>
+                ) : (
+                  messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${
+                        message.role === "user" ? "justify-end" : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-lg p-3 ${
+                          message.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted"
+                        }`}
+                      >
+                        {message.role === "user" ? (
+                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        ) : (
+                          <MarkdownRenderer content={message.content} />
+                        )}
+                        <p className="text-xs opacity-70 mt-1">
+                          {message.timestamp.toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted rounded-lg p-3">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+
+            {/* Input */}
+            {!isMinimized && (
+              <div className="p-4 border-t bg-muted/30">
+                <div className="flex gap-2">
+                  <Textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Tapez votre message..."
+                    className="min-h-[60px] max-h-[120px] resize-none"
+                    disabled={isLoading}
+                  />
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={!input.trim() || isLoading}
+                    size="icon"
+                    className="shrink-0"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Appuyez sur Entrée pour envoyer, Shift+Entrée pour une nouvelle ligne
+                </p>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+

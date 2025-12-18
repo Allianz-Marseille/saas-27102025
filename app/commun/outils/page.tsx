@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, ArrowRight } from "lucide-react";
+import { ArrowLeft, Users, ArrowRight, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { motion } from "framer-motion";
@@ -31,6 +31,13 @@ const colorSchemes: ColorScheme[] = [
     border: "border-l-4 border-emerald-500",
     hoverGlow: "hover:shadow-[0_0_30px_rgba(16,185,129,0.5)]",
   },
+  {
+    gradient: "from-orange-500 via-amber-500 to-yellow-600",
+    iconBg: "bg-gradient-to-br from-orange-500 to-amber-600",
+    iconColor: "text-orange-600 dark:text-orange-400",
+    border: "border-l-4 border-orange-500",
+    hoverGlow: "hover:shadow-[0_0_30px_rgba(249,115,22,0.5)]",
+  },
 ];
 
 export default function OutilsPage() {
@@ -43,6 +50,13 @@ export default function OutilsPage() {
       description: "Consultez toutes les informations disponibles sur une entreprise (légales, dirigeants, bilans, établissements, bénéficiaires effectifs, etc.) via Pappers",
       icon: Users,
       href: "/commun/outils/beneficiaires-effectifs",
+    },
+    {
+      id: "assistant-ia",
+      title: "Assistant IA",
+      description: "Assistant IA intelligent pour vous aider dans vos tâches quotidiennes. Mode RAG disponible pour les administrateurs.",
+      icon: Bot,
+      href: "/commun/outils/assistant-ia",
     },
   ] as const;
 

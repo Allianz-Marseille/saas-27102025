@@ -4,8 +4,6 @@
 
 ---
 
-<div class="section section-enjeux">
-
 ## 🎯 Enjeux
 
 L'agence a besoin d'un **assistant IA interne** pour améliorer la productivité quotidienne dans :
@@ -25,11 +23,25 @@ L'agence a besoin d'un **assistant IA interne** pour améliorer la productivité
   1. **Carte "outil"** : 2ème outil ajouté dans `/commun/outils` (page dédiée)
   2. **Bot flottant** : Bulle en bas à droite présente sur toutes les pages
 
-</div>
+### Séparation Chatbot / RAG
+
+**Important** : Le système est divisé en deux composants distincts :
+
+1. **Chatbot standard** (accessible à tous les utilisateurs connectés) :
+   * Accessible depuis la **bulle flottante** en bas de page (toutes les pages)
+   * Accessible depuis la **page Outils** (`/commun/outils/assistant-ia`)
+   * Utilise l'API OpenAI directement sans contexte enrichi
+   * Fonctionnalités : Chat, OCR, analyse de fichiers, streaming
+
+2. **RAG (Retrieval-Augmented Generation)** (accessible uniquement aux administrateurs) :
+   * Accessible **uniquement depuis la page Outils** (`/commun/outils/assistant-ia`)
+   * **Restriction** : Seuls les utilisateurs avec le rôle `ADMINISTRATEUR` peuvent :
+     * Utiliser le mode RAG (réponses enrichies avec contexte métier)
+     * Uploader des PDF pour mettre à jour la base de connaissances
+   * Le RAG enrichit les réponses avec du contexte récupéré depuis une base de connaissances vectorielle
+   * Les administrateurs peuvent gérer la base de connaissances (ajout, modification, suppression de documents)
 
 ---
-
-<div class="section section-solution">
 
 ## 💡 Solution proposée : Assistant IA via OpenAI API
 
@@ -57,11 +69,7 @@ Réponses multimodales (texte, images, fichiers)
 * ✅ **Sécurité** : Clé API côté serveur uniquement, authentification Firebase Auth
 * ✅ **Scalabilité** : Gestion native de la charge et des limites par l'API OpenAI
 
-</div>
-
 ---
-
-<div class="section section-reflexions">
 
 ## 🤔 Réflexions techniques
 
@@ -238,33 +246,6 @@ Les deux méthodes d'accès partagent la même interface de chat avec :
   * S'assurer que le contenu est accessible (ARIA, navigation clavier)
   * Support des lecteurs d'écran pour le contenu Markdown
 
-**Exemples de rendu** :
-
-```
-# Titre principal
-
-Voici un **texte en gras** et un *texte en italique*.
-
-## Liste à puces
-- Point 1
-- Point 2
-  - Sous-point
-
-## Code
-```typescript
-function example() {
-  return "Hello World";
-}
-```
-
-## Tableau
-| Colonne 1 | Colonne 2 | Colonne 3 |
-|-----------|-----------|-----------|
-| Donnée 1   | Donnée 2  | Donnée 3  |
-
-> Citation importante
-```
-
 **Commentaire** :
 - Le formatage élégant améliore significativement la lisibilité des réponses
 - Les tableaux sont particulièrement utiles pour les devis, comparatifs, et analyses
@@ -349,7 +330,7 @@ function example() {
   - Historique consultable et recherchable
   - Partage de conversations possible
   - Export de conversations
-  - **Recommandation** : Commencer par Option 1, ajouter Option 2 en Phase 4
+  - **Recommandation** : Commencer par Option 1, ajouter Option 2 en Phase 5
 - **Structure de stockage** (si Option 2) :
   * Collection `assistant_conversations`
   * Document par conversation avec :
@@ -423,27 +404,6 @@ function example() {
   * Retry automatique avec backoff
   * Message : "Problème de connexion. Nouvelle tentative..."
   * Limiter les retries (ex: 2-3 max)
-
-**Implémentation** :
-
-```typescript
-// Exemple de gestion d'erreurs
-try {
-  const response = await openai.chat.completions.create(...);
-} catch (error) {
-  if (error.status === 429) {
-    // Rate limit
-    const retryAfter = error.headers?.['retry-after'];
-    // Gérer le retry
-  } else if (error.status === 401) {
-    // Invalid API key
-    // Logger et notifier l'admin
-  } else if (error.message?.includes('context_length')) {
-    // Tronquer l'historique
-  }
-  // etc.
-}
-```
 
 **Commentaire** :
 - Toutes les erreurs doivent être loggées côté serveur pour debugging
@@ -609,16 +569,169 @@ interface FileReference {
   * Réponses basées sur les données extraites
   * Génération de tableaux formatés si nécessaire
 
-</div>
-
 ---
 
-<div class="section section-chemins">
+## 🔍 RAG - Base de connaissances (Admin uniquement)
+
+### Vue d'ensemble
+
+Le système RAG (Retrieval-Augmented Generation) permet d'enrichir les réponses de l'assistant IA avec du contexte métier récupéré depuis une base de connaissances vectorielle. Cette fonctionnalité est **uniquement accessible aux administrateurs**.
+
+### Architecture RAG
+
+```
+Requête utilisateur
+    ↓
+Génération embedding de la requête
+    ↓
+Recherche vectorielle (similarité cosinus)
+    ↓
+Récupération des chunks pertinents
+    ↓
+Construction du contexte enrichi
+    ↓
+Génération de réponse avec OpenAI + contexte
+    ↓
+Réponse avec sources citées
+```
+
+### Structure des fichiers
+
+- `lib/assistant/types.ts` : Types TypeScript pour le RAG
+- `lib/assistant/embeddings.ts` : Génération d'embeddings avec OpenAI
+- `lib/assistant/vector-search.ts` : Recherche vectorielle dans Firestore
+- `lib/assistant/rag.ts` : Fonctions principales RAG
+- `app/api/assistant/rag/route.ts` : Route API pour le chat RAG
+- `app/api/assistant/rag/upload/route.ts` : Route API pour upload de PDF (admin uniquement)
+- `app/api/assistant/rag/documents/route.ts` : Route API pour gérer les documents (admin uniquement)
+- `scripts/index-rag-documents.ts` : Script d'indexation de documents
+
+### Installation et configuration
+
+1. Installer les dépendances :
+```bash
+npm install openai pdf-parse
+```
+
+2. Configurer la clé API OpenAI dans `.env.local` :
+```
+OPENAI_API_KEY=sk-...
+```
+
+### Indexation de documents
+
+Pour indexer des documents dans la base RAG :
+
+1. Modifier le script `scripts/index-rag-documents.ts` pour ajouter vos documents
+2. Exécuter le script :
+```bash
+npm run index:rag
+```
+
+Le script va :
+- Découper les documents en chunks (environ 500 tokens avec overlap de 50 tokens)
+- Générer les embeddings pour chaque chunk avec `text-embedding-3-small`
+- Stocker les chunks dans Firestore (collection `rag_chunks`)
+- Créer les métadonnées dans la collection `rag_documents`
+
+### Utilisation de l'API RAG
+
+#### Endpoint
+
+`POST /api/assistant/rag`
+
+#### Headers
+
+```
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+#### Body
+
+```json
+{
+  "message": "Quelle est la procédure pour souscrire une assurance ?",
+  "useRAG": true,
+  "model": "gpt-4o"
+}
+```
+
+#### Réponse
+
+```json
+{
+  "success": true,
+  "response": "La procédure pour souscrire une assurance...",
+  "sources": ["Guide des procédures d'assurance"],
+  "sourcesWithScores": [
+    {
+      "title": "Guide des procédures d'assurance",
+      "score": 0.85,
+      "documentId": "doc-123"
+    }
+  ],
+  "usedRAG": true,
+  "context": "Contexte utilisé pour le mode debug"
+}
+```
+
+### Structure Firestore
+
+#### Collection `rag_chunks`
+
+Chaque document contient :
+- `content` : Le texte du chunk
+- `embedding` : Le vecteur d'embedding (array de nombres, 1536 dimensions)
+- `metadata` :
+  - `documentId` : ID du document source
+  - `documentTitle` : Titre du document
+  - `documentType` : Type de document (guide, faq, etc.)
+  - `chunkIndex` : Index du chunk dans le document
+  - `createdAt` : Date de création
+  - `source` : Source du document
+  - `tags` : Tags pour filtrage
+
+#### Collection `rag_documents`
+
+Documents sources indexés :
+- `title` : Titre du document
+- `type` : Type de document
+- `source` : Source
+- `tags` : Tags
+- `createdAt` : Date d'indexation
+- `chunkCount` : Nombre de chunks
+
+### Configuration
+
+Les paramètres par défaut dans `lib/assistant/vector-search.ts` :
+
+- `topK` : 5 (nombre de chunks à récupérer)
+- `minScore` : 0.7 (score de similarité minimum)
+- `embeddingModel` : "text-embedding-3-small"
+
+### Notes techniques
+
+- La recherche vectorielle utilise la similarité cosinus
+- Les chunks font environ 500 tokens avec un overlap de 50 tokens
+- Pour de grandes collections (>1000 documents), considérer une base vectorielle dédiée (Pinecone, Qdrant)
+- Le modèle d'embedding utilisé est `text-embedding-3-small` (1536 dimensions)
+- La recherche se fait actuellement sur tous les chunks (pour de grandes collections, optimiser avec une base vectorielle dédiée)
+
+### Améliorations futures
+
+- [ ] Utiliser une base vectorielle dédiée (Pinecone, Qdrant) pour de meilleures performances
+- [ ] Implémenter le reranking pour améliorer la pertinence
+- [ ] Ajouter un système de mise à jour automatique des documents
+- [ ] Dashboard de monitoring des recherches
+- [ ] Support de différents types de documents (Word, Excel, etc.)
+
+---
 
 ## 🧭 Plan d'implémentation
 
 ### Phase 1 : Backend API
-1. ✅ Créer la route API `/api/assistant`
+1. ✅ Créer la route API `/api/assistant/chat`
 2. ✅ Configurer la clé API OpenAI (`OPENAI_API_KEY`) dans les variables d'environnement
 3. ✅ Installer et configurer le SDK OpenAI (`openai`)
 4. ✅ Implémenter le client OpenAI avec gestion du streaming
@@ -637,10 +750,10 @@ interface FileReference {
    * Utiliser le composant `ChatInterface` en pleine page
    * Ajouter l'outil dans la liste (`/commun/outils/page.tsx`) :
      * Ajouter l'entrée dans le tableau `outils`
-     * Choisir une icône appropriée (ex: `MessageSquare`, `Bot`, `Sparkles`)
+     * Choisir une icône appropriée (ex: `Bot`)
      * Définir un nouveau schéma de couleurs (ex: orange/amber pour le 2ème outil)
 
-3. ✅ **Méthode 2 : Bot flottant** :
+3. ⏳ **Méthode 2 : Bot flottant** :
    * Créer le composant `FloatingAssistant`
    * Bouton/bulle flottant en bas à droite (état fermé)
    * Fenêtre de chat flottante (état ouvert)
@@ -649,7 +762,7 @@ interface FileReference {
    * Persistance de l'état dans localStorage
    * Responsive design (mobile-friendly)
 
-4. ✅ **Formatage élégant des réponses** :
+4. ⏳ **Formatage élégant des réponses** :
    * Intégrer une bibliothèque Markdown (`react-markdown`)
    * Implémenter le syntax highlighting pour les blocs de code
    * Créer des composants pour tableaux, citations, alertes
@@ -659,54 +772,79 @@ interface FileReference {
    * Adapter le rendu pour la fenêtre flottante (scroll, taille)
 
 ### Phase 3 : Multimodalité
-1. ✅ **Support des images** :
+1. ⏳ **Support des images** :
    * Zone de collage d'images (drag & drop, bouton upload, collage depuis presse-papier)
    * Prévisualisation des images avant envoi
    * Conversion des images en Base64 pour Vision API
    * Utilisation du modèle `gpt-4o` ou `gpt-4-turbo` avec support vision
-2. ✅ **Support des fichiers** :
+2. ⏳ **Support des fichiers** :
    * Zone de téléversement (drag & drop, bouton upload)
    * Support de plusieurs fichiers simultanés
    * Prévisualisation des fichiers téléversés
    * Validation des types de fichiers acceptés (PDF, Word, Excel, images, etc.)
    * Upload vers OpenAI File API ou extraction texte côté serveur
-3. ✅ **Lecture OCR** :
+3. ⏳ **Lecture OCR** :
    * Activation automatique de l'OCR via Vision API pour les images
    * Analyse et extraction de texte depuis les images
    * Affichage du texte extrait (optionnel, pour debug)
 
-### Phase 4 : Templates & Historique
-1. ✅ **Historique et recherche** :
+### Phase 4 : RAG - Base de connaissances (Admin uniquement)
+1. ✅ **Gestion de la base de connaissances** :
+   * Interface admin pour uploader des PDF dans la base RAG
+   * Route API `/api/assistant/rag/upload` (admin uniquement)
+   * Validation et traitement des PDF uploadés
+   * Extraction du texte depuis les PDF
+   * Génération automatique des embeddings et indexation
+   * Interface pour visualiser/gérer les documents indexés
+   * Possibilité de supprimer des documents de la base
+
+2. ✅ **Intégration RAG dans le chat** :
+   * Toggle "Mode RAG" dans la page Outils (visible uniquement pour les admins)
+   * Route API `/api/assistant/rag` avec vérification du rôle admin
+   * Affichage des sources utilisées dans les réponses RAG
+   * Affichage des scores de confiance
+   * Mode debug pour voir le contexte utilisé
+   * Indicateur visuel quand le mode RAG est actif
+
+3. ✅ **Sécurité et permissions** :
+   * Vérification du rôle `ADMINISTRATEUR` pour toutes les fonctionnalités RAG
+   * Route API `/api/assistant/rag` : vérifie `verifyAdmin()` avant traitement
+   * Route API `/api/assistant/rag/upload` : admin uniquement
+   * Route API `/api/assistant/rag/documents` : admin uniquement
+   * Interface UI : masquer les options RAG pour les non-admins
+
+### Phase 5 : Templates & Historique
+1. ⏳ **Historique et recherche** :
    * Sauvegarder les conversations dans Firestore (collection `assistant_conversations`)
    * Interface de recherche dans l'historique
    * Filtres par date, utilisateur, tags
    * Reprendre une conversation existante
-2. ✅ **Templates de prompts** :
+2. ⏳ **Templates de prompts** :
    * Créer une bibliothèque de prompts pour l'agence
    * Interface pour sélectionner/appliquer un template
    * Prompts personnalisables par l'utilisateur
    * Stockage dans Firestore ou fichier de configuration
-3. ✅ **Export et partage** :
+3. ⏳ **Export et partage** :
    * Export PDF/Word des conversations
    * Génération de lien de partage (si stockage activé)
    * Copie rapide du texte de la conversation
-4. ✅ **Analyse avancée** :
+4. ⏳ **Analyse avancée** :
    * Résumé automatique de documents longs
    * Comparaison de deux documents
    * Analyse de données Excel/CSV
 
-### Phase 5 : Optimisations
+### Phase 6 : Optimisations
 1. ✅ **Gestion d'erreurs robuste** :
    * Gestion des erreurs API OpenAI spécifiques (rate limits, quota, context length, etc.)
    * Retry automatique avec backoff exponentiel
    * Messages d'erreur clairs et actionnables pour l'utilisateur
    * Gestion spéciale pour les fichiers volumineux
    * Timeout et gestion des requêtes longues
-2. ✅ **Rate limiting** :
+2. ⏳ **Rate limiting** :
    * Limiter le nombre de requêtes par utilisateur/jour
    * Gestion spéciale pour les fichiers/images (plus coûteux)
    * Affichage des limites restantes à l'utilisateur
-3. ✅ **Logs et monitoring** :
+3. ⏳ **Logs et monitoring** :
    * Tracer l'utilisation pour monitoring
    * Suivi des coûts (tokens utilisés, coûts par requête)
    * Analytics par fonctionnalité
@@ -718,7 +856,7 @@ interface FileReference {
      - Taux d'erreur
      - Temps de réponse moyen
    * **Dashboard de monitoring** (optionnel) : Interface admin pour visualiser les métriques
-4. ✅ **Performance** :
+4. ⏳ **Performance** :
    * Optimisation du streaming
    * Cache des réponses fréquentes (si pertinent)
    * **Troncature intelligente de l'historique** :
@@ -733,17 +871,13 @@ interface FileReference {
      * Timeout de 60s pour requêtes normales
      * Timeout de 120s pour requêtes avec fichiers
      * Indicateur de progression pour l'utilisateur
-5. ✅ **Améliorations UX** :
+5. ⏳ **Améliorations UX** :
    * Suggestions de réponses rapides
    * Raccourcis clavier
    * Indicateur de progression pour les uploads
    * Notifications (si conversations sauvegardées)
 
-</div>
-
 ---
-
-<div class="section section-limitations">
 
 ## ⚠️ Limitations et considérations
 
@@ -789,11 +923,7 @@ interface FileReference {
   * Limiter strictement les types de fichiers acceptés
   * Quarantaine temporaire pour fichiers suspects
 
-</div>
-
 ---
-
-<div class="section section-alternatives">
 
 ## 🔄 Approche technique retenue
 
@@ -808,16 +938,13 @@ interface FileReference {
 * ✅ **Intégration simple** : Pattern identique aux autres routes API (Pappers, Societe.com)
 
 **Implémentation** :
-- Route API Next.js `/api/assistant` (server-side uniquement)
+- Route API Next.js `/api/assistant/chat` (server-side uniquement)
+- Route API Next.js `/api/assistant/rag` (server-side uniquement, admin uniquement)
 - SDK OpenAI officiel (`openai`)
 - Authentification utilisateur via Firebase Auth
 - Streaming des réponses pour une meilleure UX
 
-</div>
-
 ---
-
-<div class="section section-questions">
 
 ## ❓ Questions ouvertes
 
@@ -836,11 +963,7 @@ interface FileReference {
 13. **Rate limiting** : Quelles limites par utilisateur/jour sont appropriées ? (pour contrôler les coûts)
 14. **Monitoring** : Quel niveau de monitoring et d'analytics est nécessaire ?
 
-</div>
-
 ---
-
-<div class="section section-next-steps">
 
 ## 🚀 Prochaines étapes
 
@@ -861,11 +984,7 @@ interface FileReference {
    * Intégrer le bot flottant dans le layout principal (`app/layout.tsx`)
 7. **Tests** : Tester toutes les fonctionnalités et valider la performance (page dédiée + bot flottant)
 
-</div>
-
 ---
-
-<div class="section section-tests">
 
 ## 🧪 Tests et validation
 
@@ -882,7 +1001,8 @@ interface FileReference {
 ### Tests d'intégration
 
 **Objectifs** :
-- Tester la route API `/api/assistant` avec différents scénarios
+- Tester la route API `/api/assistant/chat` avec différents scénarios
+- Tester la route API `/api/assistant/rag` avec différents scénarios
 - Tester l'authentification et l'autorisation
 - Tester le streaming des réponses
 - Tester l'upload de fichiers et images
@@ -918,23 +1038,21 @@ interface FileReference {
 - Tester l'authentification (accès non autorisé)
 - Tester l'injection de code dans les messages
 - Tester la sanitization du Markdown
+- Tester l'accès RAG (admin uniquement)
 
 ### Scénarios de test prioritaires
 
 1. ✅ **Chat simple** : Envoi message texte → réception réponse
-2. ✅ **Streaming** : Vérifier que le streaming fonctionne correctement
-3. ✅ **Images** : Upload image → OCR → réponse avec analyse
-4. ✅ **Fichiers** : Upload PDF → analyse → réponse
+2. ⏳ **Streaming** : Vérifier que le streaming fonctionne correctement
+3. ⏳ **Images** : Upload image → OCR → réponse avec analyse
+4. ⏳ **Fichiers** : Upload PDF → analyse → réponse
 5. ✅ **Erreurs** : Tester tous les types d'erreurs (rate limit, quota, etc.)
-6. ✅ **Formatage** : Vérifier le rendu Markdown (tableaux, code, etc.)
-7. ✅ **Historique** : Tester la gestion de l'historique long
+6. ⏳ **Formatage** : Vérifier le rendu Markdown (tableaux, code, etc.)
+7. ⏳ **Historique** : Tester la gestion de l'historique long
 8. ✅ **Authentification** : Tester l'accès non autorisé
-
-</div>
+9. ✅ **RAG** : Tester le mode RAG avec recherche vectorielle
 
 ---
-
-<div class="section section-monitoring">
 
 ## 📊 Monitoring et coûts
 
@@ -952,7 +1070,7 @@ interface FileReference {
   * Coût par requête (calculé selon le modèle utilisé)
   * Coût total par jour/semaine/mois
   * Coût par utilisateur (optionnel)
-  * Coût par fonctionnalité (chat, images, fichiers)
+  * Coût par fonctionnalité (chat, images, fichiers, RAG)
 
 - **Utilisation** :
   * Nombre de requêtes par jour/semaine/mois
@@ -1002,8 +1120,7 @@ interface FileReference {
 - Mettre en cache les réponses fréquentes (si pertinent)
 - Limiter le nombre de requêtes par utilisateur/jour
 
-</div>
-
-
 ---
+
+*Dernière mise à jour : 27/10/2025*
 
