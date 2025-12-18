@@ -14,30 +14,49 @@ import { DocumentChunk } from "@/lib/assistant/types";
  * Upload et indexation d'un PDF dans la base RAG (admin uniquement)
  */
 export async function POST(request: NextRequest) {
+  console.log("POST /api/assistant/rag/upload - Début");
   try {
     // Vérifier l'authentification ET le rôle administrateur
+    console.log("Vérification de l'authentification admin...");
     const auth = await verifyAdmin(request);
+    console.log("Résultat auth:", { valid: auth.valid, error: auth.error });
     if (!auth.valid) {
+      console.error("Accès refusé - pas admin");
       return NextResponse.json(
         {
           error: auth.error || "Accès administrateur requis",
           details: "L'upload de documents dans la base RAG est réservé aux administrateurs uniquement",
         },
-        { status: 403 }
+        {
+          status: 403,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
     }
+    console.log("Authentification OK, utilisateur admin");
 
     // Récupérer le fichier depuis le FormData
+    console.log("Récupération du FormData...");
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const title = formData.get("title") as string | null;
     const documentType = (formData.get("type") as string) || "document";
     const tags = formData.get("tags") ? (formData.get("tags") as string).split(",") : [];
 
+    console.log("Fichier reçu:", file ? { name: file.name, type: file.type, size: file.size } : "null");
+
     if (!file) {
+      console.error("Aucun fichier fourni");
       return NextResponse.json(
         { error: "Aucun fichier fourni" },
-        { status: 400 }
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
     }
 
@@ -45,7 +64,12 @@ export async function POST(request: NextRequest) {
     if (file.type !== "application/pdf" && !file.name.endsWith(".pdf")) {
       return NextResponse.json(
         { error: "Le fichier doit être un PDF" },
-        { status: 400 }
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
     }
 
@@ -54,12 +78,19 @@ export async function POST(request: NextRequest) {
     if (file.size > maxSize) {
       return NextResponse.json(
         { error: "Le fichier est trop volumineux (maximum 20 MB)" },
-        { status: 400 }
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
     }
 
     // Lire le contenu du PDF
+    console.log("Lecture du contenu du PDF...");
     const arrayBuffer = await file.arrayBuffer();
+    console.log("Taille du buffer:", arrayBuffer.byteLength);
     // Convertir en Uint8Array pour pdf-parse (la classe PDFParse accepte ArrayBuffer, TypedArray ou Buffer)
     const uint8Array = new Uint8Array(arrayBuffer);
     
@@ -67,7 +98,9 @@ export async function POST(request: NextRequest) {
     try {
       // Import dynamique de pdf-parse
       // pdf-parse v2.4.5 utilise une classe PDFParse
+      console.log("Import de pdf-parse...");
       const pdfParseModule = await import("pdf-parse");
+      console.log("pdf-parse importé");
       
       // Accéder à la classe PDFParse
       const PDFParseClass = (pdfParseModule as any).PDFParse;
@@ -78,11 +111,14 @@ export async function POST(request: NextRequest) {
       
       // Instancier la classe avec le buffer
       // La classe accepte ArrayBuffer, TypedArray (Uint8Array) ou Buffer
+      console.log("Instanciation de PDFParse...");
       const parser = new PDFParseClass({ data: uint8Array });
+      console.log("PDFParse instancié, extraction du texte...");
       
       // Extraire le texte avec la méthode getText()
       // Cette méthode retourne un TextResult qui contient la propriété text
       const textResult = await parser.getText();
+      console.log("Texte extrait, longueur:", textResult ? (textResult as any).text?.length || 0 : 0);
       
       // Le résultat est un objet TextResult avec une propriété text (string)
       // TextResult a la structure: { pages: PageTextResult[], text: string }
@@ -119,16 +155,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: "Impossible d'extraire le texte du PDF",
-          details: process.env.NODE_ENV === "development" ? errorMessage : undefined
+          message: errorMessage,
+          details: process.env.NODE_ENV === "development" ? errorStack : undefined
         },
-        { status: 500 }
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
     }
 
     if (!text || text.trim().length === 0) {
       return NextResponse.json(
         { error: "Le PDF ne contient pas de texte extractible" },
-        { status: 400 }
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
     }
 
@@ -180,22 +227,42 @@ export async function POST(request: NextRequest) {
 
     await batch.commit();
 
-    return NextResponse.json({
-      success: true,
-      message: "Document indexé avec succès",
-      documentId: documentRef.id,
-      title: documentTitle,
-      chunkCount: chunks.length,
-    });
+    console.log("Upload terminé avec succès");
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Document indexé avec succès",
+        documentId: documentRef.id,
+        title: documentTitle,
+        chunkCount: chunks.length,
+      },
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
   } catch (error) {
     console.error("Erreur POST /api/assistant/rag/upload:", error);
+    console.error("Stack:", error instanceof Error ? error.stack : "N/A");
+
+    // TOUJOURS renvoyer un JSON, même en cas d'erreur
+    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+    const errorStack = error instanceof Error ? error.stack : undefined;
 
     return NextResponse.json(
       {
         error: "Erreur lors de l'upload et de l'indexation du document",
-        details: error instanceof Error ? error.message : "Erreur inconnue",
+        message: errorMessage,
+        details: process.env.NODE_ENV === "development" ? errorStack : undefined,
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     );
   }
 }

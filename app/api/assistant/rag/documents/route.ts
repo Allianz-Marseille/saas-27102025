@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/utils/auth-utils";
 import { adminDb } from "@/lib/firebase/admin-config";
+import { logAction } from "@/lib/assistant/audit";
 
 /**
  * GET /api/assistant/rag/documents

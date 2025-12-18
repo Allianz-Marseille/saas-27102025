@@ -2,18 +2,22 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, X, Minimize2, Maximize2 } from "lucide-react";
+import { Bot, X, Minimize2, Maximize2, Image as ImageIcon, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { MarkdownRenderer } from "./MarkdownRenderer";
+import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
+import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  images?: string[]; // Base64 data URLs
+  files?: { name: string; type: string; content?: string; error?: string }[];
   timestamp: Date;
 }
 
@@ -24,8 +28,14 @@ export function FloatingAssistant() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<ProcessedFile[]>([]);
+  const [isProcessingFiles, setIsProcessingFiles] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Charger l'état depuis localStorage
   useEffect(() => {
@@ -57,21 +67,189 @@ export function FloatingAssistant() {
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
-  }, [input]);
+  }, [input, selectedImages, selectedFiles]);
+
+  // Gérer le collage d'images depuis le presse-papier
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      if (!isOpen || isMinimized) return;
+      
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      const imageFiles: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) {
+            imageFiles.push(file);
+          }
+        }
+      }
+
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        try {
+          const processedImages = await processImageFiles(imageFiles);
+          setSelectedImages((prev) => [...prev, ...processedImages]);
+          toast.success(`${processedImages.length} image(s) ajoutée(s)`);
+        } catch (error) {
+          console.error("Erreur lors du traitement des images:", error);
+          toast.error("Erreur lors du traitement des images");
+        }
+      }
+    };
+
+    if (isOpen && !isMinimized) {
+      window.addEventListener("paste", handlePaste);
+      return () => window.removeEventListener("paste", handlePaste);
+    }
+  }, [isOpen, isMinimized]);
+
+  // Gérer l'upload d'images
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    try {
+      const processedImages = await processImageFiles(Array.from(files));
+      if (processedImages.length > 0) {
+        setSelectedImages((prev) => [...prev, ...processedImages]);
+        toast.success(`${processedImages.length} image(s) ajoutée(s)`);
+      } else {
+        toast.error("Aucune image valide sélectionnée");
+      }
+    } catch (error) {
+      console.error("Erreur lors du traitement des images:", error);
+      toast.error("Erreur lors du traitement des images");
+    }
+
+    // Réinitialiser l'input
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
+  };
+
+  // Gérer l'upload de fichiers
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length > 0) {
+      if (selectedFiles.length + files.length > MAX_FILES_PER_MESSAGE) {
+        toast.error(`Vous ne pouvez ajouter que ${MAX_FILES_PER_MESSAGE} fichiers maximum.`);
+        return;
+      }
+      setIsProcessingFiles(true);
+      try {
+        const newFiles = await processFiles(files);
+        setSelectedFiles((prev) => [...prev, ...newFiles]);
+      } catch (error) {
+        console.error("Erreur lors du traitement des fichiers:", error);
+        toast.error("Erreur lors du traitement des fichiers");
+      } finally {
+        setIsProcessingFiles(false);
+      }
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Gérer le drag & drop
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length === 0) return;
+
+    const imageFiles: File[] = [];
+    const otherFiles: File[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith("image/")) {
+        imageFiles.push(file);
+      } else {
+        otherFiles.push(file);
+      }
+    }
+
+    if (imageFiles.length > 0) {
+      try {
+        const processedImages = await processImageFiles(imageFiles);
+        if (processedImages.length > 0) {
+          setSelectedImages((prev) => [...prev, ...processedImages]);
+          toast.success(`${processedImages.length} image(s) ajoutée(s)`);
+        }
+      } catch (error) {
+        console.error("Erreur lors du traitement des images:", error);
+        toast.error("Erreur lors du traitement des images");
+      }
+    }
+
+    if (otherFiles.length > 0) {
+      if (selectedFiles.length + otherFiles.length > MAX_FILES_PER_MESSAGE) {
+        toast.error(`Vous ne pouvez ajouter que ${MAX_FILES_PER_MESSAGE} fichiers maximum.`);
+        return;
+      }
+      setIsProcessingFiles(true);
+      try {
+        const processedFiles = await processFiles(otherFiles);
+        setSelectedFiles((prev) => [...prev, ...processedFiles]);
+      } catch (error) {
+        console.error("Erreur lors du traitement des fichiers:", error);
+        toast.error("Erreur lors du traitement des fichiers");
+      } finally {
+        setIsProcessingFiles(false);
+      }
+    }
+  };
+
+  // Supprimer une image
+  const removeImage = (id: string) => {
+    setSelectedImages((prev) => prev.filter((img) => img.id !== id));
+  };
+
+  // Supprimer un fichier
+  const removeFile = (id: string) => {
+    setSelectedFiles((prev) => prev.filter((file) => file.id !== id));
+  };
 
   const handleSendMessage = async () => {
-    if (!input.trim() || isLoading || !user) return;
+    if ((!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !user) return;
+
+    // Convertir les images en Base64
+    const imageBase64s = await convertImagesToBase64(selectedImages);
+    const filesToSend = selectedFiles;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input,
+      content: input.trim() || (imageBase64s.length > 0 ? "Analyse cette image" : "") || (filesToSend.length > 0 ? "Analyse ces fichiers" : ""),
+      images: imageBase64s.length > 0 ? imageBase64s : undefined,
+      files: filesToSend.length > 0 ? filesToSend.map(f => ({ name: f.name, type: f.type, content: f.content, error: f.error })) : undefined,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    const messageText = input;
+    const messageText = input.trim();
+    const imagesToSend = imageBase64s;
     setInput("");
+    setSelectedImages([]);
+    setSelectedFiles([]);
     setIsLoading(true);
 
     // Créer le message assistant initial
@@ -92,7 +270,9 @@ export function FloatingAssistant() {
           Authorization: `Bearer ${await user.getIdToken()}`,
         },
         body: JSON.stringify({
-          message: messageText,
+          message: messageText || (imagesToSend.length > 0 ? "Analyse cette image" : "") || (filesToSend.length > 0 ? "Analyse ces fichiers" : ""),
+          images: imagesToSend.length > 0 ? imagesToSend : undefined,
+          files: filesToSend.length > 0 ? filesToSend.map(f => ({ name: f.name, type: f.type, content: f.content })) : undefined,
           stream: true,
         }),
       });
@@ -181,6 +361,9 @@ export function FloatingAssistant() {
       setMessages((prev) => prev.filter((msg) => msg.id !== assistantMessageId));
     } finally {
       setIsLoading(false);
+      setInput("");
+      setSelectedImages([]);
+      setSelectedFiles([]);
     }
   };
 
@@ -291,7 +474,33 @@ export function FloatingAssistant() {
                         }`}
                       >
                         {message.role === "user" ? (
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          <>
+                            {message.images && message.images.length > 0 && (
+                              <div className="mb-2 space-y-1">
+                                {message.images.map((img, idx) => (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    key={idx}
+                                    src={img}
+                                    alt={`Image ${idx + 1}`}
+                                    className="max-w-full h-auto rounded max-h-32 object-contain"
+                                  />
+                                ))}
+                              </div>
+                            )}
+                            {message.files && message.files.length > 0 && (
+                              <div className="mb-2 space-y-1">
+                                {message.files.map((file, idx) => (
+                                  <div key={idx} className="flex items-center gap-2 p-2 bg-background/50 rounded-md">
+                                    <FileText className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm font-medium">{file.name}</span>
+                                    {file.error && <span className="text-xs text-destructive">({file.error})</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          </>
                         ) : (
                           <MarkdownRenderer content={message.content} />
                         )}
@@ -315,24 +524,135 @@ export function FloatingAssistant() {
 
             {/* Input */}
             {!isMinimized && (
-              <div className="p-4 border-t bg-muted/30">
+              <div
+                className="p-4 border-t bg-muted/30"
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                {/* Prévisualisation des images */}
+                {selectedImages.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    {selectedImages.map((img) => (
+                      <div key={img.id} className="relative group">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={img.preview}
+                          alt="Preview"
+                          className="w-16 h-16 object-cover rounded border"
+                        />
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removeImage(img.id)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Prévisualisation des fichiers */}
+                {selectedFiles.length > 0 && (
+                  <div className="mb-2 space-y-1">
+                    {selectedFiles.map((file) => (
+                      <div
+                        key={file.id}
+                        className="flex items-center justify-between p-2 bg-background/50 rounded-md border"
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {(file.size / 1024).toFixed(1)} KB
+                              {file.error && (
+                                <span className="text-destructive ml-2">• {file.error}</span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0"
+                          onClick={() => removeFile(file.id)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Zone de drag & drop visuelle */}
+                {isDragging && (
+                  <div className="mb-2 p-4 border-2 border-dashed border-primary rounded-lg bg-primary/10 text-center">
+                    <p className="text-sm text-primary">Déposez les fichiers ici</p>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
-                  <Textarea
-                    ref={textareaRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Tapez votre message..."
-                    className="min-h-[60px] max-h-[120px] resize-none"
-                    disabled={isLoading}
-                  />
+                  <div className="flex-1 flex flex-col gap-2">
+                    <Textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Tapez votre message..."
+                      className="min-h-[60px] max-h-[120px] resize-none"
+                      disabled={isLoading || isProcessingFiles}
+                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={imageInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        id="floating-assistant-image-upload"
+                      />
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                        multiple
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="floating-assistant-file-upload"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => imageInputRef.current?.click()}
+                        disabled={isLoading || isProcessingFiles}
+                        className="text-xs"
+                      >
+                        <ImageIcon className="h-3 w-3 mr-1" />
+                        Image
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isLoading || isProcessingFiles || selectedFiles.length >= MAX_FILES_PER_MESSAGE}
+                        className="text-xs"
+                      >
+                        <FileText className="h-3 w-3 mr-1" />
+                        Fichier
+                      </Button>
+                    </div>
+                  </div>
                   <Button
                     onClick={handleSendMessage}
-                    disabled={!input.trim() || isLoading}
+                    disabled={(!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles}
                     size="icon"
                     className="shrink-0"
                   >
-                    {isLoading ? (
+                    {isLoading || isProcessingFiles ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Send className="h-4 w-4" />
@@ -340,7 +660,7 @@ export function FloatingAssistant() {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Appuyez sur Entrée pour envoyer, Shift+Entrée pour une nouvelle ligne
+                  Appuyez sur Entrée pour envoyer, Shift+Entrée pour une nouvelle ligne. Collez une image avec Ctrl+V / Cmd+V
                 </p>
               </div>
             )}

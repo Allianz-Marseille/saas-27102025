@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { FloatingAssistant } from "@/components/assistant/FloatingAssistant";
+import { AssistantWrapper } from "@/components/assistant/AssistantWrapper";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -34,7 +34,7 @@ export default function RootLayout({
         >
           {children}
           <Toaster />
-          <FloatingAssistant />
+          <AssistantWrapper />
         </ThemeProvider>
       </body>
     </html>

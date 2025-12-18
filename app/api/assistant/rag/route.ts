@@ -8,6 +8,10 @@ import { verifyAdmin } from "@/lib/utils/auth-utils";
 import { retrieveContext, buildRAGPrompt } from "@/lib/assistant/rag";
 import { searchSimilarChunks } from "@/lib/assistant/vector-search";
 import { generateEmbedding } from "@/lib/assistant/embeddings";
+import { checkRateLimit, determineRequestType } from "@/lib/assistant/rate-limiting";
+import { openaiWithRetry } from "@/lib/assistant/retry";
+import { logUsage } from "@/lib/assistant/monitoring";
+import { checkBudgetLimit } from "@/lib/assistant/budget-alerts";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -47,14 +51,48 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les paramètres depuis le body
     const body = await request.json();
-    const { message, images, useRAG = true, model = "gpt-4o", stream = false, showDebug = false } = body;
+    const { message, images, files, useRAG = true, model = "gpt-4o", stream = false, showDebug = false } = body;
     const useStream = stream;
 
-    // Le message peut être vide si seulement des images sont envoyées
-    if (!message && (!images || images.length === 0)) {
+    // Le message peut être vide si seulement des images ou fichiers sont envoyés
+    if (!message && (!images || images.length === 0) && (!files || files.length === 0)) {
       return NextResponse.json(
-        { error: "Message ou image manquant" },
+        { error: "Message, image ou fichier manquant" },
         { status: 400 }
+      );
+    }
+
+    // Vérifier le rate limiting
+    const hasImages = images && Array.isArray(images) && images.length > 0;
+    const hasFiles = files && Array.isArray(files) && files.length > 0;
+    const requestType = determineRequestType(hasImages, hasFiles);
+    
+    const rateLimitResult = await checkRateLimit(auth.userId!, requestType);
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          error: "Limite de requêtes atteinte",
+          details: `Vous avez atteint la limite de ${rateLimitResult.limit} requêtes ${requestType} par jour. Réessayez après ${rateLimitResult.resetAt.toLocaleString("fr-FR")}.`,
+          rateLimit: {
+            remaining: rateLimitResult.remaining,
+            limit: rateLimitResult.limit,
+            resetAt: rateLimitResult.resetAt,
+          },
+        },
+        { status: 429 }
+      );
+    }
+
+    // Vérifier le budget
+    const budgetCheck = await checkBudgetLimit();
+    if (!budgetCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: "Budget mensuel dépassé",
+          details: budgetCheck.reason,
+        },
+        { status: 429 }
       );
     }
 
@@ -96,8 +134,26 @@ Tu dois répondre aux questions en utilisant le contexte fourni ci-dessous.
 Si le contexte ne contient pas d'information pertinente, tu peux utiliser tes connaissances générales.
 Toujours citer les sources utilisées quand c'est possible.`;
 
+    // Construire le texte du message (incluant le texte des fichiers)
+    let messageText = message || "";
+    
+    // Ajouter le contenu des fichiers si présents
+    if (files && Array.isArray(files) && files.length > 0) {
+      const fileContents: string[] = [];
+      for (const file of files) {
+        if (file.content && typeof file.content === "string") {
+          fileContents.push(`\n\n--- Contenu du fichier "${file.name}" ---\n${file.content}`);
+        } else if (file.error) {
+          fileContents.push(`\n\n--- Erreur avec le fichier "${file.name}" : ${file.error} ---`);
+        }
+      }
+      if (fileContents.length > 0) {
+        messageText += fileContents.join("\n");
+      }
+    }
+
     // Construire le contenu du message utilisateur
-    const promptWithContext = buildRAGPrompt(message || "", context, systemPrompt);
+    const promptWithContext = buildRAGPrompt(messageText || "", context, systemPrompt);
     
     let userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];
     
@@ -129,6 +185,10 @@ Toujours citer les sources utilisées quand c'est possible.`;
     // Si streaming demandé, utiliser Server-Sent Events
     if (useStream) {
       const encoder = new TextEncoder();
+      const startTime = Date.now();
+      let tokensInput = 0;
+      let tokensOutput = 0;
+
       const stream = new ReadableStream({
         async start(controller) {
           try {
@@ -140,6 +200,23 @@ Toujours citer les sources utilisées quand c'est possible.`;
                 sourcesWithScores,
                 usedRAG: useRAG && context.length > 0,
                 context: showDebug && context.length > 0 ? context : undefined,
+                rateLimit: {
+                  remaining: rateLimitResult.remaining - 1, // -1 car on a déjà incrémenté
+                  limit: rateLimitResult.limit,
+                  resetAt: rateLimitResult.resetAt,
+                },
+              })}\n\n`;
+              controller.enqueue(encoder.encode(metadata));
+            } else {
+              // Envoyer les métadonnées même sans sources (pour le rate limit)
+              const metadata = `data: ${JSON.stringify({ 
+                type: "metadata",
+                usedRAG: useRAG && context.length > 0,
+                rateLimit: {
+                  remaining: rateLimitResult.remaining - 1, // -1 car on a déjà incrémenté
+                  limit: rateLimitResult.limit,
+                  resetAt: rateLimitResult.resetAt,
+                },
               })}\n\n`;
               controller.enqueue(encoder.encode(metadata));
             }
@@ -147,32 +224,79 @@ Toujours citer les sources utilisées quand c'est possible.`;
             // Utiliser gpt-4o si des images sont présentes (support vision)
             const modelToUse = images && images.length > 0 ? "gpt-4o" : model;
             
-            const openaiStream = await openai.chat.completions.create({
-              model: modelToUse,
-              messages,
-              temperature: 0.7,
-              max_tokens: 2000,
-              stream: true,
-            });
+            // Estimer les tokens d'entrée
+            const messageText = JSON.stringify(messages);
+            tokensInput = Math.ceil(messageText.length / 4);
+            
+            const openaiStream = await openaiWithRetry(
+              () =>
+                openai.chat.completions.create({
+                  model: modelToUse,
+                  messages,
+                  temperature: 0.7,
+                  max_tokens: 2000,
+                  stream: true,
+                }),
+              { maxRetries: 3, initialDelay: 1000 }
+            );
 
             for await (const chunk of openaiStream) {
               const content = chunk.choices[0]?.delta?.content || "";
               if (content) {
+                tokensOutput += Math.ceil(content.length / 4);
                 const data = `data: ${JSON.stringify({ type: "content", content })}\n\n`;
                 controller.enqueue(encoder.encode(data));
+              }
+              
+              // Capturer les tokens si disponibles
+              if (chunk.usage) {
+                tokensInput = chunk.usage.prompt_tokens || tokensInput;
+                tokensOutput = chunk.usage.completion_tokens || tokensOutput;
               }
             }
 
             // Signal de fin
             controller.enqueue(encoder.encode("data: [DONE]\n\n"));
             controller.close();
+
+            // Logger l'utilisation
+            const duration = Date.now() - startTime;
+            logUsage({
+              userId: auth.userId!,
+              endpoint: "/api/assistant/rag",
+              tokensInput,
+              tokensOutput,
+              model: modelToUse,
+              hasImages: hasImages,
+              hasFiles: hasFiles,
+              requestType,
+              duration,
+              success: true,
+            }).catch((err) => console.error("Erreur logging usage:", err));
           } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
             const errorData = `data: ${JSON.stringify({ 
               type: "error",
-              error: error instanceof Error ? error.message : "Erreur inconnue" 
+              error: errorMessage
             })}\n\n`;
             controller.enqueue(encoder.encode(errorData));
             controller.close();
+
+            // Logger l'erreur
+            const duration = Date.now() - startTime;
+            logUsage({
+              userId: auth.userId!,
+              endpoint: "/api/assistant/rag",
+              tokensInput: 0,
+              tokensOutput: 0,
+              model: images && images.length > 0 ? "gpt-4o" : model,
+              hasImages: hasImages,
+              hasFiles: hasFiles,
+              requestType,
+              duration,
+              success: false,
+              error: errorMessage,
+            }).catch((err) => console.error("Erreur logging usage:", err));
           }
         },
       });
@@ -195,16 +319,20 @@ Toujours citer les sources utilisées quand c'est possible.`;
       // Utiliser gpt-4o si des images sont présentes (support vision)
       const modelToUse = images && images.length > 0 ? "gpt-4o" : model;
       
-      completion = await openai.chat.completions.create(
-        {
-          model: modelToUse,
-          messages,
-          temperature: 0.7,
-          max_tokens: 2000,
-        },
-        {
-          signal: controller.signal,
-        }
+      completion = await openaiWithRetry(
+        () =>
+          openai.chat.completions.create(
+            {
+              model: modelToUse,
+              messages,
+              temperature: 0.7,
+              max_tokens: 2000,
+            },
+            {
+              signal: controller.signal,
+            }
+          ),
+        { maxRetries: 3, initialDelay: 1000 }
       );
       clearTimeout(timeoutId);
     } catch (error: any) {
@@ -231,6 +359,11 @@ Toujours citer les sources utilisées quand c'est possible.`;
       sourcesWithScores: sourcesWithScores.length > 0 ? sourcesWithScores : undefined,
       usedRAG: useRAG && context.length > 0,
       context: context.length > 0 ? context : undefined, // Pour le mode debug
+      rateLimit: {
+        remaining: rateLimitResult.remaining - 1, // -1 car on a déjà incrémenté
+        limit: rateLimitResult.limit,
+        resetAt: rateLimitResult.resetAt,
+      },
     });
   } catch (error) {
     console.error("Erreur POST /api/assistant/rag:", error);

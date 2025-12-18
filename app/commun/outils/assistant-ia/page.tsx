@@ -14,17 +14,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MarkdownRenderer } from "@/components/assistant/MarkdownRenderer";
+import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
+import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
+import type { PromptTemplate } from "@/lib/assistant/templates";
+import { replaceTemplateVariables, extractTemplateVariables } from "@/lib/assistant/templates";
 
 interface SourceWithScore {
   title: string;
   score: number;
   documentId: string;
-}
-
-interface ImageFile {
-  file: File;
-  preview: string;
-  id: string;
 }
 
 interface Message {
@@ -58,10 +56,28 @@ export default function AssistantIAPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
   const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<ProcessedFile[]>([]);
+  const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  interface SavedConversation {
+    id: string;
+    title: string;
+    messages: Message[];
+    updatedAt: Date | string;
+  }
+  const [savedConversations, setSavedConversations] = useState<SavedConversation[]>([]);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
+  const [isSavingConversation, setIsSavingConversation] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
+  const [templates, setTemplates] = useState<PromptTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
+  const [templateVariables, setTemplateVariables] = useState<Record<string, string>>({});
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const chatFileInputRef = useRef<HTMLInputElement>(null);
 
   const isUserAdmin = isAdmin(userData);
 
@@ -77,6 +93,13 @@ export default function AssistantIAPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isUserAdmin]);
+
+  // Charger les conversations sauvegardées et les templates
+  useEffect(() => {
+    loadSavedConversations();
+    loadTemplates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const loadDocuments = async () => {
     try {
@@ -101,108 +124,307 @@ export default function AssistantIAPage() {
 
   // Gérer les fichiers images
   const handleImageFiles = async (files: File[]) => {
-    const imageFiles: ImageFile[] = [];
-    
-    for (const file of files) {
-      if (!file.type.startsWith("image/")) {
-        toast.error(`${file.name} n'est pas une image`);
-        continue;
+    try {
+      const processedImages = await processImageFiles(files);
+      if (processedImages.length > 0) {
+        setSelectedImages((prev) => [...prev, ...processedImages]);
+        toast.success(`${processedImages.length} image(s) ajoutée(s)`);
+      } else {
+        toast.error("Aucune image valide sélectionnée");
       }
+    } catch (error) {
+      console.error("Erreur lors du traitement des images:", error);
+      toast.error("Erreur lors du traitement des images");
+    }
+  };
 
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error(`${file.name} est trop volumineux (max 5MB)`);
-        continue;
-      }
+  // Gérer l'upload de fichiers pour le chat
+  const handleChatFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-      // Optimiser l'image
-      const optimizedFile = await optimizeImage(file);
+    setIsProcessingFiles(true);
+    try {
+      const processedFiles = await processFiles(Array.from(files));
       
-      // Créer la prévisualisation
-      const reader = new FileReader();
-      const preview = await new Promise<string>((resolve) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(optimizedFile);
-      });
+      // Filtrer les fichiers avec erreurs
+      const validFiles = processedFiles.filter((f) => !f.error);
+      const errorFiles = processedFiles.filter((f) => f.error);
 
-      imageFiles.push({
-        file: optimizedFile,
-        preview,
-        id: `${Date.now()}-${Math.random()}`,
-      });
-    }
-
-    if (imageFiles.length > 0) {
-      setSelectedImages((prev) => [...prev, ...imageFiles]);
-    }
-  };
-
-  // Convertir les images en Base64
-  const convertImagesToBase64 = async (images: ImageFile[]): Promise<string[]> => {
-    const base64Images: string[] = [];
-    for (const img of images) {
-      const reader = new FileReader();
-      const promise = new Promise<string>((resolve) => {
-        reader.onload = () => {
-          const result = reader.result as string;
-          // Optimiser l'image si nécessaire (max 2048x2048)
-          resolve(result);
-        };
-      });
-      reader.readAsDataURL(img.file);
-      const base64 = await promise;
-      base64Images.push(base64);
-    }
-    return base64Images;
-  };
-
-  // Optimiser une image
-  const optimizeImage = (file: File): Promise<File> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          if (typeof window === "undefined") return;
-          const canvas = document.createElement("canvas");
-          let width = img.width;
-          let height = img.height;
-
-          // Redimensionner si nécessaire (max 2048x2048)
-          if (width > 2048 || height > 2048) {
-            const ratio = Math.min(2048 / width, 2048 / height);
-            width = width * ratio;
-            height = height * ratio;
+      if (validFiles.length > 0) {
+        setSelectedFiles((prev) => {
+          const newFiles = [...prev, ...validFiles];
+          if (newFiles.length > MAX_FILES_PER_MESSAGE) {
+            toast.warning(`Maximum ${MAX_FILES_PER_MESSAGE} fichiers par message. Seuls les ${MAX_FILES_PER_MESSAGE} premiers seront envoyés.`);
+            return newFiles.slice(0, MAX_FILES_PER_MESSAGE);
           }
+          return newFiles;
+        });
+        toast.success(`${validFiles.length} fichier(s) ajouté(s)`);
+      }
 
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          ctx?.drawImage(img, 0, 0, width, height);
+      if (errorFiles.length > 0) {
+        errorFiles.forEach((f) => {
+          toast.error(`${f.name}: ${f.error}`);
+        });
+      }
+    } catch (error) {
+      console.error("Erreur lors du traitement des fichiers:", error);
+      toast.error(error instanceof Error ? error.message : "Erreur lors du traitement des fichiers");
+    } finally {
+      setIsProcessingFiles(false);
+      if (chatFileInputRef.current) {
+        chatFileInputRef.current.value = "";
+      }
+    }
+  };
 
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                const optimizedFile = new File([blob], file.name, {
-                  type: "image/jpeg",
-                  lastModified: Date.now(),
-                });
-                resolve(optimizedFile);
-              } else {
-                resolve(file);
-              }
-            },
-            "image/jpeg",
-            0.9
-          );
-        };
-        img.src = e.target?.result as string;
-      };
-      reader.readAsDataURL(file);
-    });
+  // Supprimer un fichier
+  const removeFile = (id: string) => {
+    setSelectedFiles((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  // Charger les conversations sauvegardées
+  const loadSavedConversations = async () => {
+    if (!user) return;
+
+    setIsLoadingConversations(true);
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch("/api/assistant/conversations", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || errorData.details || "Erreur lors du chargement des conversations";
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      setSavedConversations(data.conversations || []);
+    } catch (error) {
+      console.error("Erreur lors du chargement des conversations:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors du chargement des conversations";
+      toast.error(errorMessage);
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  };
+
+  // Sauvegarder la conversation actuelle
+  const handleSaveConversation = async () => {
+    if (!user || messages.length === 0) return;
+
+    setIsSavingConversation(true);
+    try {
+      const token = await user.getIdToken();
+      
+      // Convertir les messages au format attendu
+      const conversationMessages = messages.map((msg: Message) => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        images: msg.images,
+        timestamp: msg.timestamp,
+        sources: msg.sources,
+        sourcesWithScores: msg.sourcesWithScores,
+      }));
+
+      const response = await fetch("/api/assistant/conversations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          messages: conversationMessages,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erreur lors de la sauvegarde");
+      }
+
+      toast.success("Conversation sauvegardée avec succès");
+      loadSavedConversations();
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde:", error);
+      toast.error(error instanceof Error ? error.message : "Erreur lors de la sauvegarde");
+    } finally {
+      setIsSavingConversation(false);
+    }
+  };
+
+  // Charger une conversation sauvegardée
+  const handleLoadConversation = async (conversationId: string) => {
+    if (!user) return;
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch(`/api/assistant/conversations?id=${conversationId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Erreur lors du chargement de la conversation");
+      }
+
+      const data = await response.json();
+      const conversation = data.conversation;
+
+      if (conversation) {
+        // Convertir les messages au format Message
+        const loadedMessages: Message[] = conversation.messages.map((msg: {
+          id: string;
+          role: "user" | "assistant";
+          content: string;
+          images?: string[];
+          timestamp: Date | string;
+          sources?: string[];
+          sourcesWithScores?: SourceWithScore[];
+        }) => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          images: msg.images,
+          timestamp: new Date(msg.timestamp),
+          sources: msg.sources,
+          sourcesWithScores: msg.sourcesWithScores,
+        }));
+
+        setMessages(loadedMessages);
+        toast.success("Conversation chargée avec succès");
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement:", error);
+      toast.error("Erreur lors du chargement de la conversation");
+    }
+  };
+
+  // Supprimer une conversation sauvegardée
+  const handleDeleteConversation = async (conversationId: string) => {
+    if (!user || !confirm("Êtes-vous sûr de vouloir supprimer cette conversation ?")) return;
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch(`/api/assistant/conversations?id=${conversationId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Erreur lors de la suppression");
+      }
+
+      toast.success("Conversation supprimée avec succès");
+      loadSavedConversations();
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error);
+      toast.error("Erreur lors de la suppression de la conversation");
+    }
+  };
+
+  // Charger les templates
+  const loadTemplates = async () => {
+    if (!user) return;
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch("/api/assistant/templates", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Erreur lors du chargement des templates");
+      }
+
+      const data = await response.json();
+      setTemplates(data.templates || []);
+    } catch (error) {
+      console.error("Erreur lors du chargement des templates:", error);
+    }
+  };
+
+  // Appliquer un template
+  const handleApplyTemplate = (template: PromptTemplate) => {
+    setSelectedTemplate(template);
+    const variables = extractTemplateVariables(template.prompt);
+    
+    if (variables.length > 0) {
+      // Ouvrir un dialogue pour remplir les variables
+      setTemplateVariables({});
+      setShowTemplateDialog(true);
+    } else {
+      // Appliquer directement le template
+      setInput(template.prompt);
+      setSelectedTemplate(null);
+    }
+  };
+
+  // Confirmer l'application du template avec variables
+  const handleConfirmTemplate = () => {
+    if (!selectedTemplate) return;
+
+    const filledPrompt = replaceTemplateVariables(selectedTemplate.prompt, templateVariables);
+    setInput(filledPrompt);
+    setSelectedTemplate(null);
+    setTemplateVariables({});
+    setShowTemplateDialog(false);
+  };
+
+  // Exporter une conversation
+  const handleExportConversation = async (conversationId: string, format: "txt" | "pdf" | "word") => {
+    if (!user) return;
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch("/api/assistant/export", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          conversationId,
+          format,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erreur lors de l'export");
+      }
+
+      // Télécharger le fichier
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `conversation_${conversationId}.${format === "word" ? "docx" : format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success("Conversation exportée avec succès");
+    } catch (error) {
+      console.error("Erreur lors de l'export:", error);
+      toast.error(error instanceof Error ? error.message : "Erreur lors de l'export");
+    }
   };
 
   const handleSendMessage = async () => {
-    if ((!input.trim() && selectedImages.length === 0) || isLoading) return;
+    if ((!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading) return;
 
     // Convertir les images en Base64
     const imageBase64s = await convertImagesToBase64(selectedImages);
@@ -218,8 +440,10 @@ export default function AssistantIAPage() {
     setMessages((prev) => [...prev, userMessage]);
     const messageText = input;
     const imagesToSend = imageBase64s;
+    const filesToSend = selectedFiles;
     setInput("");
     setSelectedImages([]);
+    setSelectedFiles([]);
     setIsLoading(true);
 
     // Créer le message assistant initial
@@ -242,8 +466,9 @@ export default function AssistantIAPage() {
           Authorization: `Bearer ${await user?.getIdToken()}`,
         },
         body: JSON.stringify({
-          message: messageText || (imagesToSend.length > 0 ? "Analyse cette image" : ""),
+          message: messageText || (imagesToSend.length > 0 ? "Analyse cette image" : "") || (filesToSend.length > 0 ? "Analyse ce(s) fichier(s)" : ""),
           images: imagesToSend.length > 0 ? imagesToSend : undefined,
+          files: filesToSend.length > 0 ? filesToSend : undefined,
           useRAG: useRAG && isUserAdmin,
           stream: true, // Activer le streaming
           showDebug: showDebug,
@@ -357,7 +582,12 @@ export default function AssistantIAPage() {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      console.log("Aucun fichier sélectionné");
+      return;
+    }
+
+    console.log("Fichier sélectionné:", file.name, file.type, file.size);
 
     if (file.type !== "application/pdf") {
       toast.error("Seuls les fichiers PDF sont acceptés");
@@ -370,6 +600,7 @@ export default function AssistantIAPage() {
     }
 
     setIsUploading(true);
+    console.log("Début de l'upload...");
 
     try {
       const formData = new FormData();
@@ -377,7 +608,13 @@ export default function AssistantIAPage() {
       formData.append("title", file.name.replace(".pdf", ""));
       formData.append("type", "document");
 
+      console.log("Récupération du token...");
       const token = await user?.getIdToken();
+      if (!token) {
+        throw new Error("Token d'authentification manquant");
+      }
+      console.log("Token récupéré, envoi de la requête...");
+
       const response = await fetch("/api/assistant/rag/upload", {
         method: "POST",
         headers: {
@@ -386,12 +623,47 @@ export default function AssistantIAPage() {
         body: formData,
       });
 
+      console.log("Réponse reçue:", response.status, response.statusText, response.headers.get("content-type"));
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Erreur lors de l'upload");
+        // Toujours utiliser response.text() d'abord pour voir la vraie erreur
+        let errorText = "";
+        try {
+          errorText = await response.text();
+          console.error("Réponse erreur (texte brut):", errorText);
+        } catch (e) {
+          console.error("Impossible de lire le texte de la réponse:", e);
+        }
+
+        // Essayer de parser en JSON si possible
+        let errorData: { error?: string; message?: string; details?: string } = {};
+        if (errorText && errorText.trim()) {
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            // Si ce n'est pas du JSON, utiliser le texte brut comme message d'erreur
+            errorData = { error: errorText };
+          }
+        }
+
+        console.error("Erreur API complète:", {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+          parsed: errorData,
+        });
+
+        const errorMessage =
+          errorData.error ||
+          errorData.message ||
+          errorData.details ||
+          errorText ||
+          `Erreur API (${response.status}): ${response.statusText}`;
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      console.log("Upload réussi:", data);
       toast.success(`Document "${data.title}" indexé avec succès (${data.chunkCount} chunks)`);
       
       // Recharger la liste des documents
@@ -408,6 +680,7 @@ export default function AssistantIAPage() {
       );
     } finally {
       setIsUploading(false);
+      console.log("Upload terminé (succès ou échec)");
     }
   };
 
@@ -509,7 +782,42 @@ export default function AssistantIAPage() {
         <TabsContent value="chat" className="mt-6">
           <Card className="h-[600px] flex flex-col">
             <CardHeader>
-              <CardTitle>Conversation</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Conversation</CardTitle>
+                <div className="flex items-center gap-2">
+                  {/* Menu templates */}
+                  {templates.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowTemplateDialog(true)}
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Templates
+                    </Button>
+                  )}
+                  {messages.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSaveConversation}
+                      disabled={isSavingConversation}
+                    >
+                      {isSavingConversation ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Sauvegarde...
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Sauvegarder
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col overflow-hidden">
               {/* Zone de messages */}
@@ -683,6 +991,42 @@ export default function AssistantIAPage() {
                 </div>
               )}
 
+              {/* Prévisualisation des fichiers */}
+              {selectedFiles.length > 0 && (
+                <div className="mb-2 space-y-2">
+                  {selectedFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="flex items-center justify-between p-2 bg-muted rounded-md border"
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{file.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(file.size / 1024).toFixed(1)} KB
+                            {file.error && (
+                              <span className="text-destructive ml-2">• {file.error}</span>
+                            )}
+                            {file.content && (
+                              <span className="text-green-600 ml-2">• Texte extrait</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0"
+                        onClick={() => removeFile(file.id)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Zone de saisie */}
               <div
                 className={`border-2 border-dashed rounded-lg p-2 transition-colors ${
@@ -744,20 +1088,62 @@ export default function AssistantIAPage() {
                           e.target.value = "";
                         }}
                       />
+                      <input
+                        ref={imageInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={async (e) => {
+                          const files = e.target.files;
+                          if (files) {
+                            await handleImageFiles(Array.from(files));
+                            e.target.value = "";
+                          }
+                        }}
+                      />
+                      <input
+                        ref={chatFileInputRef}
+                        type="file"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                        multiple
+                        className="hidden"
+                        onChange={handleChatFileUpload}
+                      />
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => imageInputRef.current?.click()}
                         type="button"
+                        disabled={isProcessingFiles}
                       >
                         <ImageIcon className="h-4 w-4 mr-2" />
-                        Ajouter une image
+                        Image
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => chatFileInputRef.current?.click()}
+                        type="button"
+                        disabled={isProcessingFiles || isLoading}
+                      >
+                        {isProcessingFiles ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Traitement...
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Fichier
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
                   <Button
                     onClick={handleSendMessage}
-                    disabled={isLoading || (!input.trim() && selectedImages.length === 0)}
+                    disabled={isLoading || (!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0)}
                     size="lg"
                   >
                     {isLoading ? (
@@ -771,6 +1157,256 @@ export default function AssistantIAPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="history" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Historique des conversations</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Barre de recherche et filtres */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Rechercher dans les conversations..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant={dateFilter === "all" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDateFilter("all")}
+                  >
+                    Toutes
+                  </Button>
+                  <Button
+                    variant={dateFilter === "today" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDateFilter("today")}
+                  >
+                    Aujourd&apos;hui
+                  </Button>
+                  <Button
+                    variant={dateFilter === "week" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDateFilter("week")}
+                  >
+                    Cette semaine
+                  </Button>
+                  <Button
+                    variant={dateFilter === "month" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDateFilter("month")}
+                  >
+                    Ce mois
+                  </Button>
+                </div>
+              </div>
+
+              {/* Liste des conversations */}
+              {isLoadingConversations ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (() => {
+                // Filtrer les conversations
+                let filtered = savedConversations;
+
+                // Filtre par date
+                if (dateFilter !== "all") {
+                  const now = new Date();
+                  const startDate = new Date();
+                  
+                  switch (dateFilter) {
+                    case "today":
+                      startDate.setHours(0, 0, 0, 0);
+                      break;
+                    case "week":
+                      startDate.setDate(now.getDate() - 7);
+                      break;
+                    case "month":
+                      startDate.setMonth(now.getMonth() - 1);
+                      break;
+                  }
+
+                  filtered = filtered.filter((conv) => {
+                    const updatedAt = new Date(conv.updatedAt);
+                    return updatedAt >= startDate;
+                  });
+                }
+
+                // Filtre par recherche
+                if (searchQuery.trim()) {
+                  const query = searchQuery.toLowerCase();
+                  filtered = filtered.filter(
+                    (conv) =>
+                      conv.title.toLowerCase().includes(query) ||
+                      conv.messages?.some((msg) =>
+                        msg.content.toLowerCase().includes(query)
+                      )
+                  );
+                }
+
+                if (filtered.length === 0) {
+                  return (
+                    <p className="text-center text-muted-foreground py-8">
+                      {savedConversations.length === 0
+                        ? "Aucune conversation sauvegardée"
+                        : "Aucune conversation ne correspond aux critères de recherche"}
+                    </p>
+                  );
+                }
+
+                return (
+                  <div className="space-y-2">
+                    {filtered.map((conv) => (
+                      <div
+                        key={conv.id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{conv.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {conv.messages?.length || 0} message(s) •{" "}
+                            {new Date(conv.updatedAt).toLocaleDateString("fr-FR", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleLoadConversation(conv.id)}
+                          >
+                            Charger
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleExportConversation(conv.id, "txt")}
+                          >
+                            Exporter
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteConversation(conv.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Dialogue pour sélectionner/appliquer un template */}
+        {showTemplateDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Sélectionner un template</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowTemplateDialog(false);
+                      setSelectedTemplate(null);
+                      setTemplateVariables({});
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {selectedTemplate ? (
+                  // Formulaire pour remplir les variables
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-semibold mb-2">{selectedTemplate.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {selectedTemplate.description}
+                      </p>
+                      <div className="space-y-2">
+                        {extractTemplateVariables(selectedTemplate.prompt).map((varName) => (
+                          <div key={varName}>
+                            <Label htmlFor={`var-${varName}`}>{varName}</Label>
+                            <Input
+                              id={`var-${varName}`}
+                              value={templateVariables[varName] || ""}
+                              onChange={(e) =>
+                                setTemplateVariables((prev) => ({
+                                  ...prev,
+                                  [varName]: e.target.value,
+                                }))
+                              }
+                              placeholder={`Entrez la valeur pour ${varName}`}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleConfirmTemplate} className="flex-1">
+                        Appliquer
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedTemplate(null);
+                          setTemplateVariables({});
+                        }}
+                      >
+                        Retour
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  // Liste des templates
+                  <div className="space-y-2">
+                    {templates.map((template) => (
+                      <div
+                        key={template.id}
+                        className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => handleApplyTemplate(template)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold">{template.name}</h4>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {template.description}
+                            </p>
+                            {template.variables && template.variables.length > 0 && (
+                              <p className="text-xs text-muted-foreground mt-2">
+                                Variables : {template.variables.join(", ")}
+                              </p>
+                            )}
+                          </div>
+                          <Button variant="ghost" size="sm">
+                            Utiliser
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {isUserAdmin && (
           <TabsContent value="documents" className="mt-6">
