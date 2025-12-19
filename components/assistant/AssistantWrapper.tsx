@@ -182,7 +182,7 @@ export function AssistantWrapper() {
 
   return (
     <>
-      <AssistantTrigger onOpen={handleOpenDrawer} />
+      <AssistantTrigger onClick={handleOpenDrawer} />
       <AssistantDrawer
         isOpen={isOpen}
         onClose={handleCloseDrawer}

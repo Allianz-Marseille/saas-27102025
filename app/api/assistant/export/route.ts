@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       case "pdf":
         try {
           const pdfBuffer = await exportToPDF(conversation);
-          return new NextResponse(pdfBuffer, {
+          return new NextResponse(pdfBuffer as any, {
             headers: {
               "Content-Type": "application/pdf",
               "Content-Disposition": `attachment; filename="${conversation.title.replace(/[^a-z0-9]/gi, "_")}.pdf"`,
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       case "docx":
         try {
           const wordBuffer = await exportToWord(conversation);
-          return new NextResponse(wordBuffer, {
+          return new NextResponse(wordBuffer as any, {
             headers: {
               "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
               "Content-Disposition": `attachment; filename="${conversation.title.replace(/[^a-z0-9]/gi, "_")}.docx"`,

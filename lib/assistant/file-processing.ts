@@ -147,7 +147,7 @@ export async function validateFile(file: File): Promise<{ valid: boolean; error?
  * @returns Texte extrait
  */
 export async function extractTextFromFile(file: File): Promise<string> {
-  const mimeType = getRealMimeType(file) || "";
+  const mimeType = (await getRealMimeType(file)) || "";
 
   // PDF
   if (mimeType === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
@@ -191,11 +191,23 @@ export async function extractTextFromFile(file: File): Promise<string> {
 
 /**
  * Extrait le texte d'un fichier PDF
+ * Note: Le traitement PDF nécessite des modules Node.js et ne peut être fait que côté serveur
+ * Cette fonction retourne une erreur côté client - le PDF sera traité côté serveur lors de l'envoi
  */
 async function extractTextFromPDF(file: File): Promise<string> {
-  // Utiliser pdf-parse comme pour le RAG upload
+  // Côté client : retourner une erreur - le PDF sera traité côté serveur
+  if (typeof window !== 'undefined') {
+    throw new Error("Le traitement PDF se fait côté serveur. Le fichier sera traité lors de l'envoi du message.");
+  }
+
+  // Côté serveur uniquement : utiliser pdf-parse
+  // Cette partie ne sera jamais exécutée côté client grâce à la vérification ci-dessus
+  // Mais Next.js essaie quand même de bundler le code, donc on utilise une approche dynamique
   try {
-    const { createRequire } = await import("module");
+    // Utiliser Function constructor pour éviter que Next.js ne résolve l'import statiquement
+    const dynamicImport = new Function('specifier', 'return import(specifier)');
+    const moduleImport = await dynamicImport("module");
+    const { createRequire } = moduleImport;
     const require = createRequire(import.meta.url);
     const pdfParseModule = require("pdf-parse");
     const PDFParseClass = (pdfParseModule as any).PDFParse;
@@ -286,14 +298,14 @@ export async function processFiles(files: File[]): Promise<ProcessedFile[]> {
 
   for (const file of files) {
     // Valider le fichier
-    const validationError = validateFile(file);
-    if (validationError) {
+    const validationResult = await validateFile(file);
+    if (!validationResult.valid && validationResult.error) {
       processedFiles.push({
         id: `${Date.now()}-${Math.random()}`,
         name: file.name,
         type: file.type,
         size: file.size,
-        error: validationError,
+        error: validationResult.error,
       });
       continue;
     }

@@ -7,6 +7,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/utils/auth-utils";
 import OpenAI from "openai";
 import { checkRateLimit, determineRequestType } from "@/lib/assistant/rate-limiting";
+import { checkBudgetLimit } from "@/lib/assistant/budget-alerts";
+import { openaiWithRetry } from "@/lib/assistant/retry";
+import { logUsage } from "@/lib/assistant/monitoring";
+import { logAction } from "@/lib/assistant/audit";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

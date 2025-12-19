@@ -8,6 +8,7 @@ import { verifyAuth } from "@/lib/utils/auth-utils";
 import { verifyAdmin } from "@/lib/utils/auth-utils";
 import { getUserUsageStats, getGlobalUsageStats, getDailyStats } from "@/lib/assistant/monitoring";
 import { getBudgetStatus, getBudgetConfig, updateBudgetConfig } from "@/lib/assistant/budget-alerts";
+import { logAction } from "@/lib/assistant/audit";
 
 /**
  * GET /api/assistant/monitoring

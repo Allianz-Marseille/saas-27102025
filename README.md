@@ -505,18 +505,23 @@ Toutes les routes sont protégées par le composant `RouteGuard` qui vérifie :
 ### Vercel (recommandé)
 
 1. Connecter le repository GitHub à Vercel
-2. Configurer les variables d'environnement dans Vercel
+2. Configurer les variables d'environnement dans Vercel (voir [Guide de déploiement](docs/deployment.md))
 3. Déployer automatiquement à chaque push sur `main`
 
 ### Variables d'environnement de production
 
-Dans Vercel, configurer toutes les variables d'environnement listées dans la section Configuration, notamment :
+**📖 Documentation complète** : Voir [docs/deployment.md](docs/deployment.md) pour la liste complète des variables d'environnement requises.
+
+Variables essentielles :
+- **`OPENAI_API_KEY`** (requis) : Clé API OpenAI pour l'assistant IA
 - Variables Firebase (client et admin)
-- Clés API externes (Pappers, etc.)
+- Clés API externes (Pappers, Societe.com, etc.)
 
 ### Configuration Vercel
 
 Le fichier `vercel.json` configure les redirections et les routes API.
+
+Pour plus de détails sur la configuration Vercel et les variables d'environnement, consultez le [Guide de déploiement](docs/deployment.md).
 
 ## 📚 Documentation supplémentaire
 
