@@ -145,8 +145,76 @@ export default function AssistantIAPage() {
 
     setIsProcessingFiles(true);
     try {
-      const processedFiles = await processFiles(Array.from(files));
-      
+      const filesArray = Array.from(files);
+      const processedFiles: ProcessedFile[] = [];
+
+      // Traiter chaque fichier
+      for (const file of filesArray) {
+        const fileName = file.name.toLowerCase();
+        const mimeType = file.type;
+
+        // Vérifier le type de fichier
+        const isPDF = mimeType === "application/pdf" || fileName.endsWith(".pdf");
+        const isText = mimeType === "text/plain" || mimeType === "text/csv" || fileName.endsWith(".txt") || fileName.endsWith(".csv");
+
+        if (isPDF || isText) {
+          // Extraire le texte côté serveur via l'API
+          try {
+            const token = await user?.getIdToken();
+            if (!token) {
+              throw new Error("Token d'authentification manquant");
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await fetch("/api/assistant/files/extract", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              body: formData,
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(errorData.error || "Erreur lors de l'extraction du texte");
+            }
+
+            const data = await response.json();
+            if (data.success && data.text) {
+              processedFiles.push({
+                id: `${Date.now()}-${Math.random()}`,
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                content: data.text,
+              });
+            } else {
+              processedFiles.push({
+                id: `${Date.now()}-${Math.random()}`,
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                error: data.error || "Erreur lors de l'extraction du texte",
+              });
+            }
+          } catch (error) {
+            processedFiles.push({
+              id: `${Date.now()}-${Math.random()}`,
+              name: file.name,
+              type: file.type,
+              size: file.size,
+              error: error instanceof Error ? error.message : "Erreur lors de l'extraction du texte",
+            });
+          }
+        } else {
+          // Pour les autres types de fichiers, utiliser processFiles (qui gère les erreurs)
+          const singleFileProcessed = await processFiles([file]);
+          processedFiles.push(...singleFileProcessed);
+        }
+      }
+
       // Filtrer les fichiers avec erreurs
       const validFiles = processedFiles.filter((f) => !f.error);
       const errorFiles = processedFiles.filter((f) => f.error);
