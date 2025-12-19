@@ -168,6 +168,8 @@ export default function AssistantIAPage() {
             const formData = new FormData();
             formData.append("file", file);
 
+            console.log("Envoi du fichier à l'API d'extraction:", file.name, file.type);
+
             const response = await fetch("/api/assistant/files/extract", {
               method: "POST",
               headers: {
@@ -176,12 +178,17 @@ export default function AssistantIAPage() {
               body: formData,
             });
 
+            console.log("Réponse API:", response.status, response.statusText);
+
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({}));
-              throw new Error(errorData.error || "Erreur lors de l'extraction du texte");
+              console.error("Erreur API:", errorData);
+              throw new Error(errorData.error || `Erreur API (${response.status}): ${response.statusText}`);
             }
 
             const data = await response.json();
+            console.log("Données reçues:", data.success ? "Succès" : "Échec", data.text ? `Texte extrait (${data.text.length} caractères)` : "Pas de texte");
+            
             if (data.success && data.text) {
               processedFiles.push({
                 id: `${Date.now()}-${Math.random()}`,
@@ -200,6 +207,7 @@ export default function AssistantIAPage() {
               });
             }
           } catch (error) {
+            console.error("Erreur lors de l'extraction:", error);
             processedFiles.push({
               id: `${Date.now()}-${Math.random()}`,
               name: file.name,
@@ -1111,7 +1119,34 @@ export default function AssistantIAPage() {
                   e.preventDefault();
                   setIsDragging(false);
                   const files = Array.from(e.dataTransfer.files);
-                  await handleImageFiles(files);
+                  
+                  // Séparer les images et les fichiers
+                  const imageFiles: File[] = [];
+                  const otherFiles: File[] = [];
+                  
+                  for (const file of files) {
+                    if (file.type.startsWith("image/")) {
+                      imageFiles.push(file);
+                    } else {
+                      otherFiles.push(file);
+                    }
+                  }
+                  
+                  // Traiter les images
+                  if (imageFiles.length > 0) {
+                    await handleImageFiles(imageFiles);
+                  }
+                  
+                  // Traiter les fichiers (PDF, etc.) via handleChatFileUpload
+                  if (otherFiles.length > 0) {
+                    // Créer un événement simulé pour handleChatFileUpload
+                    const dataTransfer = new DataTransfer();
+                    otherFiles.forEach(file => dataTransfer.items.add(file));
+                    const fakeEvent = {
+                      target: { files: dataTransfer.files }
+                    } as React.ChangeEvent<HTMLInputElement>;
+                    await handleChatFileUpload(fakeEvent);
+                  }
                 }}
               >
                 <div className="flex gap-2">
