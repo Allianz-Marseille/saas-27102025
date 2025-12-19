@@ -96,50 +96,19 @@ export async function POST(request: NextRequest) {
     
     let text: string;
     try {
-      // Import dynamique de pdf-parse
-      // pdf-parse v2.4.5 utilise une classe PDFParse
+      // Utiliser pdf-parse avec Buffer (meilleure compatibilité Node.js)
       console.log("Import de pdf-parse...");
-      const pdfParseModule = await import("pdf-parse");
-      console.log("pdf-parse importé");
+      const pdfParse = await import("pdf-parse");
       
-      // Accéder à la classe PDFParse
-      const PDFParseClass = (pdfParseModule as any).PDFParse;
+      // Convertir Uint8Array en Buffer pour pdf-parse
+      const Buffer = (await import("buffer")).Buffer;
+      const pdfBuffer = Buffer.from(uint8Array);
       
-      if (!PDFParseClass) {
-        throw new Error("PDFParse class not found in pdf-parse module");
-      }
+      console.log("Extraction du texte avec pdf-parse...");
+      const pdfData = await pdfParse.default(pdfBuffer);
       
-      // Instancier la classe avec le buffer
-      // La classe accepte ArrayBuffer, TypedArray (Uint8Array) ou Buffer
-      console.log("Instanciation de PDFParse...");
-      const parser = new PDFParseClass({ data: uint8Array });
-      console.log("PDFParse instancié, extraction du texte...");
-      
-      // Extraire le texte avec la méthode getText()
-      // Cette méthode retourne un TextResult qui contient la propriété text
-      const textResult = await parser.getText();
-      console.log("Texte extrait, longueur:", textResult ? (textResult as any).text?.length || 0 : 0);
-      
-      // Le résultat est un objet TextResult avec une propriété text (string)
-      // TextResult a la structure: { pages: PageTextResult[], text: string }
-      if (textResult && typeof textResult === "object") {
-        // Accéder directement à la propriété text qui est une string
-        text = (textResult as any).text;
-        
-        // Vérifier que text est bien une string
-        if (typeof text !== "string") {
-          console.warn("Le résultat getText() n'a pas retourné une string, type:", typeof text);
-          text = String(text || "");
-        }
-      } else if (typeof textResult === "string") {
-        text = textResult;
-      } else {
-        console.warn("Format de résultat inattendu:", typeof textResult);
-        text = String(textResult || "");
-      }
-      
-      // Nettoyer les ressources
-      await parser.destroy();
+      text = pdfData.text;
+      console.log(`Texte extrait: ${text.length} caractères`);
       
       if (!text || text.trim().length === 0) {
         throw new Error("Aucun texte extrait du PDF");

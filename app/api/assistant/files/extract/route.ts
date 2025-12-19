@@ -11,30 +11,15 @@ import { verifyAuth } from "@/lib/utils/auth-utils";
  */
 async function extractTextFromPDF(buffer: ArrayBuffer): Promise<string> {
   try {
-    const pdfParseModule = await import("pdf-parse");
-    const PDFParseClass = (pdfParseModule as any).PDFParse;
-
-    if (!PDFParseClass) {
-      throw new Error("PDFParse class not found in pdf-parse module");
-    }
-
-    const uint8Array = new Uint8Array(buffer);
-    const parser = new PDFParseClass({ data: uint8Array });
-    const textResult = await parser.getText();
-
-    let text: string;
-    if (textResult && typeof textResult === "object") {
-      text = (textResult as any).text;
-      if (typeof text !== "string") {
-        text = String(text || "");
-      }
-    } else if (typeof textResult === "string") {
-      text = textResult;
-    } else {
-      text = String(textResult || "");
-    }
-
-    await parser.destroy();
+    // Utiliser pdf-parse avec Buffer (meilleure compatibilité Node.js)
+    const pdfParse = await import("pdf-parse");
+    
+    // Convertir ArrayBuffer en Buffer pour pdf-parse
+    const Buffer = (await import("buffer")).Buffer;
+    const pdfBuffer = Buffer.from(buffer);
+    
+    const pdfData = await pdfParse.default(pdfBuffer);
+    const text = pdfData.text;
 
     if (!text || text.trim().length === 0) {
       throw new Error("Aucun texte extrait du PDF");
