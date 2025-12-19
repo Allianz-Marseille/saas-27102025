@@ -98,14 +98,16 @@ export async function POST(request: NextRequest) {
     try {
       // Utiliser pdf-parse avec Buffer (meilleure compatibilité Node.js)
       console.log("Import de pdf-parse...");
-      const pdfParse = await import("pdf-parse");
+      const pdfParseModule = await import("pdf-parse");
       
       // Convertir Uint8Array en Buffer pour pdf-parse
       const Buffer = (await import("buffer")).Buffer;
       const pdfBuffer = Buffer.from(uint8Array);
       
+      // pdf-parse peut être exporté comme default ou comme export nommé
+      const pdfParse = (pdfParseModule as any).default || pdfParseModule;
       console.log("Extraction du texte avec pdf-parse...");
-      const pdfData = await pdfParse.default(pdfBuffer);
+      const pdfData = await pdfParse(pdfBuffer);
       
       text = pdfData.text;
       console.log(`Texte extrait: ${text.length} caractères`);

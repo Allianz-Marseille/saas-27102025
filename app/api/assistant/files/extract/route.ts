@@ -12,13 +12,15 @@ import { verifyAuth } from "@/lib/utils/auth-utils";
 async function extractTextFromPDF(buffer: ArrayBuffer): Promise<string> {
   try {
     // Utiliser pdf-parse avec Buffer (meilleure compatibilité Node.js)
-    const pdfParse = await import("pdf-parse");
+    const pdfParseModule = await import("pdf-parse");
     
     // Convertir ArrayBuffer en Buffer pour pdf-parse
     const Buffer = (await import("buffer")).Buffer;
     const pdfBuffer = Buffer.from(buffer);
     
-    const pdfData = await pdfParse.default(pdfBuffer);
+    // pdf-parse peut être exporté comme default ou comme export nommé
+    const pdfParse = (pdfParseModule as any).default || pdfParseModule;
+    const pdfData = await pdfParse(pdfBuffer);
     const text = pdfData.text;
 
     if (!text || text.trim().length === 0) {
