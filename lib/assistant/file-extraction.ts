@@ -143,7 +143,18 @@ async function convertPDFToImages(arrayBuffer: ArrayBuffer): Promise<ArrayBuffer
         
         try {
           // Tentative : Utiliser canvas (si disponible localement)
-          const canvasModule = await import("canvas");
+          // Utiliser require dynamique pour éviter les erreurs TypeScript quand canvas n'est pas disponible
+          const canvasModule = await new Promise<any>((resolve, reject) => {
+            try {
+              // @ts-ignore - canvas est optionnel, peut ne pas être disponible
+              const { createRequire } = require("module");
+              const requireFn = createRequire(import.meta.url || __filename || process.cwd());
+              const canvas = requireFn("canvas");
+              resolve(canvas);
+            } catch (err) {
+              reject(err);
+            }
+          });
           const createCanvas = canvasModule.createCanvas || canvasModule.default?.createCanvas;
           
           if (createCanvas) {
