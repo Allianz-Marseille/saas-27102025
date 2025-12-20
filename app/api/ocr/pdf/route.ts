@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     // Note: asyncBatchAnnotateFiles nécessite généralement un fichier dans GCS.
     // Cependant, certaines versions peuvent accepter du contenu inline via inputConfig.content.
     // Si cette méthode échoue, il faudra uploader le PDF dans GCS temporairement.
-    const request = {
+    const visionRequest = {
       requests: [
         {
           inputConfig: {
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
     // Appeler Vision AI avec asyncBatchAnnotateFiles (support PDF natif multi-pages)
     // Cette méthode est asynchrone et retourne une opération à suivre
     console.log("OCR PDF: Appel à Google Vision AI (asyncBatchAnnotateFiles)...");
-    const [operation] = await client.asyncBatchAnnotateFiles(request);
+    const [operation] = await client.asyncBatchAnnotateFiles(visionRequest);
     
     // Attendre la fin du traitement asynchrone
     console.log("OCR PDF: Attente de la fin du traitement asynchrone...");
