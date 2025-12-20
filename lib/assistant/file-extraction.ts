@@ -288,55 +288,85 @@ async function extractTextFromPDFViaOCR(arrayBuffer: ArrayBuffer): Promise<{ tex
       ],
     };
 
-    // Appeler Vision AI avec asyncBatchAnnotateFiles (support PDF natif multi-pages)
+    // Note: asyncBatchAnnotateFiles nécessite généralement un fichier dans GCS.
+    // Pour l'instant, essayons avec le client SDK et améliorons la gestion d'erreur
     console.log("   🔄 Appel à Google Vision AI (asyncBatchAnnotateFiles)...");
-    const [operation] = await client.asyncBatchAnnotateFiles(visionRequest);
     
-    // Attendre la fin du traitement asynchrone
-    console.log("   ⏳ Attente de la fin du traitement asynchrone...");
-    const [result] = await operation.promise();
+    try {
+      const [operation] = await client.asyncBatchAnnotateFiles(visionRequest);
+      
+      // Attendre la fin du traitement asynchrone
+      console.log("   ⏳ Attente de la fin du traitement asynchrone...");
+      const [result] = await operation.promise();
 
-    // Vérifier que la réponse contient des données
-    if (!result.responses || result.responses.length === 0) {
-      throw new Error("Aucune réponse de Google Vision AI");
-    }
-
-    // Extraire le texte de toutes les pages
-    const responses = result.responses;
-    let fullText = "";
-    let pageCount = 0;
-
-    for (const fileResponse of responses) {
-      // Vérifier s'il y a une erreur dans cette réponse
-      const responseWithError = fileResponse as unknown as { error?: { message?: string }; responses?: Array<{ fullTextAnnotation?: { text?: string } }> };
-      if (responseWithError.error) {
-        throw new Error(
-          `Erreur lors du traitement OCR par Google Vision AI: ${responseWithError.error.message || "Erreur inconnue"}`
-        );
+      // Vérifier que la réponse contient des données
+      if (!result.responses || result.responses.length === 0) {
+        throw new Error("Aucune réponse de Google Vision AI");
       }
 
-      // Extraire le texte des réponses de pages
-      const pageResponses = (fileResponse as unknown as { responses?: Array<{ fullTextAnnotation?: { text?: string } }> }).responses;
-      if (pageResponses) {
-        pageCount = pageResponses.length;
-        for (const pageResponse of pageResponses) {
-          if (pageResponse.fullTextAnnotation?.text) {
-            fullText += pageResponse.fullTextAnnotation.text + "\n\n";
+      // Extraire le texte de toutes les pages
+      const responses = result.responses;
+      let fullText = "";
+      let pageCount = 0;
+
+      for (const fileResponse of responses) {
+        // Vérifier s'il y a une erreur dans cette réponse
+        const responseWithError = fileResponse as unknown as { error?: { message?: string }; responses?: Array<{ fullTextAnnotation?: { text?: string } }> };
+        if (responseWithError.error) {
+          throw new Error(
+            `Erreur lors du traitement OCR par Google Vision AI: ${responseWithError.error.message || "Erreur inconnue"}`
+          );
+        }
+
+        // Extraire le texte des réponses de pages
+        const pageResponses = (fileResponse as unknown as { responses?: Array<{ fullTextAnnotation?: { text?: string } }> }).responses;
+        if (pageResponses) {
+          pageCount = pageResponses.length;
+          for (const pageResponse of pageResponses) {
+            if (pageResponse.fullTextAnnotation?.text) {
+              fullText += pageResponse.fullTextAnnotation.text + "\n\n";
+            }
           }
         }
       }
+
+      // Nettoyer le texte (supprimer les espaces multiples, etc.)
+      const cleanedText = fullText.trim().replace(/\n{3,}/g, "\n\n");
+
+      if (cleanedText.length === 0) {
+        throw new Error("Aucun texte extrait du PDF via OCR Google Vision AI");
+      }
+
+      console.log(`✅ [extractTextFromPDFViaOCR] Extraction OCR réussie: ${cleanedText.length} caractères sur ${pageCount} page(s)`);
+      
+      return { text: cleanedText, pageCount };
+    } catch (visionError: any) {
+      // Améliorer le message d'erreur pour diagnostiquer le problème
+      const errorMessage = visionError?.message || String(visionError);
+      const errorCode = (visionError as any)?.code;
+      const errorDetails = visionError?.details || visionError?.response || visionError;
+      
+      console.error("❌ Erreur détaillée Vision AI:", {
+        message: errorMessage,
+        code: errorCode,
+        details: errorDetails,
+        stack: visionError?.stack,
+      });
+      
+      // Si l'erreur indique qu'il faut utiliser GCS
+      if (errorMessage.includes("gcsSource") || errorMessage.includes("GCS") || errorCode === "INVALID_ARGUMENT") {
+        throw new Error(
+          `Google Vision AI nécessite que le PDF soit dans Google Cloud Storage pour asyncBatchAnnotateFiles. ` +
+          `L'upload temporaire dans GCS n'est pas encore implémenté. ` +
+          `Erreur technique: ${errorMessage}`
+        );
+      }
+      
+      throw new Error(
+        `Erreur lors du traitement OCR Google Vision AI: ${errorMessage}. ` +
+        `Code: ${errorCode || "inconnu"}`
+      );
     }
-
-    // Nettoyer le texte (supprimer les espaces multiples, etc.)
-    const cleanedText = fullText.trim().replace(/\n{3,}/g, "\n\n");
-
-    if (cleanedText.length === 0) {
-      throw new Error("Aucun texte extrait du PDF via OCR Google Vision AI");
-    }
-
-    console.log(`✅ [extractTextFromPDFViaOCR] Extraction OCR réussie: ${cleanedText.length} caractères sur ${pageCount} page(s)`);
-    
-    return { text: cleanedText, pageCount };
   } catch (error) {
     console.error("❌ [extractTextFromPDFViaOCR] Erreur lors de l'extraction OCR:", error);
     if (error instanceof Error) {
