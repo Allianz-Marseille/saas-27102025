@@ -66,6 +66,13 @@ export async function POST(request: NextRequest) {
     const doc1 = doc1Snapshot.data();
     const doc2 = doc2Snapshot.data();
 
+    if (!doc1 || !doc2) {
+      return NextResponse.json(
+        { error: "Impossible de récupérer les données des documents" },
+        { status: 500 }
+      );
+    }
+
     // Récupérer les résumés ou les chunks
     const doc1Summary = doc1.summary;
     const doc2Summary = doc2.summary;
@@ -103,10 +110,10 @@ export async function POST(request: NextRequest) {
     // Utiliser OpenAI pour comparer
     const prompt = `Compare ces deux documents d'assurance et identifie les différences principales.
 
-Document 1 - ${doc1.title}:
+Document 1 - ${doc1.title || "Document sans titre"}:
 ${doc1Text}
 
-Document 2 - ${doc2.title}:
+Document 2 - ${doc2.title || "Document sans titre"}:
 ${doc2Text}
 
 Identifie et liste les différences sur :
@@ -155,11 +162,11 @@ Format de réponse (JSON) :
       success: true,
       document1: {
         id: documentId1,
-        title: doc1.title,
+        title: doc1.title || "Document sans titre",
       },
       document2: {
         id: documentId2,
-        title: doc2.title,
+        title: doc2.title || "Document sans titre",
       },
       comparison,
     });
