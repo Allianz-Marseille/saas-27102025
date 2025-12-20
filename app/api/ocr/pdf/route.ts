@@ -135,27 +135,42 @@ export async function POST(request: NextRequest) {
     console.log("OCR PDF: Attente de la fin du traitement asynchrone...");
     const [result] = await operation.promise();
 
-    // Vérifier les erreurs
-    if (result.responses?.[0]?.error) {
-      const error = result.responses[0].error;
-      console.error("OCR PDF: Erreur Vision AI:", error);
+    // Vérifier que la réponse contient des données
+    if (!result.responses || result.responses.length === 0) {
+      console.error("OCR PDF: Aucune réponse de Vision AI");
       return NextResponse.json(
         {
-          error: "Erreur lors du traitement OCR par Google Vision AI",
-          details: error.message || "Erreur inconnue",
+          error: "Aucune réponse de Google Vision AI",
+          details: "Le traitement OCR n'a retourné aucun résultat",
         },
         { status: 500 }
       );
     }
 
     // Extraire le texte de toutes les pages
-    // Structure: result.responses[0].responses[] contient les réponses par page
-    const responses = result.responses || [];
+    // Structure: result.responses contient les réponses par fichier
+    const responses = result.responses;
     let fullText = "";
 
     for (const fileResponse of responses) {
-      if (fileResponse.responses) {
-        for (const pageResponse of fileResponse.responses) {
+      // Vérifier s'il y a une erreur dans cette réponse (structure optionnelle)
+      const responseWithError = fileResponse as unknown as { error?: { message?: string }; responses?: Array<{ fullTextAnnotation?: { text?: string } }> };
+      if (responseWithError.error) {
+        console.error("OCR PDF: Erreur dans la réponse Vision AI:", responseWithError.error);
+        return NextResponse.json(
+          {
+            error: "Erreur lors du traitement OCR par Google Vision AI",
+            details: responseWithError.error.message || "Erreur inconnue",
+          },
+          { status: 500 }
+        );
+      }
+
+      // Extraire le texte des réponses de pages
+      // Note: La propriété 'responses' peut ne pas être dans le type mais existe à l'exécution
+      const pageResponses = (fileResponse as unknown as { responses?: Array<{ fullTextAnnotation?: { text?: string } }> }).responses;
+      if (pageResponses) {
+        for (const pageResponse of pageResponses) {
           if (pageResponse.fullTextAnnotation?.text) {
             fullText += pageResponse.fullTextAnnotation.text + "\n\n";
           }
