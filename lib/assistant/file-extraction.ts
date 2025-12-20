@@ -137,37 +137,50 @@ async function convertPDFToImages(arrayBuffer: ArrayBuffer): Promise<ArrayBuffer
         // Configuration du viewport (résolution élevée pour meilleure qualité OCR)
         const viewport = page.getViewport({ scale: 2.0 });
         
-        // Créer un canvas pour le rendu (nécessite la bibliothèque canvas)
-        let createCanvas: any;
+        // Essayer d'utiliser canvas si disponible (environnement local)
+        // Sur Vercel, canvas n'est pas disponible, donc on lance une erreur explicite
+        let imageBuffer: ArrayBuffer | null = null;
+        
         try {
+          // Tentative : Utiliser canvas (si disponible localement)
           const canvasModule = await import("canvas");
-          createCanvas = canvasModule.createCanvas || canvasModule.default?.createCanvas;
-          if (!createCanvas) {
-            throw new Error("canvas.createCanvas n'est pas disponible");
+          const createCanvas = canvasModule.createCanvas || canvasModule.default?.createCanvas;
+          
+          if (createCanvas) {
+            const canvas = createCanvas(viewport.width, viewport.height);
+            const context = canvas.getContext("2d") as any;
+            
+            const renderContext = {
+              canvasContext: context,
+              viewport: viewport,
+            };
+            
+            await page.render(renderContext).promise;
+            const buffer = canvas.toBuffer("image/png");
+            imageBuffer = new Uint8Array(buffer).buffer;
+          } else {
+            throw new Error("canvas.createCanvas non disponible");
           }
         } catch (canvasError) {
+          // Canvas n'est pas disponible (environnement Vercel)
+          // Sur Vercel ou environnement sans canvas, on ne peut pas convertir le PDF en images
+          // L'OCR via OpenAI Vision nécessite des images, donc on doit utiliser une alternative
+          // Solution : Utiliser Google Cloud Vision API qui supporte directement les PDFs
           throw new Error(
-            `La bibliothèque 'canvas' est requise pour convertir les PDFs en images. ` +
-            `Installez-la avec: npm install canvas. ` +
-            `Note: canvas nécessite des dépendances système (Cairo, Pango, etc.). ` +
+            `L'OCR des PDFs scannés nécessite la bibliothèque 'canvas' qui n'est pas disponible dans cet environnement (Vercel). ` +
+            `Solutions alternatives : ` +
+            `1. Utiliser Google Cloud Vision API qui supporte directement les PDFs (recommandé pour Vercel) ` +
+            `2. Utiliser un environnement avec canvas installé (développement local) ` +
+            `3. Désactiver l'OCR pour les PDFs scannés dans cet environnement. ` +
             `Erreur: ${canvasError instanceof Error ? canvasError.message : "Erreur inconnue"}`
           );
         }
         
-        const canvas = createCanvas(viewport.width, viewport.height);
-        const context = canvas.getContext("2d");
+        if (!imageBuffer) {
+          throw new Error("Impossible de générer l'image de la page");
+        }
         
-        // Rendre la page sur le canvas
-        const renderContext = {
-          canvasContext: context,
-          viewport: viewport,
-        };
-        
-        await page.render(renderContext).promise;
-        
-        // Convertir le canvas en buffer PNG
-        const imageBuffer = canvas.toBuffer("image/png");
-        imageBuffers.push(imageBuffer.buffer);
+        imageBuffers.push(imageBuffer);
         
         console.log(`   ✅ Page ${pageNum}/${numPages} convertie en image`);
       } catch (pageError) {
