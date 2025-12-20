@@ -352,14 +352,20 @@ SOCIETE_API_KEY=your_societe_api_key
 #### Configuration Firestore
 
 Les règles Firestore sont définies dans `firestore.rules`. Les collections principales sont :
-- `users` : Utilisateurs de l'application
-- `acts` : Actes commerciaux généraux
-- `healthActs` : Actes santé individuelle
-- `healthCollectiveActs` : Actes santé collective
+- `users` : Utilisateurs de l'application (lecture restreinte au propriétaire ou admin)
+- `acts` : Actes commerciaux généraux (lecture restreinte au propriétaire ou admin)
+- `health_acts` : Actes santé individuelle (lecture restreinte au propriétaire ou admin)
+- `health_collective_acts` : Actes santé collective (lecture restreinte au propriétaire ou admin)
 - `companies` : Entreprises clients
 - `offres` : Offres commerciales
-- `logs` : Logs système
+- `logs` : Logs système (lecture admin uniquement)
+- `agency_commissions` : Commissions agence (accès admin uniquement)
 - `leaderboard` : Classement des commerciaux
+- `commissionRules` : Règles de calcul des commissions
+- `rag_documents` : Documents RAG pour l'assistant
+- `assistant_conversations` : Conversations de l'assistant
+
+**⚠️ Important** : Les règles de sécurité ont été renforcées pour protéger les données personnelles. Voir `docs/SECURITE_FIRESTORE.md` pour plus de détails.
 
 ### Démarrage
 
@@ -417,6 +423,20 @@ npm run generate-leaderboard             # Générer le leaderboard
 
 ```bash
 npm run get-user-info                    # Obtenir les informations d'un utilisateur
+npm run index:rag                        # Indexer des documents RAG
+```
+
+### Scripts de test
+
+```bash
+npm run test:rules                        # Tester les règles Firebase (Admin SDK)
+npm run test:rules:emulator              # Tester les règles Firestore avec l'Emulator
+npm run test:storage                     # Tester les règles Storage
+```
+
+**Note** : Pour `test:rules:emulator`, démarrer d'abord l'Emulator :
+```bash
+firebase emulators:start --only firestore,auth
 ```
 
 ## 🔌 APIs externes
@@ -488,10 +508,26 @@ Le CA pondéré est calculé avec 3 coefficients :
 
 ### Règles Firestore
 
-Les règles Firestore sont définies dans `firestore.rules` :
-- Les utilisateurs ne peuvent lire que leurs propres actes (sauf admin)
+Les règles Firestore sont définies dans `firestore.rules` avec des restrictions de sécurité renforcées :
+
+**Collections protégées** :
+- **`users`** : Lecture limitée au propriétaire du document ou aux admins uniquement
+- **`acts`** : Lecture limitée au propriétaire de l'acte ou aux admins
+- **`health_acts`** : Lecture limitée au propriétaire de l'acte ou aux admins
+- **`health_collective_acts`** : Lecture limitée au propriétaire de l'acte ou aux admins
+- **`logs`** : Lecture réservée aux admins uniquement
+- **`agency_commissions`** : Accès complet réservé aux admins uniquement
+
+**Règles générales** :
+- Les utilisateurs ne peuvent lire que leurs propres documents (sauf admin)
 - Seuls les admins peuvent créer/modifier/supprimer des utilisateurs
 - Les règles varient selon le rôle de l'utilisateur
+- Les collections sensibles (logs, commissions) sont protégées
+
+**Tests des règles** :
+- Script de test disponible : `scripts/test-firestore-rules-emulator.ts`
+- Exécution : `npm run test:rules:emulator` (nécessite l'Emulator Firebase)
+- Documentation complète : `docs/SECURITE_FIRESTORE.md`
 
 ### Protection des routes
 
@@ -525,6 +561,7 @@ Pour plus de détails sur la configuration Vercel et les variables d'environneme
 
 ## 📚 Documentation supplémentaire
 
+- **Sécurité Firestore** : Voir `docs/SECURITE_FIRESTORE.md` pour les détails sur le resserrement des droits d'accès et les tests de sécurité
 - **Bot ChatGPT** : Voir `docs/bot-mcp-chatgpt.md` pour la documentation du bot ChatGPT Assistant
 - **Pappers** : Voir `docs/outil-pappers.md` pour l'inventaire des fonctionnalités Pappers (si disponible)
 
