@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && 
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'ADMINISTRATEUR';
+    }
+    
+    // knowledge-base : upload admin uniquement, lecture pour tous authentifiés
+    match /knowledge-base/pdf/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Tous les autres fichiers : règles par défaut (à adapter selon besoins)
+    match /{allPaths=**} {
+      allow read, write: if false; // Par défaut, tout est bloqué
+    }
+  }
+}
+
