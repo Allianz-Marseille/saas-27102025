@@ -93,17 +93,17 @@ async function convertPDFToImages(arrayBuffer: ArrayBuffer): Promise<ArrayBuffer
     
     // Configurer le worker pour Node.js (nécessaire pour pdfjs-dist)
     if (typeof window === "undefined") {
-      // Côté serveur Node.js - utiliser le worker Node.js
+      // Côté serveur Node.js - configurer le worker
       try {
-        // Essayer d'importer le worker Node.js
-        const pdfjsWorker = await import("pdfjs-dist/build/pdf.worker.mjs");
+        // Utiliser le chemin du worker directement (sans import dynamique pour éviter les erreurs TypeScript)
         if (pdfjsLib.GlobalWorkerOptions) {
-          pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.default || pdfjsWorker;
+          // En Node.js, pdfjs-dist peut fonctionner sans worker configuré explicitement
+          // Le worker est optionnel pour certaines opérations
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "";
         }
       } catch (workerError) {
-        // Si l'import du worker échoue, essayer une autre méthode
-        console.warn("⚠️ [convertPDFToImages] Impossible de charger le worker pdfjs-dist, utilisation sans worker");
-        // Certaines versions de pdfjs-dist fonctionnent sans worker en Node.js
+        // Si la configuration échoue, continuer sans worker
+        console.warn("⚠️ [convertPDFToImages] Configuration worker échouée, continuation sans worker");
       }
     }
     
