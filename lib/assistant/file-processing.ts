@@ -287,18 +287,48 @@ async function extractTextFromXLSX(file: File): Promise<string> {
 
   // Côté serveur uniquement
   try {
-    const XLSX = await import("xlsx");
+    // Utiliser exceljs (alternative sécurisée à xlsx)
+    const ExcelJS = await import("exceljs");
     const arrayBuffer = await file.arrayBuffer();
+    const workbook = new ExcelJS.Workbook();
     
-    const workbook = XLSX.read(arrayBuffer, { type: "array" });
+    // Charger le workbook depuis le buffer
+    await workbook.xlsx.load(arrayBuffer);
+    
     const textParts: string[] = [];
     
     // Parcourir toutes les feuilles
-    workbook.SheetNames.forEach((sheetName) => {
-      const worksheet = workbook.Sheets[sheetName];
-      const sheetText = XLSX.utils.sheet_to_txt(worksheet);
-      if (sheetText) {
-        textParts.push(`=== ${sheetName} ===\n${sheetText}`);
+    workbook.eachSheet((worksheet, sheetId) => {
+      const sheetName = worksheet.name;
+      const rows: string[] = [];
+      
+      // Parcourir toutes les lignes
+      worksheet.eachRow((row, rowNumber) => {
+        const cells: string[] = [];
+        
+        // Parcourir toutes les cellules de la ligne
+        row.eachCell((cell, colNumber) => {
+          // Extraire la valeur de la cellule (texte brut)
+          let cellValue = "";
+          if (cell.value !== null && cell.value !== undefined) {
+            if (typeof cell.value === "object" && "text" in cell.value) {
+              cellValue = cell.value.text || "";
+            } else if (typeof cell.value === "object" && "result" in cell.value) {
+              cellValue = String(cell.value.result || "");
+            } else {
+              cellValue = String(cell.value);
+            }
+          }
+          cells.push(cellValue.trim());
+        });
+        
+        if (cells.length > 0) {
+          rows.push(cells.join("\t"));
+        }
+      });
+      
+      if (rows.length > 0) {
+        textParts.push(`=== ${sheetName} ===\n${rows.join("\n")}`);
       }
     });
     
@@ -311,7 +341,7 @@ async function extractTextFromXLSX(file: File): Promise<string> {
     return text;
   } catch (error) {
     if (error instanceof Error && error.message.includes("Cannot find module")) {
-      throw new Error("La bibliothèque 'xlsx' n'est pas installée");
+      throw new Error("La bibliothèque 'exceljs' n'est pas installée");
     }
     throw error;
   }
