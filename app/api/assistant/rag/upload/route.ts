@@ -135,6 +135,19 @@ export async function POST(request: NextRequest) {
       console.log(`Bucket Storage: ${bucket.name}`);
       console.log(`Chemin Storage: ${storagePath}`);
       
+      // Vérifier que le bucket existe (optionnel, mais utile pour le debug)
+      try {
+        const [exists] = await bucket.exists();
+        if (!exists) {
+          console.warn(`⚠️ Le bucket ${bucket.name} n'existe pas encore. Il sera créé automatiquement lors du premier upload.`);
+        } else {
+          console.log(`✅ Bucket ${bucket.name} existe`);
+        }
+      } catch (checkError) {
+        console.warn("⚠️ Impossible de vérifier l'existence du bucket:", checkError);
+        // Continuer quand même, le bucket sera créé si nécessaire
+      }
+      
       const storageFile = bucket.file(storagePath);
       
       await storageFile.save(buffer, {
@@ -150,20 +163,41 @@ export async function POST(request: NextRequest) {
       console.log(`Fichier uploadé dans Storage : ${storagePath}`);
     } catch (error) {
       console.error("Erreur lors de l'upload dans Storage:", error);
-      console.error("Détails de l'erreur:", {
+      const errorDetails: any = {
         message: error instanceof Error ? error.message : "Erreur inconnue",
-        stack: error instanceof Error ? error.stack : undefined,
         code: (error as any)?.code,
         details: (error as any)?.details,
-      });
+      };
+      
+      // Ajouter des informations de debug utiles
+      if (process.env.NODE_ENV === "development") {
+        errorDetails.stack = error instanceof Error ? error.stack : undefined;
+        errorDetails.bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 
+                                   process.env.FIREBASE_STORAGE_BUCKET ||
+                                   `${process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.appspot.com`;
+      }
+      
+      console.error("Détails de l'erreur:", errorDetails);
+      
       const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
       const errorCode = (error as any)?.code || "UNKNOWN";
+      
+      // Messages d'erreur plus explicites selon le code d'erreur
+      let userMessage = "Erreur lors de l'upload du fichier dans Storage";
+      if (errorCode === "ENOENT" || errorMessage.includes("not found")) {
+        userMessage = "Le bucket Storage n'existe pas. Vérifiez la configuration dans Firebase Console.";
+      } else if (errorCode === "403" || errorMessage.includes("permission")) {
+        userMessage = "Permissions insuffisantes. Vérifiez que le service account a les droits Storage Admin.";
+      } else if (errorCode === "401" || errorMessage.includes("unauthorized")) {
+        userMessage = "Authentification échouée. Vérifiez les credentials Firebase Admin.";
+      }
+      
       return NextResponse.json(
         {
-          error: "Erreur lors de l'upload du fichier dans Storage",
+          error: userMessage,
           message: errorMessage,
           code: errorCode,
-          details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.stack : undefined) : undefined,
+          details: process.env.NODE_ENV === "development" ? errorDetails : undefined,
         },
         {
           status: 500,
