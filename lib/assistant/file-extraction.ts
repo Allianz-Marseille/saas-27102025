@@ -54,14 +54,32 @@ async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
       
       // Vérifier que c'est bien une fonction
       if (typeof pdfParse !== "function") {
-        // Parfois pdf-parse exporte une fonction par défaut
-        pdfParse = pdfParse.default || pdfParse;
+        // Parfois pdf-parse exporte une fonction par défaut (CommonJS)
+        if (pdfParse && typeof pdfParse.default === "function") {
+          pdfParse = pdfParse.default;
+        }
       }
     } catch (requireError) {
       // Si require échoue, essayer avec import ES6
       try {
-        const pdfParseModule = await import("pdf-parse");
-        pdfParse = pdfParseModule.default || pdfParseModule;
+        const pdfParseModule: any = await import("pdf-parse");
+        // pdf-parse peut exporter de différentes manières selon la version
+        // Essayer d'abord comme fonction directe, puis default, puis le module entier
+        if (typeof pdfParseModule === "function") {
+          pdfParse = pdfParseModule;
+        } else if (pdfParseModule.default && typeof pdfParseModule.default === "function") {
+          pdfParse = pdfParseModule.default;
+        } else if (pdfParseModule.pdfParse && typeof pdfParseModule.pdfParse === "function") {
+          pdfParse = pdfParseModule.pdfParse;
+        } else {
+          // Dernier recours : utiliser le module entier
+          pdfParse = pdfParseModule;
+        }
+        
+        // Vérifier que c'est bien une fonction
+        if (typeof pdfParse !== "function") {
+          throw new Error("pdf-parse n'est pas une fonction après import");
+        }
       } catch (importError) {
         throw new Error(
           `Impossible de charger pdf-parse. Vérifiez que la dépendance est installée: npm install pdf-parse. ` +
@@ -181,7 +199,8 @@ async function extractTextFromExcel(arrayBuffer: ArrayBuffer): Promise<string> {
  */
 async function extractTextFromImage(arrayBuffer: ArrayBuffer, mimeType: string): Promise<string> {
   try {
-    const OpenAI = (await import("openai")).default;
+    const openaiModule = await import("openai");
+    const OpenAI = (openaiModule as any).default || openaiModule.OpenAI || openaiModule;
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
