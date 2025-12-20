@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, X, Minimize2, Maximize2, Image as ImageIcon, FileText } from "lucide-react";
+import { Sparkles, MessageSquare, X, Minimize2, Maximize2, Image as ImageIcon, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { Textarea } from "@/components/ui/textarea";
@@ -552,17 +552,78 @@ export function FloatingAssistant() {
             exit={{ scale: 0, opacity: 0 }}
             className="fixed bottom-6 right-6 z-50"
           >
-            <Button
+            {/* Animation de pulsation en arrière-plan */}
+            <motion.div
+              className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 opacity-20 blur-xl"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.2, 0.3, 0.2],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+            
+            {/* Badge IA */}
+            <motion.div
+              className="absolute -top-1 -right-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-lg z-10"
+              animate={{
+                scale: [1, 1.1, 1],
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              IA
+            </motion.div>
+
+            <motion.button
               onClick={() => {
                 setIsOpen(true);
                 setIsMinimized(false);
               }}
-              size="lg"
-              className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+              className="relative h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 text-white shadow-2xl hover:shadow-[0_0_40px_rgba(99,102,241,0.6)] transition-all duration-300 flex items-center justify-center group"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               aria-label="Ouvrir l'assistant IA"
             >
-              <Bot className="h-6 w-6" />
-            </Button>
+              {/* Effet de brillance animé */}
+              <motion.div
+                className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                animate={{
+                  x: ["-100%", "100%"],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  repeatDelay: 1,
+                  ease: "linear",
+                }}
+              />
+              
+              {/* Icône principale */}
+              <div className="relative z-10 flex items-center justify-center">
+                <MessageSquare className="h-7 w-7 absolute" />
+                <motion.div
+                  animate={{
+                    rotate: [0, 10, -10, 0],
+                    scale: [1, 1.1, 1],
+                  }}
+                  transition={{
+                    duration: 2.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  className="absolute"
+                >
+                  <Sparkles className="h-4 w-4 text-amber-300" />
+                </motion.div>
+              </div>
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -583,10 +644,20 @@ export function FloatingAssistant() {
             style={{ maxHeight: "calc(100vh - 3rem)" }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b bg-muted/50">
-              <div className="flex items-center gap-2">
-                <Bot className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold">Assistant IA</h3>
+            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg blur-sm opacity-50" />
+                  <div className="relative bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 p-2 rounded-lg">
+                    <MessageSquare className="h-4 w-4 text-white" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    Assistant IA
+                  </h3>
+                  <p className="text-xs text-muted-foreground">Comment puis-je vous aider ?</p>
+                </div>
               </div>
               <div className="flex items-center gap-1">
                 <Button
@@ -617,8 +688,28 @@ export function FloatingAssistant() {
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.length === 0 ? (
                   <div className="text-center text-muted-foreground py-8">
-                    <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
+                    <div className="relative mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-full opacity-20 blur-xl" />
+                      <div className="relative bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 p-3 rounded-full">
+                        <MessageSquare className="h-8 w-8 text-white" />
+                      </div>
+                      <motion.div
+                        className="absolute -top-1 -right-1"
+                        animate={{
+                          rotate: [0, 360],
+                          scale: [1, 1.2, 1],
+                        }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        <Sparkles className="h-5 w-5 text-amber-400" />
+                      </motion.div>
+                    </div>
+                    <p className="font-medium">Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
+                    <p className="text-sm mt-2 opacity-70">Posez-moi une question ou envoyez-moi un fichier</p>
                   </div>
                 ) : (
                   messages.map((message) => (
@@ -812,7 +903,7 @@ export function FloatingAssistant() {
                     onClick={handleSendMessage}
                     disabled={(!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles}
                     size="icon"
-                    className="shrink-0"
+                    className="shrink-0 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading || isProcessingFiles ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

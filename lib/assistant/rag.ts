@@ -4,7 +4,7 @@
  */
 
 import { generateEmbedding } from "./embeddings";
-import { searchSimilarChunks, buildRAGContext, extractSources } from "./vector-search";
+import { searchSimilarChunks, buildRAGContext, extractSources, SearchFilters } from "./vector-search";
 import { RAGContext, RAGConfig } from "./types";
 
 /**
@@ -12,14 +12,53 @@ import { RAGContext, RAGConfig } from "./types";
  */
 export async function retrieveContext(
   query: string,
-  config: Partial<RAGConfig> = {}
+  config: Partial<RAGConfig> = {},
+  filters?: SearchFilters
 ): Promise<RAGContext> {
   try {
-    // Générer l'embedding de la requête
-    const queryEmbedding = await generateEmbedding(query);
+    // Générer l'embedding de la requête (sauf si recherche keyword pure)
+    let queryEmbedding: number[] | undefined;
+    if (!filters?.searchMode || filters.searchMode === "vector" || filters.searchMode === "hybrid") {
+      queryEmbedding = await generateEmbedding(query);
+    }
 
     // Rechercher les chunks similaires
-    const searchResults = await searchSimilarChunks(queryEmbedding, config);
+    // Si recherche keyword pure, utiliser searchByKeywords directement
+    if (filters?.searchMode === "keyword" && filters.keywords) {
+      // Récupérer les documents actifs
+      const { searchByKeywords } = await import("./vector-search");
+      const activeDocsSnapshot = await (await import("@/lib/firebase/admin-config")).adminDb
+        .collection("rag_documents")
+        .where("isActive", "==", true)
+        .where("status", "==", "indexed")
+        .get();
+      
+      const activeDocumentIds = new Set<string>();
+      activeDocsSnapshot.docs.forEach((doc) => activeDocumentIds.add(doc.id));
+      
+      const searchResults = await searchByKeywords(
+        filters.keywords,
+        activeDocumentIds,
+        { ...config, topK: config.topK || 5, minScore: config.minScore || 0.7, embeddingModel: config.embeddingModel || "text-embedding-3-small" },
+        undefined
+      );
+      
+      const context = buildRAGContext(searchResults);
+      const sources = extractSources(searchResults);
+      
+      return {
+        chunks: searchResults.map((result) => result.chunk),
+        query,
+        sources,
+      };
+    }
+    
+    // Recherche vectorielle ou hybride
+    if (!queryEmbedding) {
+      queryEmbedding = await generateEmbedding(query);
+    }
+    
+    const searchResults = await searchSimilarChunks(queryEmbedding, config, filters);
 
     // Construire le contexte
     const context = buildRAGContext(searchResults);

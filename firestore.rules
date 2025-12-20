@@ -119,6 +119,44 @@ service cloud.firestore {
       allow update: if isAdmin(); // Seuls les admins peuvent mettre à jour
       allow delete: if isAdmin(); // Seuls les admins peuvent supprimer
     }
+    
+    // RAG documents collection
+    // Base de connaissances RAG - lecture pour tous authentifiés, écriture admin uniquement
+    match /rag_documents/{documentId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // RAG chunks collection
+    // Chunks vectoriels - lecture pour tous authentifiés, écriture serveur uniquement
+    match /rag_chunks/{chunkId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Uniquement via Admin SDK côté serveur
+    }
+    
+    // RAG source usage collection
+    // Statistiques d'utilisation des sources - lecture pour tous authentifiés, écriture serveur uniquement
+    match /rag_source_usage/{usageId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Uniquement via Admin SDK côté serveur
+    }
+    
+    // Assistant conversations collection
+    // Conversations sauvegardées - lecture/écriture pour le propriétaire
+    // Note: La vérification du partage se fait côté serveur dans l'API car Firestore Rules
+    // ne permet pas facilement de vérifier si un userId est dans un tableau d'objets
+    match /assistant_conversations/{conversationId} {
+      // Le propriétaire peut tout faire
+      allow read, write: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Création : l'utilisateur doit être le propriétaire
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      
+      // Les admins peuvent lire toutes les conversations (pour support)
+      allow read: if isAdmin();
+      
+      // Note: Les conversations partagées sont gérées via l'API qui vérifie les permissions côté serveur
+    }
   }
 }
 

@@ -12,6 +12,7 @@ import { checkRateLimit, determineRequestType } from "@/lib/assistant/rate-limit
 import { openaiWithRetry } from "@/lib/assistant/retry";
 import { logUsage } from "@/lib/assistant/monitoring";
 import { checkBudgetLimit } from "@/lib/assistant/budget-alerts";
+import { trackMultipleSourceUsage } from "@/lib/assistant/usage-tracking";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -51,7 +52,20 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les paramètres depuis le body
     const body = await request.json();
-    const { message, images, files, useRAG = true, model = "gpt-4o", stream = false, showDebug = false } = body;
+    const { 
+      message, 
+      images, 
+      files, 
+      useRAG = true, 
+      model = "gpt-4o", 
+      stream = false, 
+      showDebug = false,
+      searchMode = "vector",
+      category,
+      dateFrom,
+      dateTo,
+      keywords,
+    } = body;
     const useStream = stream;
 
     // Le message peut être vide si seulement des images ou fichiers sont envoyés
@@ -103,25 +117,49 @@ export async function POST(request: NextRequest) {
     // Récupérer le contexte RAG si activé (seulement si message texte présent)
     if (useRAG && message) {
       try {
+        // Construire les filtres de recherche
+        const filters: any = {
+          searchMode: searchMode || "vector",
+        };
+        
+        if (category) filters.category = category;
+        if (dateFrom) filters.dateFrom = new Date(dateFrom);
+        if (dateTo) filters.dateTo = new Date(dateTo);
+        if (keywords) filters.keywords = keywords;
+
         const ragContext = await retrieveContext(message, {
           topK: 5,
           minScore: 0.7,
-        });
+        }, filters);
         context = ragContext.chunks
           .map((chunk) => chunk.content)
           .join("\n\n---\n\n");
         sources = ragContext.sources;
         
         // Récupérer les scores de similarité pour chaque chunk
+        const queryEmbedding = await generateEmbedding(message);
         const searchResults = await searchSimilarChunks(
-          await generateEmbedding(message),
-          { topK: 5, minScore: 0.7 }
+          queryEmbedding,
+          { topK: 5, minScore: 0.7 },
+          filters
         );
         sourcesWithScores = searchResults.map((result) => ({
           title: result.chunk.metadata.documentTitle || result.chunk.metadata.source || "Document",
           score: result.score,
           documentId: result.chunk.metadata.documentId,
         }));
+
+        // Tracker l'utilisation des sources (en arrière-plan)
+        if (auth.userId && sourcesWithScores.length > 0) {
+          trackMultipleSourceUsage(
+            sourcesWithScores.map((s) => ({
+              documentId: s.documentId,
+              score: s.score,
+            })),
+            auth.userId,
+            message
+          ).catch(console.error);
+        }
       } catch (error) {
         console.error("Erreur lors de la récupération du contexte RAG:", error);
         // Continuer sans contexte RAG si la récupération échoue

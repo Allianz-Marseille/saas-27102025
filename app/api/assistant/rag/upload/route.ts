@@ -6,8 +6,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/utils/auth-utils";
 import { chunkText, generateEmbeddingsBatch } from "@/lib/assistant/embeddings";
-import { adminDb } from "@/lib/firebase/admin-config";
-import { DocumentChunk } from "@/lib/assistant/types";
+import { adminDb, adminStorage, Timestamp } from "@/lib/firebase/admin-config";
+import { DocumentChunk, DocumentStatus } from "@/lib/assistant/types";
+import { estimateTokens } from "@/lib/assistant/history-truncation";
+import { extractTextFromFile } from "@/lib/assistant/file-extraction";
+import { categorizeDocument } from "@/lib/assistant/document-categorization";
+import { generateDocumentSummary } from "@/lib/assistant/document-summarization";
+import { detectContradictions } from "@/lib/assistant/contradiction-detection";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * POST /api/assistant/rag/upload
@@ -43,6 +49,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File | null;
     const title = formData.get("title") as string | null;
     const documentType = (formData.get("type") as string) || "document";
+    const category = (formData.get("category") as string) || undefined;
     const tags = formData.get("tags") ? (formData.get("tags") as string).split(",") : [];
 
     console.log("Fichier reçu:", file ? { name: file.name, type: file.type, size: file.size } : "null");
@@ -60,10 +67,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier que c'est un PDF
-    if (file.type !== "application/pdf" && !file.name.endsWith(".pdf")) {
+    // Vérifier le type de fichier (PDF, Word, Excel, images)
+    const allowedTypes = [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+    
+    const allowedExtensions = [".pdf", ".docx", ".xlsx", ".jpg", ".jpeg", ".png", ".gif", ".webp"];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
+    
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
       return NextResponse.json(
-        { error: "Le fichier doit être un PDF" },
+        { error: "Type de fichier non supporté. Formats acceptés : PDF, Word (.docx), Excel (.xlsx), Images" },
         {
           status: 400,
           headers: {
@@ -87,47 +107,142 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Lire le contenu du PDF
-    console.log("Lecture du contenu du PDF...");
-    const arrayBuffer = await file.arrayBuffer();
-    console.log("Taille du buffer:", arrayBuffer.byteLength);
-    // Convertir en Uint8Array pour pdf-parse (la classe PDFParse accepte ArrayBuffer, TypedArray ou Buffer)
-    const uint8Array = new Uint8Array(arrayBuffer);
+    // Générer un ID unique pour le document
+    const sourceId = uuidv4();
+    const documentRef = adminDb.collection("rag_documents").doc(sourceId);
+    const documentTitle = title || file.name.replace(/\.[^/.]+$/, "");
     
-    let text: string;
+    // Étape 1 : Upload dans Firebase Storage
+    console.log("Upload du fichier dans Firebase Storage...");
+    let storagePath: string;
     try {
-      // Utiliser pdf-parse avec Buffer (meilleure compatibilité Node.js)
-      console.log("Import de pdf-parse...");
-      const pdfParseModule = await import("pdf-parse");
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
       
-      // Convertir Uint8Array en Buffer pour pdf-parse
-      const Buffer = (await import("buffer")).Buffer;
-      const pdfBuffer = Buffer.from(uint8Array);
+      storagePath = `knowledge-base/pdf/${sourceId}${fileExtension}`;
+      const storageFile = adminStorage.bucket().file(storagePath);
       
-      // pdf-parse peut être exporté comme default ou comme export nommé
-      const pdfParse = (pdfParseModule as any).default || pdfParseModule;
-      console.log("Extraction du texte avec pdf-parse...");
-      const pdfData = await pdfParse(pdfBuffer);
+      await storageFile.save(buffer, {
+        metadata: {
+          contentType: file.type,
+          metadata: {
+            originalName: file.name,
+            uploadedBy: auth.userId,
+          },
+        },
+      });
       
-      text = pdfData.text;
-      console.log(`Texte extrait: ${text.length} caractères`);
-      
-      if (!text || text.trim().length === 0) {
-        throw new Error("Aucun texte extrait du PDF");
+      console.log(`Fichier uploadé dans Storage : ${storagePath}`);
+    } catch (error) {
+      console.error("Erreur lors de l'upload dans Storage:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+      return NextResponse.json(
+        {
+          error: "Erreur lors de l'upload du fichier dans Storage",
+          message: errorMessage,
+        },
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+    
+    // Étape 2 : Vérifier si un document avec le même titre existe (versionning)
+    let version = 1;
+    let previousVersionId: string | undefined;
+    try {
+      const existingDocsSnapshot = await adminDb
+        .collection("rag_documents")
+        .where("title", "==", documentTitle)
+        .where("isActive", "==", true)
+        .get();
+
+      if (!existingDocsSnapshot.empty) {
+        // Un document avec le même titre existe, créer une nouvelle version
+        const latestDoc = existingDocsSnapshot.docs[0];
+        const latestData = latestDoc.data();
+        previousVersionId = latestDoc.id;
+        version = (latestData.version || 1) + 1;
+
+        // Désactiver l'ancienne version
+        await latestDoc.ref.update({
+          isActive: false,
+          updatedAt: Timestamp.now(),
+        });
       }
     } catch (error) {
-      console.error("Erreur lors de l'extraction du texte PDF:", error);
-      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
-      const errorStack = error instanceof Error ? error.stack : undefined;
-      console.error("Détails de l'erreur:", errorMessage);
-      if (errorStack) {
-        console.error("Stack trace:", errorStack);
+      console.error("Erreur lors de la vérification du versionning:", error);
+      // Continuer même en cas d'erreur
+    }
+
+    // Étape 3 : Créer le document avec statut "uploaded"
+    try {
+      await documentRef.set({
+        id: sourceId,
+        title: documentTitle,
+        type: documentType,
+        category: category,
+        source: file.name,
+        storagePath: storagePath,
+        tags: tags,
+        status: "uploaded" as DocumentStatus,
+        isActive: true,
+        uploadedBy: auth.userId,
+        chunkCount: 0,
+        version: version,
+        previousVersionId: previousVersionId,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      });
+    } catch (error) {
+      console.error("Erreur lors de la création du document:", error);
+      // Nettoyer Storage en cas d'erreur
+      try {
+        await adminStorage.bucket().file(storagePath).delete();
+      } catch (cleanupError) {
+        console.error("Erreur lors du nettoyage Storage:", cleanupError);
       }
+      throw error;
+    }
+    
+    // Étape 4 : Mettre à jour le statut à "processing"
+    try {
+      await documentRef.update({
+        status: "processing" as DocumentStatus,
+        updatedAt: Timestamp.now(),
+      });
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du statut:", error);
+    }
+    
+    // Étape 5 : Extraire le texte selon le type de fichier
+    console.log("Extraction du texte...");
+    const arrayBuffer = await file.arrayBuffer();
+    let text: string;
+    let errorMessage: string | undefined;
+    
+    try {
+      text = await extractTextFromFile(file, arrayBuffer);
+      console.log(`Texte extrait: ${text.length} caractères`);
+    } catch (error) {
+      console.error("Erreur lors de l'extraction du texte:", error);
+      errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+      
+      // Mettre à jour le statut à "error"
+      await documentRef.update({
+        status: "error" as DocumentStatus,
+        errorMessage: errorMessage,
+        updatedAt: Timestamp.now(),
+      });
+      
       return NextResponse.json(
-        { 
-          error: "Impossible d'extraire le texte du PDF",
+        {
+          error: "Impossible d'extraire le texte du fichier",
           message: errorMessage,
-          details: process.env.NODE_ENV === "development" ? errorStack : undefined
+          details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.stack : undefined) : undefined,
         },
         {
           status: 500,
@@ -138,52 +253,69 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!text || text.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Le PDF ne contient pas de texte extractible" },
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+    // Étape 5 : Catégorisation automatique (en arrière-plan, ne pas bloquer)
+    let finalCategory = category;
+    if (!finalCategory) {
+      categorizeDocument(documentTitle, text)
+        .then((cat) => {
+          finalCategory = cat;
+          // Mettre à jour la catégorie en arrière-plan
+          documentRef.update({ category: cat, updatedAt: Timestamp.now() }).catch(console.error);
+        })
+        .catch(console.error);
     }
+
+    // Étape 6 : Génération du résumé (en arrière-plan)
+    generateDocumentSummary(documentTitle, text)
+      .then((summary) => {
+        documentRef.update({ summary, updatedAt: Timestamp.now() }).catch(console.error);
+      })
+      .catch(console.error);
+
+    // Étape 7 : Détection de contradictions (en arrière-plan)
+    detectContradictions(documentTitle, text, finalCategory)
+      .then((contradictions) => {
+        if (contradictions.length > 0) {
+          console.warn(`⚠️ ${contradictions.length} contradiction(s) détectée(s) avec d'autres documents`);
+          // Loguer les contradictions (pourrait être envoyé par email à l'admin)
+          documentRef.update({
+            contradictions: contradictions.map((c) => ({
+              documentId: c.documentId,
+              documentTitle: c.documentTitle,
+              text: c.contradictionText,
+              severity: c.severity,
+            })),
+            updatedAt: Timestamp.now(),
+          }).catch(console.error);
+        }
+      })
+      .catch(console.error);
 
     // Découper le texte en chunks
     const chunks = chunkText(text, 500, 50);
     console.log(`  → ${chunks.length} chunks créés`);
 
     // Générer les embeddings pour tous les chunks
+    const embeddingModel = "text-embedding-3-small";
     console.log("  → Génération des embeddings...");
-    const embeddings = await generateEmbeddingsBatch(chunks);
+    const embeddings = await generateEmbeddingsBatch(chunks, embeddingModel);
 
     // Stocker chaque chunk dans Firestore
     const batch = adminDb.batch();
-    const documentRef = adminDb.collection("rag_documents").doc();
-
-    const documentTitle = title || file.name.replace(".pdf", "");
-
-    // Créer le document principal
-    batch.set(documentRef, {
-      title: documentTitle,
-      type: documentType,
-      source: file.name,
-      tags: tags,
-      createdAt: new Date(),
-      chunkCount: chunks.length,
-      uploadedBy: auth.userId,
-    });
 
     // Créer les chunks avec leurs embeddings
     for (let i = 0; i < chunks.length; i++) {
       const chunkRef = adminDb.collection("rag_chunks").doc();
+      const tokenCount = estimateTokens(chunks[i]);
+      
       const chunkData: DocumentChunk = {
         id: chunkRef.id,
         content: chunks[i],
         embedding: embeddings[i],
+        tokenCount: tokenCount,
+        embeddingModel: embeddingModel,
         metadata: {
-          documentId: documentRef.id,
+          documentId: sourceId,
           documentTitle: documentTitle,
           documentType: documentType,
           chunkIndex: i,
@@ -196,6 +328,13 @@ export async function POST(request: NextRequest) {
       batch.set(chunkRef, chunkData);
     }
 
+    // Mettre à jour le document avec le nombre de chunks et le statut "indexed"
+    batch.update(documentRef, {
+      chunkCount: chunks.length,
+      status: "indexed" as DocumentStatus,
+      updatedAt: Timestamp.now(),
+    });
+
     await batch.commit();
 
     console.log("Upload terminé avec succès");
@@ -203,9 +342,10 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         message: "Document indexé avec succès",
-        documentId: documentRef.id,
+        documentId: sourceId,
         title: documentTitle,
         chunkCount: chunks.length,
+        status: "indexed",
       },
       {
         status: 200,
@@ -218,7 +358,6 @@ export async function POST(request: NextRequest) {
     console.error("Erreur POST /api/assistant/rag/upload:", error);
     console.error("Stack:", error instanceof Error ? error.stack : "N/A");
 
-    // TOUJOURS renvoyer un JSON, même en cas d'erreur
     const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
     const errorStack = error instanceof Error ? error.stack : undefined;
 

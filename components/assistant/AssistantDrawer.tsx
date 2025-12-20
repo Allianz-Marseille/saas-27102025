@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, Send, FileText, Image as ImageIcon, FileSpreadsheet, Loader2 } from "lucide-react";
+import { X, Sparkles, Send, FileText, Image as ImageIcon, FileSpreadsheet, Loader2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
@@ -372,18 +372,19 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, messages, isLo
             aria-describedby="assistant-drawer-description"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border/50 bg-gradient-to-r from-background to-muted/20">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border/50 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                <motion.div
-                  animate={{ rotate: [0, 5, -5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                  className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/20 shrink-0"
-                >
-                  <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
-                </motion.div>
+                <div className="relative shrink-0">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg blur-sm opacity-50" />
+                  <div className="relative bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 p-2 sm:p-2.5 rounded-lg">
+                    <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                  </div>
+                </div>
                 <div className="min-w-0 flex-1">
-                  <h2 id="assistant-drawer-title" className="font-semibold text-base sm:text-lg tracking-tight truncate">Assistant Agence Allianz</h2>
-                  <p id="assistant-drawer-description" className="text-xs sm:text-sm text-muted-foreground mt-0.5 hidden sm:block">Aide devis, contrats, pilotage</p>
+                  <h2 id="assistant-drawer-title" className="font-bold text-base sm:text-lg tracking-tight truncate bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    Assistant IA
+                  </h2>
+                  <p id="assistant-drawer-description" className="text-xs sm:text-sm text-muted-foreground mt-0.5 hidden sm:block">Comment puis-je vous aider ?</p>
                 </div>
               </div>
               <Button
@@ -645,7 +646,7 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, messages, isLo
                   onClick={handleSendMessage}
                   disabled={(!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading}
                   size="icon"
-                  className="shrink-0 h-[60px] w-[60px] sm:h-[60px] sm:w-[60px] bg-amber-500 hover:bg-amber-600 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="shrink-0 h-[60px] w-[60px] sm:h-[60px] sm:w-[60px] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <Loader2 className="h-5 w-5 animate-spin" />

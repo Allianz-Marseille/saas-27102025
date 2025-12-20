@@ -2,10 +2,34 @@
  * Types pour le système RAG (Retrieval-Augmented Generation)
  */
 
+export type DocumentStatus = "uploaded" | "processing" | "indexed" | "error";
+
+export interface RAGDocument {
+  id: string;
+  title: string;
+  type: string;
+  category?: string;
+  source: string;
+  storagePath?: string;
+  tags: string[];
+  status: DocumentStatus;
+  isActive: boolean;
+  uploadedBy: string;
+  chunkCount: number;
+  createdAt: Date | any; // Firestore Timestamp
+  updatedAt: Date | any; // Firestore Timestamp
+  errorMessage?: string;
+  version?: number;
+  previousVersionId?: string;
+  summary?: string;
+}
+
 export interface DocumentChunk {
   id: string;
   content: string;
   embedding: number[];
+  tokenCount?: number;
+  embeddingModel?: string;
   metadata: {
     documentId: string;
     documentTitle: string;

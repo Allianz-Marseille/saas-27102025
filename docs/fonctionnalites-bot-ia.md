@@ -13,6 +13,7 @@
 5. [Détails techniques](#détails-techniques)
 6. [Limitations connues](#limitations-connues)
 7. [Vision et fonctionnalités potentielles](#vision-et-fonctionnalités-potentielles)
+8. [Roadmap de Développement](#-roadmap-de-développement)
 
 ---
 
@@ -94,10 +95,12 @@ Réponses multimodales (texte, images, fichiers)
 
 **Description** : Upload et analyse d'images avec OCR automatique via l'API Vision d'OpenAI.
 
+**Accessibilité** : ✅ **Accessible à tous les utilisateurs authentifiés, quel que soit leur rôle** (admin, CDC, commercial, etc.)
+
 **Comment l'utiliser** :
 1. **Upload direct** : Cliquer sur le bouton "Image" et sélectionner une image
 2. **Drag & Drop** : Glisser-déposer une image dans la zone de chat
-3. **Collage** : Copier une image (Ctrl+C / Cmd+C) et coller dans le chat (Ctrl+V / Cmd+V)
+3. **Collage** : Copier une image (Ctrl+C / Cmd+C) et coller dans le chat (Ctrl+V / Cmd+V) - **Fonctionnalité déjà implémentée et opérationnelle**
 
 **Types d'images acceptés** :
 - JPEG, PNG, GIF, WebP
@@ -840,6 +843,422 @@ Le bot peut devenir :
 Le Bot IA offre une expérience complète et professionnelle pour tous les utilisateurs, avec des fonctionnalités avancées pour les administrateurs. Les fonctionnalités sont en constante évolution et des améliorations sont régulièrement apportées.
 
 La vision présentée ci-dessus montre le potentiel de transformation du bot en **collaborateur numérique transversal** pour l'agence, au-delà d'un simple outil de chat.
+
+---
+
+## 🗺️ Roadmap de Développement
+
+*Plan de développement structuré par phases et priorités*
+
+### Légende des priorités
+
+- 🔥 **Haute priorité** : Impact métier fort, gain de temps significatif, ROI élevé
+- 🟡 **Priorité moyenne** : Améliore l'expérience utilisateur, nice to have
+- 🟢 **Basse priorité** : Fonctionnalité avancée, futur, innovation
+
+---
+
+### Phase 1 : Consolidation et Amélioration Base (Q1 2025)
+
+**Objectif** : Améliorer les fonctionnalités existantes et compléter les bases
+
+#### 1.1. Amélioration Base de Connaissances RAG 🔥
+
+- Upload Word/Excel dans base RAG
+- Upload images avec OCR dans base RAG
+- Catégorisation automatique des documents
+- Versionning des documents
+- Désactivation/activation de sources
+- Statistiques d'utilisation des sources
+- Recherche par mots-clés, date, catégorie
+- Résumés automatiques de documents
+- Comparaison de documents
+
+#### 1.2. Support de Formats Additionnels 🔥
+
+- Upload Word (.docx) dans le chat
+- Upload Excel (.xlsx) dans le chat
+- Upload PowerPoint (.pptx) dans le chat
+- Extraction de texte depuis Word/Excel
+
+#### 1.3. Amélioration Historique et Sauvegarde 🟡
+
+- Sauvegarde automatique des conversations
+- Partage de conversations entre utilisateurs
+- Tags personnalisés pour conversations
+- Favoris de conversations
+
+#### 1.4. Templates Avancés 🟡
+
+- Création de templates personnalisés
+- Partage de templates entre utilisateurs
+- Catégories de templates
+- Templates conditionnels (si/alors)
+- Import/export de templates
+
+---
+
+### Phase 2 : Fonctionnalités Métier Assurance (Q2 2025)
+
+**Objectif** : Transformer le bot en assistant métier spécialisé assurance
+
+#### 2.1. Découverte Client 🔥
+
+- Questionnement structuré (trame d'entretien)
+- Détection automatique des manques de couverture
+- Priorisation des besoins (essentiels/opportunités)
+- Reformulation client-friendly des risques
+- Checklist GAV / PJ / Prévoyance / Épargne
+- Découverte pro (RC, IRD, PJ, Santé, Prévoyance dirigeant)
+- Analyse de portefeuille client existant
+
+#### 2.2. Aide à la Vente 🔥
+
+- Arguments par type de contrat (auto, MRH, santé, prévoyance, PER)
+- Gestion des objections ("c'est trop cher", "j'ai déjà")
+- Comparaisons d'offres (sans dénigrement)
+- Calculs de devis rapides
+- Simulation de garanties
+- Explication de clauses contractuelles
+
+#### 2.3. Synthèses Commerciales 🔥
+
+- Synthèse après rendez-vous
+- Compte rendu prêt à envoyer par mail
+- Tableau "Ce que vous avez / Ce qu'il manque / Recommandations"
+- Version interne vs version client
+- Export PDF client
+- Génération automatique de propositions commerciales
+
+#### 2.4. Analyse de Documents Avancée 🟡
+
+- Analyse de contrats (points clés, risques)
+- Analyse de devis (comparaison, recommandations)
+- Détection d'anomalies dans documents
+- Extraction de données structurées (tables, formulaires)
+
+#### 2.5. Prompts Prédéfinis Métier 🟡
+
+- Prompts pour analyse de devis
+- Prompts pour résumé de contrat
+- Prompts pour rédaction d'emails
+- Prompts pour gestion d'objections
+- Prompts pour découverte client
+- Prompts pour synthèse commerciale
+
+---
+
+### Phase 3 : Process Internes et Pilotage (Q3 2025)
+
+**Objectif** : Automatiser et optimiser les processus internes
+
+#### 3.1. Pilotage M+3 / Prétermes 🔥
+
+- Checklist dynamique M+3
+- Rappels automatiques
+- Analyse qualitative du portefeuille
+- Validation rouge/vert (complet/incomplet)
+- Détection de documents manquants
+- Analyse de captures Lagon (OCR)
+
+#### 3.2. Gestion des Leads 🔥
+
+- Qualification automatique du lead
+- Proposition de script d'appel
+- Priorisation (chaud / tiède / froid)
+- Suivi de conversion
+- Génération de compte rendu post-appel
+- Intégration avec système de leads existant
+
+#### 3.3. Suivi Qualité & Performance 🟡
+
+- Analyse des volumes (leads, AN, process)
+- Lien quantité ↔ qualité
+- Alertes sur dérives (trop d'AN sans M+3)
+- Tableaux de bord personnalisés
+- Rapports automatiques
+- Comparaison de performance (mois/mois, année/année)
+
+#### 3.4. Analyse Portefeuille 🟡
+
+- Détection du potentiel dormant
+- Multi-équipement manquant
+- Score client
+- Analyse de risques
+- Recommandations de cross-sell/up-sell
+
+---
+
+### Phase 4 : Génération de Documents (Q4 2025)
+
+**Objectif** : Automatiser la génération de documents métier
+
+#### 4.1. Documents Clients 🔥
+
+- DER (Déclaration d'Événement Responsable)
+- Courriers clients
+- Devis personnalisés
+- Propositions commerciales
+- Contrats pré-remplis
+- Lettres de relance
+- Avenants
+
+#### 4.2. Documents Internes 🟡
+
+- Notes internes
+- Argumentaires
+- Comptes rendus de rendez-vous
+- Rapports d'activité
+- Synthèses commerciales
+- Procès-verbaux
+
+#### 4.3. Formats et Intégrations 🟡
+
+- Génération PDF
+- Génération Word (.docx)
+- Génération Excel (.xlsx)
+- Intégration Yousign (signature électronique)
+- Envoi automatique par email
+- Sauvegarde dans Google Drive
+
+---
+
+### Phase 5 : Intégrations et Connecteurs (Q1 2026)
+
+**Objectif** : Connecter le bot aux outils existants
+
+#### 5.1. Communication 🔥
+
+- Slack (alertes, résumés, questions directes)
+- Email (Gmail - brouillons automatiques)
+- SMS (notifications importantes)
+- Teams / Microsoft 365
+
+#### 5.2. Productivité 🟡
+
+- Google Workspace (Docs, Sheets, Drive)
+- Microsoft Office 365
+- Trello / Notion / Kanban
+- Calendrier (Google Calendar, Outlook)
+
+#### 5.3. Données et Conformité 🟡
+
+- INSEE / Sirene
+- OCR documents légaux
+- Pré-remplissage de formulaires officiels
+
+#### 5.4. Systèmes Métier 🔥
+
+- Lagon (export/import, OCR)
+- CRM interne
+- Base de données clients
+- Système de commissions
+
+---
+
+### Phase 6 : Automatisation et Workflows (Q2 2026)
+
+**Objectif** : Automatiser les tâches répétitives
+
+#### 6.1. Automatisations 🔥
+
+- Workflows personnalisables
+- Déclencheurs automatiques (événements)
+- Actions conditionnelles (si/alors)
+- Tâches récurrentes
+- Notifications automatiques
+
+#### 6.2. Rappels et Alertes 🔥
+
+- Rappels de rendez-vous
+- Alertes M+3 en retard
+- Alertes prétermes
+- Alertes budget dépassé
+- Alertes qualité (dérives)
+
+---
+
+### Phase 7 : Formation et Support (Q3 2026)
+
+**Objectif** : Transformer le bot en outil de formation
+
+#### 7.1. Formation Continue 🟡
+
+- Quiz internes
+- Cas clients simulés
+- Mise à jour réglementaire expliquée
+- Tutoriels interactifs
+- Certification interne
+- Suivi de progression
+
+#### 7.2. Support en Temps Réel 🟡
+
+- "Que dois-je proposer dans ce cas ?"
+- Aide pendant l'appel client
+- Résumé post-appel automatique
+- Suggestions contextuelles
+- FAQ interactive
+
+---
+
+### Phase 8 : Analytics et Reporting (Q4 2026)
+
+**Objectif** : Mesurer et optimiser l'utilisation
+
+#### 8.1. Statistiques 🟡
+
+- Statistiques d'utilisation du bot
+- Métriques de performance
+- Analyse des questions les plus fréquentes
+- Taux de satisfaction
+- Temps de réponse moyen
+
+#### 8.2. Rapports 🟡
+
+- Rapports d'activité automatiques
+- Rapports de performance commerciale
+- Rapports de qualité
+- Export de données
+
+---
+
+### Phase 9 : Sécurité et Conformité Avancée (Q1 2027)
+
+**Objectif** : Renforcer la sécurité et la conformité
+
+#### 9.1. Sécurité Avancée 🔥
+
+- Chiffrement des conversations sensibles
+- Audit trail complet
+- Détection de contenu sensible
+
+#### 9.2. Conformité RGPD 🔥
+
+- Anonymisation automatique
+- Droit à l'oubli
+- Export des données utilisateur
+- Consentement explicite
+- Journalisation des accès
+
+#### 9.3. Conformité Assurance (ACPR) 🔥
+
+- Traçabilité des sources
+- Versionning des documents
+- Réponses non inventées ("je ne sais pas")
+- Cohérence inter-collaborateurs
+
+---
+
+### Phase 10 : Interface et Expérience Utilisateur (Q2 2027)
+
+**Objectif** : Améliorer l'expérience utilisateur
+
+#### 10.1. Personnalisation 🟢
+
+- Thèmes personnalisables (clair/sombre)
+- Préférences utilisateur
+- Raccourcis clavier personnalisés
+- Interface adaptative (mobile/desktop)
+
+#### 10.2. Accessibilité 🟢
+
+- Mode contraste élevé
+- Support lecteur d'écran
+- Navigation au clavier
+- Taille de police ajustable
+
+#### 10.3. Multilingue 🟢
+
+- Interface multilingue
+- Traduction automatique des réponses
+- Support de langues régionales
+
+---
+
+### Phase 11 : Fonctionnalités Avancées (Q3-Q4 2027)
+
+**Objectif** : Innovation et fonctionnalités de pointe
+
+#### 11.1. IA Avancée 🟢
+
+- Fine-tuning sur données métier
+- Modèles spécialisés par domaine
+- Apprentissage continu
+- Agents autonomes (multi-step reasoning)
+
+#### 11.2. Collaboration 🟢
+
+- Chat de groupe
+- Partage de contexte entre utilisateurs
+- Collaboration en temps réel
+- Commentaires et annotations
+
+#### 11.3. Communication Avancée 🟢
+
+- Chat vocal (reconnaissance vocale + synthèse)
+- Traduction multilingue automatique
+- Correction orthographique automatique
+- Suggestions de réponses rapides
+- Support audio/vidéo (transcription)
+- Capture d'écran directe
+
+#### 11.4. API et Extensibilité 🟢
+
+- API publique pour intégrations
+- Webhooks
+- Plugins personnalisés
+- SDK pour développeurs
+
+---
+
+## 📊 Résumé de la Roadmap
+
+### Par Priorité
+
+**🔥 Haute Priorité (Phases 1-6)** : 45 fonctionnalités
+- Consolidation base RAG
+- Support formats additionnels
+- Fonctionnalités métier assurance
+- Process internes et pilotage
+- Génération de documents
+- Intégrations systèmes métier
+- Automatisation et workflows
+
+**🟡 Priorité Moyenne (Phases 7-9)** : 25 fonctionnalités
+- Formation et support
+- Analytics et reporting
+- Sécurité et conformité avancée
+
+**🟢 Basse Priorité (Phases 10-11)** : 20 fonctionnalités
+- Interface et UX avancée
+- Fonctionnalités innovantes
+- API et extensibilité
+
+### Par Trimestre
+
+- **Q1 2025** : Phase 1 (Consolidation)
+- **Q2 2025** : Phase 2 (Métier Assurance)
+- **Q3 2025** : Phase 3 (Process Internes)
+- **Q4 2025** : Phase 4 (Génération Documents)
+- **Q1 2026** : Phase 5 (Intégrations)
+- **Q2 2026** : Phase 6 (Automatisation)
+- **Q3 2026** : Phase 7 (Formation)
+- **Q4 2026** : Phase 8 (Analytics)
+- **Q1 2027** : Phase 9 (Sécurité)
+- **Q2 2027** : Phase 10 (UX)
+- **Q3-Q4 2027** : Phase 11 (Avancé)
+
+---
+
+## 🎯 Objectifs Stratégiques
+
+1. **Transformation en assistant métier** : Le bot devient le collaborateur numérique de l'agence
+2. **Automatisation des processus** : Réduction du temps passé sur les tâches répétitives
+3. **Amélioration de la qualité** : Standardisation et conformité renforcées
+4. **Gain de productivité** : Focus sur les activités à forte valeur ajoutée
+5. **Innovation continue** : Adaptation aux besoins émergents
+
+---
 
 Pour toute question ou problème, contactez l'équipe de développement.
 

@@ -6,8 +6,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/utils/auth-utils";
-import { adminDb } from "@/lib/firebase/admin-config";
+import { adminDb, Timestamp } from "@/lib/firebase/admin-config";
 import { logAction } from "@/lib/assistant/audit";
+import { getDocumentUsageStats } from "@/lib/assistant/usage-tracking";
 
 /**
  * GET /api/assistant/rag/documents
@@ -30,18 +31,31 @@ export async function GET(request: NextRequest) {
     // Récupérer tous les documents
     const documentsSnapshot = await adminDb.collection("rag_documents").get();
 
-    const documents = documentsSnapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        title: data.title || "",
-        type: data.type || "document",
-        source: data.source || "",
-        chunkCount: data.chunkCount || 0,
-        createdAt: data.createdAt?.toDate?.() || new Date(data.createdAt),
-        tags: data.tags || [],
-      };
-    });
+    const documents = await Promise.all(
+      documentsSnapshot.docs.map(async (doc) => {
+        const data = doc.data();
+        const stats = await getDocumentUsageStats(doc.id);
+        
+        return {
+          id: doc.id,
+          title: data.title || "",
+          type: data.type || "document",
+          category: data.category || undefined,
+          source: data.source || "",
+          storagePath: data.storagePath || undefined,
+          chunkCount: data.chunkCount || 0,
+          status: data.status || "unknown",
+          isActive: data.isActive !== undefined ? data.isActive : true,
+          createdAt: data.createdAt?.toDate?.() || new Date(data.createdAt),
+          updatedAt: data.updatedAt?.toDate?.() || new Date(data.updatedAt || data.createdAt),
+          tags: data.tags || [],
+          version: data.version || 1,
+          previousVersionId: data.previousVersionId || undefined,
+          summary: data.summary || undefined,
+          usageStats: stats,
+        };
+      })
+    );
 
     // Trier par date de création (plus récent en premier)
     documents.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -120,6 +134,18 @@ export async function DELETE(request: NextRequest) {
 
     await batch.commit();
 
+    // Supprimer aussi le fichier dans Storage si storagePath existe
+    const documentData = documentDoc.data();
+    if (documentData.storagePath) {
+      try {
+        const adminStorage = (await import("@/lib/firebase/admin-config")).adminStorage;
+        await adminStorage.bucket().file(documentData.storagePath).delete();
+      } catch (storageError) {
+        console.error("Erreur lors de la suppression du fichier Storage:", storageError);
+        // Continuer même si la suppression Storage échoue
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: "Document et chunks associés supprimés avec succès",
@@ -130,6 +156,80 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Erreur lors de la suppression du document",
+        details: error instanceof Error ? error.message : "Erreur inconnue",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/assistant/rag/documents
+ * Met à jour un document (toggle isActive, etc.)
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    // Vérifier l'authentification ET le rôle administrateur
+    const auth = await verifyAdmin(request);
+    if (!auth.valid) {
+      return NextResponse.json(
+        {
+          error: auth.error || "Accès administrateur requis",
+          details: "La modification de documents RAG est réservée aux administrateurs uniquement",
+        },
+        { status: 403 }
+      );
+    }
+
+    // Récupérer l'ID du document et l'action depuis les query params
+    const searchParams = request.nextUrl.searchParams;
+    const documentId = searchParams.get("id");
+    const action = searchParams.get("action");
+
+    if (!documentId) {
+      return NextResponse.json(
+        { error: "ID du document manquant" },
+        { status: 400 }
+      );
+    }
+
+    // Vérifier que le document existe
+    const documentRef = adminDb.collection("rag_documents").doc(documentId);
+    const documentDoc = await documentRef.get();
+
+    if (!documentDoc.exists) {
+      return NextResponse.json(
+        { error: "Document non trouvé" },
+        { status: 404 }
+      );
+    }
+
+    const documentData = documentDoc.data();
+
+    if (action === "toggle") {
+      // Toggle isActive
+      const newIsActive = !documentData.isActive;
+      await documentRef.update({
+        isActive: newIsActive,
+        updatedAt: Timestamp.now(),
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Document ${newIsActive ? "activé" : "désactivé"} avec succès`,
+        isActive: newIsActive,
+      });
+    } else {
+      return NextResponse.json(
+        { error: "Action non reconnue. Actions supportées : toggle" },
+        { status: 400 }
+      );
+    }
+  } catch (error) {
+    console.error("Erreur PATCH /api/assistant/rag/documents:", error);
+    return NextResponse.json(
+      {
+        error: "Erreur lors de la modification du document",
         details: error instanceof Error ? error.message : "Erreur inconnue",
       },
       { status: 500 }

@@ -5,21 +5,29 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/utils/auth-utils";
+import { extractTextFromFile } from "@/lib/assistant/file-extraction";
 
 /**
  * Extrait le texte d'un fichier PDF
  */
 async function extractTextFromPDF(buffer: ArrayBuffer): Promise<string> {
   try {
-    // Utiliser pdf-parse avec Buffer (meilleure compatibilité Node.js)
-    const pdfParseModule = await import("pdf-parse");
-    
     // Convertir ArrayBuffer en Buffer pour pdf-parse
     const Buffer = (await import("buffer")).Buffer;
     const pdfBuffer = Buffer.from(buffer);
     
-    // pdf-parse peut être exporté comme default ou comme export nommé
-    const pdfParse = (pdfParseModule as any).default || pdfParseModule;
+    // Utiliser createRequire pour importer pdf-parse (module CommonJS)
+    // Cela garantit une compatibilité maximale avec Next.js/Turbopack
+    const { createRequire } = await import("module");
+    const require = createRequire(import.meta.url);
+    const pdfParse = require("pdf-parse");
+    
+    // Vérifier que pdfParse est bien une fonction
+    if (typeof pdfParse !== "function") {
+      console.error("pdfParse n'est pas une fonction:", typeof pdfParse, pdfParse);
+      throw new Error("Impossible de charger pdf-parse correctement");
+    }
+    
     const pdfData = await pdfParse(pdfBuffer);
     const text = pdfData.text;
 
@@ -93,10 +101,22 @@ export async function POST(request: NextRequest) {
         text = await extractTextFromPDF(arrayBuffer);
       } else if (mimeType === "text/plain" || mimeType === "text/csv" || fileName.endsWith(".txt") || fileName.endsWith(".csv")) {
         text = await extractTextFromText(arrayBuffer);
+      } else if (
+        mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        fileName.endsWith(".docx")
+      ) {
+        // Utiliser la fonction d'extraction centralisée
+        text = await extractTextFromFile(file, arrayBuffer);
+      } else if (
+        mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+        fileName.endsWith(".xlsx")
+      ) {
+        // Utiliser la fonction d'extraction centralisée
+        text = await extractTextFromFile(file, arrayBuffer);
       } else {
         return NextResponse.json(
           {
-            error: `Type de fichier non supporté : ${mimeType || file.name}. Types supportés : PDF, TXT, CSV`,
+            error: `Type de fichier non supporté : ${mimeType || file.name}. Types supportés : PDF, Word (.docx), Excel (.xlsx), TXT, CSV`,
           },
           { status: 400 }
         );

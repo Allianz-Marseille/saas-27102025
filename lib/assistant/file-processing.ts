@@ -250,20 +250,71 @@ async function extractTextFromPDF(file: File): Promise<string> {
  * Extrait le texte d'un fichier DOCX
  */
 async function extractTextFromDOCX(file: File): Promise<string> {
-  // Pour DOCX, on peut utiliser mammoth ou docx
-  // Pour l'instant, on retourne une erreur indiquant que c'est à implémenter
-  // TODO: Implémenter avec mammoth ou docx
-  throw new Error("L'extraction de texte depuis les fichiers Word (.docx) sera bientôt disponible");
+  // Côté client : retourner une erreur - le DOCX sera traité côté serveur
+  if (typeof window !== 'undefined') {
+    throw new Error("Le traitement Word se fait côté serveur. Le fichier sera traité lors de l'envoi du message.");
+  }
+
+  // Côté serveur uniquement
+  try {
+    const mammoth = await import("mammoth");
+    const arrayBuffer = await file.arrayBuffer();
+    
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    const text = result.value;
+    
+    if (!text || text.trim().length === 0) {
+      throw new Error("Aucun texte extrait du fichier Word");
+    }
+    
+    return text;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Cannot find module")) {
+      throw new Error("La bibliothèque 'mammoth' n'est pas installée");
+    }
+    throw error;
+  }
 }
 
 /**
  * Extrait le texte d'un fichier XLSX
  */
 async function extractTextFromXLSX(file: File): Promise<string> {
-  // Pour XLSX, on peut utiliser xlsx
-  // Pour l'instant, on retourne une erreur indiquant que c'est à implémenter
-  // TODO: Implémenter avec xlsx
-  throw new Error("L'extraction de texte depuis les fichiers Excel (.xlsx) sera bientôt disponible");
+  // Côté client : retourner une erreur - le XLSX sera traité côté serveur
+  if (typeof window !== 'undefined') {
+    throw new Error("Le traitement Excel se fait côté serveur. Le fichier sera traité lors de l'envoi du message.");
+  }
+
+  // Côté serveur uniquement
+  try {
+    const XLSX = await import("xlsx");
+    const arrayBuffer = await file.arrayBuffer();
+    
+    const workbook = XLSX.read(arrayBuffer, { type: "array" });
+    const textParts: string[] = [];
+    
+    // Parcourir toutes les feuilles
+    workbook.SheetNames.forEach((sheetName) => {
+      const worksheet = workbook.Sheets[sheetName];
+      const sheetText = XLSX.utils.sheet_to_txt(worksheet);
+      if (sheetText) {
+        textParts.push(`=== ${sheetName} ===\n${sheetText}`);
+      }
+    });
+    
+    const text = textParts.join("\n\n");
+    
+    if (!text || text.trim().length === 0) {
+      throw new Error("Aucun texte extrait du fichier Excel");
+    }
+    
+    return text;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Cannot find module")) {
+      throw new Error("La bibliothèque 'xlsx' n'est pas installée");
+    }
+    throw error;
+  }
 }
 
 /**

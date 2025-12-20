@@ -32,6 +32,8 @@ export interface Conversation {
   createdAt: Date;
   updatedAt: Date;
   tags?: string[];
+  isFavorite?: boolean;
+  autoSaved?: boolean; // Indique si la conversation a été sauvegardée automatiquement
   sharedWith?: Array<{
     userId: string;
     permission: "read" | "write";
@@ -69,7 +71,8 @@ export async function saveConversation(
   userId: string,
   messages: ConversationMessage[],
   title?: string,
-  tags?: string[]
+  tags?: string[],
+  autoSaved: boolean = false
 ): Promise<string> {
   if (messages.length === 0) {
     throw new Error("Impossible de sauvegarder une conversation vide");
@@ -86,6 +89,8 @@ export async function saveConversation(
       timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp),
     })),
     tags: tags || [],
+    isFavorite: false,
+    autoSaved: autoSaved,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -93,6 +98,70 @@ export async function saveConversation(
   const docRef = await adminDb.collection("assistant_conversations").add(conversationData);
 
   return docRef.id;
+}
+
+/**
+ * Sauvegarde automatique d'une conversation (appelée périodiquement)
+ */
+export async function autoSaveConversation(
+  userId: string,
+  messages: ConversationMessage[],
+  conversationId?: string
+): Promise<string> {
+  if (messages.length === 0) {
+    return ""; // Ne pas sauvegarder une conversation vide
+  }
+
+  // Si un ID existe, mettre à jour la conversation existante
+  if (conversationId) {
+    try {
+      const doc = await adminDb.collection("assistant_conversations").doc(conversationId).get();
+      if (doc.exists && doc.data()?.userId === userId) {
+        await adminDb.collection("assistant_conversations").doc(conversationId).update({
+          messages: messages.map((msg) => ({
+            ...msg,
+            timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp),
+          })),
+          autoSaved: true,
+          updatedAt: new Date(),
+        });
+        return conversationId;
+      }
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour automatique:", error);
+    }
+  }
+
+  // Sinon, créer une nouvelle conversation
+  return await saveConversation(userId, messages, undefined, undefined, true);
+}
+
+/**
+ * Marque/démarque une conversation comme favorite
+ */
+export async function toggleFavorite(
+  conversationId: string,
+  userId: string
+): Promise<boolean> {
+  const doc = await adminDb.collection("assistant_conversations").doc(conversationId).get();
+
+  if (!doc.exists) {
+    throw new Error("Conversation non trouvée");
+  }
+
+  const data = doc.data();
+  if (data?.userId !== userId) {
+    throw new Error("Accès non autorisé à cette conversation");
+  }
+
+  const newIsFavorite = !(data?.isFavorite || false);
+
+  await adminDb.collection("assistant_conversations").doc(conversationId).update({
+    isFavorite: newIsFavorite,
+    updatedAt: new Date(),
+  });
+
+  return newIsFavorite;
 }
 
 /**

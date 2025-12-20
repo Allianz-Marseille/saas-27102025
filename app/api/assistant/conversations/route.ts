@@ -10,12 +10,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/utils/auth-utils";
 import {
   saveConversation,
+  autoSaveConversation,
   loadConversations,
   loadConversation,
   updateConversation,
   deleteConversation,
   loadSharedConversation,
   loadSharedConversations,
+  toggleFavorite,
   ConversationMessage,
 } from "@/lib/assistant/conversations";
 import { logAction } from "@/lib/assistant/audit";
@@ -104,7 +106,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { messages, title, tags } = body;
+    const { messages, title, tags, autoSaved, conversationId } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json(
@@ -124,7 +126,10 @@ export async function POST(request: NextRequest) {
       sourcesWithScores: msg.sourcesWithScores,
     }));
 
-    const conversationId = await saveConversation(auth.userId!, conversationMessages, title, tags);
+    // Si autoSaved et conversationId fourni, utiliser autoSaveConversation
+    const savedConversationId = autoSaved && conversationId
+      ? await autoSaveConversation(auth.userId!, conversationMessages, conversationId)
+      : await saveConversation(auth.userId!, conversationMessages, title, tags, autoSaved);
 
     // Logger l'action
     await logAction(
@@ -162,13 +167,22 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { conversationId, title, messages, tags } = body;
+    const { conversationId, title, messages, tags, isFavorite } = body;
 
     if (!conversationId) {
       return NextResponse.json(
         { error: "L'ID de la conversation est requis" },
         { status: 400 }
       );
+    }
+
+    // Si isFavorite est fourni, utiliser toggleFavorite
+    if (isFavorite !== undefined) {
+      const newIsFavorite = await toggleFavorite(conversationId, auth.userId!);
+      return NextResponse.json({
+        success: true,
+        isFavorite: newIsFavorite,
+      });
     }
 
     const updates: any = {};
