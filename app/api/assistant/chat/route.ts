@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les paramètres depuis le body
     const body = await request.json();
-    const { message, images, files, model = "gpt-4o" } = body;
+    const { message, images, files, history = [], model = "gpt-4o" } = body;
 
     // Le message peut être vide si seulement des images ou fichiers sont envoyés
     if (!message && (!images || images.length === 0) && (!files || files.length === 0)) {
@@ -133,16 +133,33 @@ Si tu ne connais pas la réponse, dis-le clairement.`;
       }
     }
 
+    // Construire le tableau de messages avec l'historique
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       {
         role: "system",
         content: systemPrompt,
       },
-      {
-        role: "user",
-        content: userContent.length > 0 ? userContent : message,
-      },
     ];
+
+    // Ajouter l'historique de conversation si présent
+    if (Array.isArray(history) && history.length > 0) {
+      // Convertir l'historique au format OpenAI (limiter à 20 messages pour éviter la surcharge)
+      const recentHistory = history.slice(-20);
+      for (const msg of recentHistory) {
+        if (msg.role === "user" || msg.role === "assistant") {
+          messages.push({
+            role: msg.role,
+            content: msg.content || "",
+          });
+        }
+      }
+    }
+
+    // Ajouter le message utilisateur actuel
+    messages.push({
+      role: "user",
+      content: userContent.length > 0 ? userContent : message,
+    });
 
     // Récupérer le paramètre stream depuis le body
     const { stream: useStream = false } = body;

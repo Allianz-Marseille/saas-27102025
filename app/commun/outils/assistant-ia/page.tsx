@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Bot, Upload, FileText, Trash2, Loader2, Send, Sparkles, Image as ImageIcon, X } from "lucide-react";
+import { ArrowLeft, Bot, Upload, FileText, Trash2, Loader2, Send, Sparkles, Image as ImageIcon, X, RotateCcw, Copy, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -74,6 +74,7 @@ export default function AssistantIAPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
   const [templateVariables, setTemplateVariables] = useState<Record<string, string>>({});
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -458,6 +459,28 @@ export default function AssistantIAPage() {
     setShowTemplateDialog(false);
   };
 
+  // Réinitialiser la conversation
+  const handleResetConversation = () => {
+    setMessages([]);
+    setInput("");
+    setSelectedImages([]);
+    setSelectedFiles([]);
+    toast.success("Conversation réinitialisée");
+  };
+
+  // Copier un message
+  const handleCopyMessage = async (messageId: string, content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMessageId(messageId);
+      toast.success("Message copié dans le presse-papier");
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (error) {
+      console.error("Erreur lors de la copie:", error);
+      toast.error("Erreur lors de la copie");
+    }
+  };
+
   // Exporter une conversation
   const handleExportConversation = async (conversationId: string, format: "txt" | "pdf" | "word") => {
     if (!user) return;
@@ -535,6 +558,15 @@ export default function AssistantIAPage() {
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
+      // Préparer l'historique de conversation (sans les fichiers/images pour éviter la surcharge)
+      const conversationHistory = messages
+        .filter((msg) => msg.id !== assistantMessageId) // Exclure le message assistant en cours
+        .map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+          // Ne pas inclure les images et fichiers dans l'historique pour éviter la surcharge
+        }));
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -545,6 +577,7 @@ export default function AssistantIAPage() {
           message: messageText || (imagesToSend.length > 0 ? "Analyse cette image" : "") || (filesToSend.length > 0 ? "Analyse ce(s) fichier(s)" : ""),
           images: imagesToSend.length > 0 ? imagesToSend : undefined,
           files: filesToSend.length > 0 ? filesToSend : undefined,
+          history: conversationHistory,
           useRAG: useRAG && isUserAdmin,
           stream: true, // Activer le streaming
           showDebug: showDebug,
@@ -873,24 +906,35 @@ export default function AssistantIAPage() {
                     </Button>
                   )}
                   {messages.length > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSaveConversation}
-                      disabled={isSavingConversation}
-                    >
-                      {isSavingConversation ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Sauvegarde...
-                        </>
-                      ) : (
-                        <>
-                          <FileText className="h-4 w-4 mr-2" />
-                          Sauvegarder
-                        </>
-                      )}
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResetConversation}
+                        title="Réinitialiser la conversation"
+                      >
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Réinitialiser
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSaveConversation}
+                        disabled={isSavingConversation}
+                      >
+                        {isSavingConversation ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Sauvegarde...
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Sauvegarder
+                          </>
+                        )}
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
@@ -943,7 +987,25 @@ export default function AssistantIAPage() {
                             <p className="whitespace-pre-wrap">{message.content}</p>
                           </>
                         ) : (
-                          <MarkdownRenderer content={message.content} />
+                          <div className="relative group">
+                            <MarkdownRenderer content={message.content} />
+                            {message.role === "assistant" && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleCopyMessage(message.id, message.content)}
+                                aria-label="Copier le message"
+                                title="Copier le message"
+                              >
+                                {copiedMessageId === message.id ? (
+                                  <Check className="h-3.5 w-3.5 text-green-600" />
+                                ) : (
+                                  <Copy className="h-3.5 w-3.5" />
+                                )}
+                              </Button>
+                            )}
+                          </div>
                         )}
                         {message.sourcesWithScores && message.sourcesWithScores.length > 0 && (
                           <div className="mt-3 pt-3 border-t border-border/50">

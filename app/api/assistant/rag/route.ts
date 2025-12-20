@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
       message, 
       images, 
       files, 
+      history = [],
       useRAG = true, 
       model = "gpt-4o", 
       stream = false, 
@@ -213,12 +214,28 @@ Toujours citer les sources utilisées quand c'est possible.`;
       }
     }
 
-    const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-      {
-        role: "user",
-        content: userContent.length > 1 ? userContent : promptWithContext,
-      },
-    ];
+    // Construire le tableau de messages avec l'historique
+    const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
+
+    // Ajouter l'historique de conversation si présent
+    if (Array.isArray(history) && history.length > 0) {
+      // Convertir l'historique au format OpenAI (limiter à 20 messages pour éviter la surcharge)
+      const recentHistory = history.slice(-20);
+      for (const msg of recentHistory) {
+        if (msg.role === "user" || msg.role === "assistant") {
+          messages.push({
+            role: msg.role,
+            content: msg.content || "",
+          });
+        }
+      }
+    }
+
+    // Ajouter le message utilisateur actuel avec le contexte RAG
+    messages.push({
+      role: "user",
+      content: userContent.length > 1 ? userContent : promptWithContext,
+    });
 
     // Si streaming demandé, utiliser Server-Sent Events
     if (useStream) {

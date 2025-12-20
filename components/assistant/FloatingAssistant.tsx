@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, MessageSquare, X, Minimize2, Maximize2, Image as ImageIcon, FileText } from "lucide-react";
+import { Sparkles, MessageSquare, X, Minimize2, Maximize2, Image as ImageIcon, FileText, RotateCcw, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +32,7 @@ export function FloatingAssistant() {
   const [selectedFiles, setSelectedFiles] = useState<ProcessedFile[]>([]);
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -390,6 +391,26 @@ export function FloatingAssistant() {
     setSelectedFiles((prev) => prev.filter((file) => file.id !== id));
   };
 
+  const handleResetConversation = () => {
+    setMessages([]);
+    setInput("");
+    setSelectedImages([]);
+    setSelectedFiles([]);
+    toast.success("Conversation réinitialisée");
+  };
+
+  const handleCopyMessage = async (messageId: string, content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMessageId(messageId);
+      toast.success("Message copié dans le presse-papier");
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (error) {
+      console.error("Erreur lors de la copie:", error);
+      toast.error("Erreur lors de la copie");
+    }
+  };
+
   const handleSendMessage = async () => {
     if ((!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !user) return;
 
@@ -425,6 +446,15 @@ export function FloatingAssistant() {
     setMessages((prev) => [...prev, assistantMessage]);
 
     try {
+      // Préparer l'historique de conversation (sans les fichiers/images pour éviter la surcharge)
+      const conversationHistory = messages
+        .filter((msg) => msg.id !== assistantMessageId) // Exclure le message assistant en cours
+        .map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+          // Ne pas inclure les images et fichiers dans l'historique pour éviter la surcharge
+        }));
+
       const response = await fetch("/api/assistant/chat", {
         method: "POST",
         headers: {
@@ -435,6 +465,7 @@ export function FloatingAssistant() {
           message: messageText || (imagesToSend.length > 0 ? "Analyse cette image" : "") || (filesToSend.length > 0 ? "Analyse ces fichiers" : ""),
           images: imagesToSend.length > 0 ? imagesToSend : undefined,
           files: filesToSend.length > 0 ? filesToSend.map(f => ({ name: f.name, type: f.type, content: f.content })) : undefined,
+          history: conversationHistory,
           stream: true,
         }),
       });
@@ -660,6 +691,17 @@ export function FloatingAssistant() {
                 </div>
               </div>
               <div className="flex items-center gap-1">
+                {messages.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleResetConversation}
+                    aria-label="Réinitialiser la conversation"
+                    title="Réinitialiser la conversation"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -755,7 +797,25 @@ export function FloatingAssistant() {
                             <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                           </>
                         ) : (
-                          <MarkdownRenderer content={message.content} />
+                          <div className="relative group">
+                            <MarkdownRenderer content={message.content} />
+                            {message.role === "assistant" && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleCopyMessage(message.id, message.content)}
+                                aria-label="Copier le message"
+                                title="Copier le message"
+                              >
+                                {copiedMessageId === message.id ? (
+                                  <Check className="h-3.5 w-3.5 text-green-600" />
+                                ) : (
+                                  <Copy className="h-3.5 w-3.5" />
+                                )}
+                              </Button>
+                            )}
+                          </div>
                         )}
                         <p className="text-xs opacity-70 mt-1">
                           {message.timestamp.toLocaleTimeString()}

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, Send, FileText, Image as ImageIcon, FileSpreadsheet, Loader2, MessageSquare } from "lucide-react";
+import { X, Sparkles, Send, FileText, Image as ImageIcon, FileSpreadsheet, Loader2, MessageSquare, RotateCcw, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
@@ -77,12 +77,13 @@ interface AssistantDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onSendMessage: (message: string, images: string[], files: ProcessedFile[]) => Promise<void>;
+  onReset?: () => void;
   messages: Message[];
   isLoading: boolean;
   responseProgress?: number; // Pourcentage de progression (0-100)
 }
 
-export function AssistantDrawer({ isOpen, onClose, onSendMessage, messages, isLoading, responseProgress = 0 }: AssistantDrawerProps) {
+export function AssistantDrawer({ isOpen, onClose, onSendMessage, onReset, messages, isLoading, responseProgress = 0 }: AssistantDrawerProps) {
   const { user } = useAuth();
   const [input, setInput] = useState("");
   const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
@@ -90,12 +91,25 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, messages, isLo
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
+
+  const handleCopyMessage = async (messageId: string, content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMessageId(messageId);
+      toast.success("Message copié dans le presse-papier");
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (error) {
+      console.error("Erreur lors de la copie:", error);
+      toast.error("Erreur lors de la copie");
+    }
+  };
 
   // Focus trap et gestion du focus
   useEffect(() => {
@@ -387,15 +401,29 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, messages, isLo
                   <p id="assistant-drawer-description" className="text-xs sm:text-sm text-muted-foreground mt-0.5 hidden sm:block">Comment puis-je vous aider ?</p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                aria-label="Fermer"
-                className="hover:bg-muted/50 shrink-0"
-              >
-                <X className="h-5 w-5" />
-              </Button>
+              <div className="flex items-center gap-2 shrink-0">
+                {messages.length > 0 && onReset && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onReset}
+                    aria-label="Réinitialiser la conversation"
+                    className="hover:bg-muted/50"
+                    title="Réinitialiser la conversation"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onClose}
+                  aria-label="Fermer"
+                  className="hover:bg-muted/50"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
 
             {/* Content */}
@@ -477,7 +505,27 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, messages, isLo
                             <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                           </>
                         ) : (
-                          <MarkdownRenderer content={message.content} />
+                          <>
+                            <div className="relative group">
+                              <MarkdownRenderer content={message.content} />
+                              {message.role === "assistant" && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => handleCopyMessage(message.id, message.content)}
+                                  aria-label="Copier le message"
+                                  title="Copier le message"
+                                >
+                                  {copiedMessageId === message.id ? (
+                                    <Check className="h-3.5 w-3.5 text-green-600" />
+                                  ) : (
+                                    <Copy className="h-3.5 w-3.5" />
+                                  )}
+                                </Button>
+                              )}
+                            </div>
+                          </>
                         )}
                         <p className="text-xs opacity-70 mt-2">
                           {message.timestamp.toLocaleTimeString()}

@@ -33,6 +33,11 @@ export function AssistantWrapper() {
     setIsOpen(false);
   }, []);
 
+  const handleResetConversation = useCallback(() => {
+    setMessages([]);
+    toast.success("Conversation réinitialisée");
+  }, []);
+
   const handleSendMessage = useCallback(async (input: string, images: string[], files: ProcessedFile[]) => {
     if (!user) {
       toast.error("Vous devez être connecté pour utiliser l'assistant.");
@@ -62,6 +67,13 @@ export function AssistantWrapper() {
     setMessages((prev) => [...prev, assistantMessage]);
 
     try {
+      // Préparer l'historique de conversation (sans les fichiers/images pour éviter la surcharge)
+      const conversationHistory = messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+        // Ne pas inclure les images et fichiers dans l'historique pour éviter la surcharge
+      }));
+
       const response = await fetch("/api/assistant/chat", {
         method: "POST",
         headers: {
@@ -72,6 +84,7 @@ export function AssistantWrapper() {
           message: input,
           images: images.length > 0 ? images : undefined,
           files: files.length > 0 ? files.map(f => ({ name: f.name, type: f.type, content: f.content })) : undefined,
+          history: conversationHistory,
           stream: true,
         }),
       });
@@ -187,6 +200,7 @@ export function AssistantWrapper() {
         isOpen={isOpen}
         onClose={handleCloseDrawer}
         onSendMessage={handleSendMessage}
+        onReset={handleResetConversation}
         messages={messages}
         isLoading={isLoading}
         responseProgress={responseProgress}
