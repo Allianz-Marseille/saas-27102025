@@ -105,7 +105,8 @@ async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
           
           // Méthode 3 : Essayer avec import dynamique
           const pdfParseModule = await import("pdf-parse");
-          pdfParse = pdfParseModule.default || pdfParseModule;
+          // Gérer les différents formats d'export (CommonJS vs ESM)
+          pdfParse = (pdfParseModule as any).default || pdfParseModule;
           console.log(`✅ [extractTextFromPDF] pdf-parse chargé via import dynamique, type: ${typeof pdfParse}`);
         }
       }
