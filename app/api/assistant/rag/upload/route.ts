@@ -13,7 +13,7 @@ import { chunkText, generateEmbeddingsBatch } from "@/lib/assistant/embeddings";
 import { adminDb, adminStorage, Timestamp, getStorageBucket } from "@/lib/firebase/admin-config";
 import { DocumentChunk, DocumentStatus } from "@/lib/assistant/types";
 import { estimateTokens } from "@/lib/assistant/history-truncation";
-import { extractTextFromFile } from "@/lib/assistant/file-extraction";
+import { extractTextFromFile, extractTextFromFileWithMetadata, ExtractionMetadata } from "@/lib/assistant/file-extraction";
 import { categorizeDocument } from "@/lib/assistant/document-categorization";
 import { generateDocumentSummary } from "@/lib/assistant/document-summarization";
 import { detectContradictions } from "@/lib/assistant/contradiction-detection";
@@ -314,11 +314,33 @@ export async function POST(request: NextRequest) {
     }
     
     let text: string;
+    let extractionMetadata: ExtractionMetadata | undefined;
     let errorMessage: string | undefined;
     
     try {
-      text = await extractTextFromFile(file, arrayBuffer);
+      // Utiliser extractTextFromFileWithMetadata pour obtenir les métadonnées OCR
+      const extractionResult = await extractTextFromFileWithMetadata(file, arrayBuffer);
+      text = extractionResult.text;
+      extractionMetadata = extractionResult.metadata;
+      
       console.log(`   ✅ Texte extrait: ${text.length} caractères bruts`);
+      console.log(`   📊 Méthode d'extraction: ${extractionMetadata.extractionMethod}`);
+      if (extractionMetadata.ocrEngine) {
+        console.log(`   🔍 OCR utilisé: ${extractionMetadata.ocrEngine} (${extractionMetadata.ocrPageCount || 0} page(s))`);
+      }
+      
+      // Mettre à jour le statut si OCR est en cours
+      if (extractionMetadata.extractionMethod === "ocr") {
+        console.log("   🔄 OCR détecté, mise à jour du statut du document...");
+        try {
+          await documentRef.set({
+            status: "ocr_processing" as DocumentStatus,
+            updatedAt: Timestamp.now(),
+          }, { merge: true });
+        } catch (statusError) {
+          console.warn("   ⚠️ Impossible de mettre à jour le statut OCR (document pas encore créé, normal)");
+        }
+      }
       
       // Validation stricte du texte : vérifier qu'il contient des caractères imprimables
       const hasPrintableContent = /[\w\u00C0-\u017F\u0400-\u04FF]/.test(text);
@@ -337,6 +359,19 @@ export async function POST(request: NextRequest) {
       // Utiliser le texte nettoyé
       text = trimmedText;
       console.log(`   ✅ Texte validé: ${text.length} caractères imprimables`);
+      
+      // Mettre à jour le statut si OCR est terminé
+      if (extractionMetadata.extractionMethod === "ocr") {
+        console.log("   ✅ OCR terminé avec succès");
+        try {
+          await documentRef.set({
+            status: "ocr_done" as DocumentStatus,
+            updatedAt: Timestamp.now(),
+          }, { merge: true });
+        } catch (statusError) {
+          console.warn("   ⚠️ Impossible de mettre à jour le statut OCR (document pas encore créé, normal)");
+        }
+      }
     } catch (error) {
       console.error("❌ Erreur lors de l'extraction du texte:", error);
       errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
@@ -540,6 +575,18 @@ export async function POST(request: NextRequest) {
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       };
+      
+      // Ajouter les métadonnées OCR si disponibles
+      if (extractionMetadata) {
+        documentData.extractionMethod = extractionMetadata.extractionMethod;
+        if (extractionMetadata.ocrEngine) {
+          documentData.ocrEngine = extractionMetadata.ocrEngine;
+        }
+        if (extractionMetadata.ocrPageCount !== undefined) {
+          documentData.ocrPageCount = extractionMetadata.ocrPageCount;
+          documentData.ocrAt = Timestamp.now();
+        }
+      }
       
       // Ajouter les champs optionnels seulement s'ils existent
       if (category && category.trim() !== "") {

@@ -2,7 +2,13 @@
  * Types pour le système RAG (Retrieval-Augmented Generation)
  */
 
-export type DocumentStatus = "uploaded" | "processing" | "indexed" | "error";
+export type DocumentStatus = 
+  | "uploaded" 
+  | "processing" 
+  | "ocr_processing"
+  | "ocr_done"
+  | "indexed" 
+  | "error";
 
 export interface RAGDocument {
   id: string;
@@ -22,6 +28,10 @@ export interface RAGDocument {
   version?: number;
   previousVersionId?: string;
   summary?: string;
+  ocrEngine?: "openai_vision" | "none";
+  ocrPageCount?: number;
+  ocrAt?: Date | any;
+  extractionMethod?: "pdf-parse" | "ocr";
 }
 
 export interface DocumentChunk {
