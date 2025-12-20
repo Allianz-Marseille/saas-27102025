@@ -136,7 +136,7 @@ export async function DELETE(request: NextRequest) {
 
     // Supprimer aussi le fichier dans Storage si storagePath existe
     const documentData = documentDoc.data();
-    if (documentData.storagePath) {
+    if (documentData?.storagePath) {
       try {
         const adminStorage = (await import("@/lib/firebase/admin-config")).adminStorage;
         await adminStorage.bucket().file(documentData.storagePath).delete();
