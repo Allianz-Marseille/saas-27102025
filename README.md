@@ -562,6 +562,7 @@ Pour plus de détails sur la configuration Vercel et les variables d'environneme
 ## 📚 Documentation supplémentaire
 
 - **Sécurité Firestore** : Voir `docs/SECURITE_FIRESTORE.md` pour les détails sur le resserrement des droits d'accès et les tests de sécurité
+- **Pinecone vs Firestore Vectoriel** : Voir `docs/PINECONE_VS_FIRESTORE_VECTORIEL.md` pour le guide de décision sur l'architecture de recherche vectorielle
 - **Bot ChatGPT** : Voir `docs/bot-mcp-chatgpt.md` pour la documentation du bot ChatGPT Assistant
 - **Pappers** : Voir `docs/outil-pappers.md` pour l'inventaire des fonctionnalités Pappers (si disponible)
 
