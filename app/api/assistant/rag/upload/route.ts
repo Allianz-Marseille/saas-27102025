@@ -4,6 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+
+// Forcer l'utilisation du runtime Node.js (nécessaire pour pdf-parse)
+export const runtime = "nodejs";
+export const maxDuration = 300; // 5 minutes max pour l'indexation
 import { verifyAdmin } from "@/lib/utils/auth-utils";
 import { chunkText, generateEmbeddingsBatch } from "@/lib/assistant/embeddings";
 import { adminDb, adminStorage, Timestamp, getStorageBucket } from "@/lib/firebase/admin-config";
@@ -340,7 +344,16 @@ export async function POST(request: NextRequest) {
     
     // Étape 5 : Extraire le texte selon le type de fichier
     console.log("Extraction du texte...");
+    console.log("Informations fichier:", {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      extension: file.name.toLowerCase().substring(file.name.lastIndexOf(".")),
+    });
+    
     const arrayBuffer = await file.arrayBuffer();
+    console.log(`Buffer créé: ${arrayBuffer.byteLength} bytes`);
+    
     let text: string;
     let errorMessage: string | undefined;
     
@@ -356,7 +369,11 @@ export async function POST(request: NextRequest) {
       console.error("Détails extraction:", {
         message: errorMessage,
         code: (error as any)?.code,
+        name: error instanceof Error ? error.name : undefined,
         stack: error instanceof Error ? error.stack : undefined,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
       });
       
       // Mettre à jour le statut à "error"
