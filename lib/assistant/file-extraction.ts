@@ -35,55 +35,111 @@ export async function extractTextFromFile(
  * Extrait le texte d'un PDF
  */
 async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
+  console.log("🔍 [extractTextFromPDF] Début extraction PDF");
   try {
     // Validation du buffer avant traitement
     if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+      console.error("❌ [extractTextFromPDF] Buffer vide ou invalide");
       throw new Error("Le buffer PDF est vide ou invalide");
     }
+    
+    console.log(`✅ [extractTextFromPDF] Buffer valide: ${arrayBuffer.byteLength} bytes`);
     
     const Buffer = (await import("buffer")).Buffer;
     const pdfBuffer = Buffer.from(arrayBuffer);
     
     // Vérifier que le buffer n'est pas vide après conversion
     if (!pdfBuffer || pdfBuffer.length === 0) {
+      console.error("❌ [extractTextFromPDF] Buffer vide après conversion");
       throw new Error("Le buffer PDF est vide après conversion");
     }
     
     // Vérifier la taille minimale d'un PDF valide (header PDF = %PDF)
     if (pdfBuffer.length < 4) {
+      console.error(`❌ [extractTextFromPDF] Fichier trop petit: ${pdfBuffer.length} bytes`);
       throw new Error("Le fichier est trop petit pour être un PDF valide");
     }
     
     // Vérifier que c'est bien un PDF (header commence par %PDF)
     const header = pdfBuffer.slice(0, 4).toString("ascii");
+    console.log(`📄 [extractTextFromPDF] Header PDF: "${header}" (${Buffer.from(header).toString('hex')})`);
+    
     if (!header.startsWith("%PDF")) {
-      console.warn(`⚠️ Le fichier ne semble pas être un PDF valide. Header: ${header}`);
+      console.warn(`⚠️ [extractTextFromPDF] Le fichier ne semble pas être un PDF valide. Header: ${header}`);
       // Continuer quand même, certains PDF peuvent avoir des headers différents
     }
     
-    console.log(`Extraction PDF: buffer size = ${pdfBuffer.length} bytes, header = ${header}`);
+    console.log(`✅ [extractTextFromPDF] Buffer préparé: ${pdfBuffer.length} bytes, header = ${header}`);
     
-    // Importer pdf-parse (même méthode que dans app/api/assistant/files/extract/route.ts)
+    // Importer pdf-parse - utiliser plusieurs méthodes de fallback pour compatibilité maximale
     let pdfParse: any;
     try {
-      // Utiliser createRequire pour importer pdf-parse (module CommonJS)
-      // Cela garantit une compatibilité maximale avec Next.js/Turbopack
-      const { createRequire } = await import("module");
-      const require = createRequire(import.meta.url);
-      pdfParse = require("pdf-parse");
+      console.log("📦 [extractTextFromPDF] Chargement de pdf-parse...");
+      
+      // Méthode 1 : Essayer avec createRequire (si import.meta.url est disponible)
+      try {
+        const { createRequire } = await import("module");
+        // Utiliser __filename ou __dirname si disponible, sinon utiliser import.meta.url
+        let requireUrl: string | URL;
+        if (typeof import.meta !== "undefined" && import.meta.url) {
+          requireUrl = import.meta.url;
+        } else if (typeof __filename !== "undefined") {
+          requireUrl = __filename;
+        } else {
+          // Fallback : utiliser le chemin du module courant
+          requireUrl = new URL(".", "file://" + process.cwd() + "/");
+        }
+        const require = createRequire(requireUrl);
+        pdfParse = require("pdf-parse");
+        console.log(`✅ [extractTextFromPDF] pdf-parse chargé via createRequire, type: ${typeof pdfParse}`);
+      } catch (createRequireError) {
+        console.warn("⚠️ [extractTextFromPDF] createRequire a échoué, essai méthode alternative:", createRequireError);
+        
+        // Méthode 2 : Essayer avec require direct (si disponible dans le contexte)
+        try {
+          // @ts-ignore - require peut ne pas être disponible en ESM
+          pdfParse = require("pdf-parse");
+          console.log(`✅ [extractTextFromPDF] pdf-parse chargé via require direct, type: ${typeof pdfParse}`);
+        } catch (requireError) {
+          console.warn("⚠️ [extractTextFromPDF] require direct a échoué, essai import dynamique:", requireError);
+          
+          // Méthode 3 : Essayer avec import dynamique
+          const pdfParseModule = await import("pdf-parse");
+          pdfParse = pdfParseModule.default || pdfParseModule;
+          console.log(`✅ [extractTextFromPDF] pdf-parse chargé via import dynamique, type: ${typeof pdfParse}`);
+        }
+      }
       
       // Vérifier que pdfParse est bien une fonction
       if (typeof pdfParse !== "function") {
-        console.error("pdfParse n'est pas une fonction:", typeof pdfParse, pdfParse);
+        console.error(`❌ [extractTextFromPDF] pdfParse n'est pas une fonction:`, typeof pdfParse, pdfParse);
         // Essayer d'accéder à default si présent
         if (pdfParse && typeof (pdfParse as any).default === "function") {
+          console.log("🔄 [extractTextFromPDF] Utilisation de pdfParse.default");
           pdfParse = (pdfParse as any).default;
+        } else if (pdfParse && typeof pdfParse === "object" && "default" in pdfParse) {
+          // Essayer d'autres propriétés possibles
+          const possibleFunctions = Object.values(pdfParse).filter(v => typeof v === "function");
+          if (possibleFunctions.length > 0) {
+            pdfParse = possibleFunctions[0];
+            console.log("🔄 [extractTextFromPDF] Utilisation d'une fonction trouvée dans l'objet");
+          } else {
+            throw new Error(`pdf-parse n'est pas une fonction. Type: ${typeof pdfParse}, valeur: ${JSON.stringify(Object.keys(pdfParse || {}))}`);
+          }
         } else {
           throw new Error(`pdf-parse n'est pas une fonction. Type: ${typeof pdfParse}`);
         }
       }
+      
+      console.log("✅ [extractTextFromPDF] pdfParse est une fonction, prêt pour parsing");
     } catch (error) {
-      console.error("Erreur lors du chargement de pdf-parse:", error);
+      console.error("❌ [extractTextFromPDF] Erreur lors du chargement de pdf-parse:", error);
+      const errorDetails = error instanceof Error ? {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+      } : { error: String(error) };
+      console.error("   Détails complets:", errorDetails);
       throw new Error(
         `Impossible de charger pdf-parse. Vérifiez que la dépendance est installée: npm install pdf-parse. ` +
         `Erreur: ${error instanceof Error ? error.message : String(error)}`
@@ -93,9 +149,19 @@ async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
     // Parser le PDF
     let pdfData: any;
     try {
+      console.log("🔄 [extractTextFromPDF] Début du parsing PDF...");
       pdfData = await pdfParse(pdfBuffer);
+      console.log("✅ [extractTextFromPDF] Parsing réussi");
     } catch (parseError) {
-      console.error("Erreur lors du parsing PDF:", parseError);
+      console.error("❌ [extractTextFromPDF] Erreur lors du parsing PDF:", parseError);
+      const errorDetails = parseError instanceof Error ? {
+        message: parseError.message,
+        name: parseError.name,
+        stack: parseError.stack,
+        code: (parseError as any).code,
+      } : { error: String(parseError) };
+      console.error("   Détails complets de l'erreur:", errorDetails);
+      
       const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
       
       // Messages d'erreur plus spécifiques selon le type d'erreur
@@ -111,31 +177,41 @@ async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
         );
       } else {
         throw new Error(
-          `Erreur lors du parsing du PDF: ${errorMessage}`
+          `Erreur lors du parsing du PDF: ${errorMessage}. ` +
+          `Détails: ${JSON.stringify(errorDetails)}`
         );
       }
     }
     
     // Validation des données retournées par pdf-parse
     if (!pdfData || typeof pdfData !== "object") {
+      console.error("❌ [extractTextFromPDF] pdf-parse n'a retourné aucune donnée valide:", pdfData);
       throw new Error("pdf-parse n'a retourné aucune donnée valide");
     }
     
+    console.log("✅ [extractTextFromPDF] pdfData reçu:", {
+      type: typeof pdfData,
+      hasText: !!pdfData.text,
+      hasNumpages: pdfData.numpages !== undefined,
+      keys: Object.keys(pdfData),
+    });
+    
     // Vérifier que pdfData contient les propriétés attendues
     if (pdfData.numpages === undefined || pdfData.numpages === null) {
-      console.warn("⚠️ pdfData.numpages est undefined/null, le PDF pourrait être corrompu");
+      console.warn("⚠️ [extractTextFromPDF] pdfData.numpages est undefined/null, le PDF pourrait être corrompu");
     }
     
     const text = pdfData.text || "";
     const numPages = pdfData.numpages || 0;
     
     // Logs détaillés pour diagnostic
-    console.log(`PDF parsé: ${numPages} page(s), texte: ${text.length} caractères`, {
+    console.log(`📊 [extractTextFromPDF] PDF parsé: ${numPages} page(s), texte: ${text.length} caractères`, {
       numPages: numPages,
       textLength: text.length,
       hasText: !!text && text.length > 0,
       hasInfo: !!pdfData.info,
       hasMetadata: !!pdfData.metadata,
+      textPreview: text.substring(0, 100),
     });
     
     // Vérifier que du texte a été extrait
