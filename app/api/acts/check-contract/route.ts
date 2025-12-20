@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
     // UNIQUEMENT parmi les actes AN
     const exists = actsSnapshot.docs.some((doc) => {
       const actData = doc.data();
+      if (!actData) return false;
       const existingNumber = actData.numeroContrat?.trim().toLowerCase();
       return existingNumber === normalizedNumber;
     });

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const usersSnapshot = await adminDb.collection("users").get();
     const users = usersSnapshot.docs
       .map((doc) => doc.data())
-      .filter((user) => user.role === "CDC_COMMERCIAL");
+      .filter((user): user is NonNullable<typeof user> => user !== undefined && user.role === "CDC_COMMERCIAL");
 
     console.log(`[CRON] ${users.length} commerciaux trouvés`);
 
@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
     const actsByUser = new Map<string, any[]>();
     actsSnapshot.docs.forEach((doc) => {
       const act = doc.data();
+      if (!act || !act.userId) return;
       if (!actsByUser.has(act.userId)) {
         actsByUser.set(act.userId, []);
       }

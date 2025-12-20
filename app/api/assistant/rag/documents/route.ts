@@ -34,6 +34,9 @@ export async function GET(request: NextRequest) {
     const documents = await Promise.all(
       documentsSnapshot.docs.map(async (doc) => {
         const data = doc.data();
+        if (!data) {
+          return null;
+        }
         const stats = await getDocumentUsageStats(doc.id);
         
         return {
@@ -57,13 +60,16 @@ export async function GET(request: NextRequest) {
       })
     );
 
+    // Filtrer les documents null (si data() retourne undefined)
+    const validDocuments = documents.filter((doc): doc is NonNullable<typeof doc> => doc !== null);
+
     // Trier par date de création (plus récent en premier)
-    documents.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    validDocuments.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return NextResponse.json({
       success: true,
-      documents,
-      count: documents.length,
+      documents: validDocuments,
+      count: validDocuments.length,
     });
   } catch (error) {
     console.error("Erreur GET /api/assistant/rag/documents:", error);
@@ -205,6 +211,13 @@ export async function PATCH(request: NextRequest) {
     }
 
     const documentData = documentDoc.data();
+
+    if (!documentData) {
+      return NextResponse.json(
+        { error: "Impossible de récupérer les données du document" },
+        { status: 500 }
+      );
+    }
 
     if (action === "toggle") {
       // Toggle isActive

@@ -164,8 +164,10 @@ export async function POST(request: NextRequest) {
         // Un document avec le même titre existe, créer une nouvelle version
         const latestDoc = existingDocsSnapshot.docs[0];
         const latestData = latestDoc.data();
-        previousVersionId = latestDoc.id;
-        version = (latestData.version || 1) + 1;
+        if (latestData) {
+          previousVersionId = latestDoc.id;
+          version = (latestData.version || 1) + 1;
+        }
 
         // Désactiver l'ancienne version
         await latestDoc.ref.update({

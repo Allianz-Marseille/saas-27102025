@@ -44,10 +44,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const leaderboardData = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const leaderboardData = snapshot.docs
+      .map((doc) => {
+        const data = doc.data();
+        if (!data) return null;
+        return {
+          id: doc.id,
+          ...data,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
 
     return NextResponse.json({
       monthKey,
