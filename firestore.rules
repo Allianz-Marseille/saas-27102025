@@ -41,8 +41,10 @@ service cloud.firestore {
     }
     
     // Users collection
+    // Lecture restreinte : uniquement le propriétaire ou l'admin
+    // Protection des données personnelles des utilisateurs
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin() || (isAuthenticated() && userId == request.auth.uid);
       allow create: if false; // Only server-side
       allow update: if isAdmin();
       allow delete: if isAdmin();
@@ -71,24 +73,30 @@ service cloud.firestore {
     }
     
     // Commission rules collection
+    // Règles de calcul des commissions - lecture pour tous authentifiés (nécessaire pour les calculs)
+    // Écriture réservée aux admins uniquement
     match /commissionRules/{ruleId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated(); // Nécessaire pour les calculs côté client
       allow create: if isAdmin();
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
     
     // Health acts collection (Santé Individuelle)
+    // Lecture restreinte : uniquement le propriétaire ou l'admin
+    // Protection de la confidentialité des données commerciales
     match /health_acts/{actId} {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow create: if isCommercialSante();
       allow update: if isAdmin() || (isCommercialSante() && resource.data.userId == request.auth.uid);
       allow delete: if isAdmin() || (isCommercialSante() && resource.data.userId == request.auth.uid);
     }
     
     // Health collective acts collection (Santé Collective)
+    // Lecture restreinte : uniquement le propriétaire ou l'admin
+    // Protection de la confidentialité des données commerciales
     match /health_collective_acts/{actId} {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow create: if isCommercialSanteCollective() && request.resource.data.userId == request.auth.uid;
       allow update: if isAdmin() || (isCommercialSanteCollective() && resource.data.userId == request.auth.uid);
       allow delete: if isAdmin() || (isCommercialSanteCollective() && resource.data.userId == request.auth.uid);
