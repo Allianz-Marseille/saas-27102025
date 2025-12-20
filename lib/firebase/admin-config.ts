@@ -98,5 +98,18 @@ export const Timestamp = admin.firestore.Timestamp;
  */
 export const adminStorage = admin.storage();
 
+/**
+ * Obtient le bucket Storage configuré
+ * Utilise les variables d'environnement ou le bucket par défaut du projet
+ */
+export function getStorageBucket() {
+  const bucketName = 
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 
+    process.env.FIREBASE_STORAGE_BUCKET ||
+    `${process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.appspot.com`;
+  
+  return adminStorage.bucket(bucketName);
+}
+
 export { admin };
 

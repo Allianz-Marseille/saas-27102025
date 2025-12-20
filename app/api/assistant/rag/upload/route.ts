@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/utils/auth-utils";
 import { chunkText, generateEmbeddingsBatch } from "@/lib/assistant/embeddings";
-import { adminDb, adminStorage, Timestamp } from "@/lib/firebase/admin-config";
+import { adminDb, adminStorage, Timestamp, getStorageBucket } from "@/lib/firebase/admin-config";
 import { DocumentChunk, DocumentStatus } from "@/lib/assistant/types";
 import { estimateTokens } from "@/lib/assistant/history-truncation";
 import { extractTextFromFile } from "@/lib/assistant/file-extraction";
@@ -120,7 +120,22 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(arrayBuffer);
       
       storagePath = `knowledge-base/pdf/${sourceId}${fileExtension}`;
-      const storageFile = adminStorage.bucket().file(storagePath);
+      
+      // Vérifier que adminStorage est bien initialisé
+      if (!adminStorage) {
+        throw new Error("adminStorage n'est pas initialisé");
+      }
+      
+      // Obtenir le bucket Storage configuré
+      const bucket = getStorageBucket();
+      if (!bucket) {
+        throw new Error(`Impossible d'accéder au bucket Storage`);
+      }
+      
+      console.log(`Bucket Storage: ${bucket.name}`);
+      console.log(`Chemin Storage: ${storagePath}`);
+      
+      const storageFile = bucket.file(storagePath);
       
       await storageFile.save(buffer, {
         metadata: {
@@ -135,11 +150,20 @@ export async function POST(request: NextRequest) {
       console.log(`Fichier uploadé dans Storage : ${storagePath}`);
     } catch (error) {
       console.error("Erreur lors de l'upload dans Storage:", error);
+      console.error("Détails de l'erreur:", {
+        message: error instanceof Error ? error.message : "Erreur inconnue",
+        stack: error instanceof Error ? error.stack : undefined,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+      });
       const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+      const errorCode = (error as any)?.code || "UNKNOWN";
       return NextResponse.json(
         {
           error: "Erreur lors de l'upload du fichier dans Storage",
           message: errorMessage,
+          code: errorCode,
+          details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.stack : undefined) : undefined,
         },
         {
           status: 500,
@@ -203,7 +227,7 @@ export async function POST(request: NextRequest) {
       console.error("Erreur lors de la création du document:", error);
       // Nettoyer Storage en cas d'erreur
       try {
-        await adminStorage.bucket().file(storagePath).delete();
+        await getStorageBucket().file(storagePath).delete();
       } catch (cleanupError) {
         console.error("Erreur lors du nettoyage Storage:", cleanupError);
       }

@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/utils/auth-utils";
-import { adminDb, Timestamp } from "@/lib/firebase/admin-config";
+import { adminDb, Timestamp, getStorageBucket } from "@/lib/firebase/admin-config";
 import { logAction } from "@/lib/assistant/audit";
 import { getDocumentUsageStats } from "@/lib/assistant/usage-tracking";
 
@@ -144,8 +144,8 @@ export async function DELETE(request: NextRequest) {
     const documentData = documentDoc.data();
     if (documentData?.storagePath) {
       try {
-        const adminStorage = (await import("@/lib/firebase/admin-config")).adminStorage;
-        await adminStorage.bucket().file(documentData.storagePath).delete();
+        const { getStorageBucket } = await import("@/lib/firebase/admin-config");
+        await getStorageBucket().file(documentData.storagePath).delete();
       } catch (storageError) {
         console.error("Erreur lors de la suppression du fichier Storage:", storageError);
         // Continuer même si la suppression Storage échoue
