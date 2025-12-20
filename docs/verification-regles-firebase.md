@@ -313,7 +313,52 @@ Ou via la console Firebase → Firestore Database → Indexes
 - Vérifier le chemin du fichier (`knowledge-base/pdf/...`)
 - Vérifier que l'utilisateur est authentifié
 
+### Erreur 500 lors de l'upload PDF (Admin)
+
+Si vous obtenez une erreur 500 lors de l'upload de PDF en tant qu'admin, suivez ces étapes :
+
+1. **Consulter les logs Vercel** :
+   - Vercel Dashboard → Votre projet → Deployments → Cliquer sur le dernier déploiement → Logs
+   - Chercher les messages d'erreur avec les préfixes `❌` ou `Erreur`
+   - Identifier l'étape où l'erreur se produit (step: "upload_storage", "create_document", "extract_text", etc.)
+
+2. **Vérifier les permissions IAM du service account** :
+   - Google Cloud Console → IAM & Admin → IAM
+   - Trouver le service account : `firebase-adminsdk-xxxxx@saas-27102025.iam.gserviceaccount.com`
+   - Vérifier qu'il a au minimum :
+     - `Storage Admin` ou `Storage Object Admin`
+     - `Firestore Admin` ou permissions d'écriture Firestore
+   - Si manquant, ajouter les rôles nécessaires
+
+3. **Vérifier que Storage est activé** :
+   - Firebase Console → Storage
+   - Si Storage n'est pas activé, cliquer sur "Commencer"
+   - Vérifier que le bucket `saas-27102025.firebasestorage.app` existe
+
+4. **Tester avec le script de diagnostic** :
+   ```bash
+   npm run test:storage
+   ```
+   Ce script teste :
+   - Les variables d'environnement
+   - L'accès au bucket Storage
+   - L'upload d'un fichier test
+   - La création de documents Firestore
+   - La création de chunks Firestore
+
+5. **Vérifier les variables d'environnement Vercel** :
+   - Vercel Dashboard → Settings → Environment Variables
+   - Vérifier que `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` est défini avec la valeur : `saas-27102025.firebasestorage.app`
+   - Vérifier que `FIREBASE_PROJECT_ID`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_CLIENT_EMAIL` sont définis
+
+6. **Messages d'erreur améliorés** :
+   Le code retourne maintenant des messages d'erreur plus détaillés avec :
+   - Le code d'erreur (`code`)
+   - L'étape où l'erreur s'est produite (`step`)
+   - Les détails complets en mode développement (`details`)
+
 ---
 
 *Document créé le : 2025*
+*Mis à jour le : 2025 - Ajout diagnostic erreur 500 upload PDF*
 

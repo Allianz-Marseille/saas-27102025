@@ -101,14 +101,58 @@ export const adminStorage = admin.storage();
 /**
  * Obtient le bucket Storage configuré
  * Utilise les variables d'environnement ou le bucket par défaut du projet
+ * Priorité au nouveau format Firebase Storage (.firebasestorage.app)
  */
 export function getStorageBucket() {
   const bucketName = 
     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 
     process.env.FIREBASE_STORAGE_BUCKET ||
-    `${process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.appspot.com`;
+    `${process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.firebasestorage.app`;
   
   return adminStorage.bucket(bucketName);
+}
+
+/**
+ * Vérifie que le bucket Storage est accessible
+ * Utile pour le diagnostic
+ */
+export async function testStorageBucketAccess(): Promise<{ success: boolean; bucketName: string; error?: string }> {
+  try {
+    const bucket = getStorageBucket();
+    const bucketName = bucket.name;
+    
+    // Vérifier si le bucket existe
+    const [exists] = await bucket.exists();
+    
+    if (!exists) {
+      return {
+        success: false,
+        bucketName,
+        error: "Le bucket n'existe pas. Vérifiez qu'il est créé dans Firebase Console.",
+      };
+    }
+    
+    // Tester les permissions en listant les fichiers
+    try {
+      await bucket.getFiles({ maxResults: 1 });
+      return {
+        success: true,
+        bucketName,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        bucketName,
+        error: `Permissions insuffisantes (${error.code || error.message}). Vérifiez que le service account a le rôle 'Storage Admin'.`,
+      };
+    }
+  } catch (error: any) {
+    return {
+      success: false,
+      bucketName: "unknown",
+      error: error.message || "Erreur inconnue lors de l'accès au bucket",
+    };
+  }
 }
 
 export { admin };

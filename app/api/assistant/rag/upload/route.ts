@@ -239,6 +239,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Étape 3 : Créer le document avec statut "uploaded"
+    console.log("Création du document Firestore...");
     try {
       await documentRef.set({
         id: sourceId,
@@ -257,25 +258,50 @@ export async function POST(request: NextRequest) {
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       });
+      console.log(`✅ Document Firestore créé : ${sourceId}`);
     } catch (error) {
-      console.error("Erreur lors de la création du document:", error);
+      console.error("❌ Erreur lors de la création du document Firestore:", error);
+      console.error("Détails:", {
+        message: error instanceof Error ? error.message : "Erreur inconnue",
+        code: (error as any)?.code,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       // Nettoyer Storage en cas d'erreur
       try {
+        console.log("Nettoyage du fichier Storage...");
         await getStorageBucket().file(storagePath).delete();
+        console.log("✅ Fichier Storage supprimé");
       } catch (cleanupError) {
-        console.error("Erreur lors du nettoyage Storage:", cleanupError);
+        console.error("❌ Erreur lors du nettoyage Storage:", cleanupError);
       }
-      throw error;
+      return NextResponse.json(
+        {
+          error: "Erreur lors de la création du document Firestore",
+          message: error instanceof Error ? error.message : "Erreur inconnue",
+          code: (error as any)?.code || "FIRESTORE_ERROR",
+          step: "create_document",
+          details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.stack : undefined) : undefined,
+        },
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
     }
     
     // Étape 4 : Mettre à jour le statut à "processing"
+    console.log("Mise à jour du statut à 'processing'...");
     try {
       await documentRef.update({
         status: "processing" as DocumentStatus,
         updatedAt: Timestamp.now(),
       });
+      console.log("✅ Statut mis à jour à 'processing'");
     } catch (error) {
-      console.error("Erreur lors de la mise à jour du statut:", error);
+      console.error("❌ Erreur lors de la mise à jour du statut:", error);
+      // Ne pas bloquer le processus, continuer quand même
     }
     
     // Étape 5 : Extraire le texte selon le type de fichier
@@ -286,22 +312,36 @@ export async function POST(request: NextRequest) {
     
     try {
       text = await extractTextFromFile(file, arrayBuffer);
-      console.log(`Texte extrait: ${text.length} caractères`);
+      console.log(`✅ Texte extrait: ${text.length} caractères`);
+      if (text.length === 0) {
+        throw new Error("Le fichier ne contient pas de texte extractible");
+      }
     } catch (error) {
-      console.error("Erreur lors de l'extraction du texte:", error);
+      console.error("❌ Erreur lors de l'extraction du texte:", error);
       errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+      console.error("Détails extraction:", {
+        message: errorMessage,
+        code: (error as any)?.code,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       
       // Mettre à jour le statut à "error"
-      await documentRef.update({
-        status: "error" as DocumentStatus,
-        errorMessage: errorMessage,
-        updatedAt: Timestamp.now(),
-      });
+      try {
+        await documentRef.update({
+          status: "error" as DocumentStatus,
+          errorMessage: errorMessage,
+          updatedAt: Timestamp.now(),
+        });
+      } catch (updateError) {
+        console.error("❌ Erreur lors de la mise à jour du statut d'erreur:", updateError);
+      }
       
       return NextResponse.json(
         {
           error: "Impossible d'extraire le texte du fichier",
           message: errorMessage,
+          code: (error as any)?.code || "EXTRACTION_ERROR",
+          step: "extract_text",
           details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.stack : undefined) : undefined,
         },
         {
@@ -351,51 +391,139 @@ export async function POST(request: NextRequest) {
       })
       .catch(console.error);
 
-    // Découper le texte en chunks
-    const chunks = chunkText(text, 500, 50);
-    console.log(`  → ${chunks.length} chunks créés`);
-
-    // Générer les embeddings pour tous les chunks
-    const embeddingModel = "text-embedding-3-small";
-    console.log("  → Génération des embeddings...");
-    const embeddings = await generateEmbeddingsBatch(chunks, embeddingModel);
-
-    // Stocker chaque chunk dans Firestore
-    const batch = adminDb.batch();
-
-    // Créer les chunks avec leurs embeddings
-    for (let i = 0; i < chunks.length; i++) {
-      const chunkRef = adminDb.collection("rag_chunks").doc();
-      const tokenCount = estimateTokens(chunks[i]);
-      
-      const chunkData: DocumentChunk = {
-        id: chunkRef.id,
-        content: chunks[i],
-        embedding: embeddings[i],
-        tokenCount: tokenCount,
-        embeddingModel: embeddingModel,
-        metadata: {
-          documentId: sourceId,
-          documentTitle: documentTitle,
-          documentType: documentType,
-          chunkIndex: i,
-          createdAt: new Date(),
-          source: file.name,
-          tags: tags,
+    // Étape 6 : Découper le texte en chunks
+    console.log("Découpage du texte en chunks...");
+    let chunks: string[];
+    try {
+      chunks = chunkText(text, 500, 50);
+      console.log(`✅ ${chunks.length} chunks créés`);
+      if (chunks.length === 0) {
+        throw new Error("Aucun chunk créé à partir du texte");
+      }
+    } catch (error) {
+      console.error("❌ Erreur lors du découpage en chunks:", error);
+      await documentRef.update({
+        status: "error" as DocumentStatus,
+        errorMessage: error instanceof Error ? error.message : "Erreur lors du découpage",
+        updatedAt: Timestamp.now(),
+      });
+      return NextResponse.json(
+        {
+          error: "Erreur lors du découpage du texte en chunks",
+          message: error instanceof Error ? error.message : "Erreur inconnue",
+          code: "CHUNKING_ERROR",
+          step: "chunk_text",
         },
-      };
-
-      batch.set(chunkRef, chunkData);
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
     }
 
-    // Mettre à jour le document avec le nombre de chunks et le statut "indexed"
-    batch.update(documentRef, {
-      chunkCount: chunks.length,
-      status: "indexed" as DocumentStatus,
-      updatedAt: Timestamp.now(),
-    });
+    // Étape 7 : Générer les embeddings pour tous les chunks
+    const embeddingModel = "text-embedding-3-small";
+    console.log("Génération des embeddings...");
+    let embeddings: number[][];
+    try {
+      embeddings = await generateEmbeddingsBatch(chunks, embeddingModel);
+      console.log(`✅ ${embeddings.length} embeddings générés`);
+      if (embeddings.length !== chunks.length) {
+        throw new Error(`Nombre d'embeddings (${embeddings.length}) ne correspond pas au nombre de chunks (${chunks.length})`);
+      }
+    } catch (error) {
+      console.error("❌ Erreur lors de la génération des embeddings:", error);
+      await documentRef.update({
+        status: "error" as DocumentStatus,
+        errorMessage: error instanceof Error ? error.message : "Erreur lors de la génération des embeddings",
+        updatedAt: Timestamp.now(),
+      });
+      return NextResponse.json(
+        {
+          error: "Erreur lors de la génération des embeddings",
+          message: error instanceof Error ? error.message : "Erreur inconnue",
+          code: (error as any)?.code || "EMBEDDING_ERROR",
+          step: "generate_embeddings",
+          details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.stack : undefined) : undefined,
+        },
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
 
-    await batch.commit();
+    // Étape 8 : Stocker chaque chunk dans Firestore
+    console.log("Stockage des chunks dans Firestore...");
+    try {
+      const batch = adminDb.batch();
+
+      // Créer les chunks avec leurs embeddings
+      for (let i = 0; i < chunks.length; i++) {
+        const chunkRef = adminDb.collection("rag_chunks").doc();
+        const tokenCount = estimateTokens(chunks[i]);
+        
+        const chunkData: DocumentChunk = {
+          id: chunkRef.id,
+          content: chunks[i],
+          embedding: embeddings[i],
+          tokenCount: tokenCount,
+          embeddingModel: embeddingModel,
+          metadata: {
+            documentId: sourceId,
+            documentTitle: documentTitle,
+            documentType: documentType,
+            chunkIndex: i,
+            createdAt: new Date(),
+            source: file.name,
+            tags: tags,
+          },
+        };
+
+        batch.set(chunkRef, chunkData);
+      }
+
+      // Mettre à jour le document avec le nombre de chunks et le statut "indexed"
+      batch.update(documentRef, {
+        chunkCount: chunks.length,
+        status: "indexed" as DocumentStatus,
+        updatedAt: Timestamp.now(),
+      });
+
+      await batch.commit();
+      console.log(`✅ ${chunks.length} chunks stockés dans Firestore`);
+    } catch (error) {
+      console.error("❌ Erreur lors du stockage des chunks:", error);
+      console.error("Détails:", {
+        message: error instanceof Error ? error.message : "Erreur inconnue",
+        code: (error as any)?.code,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      await documentRef.update({
+        status: "error" as DocumentStatus,
+        errorMessage: error instanceof Error ? error.message : "Erreur lors du stockage des chunks",
+        updatedAt: Timestamp.now(),
+      });
+      return NextResponse.json(
+        {
+          error: "Erreur lors du stockage des chunks dans Firestore",
+          message: error instanceof Error ? error.message : "Erreur inconnue",
+          code: (error as any)?.code || "FIRESTORE_BATCH_ERROR",
+          step: "store_chunks",
+          details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.stack : undefined) : undefined,
+        },
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
 
     console.log("Upload terminé avec succès");
     return NextResponse.json(
@@ -415,16 +543,25 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error("Erreur POST /api/assistant/rag/upload:", error);
+    console.error("❌ Erreur POST /api/assistant/rag/upload (catch global):", error);
     console.error("Stack:", error instanceof Error ? error.stack : "N/A");
+    console.error("Détails complets:", {
+      message: error instanceof Error ? error.message : "Erreur inconnue",
+      code: (error as any)?.code,
+      name: error instanceof Error ? error.name : undefined,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
 
     const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
     const errorStack = error instanceof Error ? error.stack : undefined;
+    const errorCode = (error as any)?.code || "UNKNOWN_ERROR";
 
     return NextResponse.json(
       {
         error: "Erreur lors de l'upload et de l'indexation du document",
         message: errorMessage,
+        code: errorCode,
+        step: "unknown",
         details: process.env.NODE_ENV === "development" ? errorStack : undefined,
       },
       {

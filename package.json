@@ -23,7 +23,8 @@
     "import:commissions-2023": "ts-node --project tsconfig.scripts.json scripts/import-commissions-2023.ts",
     "get-user-info": "ts-node --project tsconfig.scripts.json scripts/get-user-info.ts",
     "index:rag": "ts-node --project tsconfig.scripts.json scripts/index-rag-documents.ts",
-    "test:rules": "ts-node --project tsconfig.scripts.json scripts/test-firebase-rules.ts"
+    "test:rules": "ts-node --project tsconfig.scripts.json scripts/test-firebase-rules.ts",
+    "test:storage": "ts-node --project tsconfig.scripts.json scripts/test-storage-upload.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
