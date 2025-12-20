@@ -36,13 +36,32 @@ export async function extractTextFromFile(
  */
 async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
   try {
+    // Validation du buffer avant traitement
+    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+      throw new Error("Le buffer PDF est vide ou invalide");
+    }
+    
     const Buffer = (await import("buffer")).Buffer;
     const pdfBuffer = Buffer.from(arrayBuffer);
     
-    // Vérifier que le buffer n'est pas vide
+    // Vérifier que le buffer n'est pas vide après conversion
     if (!pdfBuffer || pdfBuffer.length === 0) {
-      throw new Error("Le buffer PDF est vide");
+      throw new Error("Le buffer PDF est vide après conversion");
     }
+    
+    // Vérifier la taille minimale d'un PDF valide (header PDF = %PDF)
+    if (pdfBuffer.length < 4) {
+      throw new Error("Le fichier est trop petit pour être un PDF valide");
+    }
+    
+    // Vérifier que c'est bien un PDF (header commence par %PDF)
+    const header = pdfBuffer.slice(0, 4).toString("ascii");
+    if (!header.startsWith("%PDF")) {
+      console.warn(`⚠️ Le fichier ne semble pas être un PDF valide. Header: ${header}`);
+      // Continuer quand même, certains PDF peuvent avoir des headers différents
+    }
+    
+    console.log(`Extraction PDF: buffer size = ${pdfBuffer.length} bytes, header = ${header}`);
     
     // Importer pdf-parse (même méthode que dans app/api/assistant/files/extract/route.ts)
     let pdfParse: any;
@@ -71,41 +90,83 @@ async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
       );
     }
     
-    console.log(`Extraction PDF: buffer size = ${pdfBuffer.length} bytes`);
-    
     // Parser le PDF
     let pdfData: any;
     try {
       pdfData = await pdfParse(pdfBuffer);
     } catch (parseError) {
       console.error("Erreur lors du parsing PDF:", parseError);
-      throw new Error(
-        `Erreur lors du parsing du PDF: ${parseError instanceof Error ? parseError.message : String(parseError)}`
-      );
+      const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
+      
+      // Messages d'erreur plus spécifiques selon le type d'erreur
+      if (errorMessage.includes("Invalid PDF") || errorMessage.includes("corrupt")) {
+        throw new Error(
+          `Le PDF est corrompu ou invalide: ${errorMessage}. ` +
+          `Vérifiez que le fichier est un PDF valide et non endommagé.`
+        );
+      } else if (errorMessage.includes("password") || errorMessage.includes("encrypted")) {
+        throw new Error(
+          `Le PDF est protégé par un mot de passe ou chiffré: ${errorMessage}. ` +
+          `Déverrouillez le PDF avant de l'uploader.`
+        );
+      } else {
+        throw new Error(
+          `Erreur lors du parsing du PDF: ${errorMessage}`
+        );
+      }
     }
     
-    if (!pdfData) {
-      throw new Error("pdf-parse n'a retourné aucune donnée");
+    // Validation des données retournées par pdf-parse
+    if (!pdfData || typeof pdfData !== "object") {
+      throw new Error("pdf-parse n'a retourné aucune donnée valide");
+    }
+    
+    // Vérifier que pdfData contient les propriétés attendues
+    if (pdfData.numpages === undefined || pdfData.numpages === null) {
+      console.warn("⚠️ pdfData.numpages est undefined/null, le PDF pourrait être corrompu");
     }
     
     const text = pdfData.text || "";
+    const numPages = pdfData.numpages || 0;
     
+    // Logs détaillés pour diagnostic
+    console.log(`PDF parsé: ${numPages} page(s), texte: ${text.length} caractères`, {
+      numPages: numPages,
+      textLength: text.length,
+      hasText: !!text && text.length > 0,
+      hasInfo: !!pdfData.info,
+      hasMetadata: !!pdfData.metadata,
+    });
+    
+    // Vérifier que du texte a été extrait
     if (!text || text.trim().length === 0) {
-      console.warn("PDF parsé mais aucun texte extrait. Info:", {
-        numPages: pdfData.numpages,
-        info: pdfData.info,
-        metadata: pdfData.metadata,
+      const diagnosticInfo = {
+        numPages: numPages,
+        info: pdfData.info || null,
+        metadata: pdfData.metadata || null,
         hasText: !!pdfData.text,
         textLength: pdfData.text ? pdfData.text.length : 0,
-      });
-      throw new Error(
-        "Aucun texte extrait du PDF. Le PDF pourrait être une image scannée, protégé, ou corrompu. " +
-        `Nombre de pages: ${pdfData.numpages || "inconnu"}. ` +
-        `Si le PDF contient du texte mais est une image scannée, utilisez un outil OCR.`
-      );
+        bufferSize: pdfBuffer.length,
+      };
+      
+      console.warn("PDF parsé mais aucun texte extrait. Diagnostic:", diagnosticInfo);
+      
+      // Message d'erreur plus informatif selon le contexte
+      if (numPages > 0) {
+        throw new Error(
+          `Aucun texte extrait du PDF (${numPages} page(s)). ` +
+          `Le PDF pourrait être une image scannée, contenir uniquement des images, ou être protégé. ` +
+          `Si le PDF contient du texte mais est une image scannée, utilisez un outil OCR.`
+        );
+      } else {
+        throw new Error(
+          `Aucun texte extrait du PDF. Le PDF semble vide ou corrompu. ` +
+          `Vérifiez que le fichier est un PDF valide contenant du texte.`
+        );
+      }
     }
     
-    console.log(`Extraction PDF réussie: ${text.length} caractères extraits sur ${pdfData.numpages || "?"} page(s)`);
+    console.log(`✅ Extraction PDF réussie: ${text.length} caractères extraits sur ${numPages} page(s)`);
     return text;
   } catch (error) {
     console.error("Erreur détaillée extraction PDF:", error);
@@ -117,6 +178,7 @@ async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
           "Installez-la avec: npm install pdf-parse"
         );
       }
+      // Propager l'erreur avec son message amélioré
       throw error;
     }
     throw new Error(`Erreur inconnue lors de l'extraction PDF: ${String(error)}`);

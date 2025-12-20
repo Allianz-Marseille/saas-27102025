@@ -24,12 +24,15 @@ import { v4 as uuidv4 } from "uuid";
  * Upload et indexation d'un PDF dans la base RAG (admin uniquement)
  */
 export async function POST(request: NextRequest) {
-  console.log("POST /api/assistant/rag/upload - Début");
+  const startTime = Date.now();
+  console.log("═══════════════════════════════════════════════════════════");
+  console.log("🚀 POST /api/assistant/rag/upload - Début du processus");
+  console.log("═══════════════════════════════════════════════════════════");
   try {
     // Vérifier l'authentification ET le rôle administrateur
-    console.log("Vérification de l'authentification admin...");
+    console.log("📋 [Étape 0/7] Vérification de l'authentification admin...");
     const auth = await verifyAdmin(request);
-    console.log("Résultat auth:", { valid: auth.valid, error: auth.error });
+    console.log("   Résultat auth:", { valid: auth.valid, error: auth.error });
     if (!auth.valid) {
       console.error("Accès refusé - pas admin");
       return NextResponse.json(
@@ -45,10 +48,14 @@ export async function POST(request: NextRequest) {
         }
       );
     }
-    console.log("Authentification OK, utilisateur admin");
+    if (!auth.valid) {
+      console.error("   ❌ Authentification échouée");
+    } else {
+      console.log("   ✅ Authentification OK, utilisateur admin");
+    }
 
     // Récupérer le fichier depuis le FormData
-    console.log("Récupération du FormData...");
+    console.log("📋 [Étape 0.5/7] Récupération et validation du fichier...");
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const title = formData.get("title") as string | null;
@@ -56,7 +63,7 @@ export async function POST(request: NextRequest) {
     const category = (formData.get("category") as string) || undefined;
     const tags = formData.get("tags") ? (formData.get("tags") as string).split(",") : [];
 
-    console.log("Fichier reçu:", file ? { name: file.name, type: file.type, size: file.size } : "null");
+    console.log("   Fichier reçu:", file ? { name: file.name, type: file.type, size: file.size } : "null");
 
     if (!file) {
       console.error("Aucun fichier fourni");
@@ -116,11 +123,29 @@ export async function POST(request: NextRequest) {
     const documentRef = adminDb.collection("rag_documents").doc(sourceId);
     const documentTitle = title || file.name.replace(/\.[^/.]+$/, "");
     
+    // Créer le buffer UNE SEULE FOIS pour réutilisation (Storage + extraction)
+    console.log("Création du buffer du fichier...");
+    const arrayBuffer = await file.arrayBuffer();
+    
+    // Validation du buffer
+    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+      return NextResponse.json(
+        { error: "Le fichier est vide ou corrompu" },
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+    
+    console.log(`Buffer créé: ${arrayBuffer.byteLength} bytes`);
+    
     // Étape 1 : Upload dans Firebase Storage
-    console.log("Upload du fichier dans Firebase Storage...");
+    console.log("📦 [Étape 1/7] Upload du fichier dans Firebase Storage...");
     let storagePath: string;
     try {
-      const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       
       storagePath = `knowledge-base/pdf/${sourceId}${fileExtension}`;
@@ -136,19 +161,19 @@ export async function POST(request: NextRequest) {
         throw new Error(`Impossible d'accéder au bucket Storage`);
       }
       
-      console.log(`Bucket Storage: ${bucket.name}`);
-      console.log(`Chemin Storage: ${storagePath}`);
+      console.log(`   Bucket Storage: ${bucket.name}`);
+      console.log(`   Chemin Storage: ${storagePath}`);
       
       // Vérifier que le bucket existe (optionnel, mais utile pour le debug)
       try {
         const [exists] = await bucket.exists();
         if (!exists) {
-          console.warn(`⚠️ Le bucket ${bucket.name} n'existe pas encore. Il sera créé automatiquement lors du premier upload.`);
+          console.warn(`   ⚠️ Le bucket ${bucket.name} n'existe pas encore. Il sera créé automatiquement lors du premier upload.`);
         } else {
-          console.log(`✅ Bucket ${bucket.name} existe`);
+          console.log(`   ✅ Bucket ${bucket.name} existe`);
         }
       } catch (checkError) {
-        console.warn("⚠️ Impossible de vérifier l'existence du bucket:", checkError);
+        console.warn("   ⚠️ Impossible de vérifier l'existence du bucket:", checkError);
         // Continuer quand même, le bucket sera créé si nécessaire
       }
       
@@ -164,7 +189,7 @@ export async function POST(request: NextRequest) {
         },
       });
       
-      console.log(`Fichier uploadé dans Storage : ${storagePath}`);
+      console.log(`   ✅ Fichier uploadé dans Storage : ${storagePath} (${(buffer.length / 1024).toFixed(2)} KB)`);
     } catch (error) {
       console.error("Erreur lors de l'upload dans Storage:", error);
       const errorDetails: any = {
@@ -212,7 +237,233 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Étape 2 : Vérifier si un document avec le même titre existe (versionning)
+    // Fonction de nettoyage en cas d'erreur après l'upload Storage
+    // Définie ici pour avoir accès à storagePath après l'upload réussi
+    const cleanupOnError = async (errorStep: string) => {
+      console.log(`🧹 Nettoyage des ressources après erreur à l'étape: ${errorStep}`);
+      try {
+        // Supprimer les chunks créés individuellement (si transaction a échoué partiellement)
+        try {
+          const chunksSnapshot = await adminDb
+            .collection("rag_chunks")
+            .where("metadata.documentId", "==", sourceId)
+            .get();
+          
+          if (!chunksSnapshot.empty) {
+            const batch = adminDb.batch();
+            chunksSnapshot.docs.forEach((doc) => {
+              batch.delete(doc.ref);
+            });
+            await batch.commit();
+            console.log(`✅ ${chunksSnapshot.docs.length} chunk(s) supprimé(s)`);
+          }
+        } catch (chunksError) {
+          console.error("❌ Erreur lors de la suppression des chunks:", chunksError);
+        }
+        
+        // Supprimer le document Firestore si il existe
+        try {
+          await documentRef.delete();
+          console.log(`✅ Document Firestore supprimé: ${sourceId}`);
+        } catch (firestoreError) {
+          console.error("❌ Erreur lors de la suppression du document Firestore:", firestoreError);
+        }
+        
+        // Supprimer le fichier Storage si il existe
+        if (storagePath) {
+          try {
+            const bucket = getStorageBucket();
+            if (bucket) {
+              await bucket.file(storagePath).delete();
+              console.log(`✅ Fichier Storage supprimé: ${storagePath}`);
+            }
+          } catch (storageError) {
+            console.error("❌ Erreur lors de la suppression du fichier Storage:", storageError);
+          }
+        }
+      } catch (cleanupError) {
+        console.error("❌ Erreur lors du nettoyage général:", cleanupError);
+      }
+    };
+    
+    // Étape 2 : Extraire le texte AVANT de créer le document Firestore
+    console.log("📄 [Étape 2/7] Extraction du texte (AVANT création document)...");
+    console.log("   Informations fichier:", {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      extension: file.name.toLowerCase().substring(file.name.lastIndexOf(".")),
+    });
+    
+    // Validation du buffer avant extraction
+    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+      await cleanupOnError("extract_text");
+      return NextResponse.json(
+        {
+          error: "Le buffer du fichier est vide ou invalide",
+          code: "INVALID_BUFFER",
+          step: "extract_text",
+        },
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+    
+    let text: string;
+    let errorMessage: string | undefined;
+    
+    try {
+      text = await extractTextFromFile(file, arrayBuffer);
+      console.log(`   ✅ Texte extrait: ${text.length} caractères bruts`);
+      
+      // Validation stricte du texte : vérifier qu'il contient des caractères imprimables
+      const hasPrintableContent = /[\w\u00C0-\u017F\u0400-\u04FF]/.test(text);
+      const trimmedText = text.trim();
+      
+      console.log(`   Validation texte: longueur=${trimmedText.length}, contientImprimables=${hasPrintableContent}`);
+      
+      // Validation : texte doit avoir au moins 10 caractères imprimables
+      if (trimmedText.length < 10 || !hasPrintableContent) {
+        throw new Error(
+          "Le fichier ne contient pas de texte extractible valide (minimum 10 caractères imprimables requis). " +
+          "Le PDF pourrait être une image scannée, protégé, ou ne contenir que des espaces/caractères non imprimables."
+        );
+      }
+      
+      // Utiliser le texte nettoyé
+      text = trimmedText;
+      console.log(`   ✅ Texte validé: ${text.length} caractères imprimables`);
+    } catch (error) {
+      console.error("❌ Erreur lors de l'extraction du texte:", error);
+      errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+      console.error("Détails extraction:", {
+        message: errorMessage,
+        code: (error as any)?.code,
+        name: error instanceof Error ? error.name : undefined,
+        stack: error instanceof Error ? error.stack : undefined,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        bufferSize: arrayBuffer.byteLength,
+      });
+      
+      // Nettoyer les ressources en cas d'erreur (seulement Storage, pas de document à supprimer)
+      await cleanupOnError("extract_text");
+      
+      return NextResponse.json(
+        {
+          error: "Impossible d'extraire le texte du fichier",
+          message: errorMessage,
+          code: (error as any)?.code || "EXTRACTION_ERROR",
+          step: "extract_text",
+          details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.stack : undefined) : undefined,
+        },
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    // Étape 3 : Découper le texte en chunks (avec validation)
+    console.log("✂️ [Étape 3/7] Découpage du texte en chunks...");
+    let chunks: string[];
+    try {
+      chunks = chunkText(text, 500, 50);
+      console.log(`   ✅ ${chunks.length} chunks créés initialement`);
+      
+      // Validation stricte : au moins 1 chunk valide requis
+      if (chunks.length === 0) {
+        throw new Error("Aucun chunk créé à partir du texte. Le texte pourrait être trop court ou invalide.");
+      }
+      
+      // Validation : chaque chunk doit contenir du contenu valide
+      const validChunks = chunks.filter(chunk => chunk.trim().length >= 10);
+      console.log(`   Validation chunks: ${validChunks.length}/${chunks.length} chunks valides (>= 10 caractères)`);
+      
+      if (validChunks.length === 0) {
+        throw new Error("Aucun chunk valide créé. Tous les chunks sont trop courts ou vides.");
+      }
+      
+      // Utiliser uniquement les chunks valides
+      chunks = validChunks;
+      console.log(`   ✅ ${chunks.length} chunks valides après validation`);
+    } catch (error) {
+      console.error("❌ Erreur lors du découpage en chunks:", error);
+      await cleanupOnError("chunk_text");
+      return NextResponse.json(
+        {
+          error: "Erreur lors du découpage du texte en chunks",
+          message: error instanceof Error ? error.message : "Erreur inconnue",
+          code: "CHUNKING_ERROR",
+          step: "chunk_text",
+        },
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    // Étape 4 : Générer les embeddings pour tous les chunks (avec validation)
+    const embeddingModel = "text-embedding-3-small";
+    console.log("🧮 [Étape 4/7] Génération des embeddings...");
+    let embeddings: number[][];
+    try {
+      // Validation : s'assurer que tous les chunks sont valides avant génération
+      const validChunksForEmbedding = chunks.filter(chunk => chunk.trim().length > 0);
+      if (validChunksForEmbedding.length !== chunks.length) {
+        throw new Error("Certains chunks sont vides et ne peuvent pas être utilisés pour générer des embeddings");
+      }
+      
+      console.log(`   Génération de ${chunks.length} embeddings avec le modèle ${embeddingModel}...`);
+      embeddings = await generateEmbeddingsBatch(chunks, embeddingModel);
+      console.log(`   ✅ ${embeddings.length} embeddings générés`);
+      
+      // Validation : nombre d'embeddings doit correspondre au nombre de chunks
+      if (embeddings.length !== chunks.length) {
+        throw new Error(`Nombre d'embeddings (${embeddings.length}) ne correspond pas au nombre de chunks (${chunks.length})`);
+      }
+      
+      // Validation : chaque embedding doit être un tableau non vide
+      const validEmbeddings = embeddings.filter(emb => Array.isArray(emb) && emb.length > 0);
+      console.log(`   Validation embeddings: ${validEmbeddings.length}/${embeddings.length} embeddings valides`);
+      
+      if (validEmbeddings.length !== embeddings.length) {
+        throw new Error(`Certains embeddings sont invalides (${validEmbeddings.length}/${embeddings.length} valides)`);
+      }
+      
+      console.log(`   ✅ Tous les embeddings sont valides (dimension: ${embeddings[0]?.length || 0})`);
+    } catch (error) {
+      console.error("❌ Erreur lors de la génération des embeddings:", error);
+      await cleanupOnError("generate_embeddings");
+      return NextResponse.json(
+        {
+          error: "Erreur lors de la génération des embeddings",
+          message: error instanceof Error ? error.message : "Erreur inconnue",
+          code: (error as any)?.code || "EMBEDDING_ERROR",
+          step: "generate_embeddings",
+          details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.stack : undefined) : undefined,
+        },
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    // Étape 5 : Vérifier si un document avec le même titre existe (versionning)
+    console.log("🔍 [Étape 5/7] Vérification du versionning...");
     let version = 1;
     let previousVersionId: string | undefined;
     try {
@@ -236,47 +487,56 @@ export async function POST(request: NextRequest) {
           isActive: false,
           updatedAt: Timestamp.now(),
         });
+        console.log(`✅ Version ${version} créée (ancienne version ${previousVersionId} désactivée)`);
       }
     } catch (error) {
-      console.error("Erreur lors de la vérification du versionning:", error);
+      console.error("⚠️ Erreur lors de la vérification du versionning:", error);
       // Continuer même en cas d'erreur
     }
 
-    // Étape 3 : Créer le document avec statut "uploaded"
-    console.log("Création du document Firestore...");
-    console.log("Données du document:", {
-      id: sourceId,
-      title: documentTitle,
-      type: documentType,
-      category: category,
-      source: file.name,
-      storagePath: storagePath,
-      uploadedBy: auth.userId,
-      version: version,
-    });
+    // Étape 6 : Transaction atomique pour créer document + chunks
+    console.log("💾 [Étape 6/7] Stockage atomique du document et des chunks dans Firestore...");
     
-    // Validation des données avant création
-    if (!auth.userId) {
-      throw new Error("userId manquant dans l'authentification");
-    }
-    if (!storagePath) {
-      throw new Error("storagePath manquant");
-    }
-    if (!documentTitle || documentTitle.trim() === "") {
-      throw new Error("title manquant ou vide");
-    }
-    
+    /**
+     * Fonction pour stocker le document et tous les chunks de manière atomique
+     */
+    const storeDocumentWithChunksAtomically = async (
+      documentId: string,
+      documentData: any,
+      chunksData: DocumentChunk[]
+    ): Promise<void> => {
+      console.log(`   Préparation transaction: document + ${chunksData.length} chunks`);
+      return adminDb.runTransaction(async (transaction) => {
+        // Créer le document avec le bon chunkCount dès le départ
+        const docRef = adminDb.collection("rag_documents").doc(documentId);
+        transaction.set(docRef, {
+          ...documentData,
+          chunkCount: chunksData.length,
+          status: "indexed" as DocumentStatus,
+        });
+        console.log(`   Transaction: document ${documentId} préparé avec chunkCount=${chunksData.length}`);
+
+        // Créer tous les chunks
+        for (const chunkData of chunksData) {
+          const chunkRef = adminDb.collection("rag_chunks").doc(chunkData.id);
+          transaction.set(chunkRef, chunkData);
+        }
+        console.log(`   Transaction: ${chunksData.length} chunks préparés`);
+      });
+    };
+
     try {
+      // Préparer les données du document
       const documentData: any = {
         id: sourceId,
         title: documentTitle.trim(),
         type: documentType || "document",
         source: file.name,
         storagePath: storagePath,
-        status: "uploaded" as DocumentStatus,
+        status: "indexed" as DocumentStatus, // Directement "indexed" car tout est prêt
         isActive: true,
         uploadedBy: auth.userId,
-        chunkCount: 0,
+        chunkCount: chunks.length, // Le bon nombre dès le départ
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       };
@@ -294,233 +554,15 @@ export async function POST(request: NextRequest) {
       if (previousVersionId) {
         documentData.previousVersionId = previousVersionId;
       }
-      
-      await documentRef.set(documentData);
-      console.log(`✅ Document Firestore créé : ${sourceId}`);
-    } catch (error) {
-      console.error("❌ Erreur lors de la création du document Firestore:", error);
-      console.error("Détails:", {
-        message: error instanceof Error ? error.message : "Erreur inconnue",
-        code: (error as any)?.code,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      // Nettoyer Storage en cas d'erreur
-      try {
-        console.log("Nettoyage du fichier Storage...");
-        await getStorageBucket().file(storagePath).delete();
-        console.log("✅ Fichier Storage supprimé");
-      } catch (cleanupError) {
-        console.error("❌ Erreur lors du nettoyage Storage:", cleanupError);
-      }
-      return NextResponse.json(
-        {
-          error: "Erreur lors de la création du document Firestore",
-          message: error instanceof Error ? error.message : "Erreur inconnue",
-          code: (error as any)?.code || "FIRESTORE_ERROR",
-          step: "create_document",
-          details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.stack : undefined) : undefined,
-        },
-        {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-    
-    // Étape 4 : Mettre à jour le statut à "processing"
-    console.log("Mise à jour du statut à 'processing'...");
-    try {
-      await documentRef.update({
-        status: "processing" as DocumentStatus,
-        updatedAt: Timestamp.now(),
-      });
-      console.log("✅ Statut mis à jour à 'processing'");
-    } catch (error) {
-      console.error("❌ Erreur lors de la mise à jour du statut:", error);
-      // Ne pas bloquer le processus, continuer quand même
-    }
-    
-    // Étape 5 : Extraire le texte selon le type de fichier
-    console.log("Extraction du texte...");
-    console.log("Informations fichier:", {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      extension: file.name.toLowerCase().substring(file.name.lastIndexOf(".")),
-    });
-    
-    const arrayBuffer = await file.arrayBuffer();
-    console.log(`Buffer créé: ${arrayBuffer.byteLength} bytes`);
-    
-    let text: string;
-    let errorMessage: string | undefined;
-    
-    try {
-      text = await extractTextFromFile(file, arrayBuffer);
-      console.log(`✅ Texte extrait: ${text.length} caractères`);
-      if (text.length === 0) {
-        throw new Error("Le fichier ne contient pas de texte extractible");
-      }
-    } catch (error) {
-      console.error("❌ Erreur lors de l'extraction du texte:", error);
-      errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
-      console.error("Détails extraction:", {
-        message: errorMessage,
-        code: (error as any)?.code,
-        name: error instanceof Error ? error.name : undefined,
-        stack: error instanceof Error ? error.stack : undefined,
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-      });
-      
-      // Mettre à jour le statut à "error"
-      try {
-        await documentRef.update({
-          status: "error" as DocumentStatus,
-          errorMessage: errorMessage,
-          updatedAt: Timestamp.now(),
-        });
-      } catch (updateError) {
-        console.error("❌ Erreur lors de la mise à jour du statut d'erreur:", updateError);
-      }
-      
-      return NextResponse.json(
-        {
-          error: "Impossible d'extraire le texte du fichier",
-          message: errorMessage,
-          code: (error as any)?.code || "EXTRACTION_ERROR",
-          step: "extract_text",
-          details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.stack : undefined) : undefined,
-        },
-        {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
 
-    // Étape 5 : Catégorisation automatique (en arrière-plan, ne pas bloquer)
-    let finalCategory = category;
-    if (!finalCategory) {
-      categorizeDocument(documentTitle, text)
-        .then((cat) => {
-          finalCategory = cat;
-          // Mettre à jour la catégorie en arrière-plan
-          documentRef.update({ category: cat, updatedAt: Timestamp.now() }).catch(console.error);
-        })
-        .catch(console.error);
-    }
-
-    // Étape 6 : Génération du résumé (en arrière-plan)
-    generateDocumentSummary(documentTitle, text)
-      .then((summary) => {
-        documentRef.update({ summary, updatedAt: Timestamp.now() }).catch(console.error);
-      })
-      .catch(console.error);
-
-    // Étape 7 : Détection de contradictions (en arrière-plan)
-    detectContradictions(documentTitle, text, finalCategory)
-      .then((contradictions) => {
-        if (contradictions.length > 0) {
-          console.warn(`⚠️ ${contradictions.length} contradiction(s) détectée(s) avec d'autres documents`);
-          // Loguer les contradictions (pourrait être envoyé par email à l'admin)
-          documentRef.update({
-            contradictions: contradictions.map((c) => ({
-              documentId: c.documentId,
-              documentTitle: c.documentTitle,
-              text: c.contradictionText,
-              severity: c.severity,
-            })),
-            updatedAt: Timestamp.now(),
-          }).catch(console.error);
-        }
-      })
-      .catch(console.error);
-
-    // Étape 6 : Découper le texte en chunks
-    console.log("Découpage du texte en chunks...");
-    let chunks: string[];
-    try {
-      chunks = chunkText(text, 500, 50);
-      console.log(`✅ ${chunks.length} chunks créés`);
-      if (chunks.length === 0) {
-        throw new Error("Aucun chunk créé à partir du texte");
-      }
-    } catch (error) {
-      console.error("❌ Erreur lors du découpage en chunks:", error);
-      await documentRef.update({
-        status: "error" as DocumentStatus,
-        errorMessage: error instanceof Error ? error.message : "Erreur lors du découpage",
-        updatedAt: Timestamp.now(),
-      });
-      return NextResponse.json(
-        {
-          error: "Erreur lors du découpage du texte en chunks",
-          message: error instanceof Error ? error.message : "Erreur inconnue",
-          code: "CHUNKING_ERROR",
-          step: "chunk_text",
-        },
-        {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-
-    // Étape 7 : Générer les embeddings pour tous les chunks
-    const embeddingModel = "text-embedding-3-small";
-    console.log("Génération des embeddings...");
-    let embeddings: number[][];
-    try {
-      embeddings = await generateEmbeddingsBatch(chunks, embeddingModel);
-      console.log(`✅ ${embeddings.length} embeddings générés`);
-      if (embeddings.length !== chunks.length) {
-        throw new Error(`Nombre d'embeddings (${embeddings.length}) ne correspond pas au nombre de chunks (${chunks.length})`);
-      }
-    } catch (error) {
-      console.error("❌ Erreur lors de la génération des embeddings:", error);
-      await documentRef.update({
-        status: "error" as DocumentStatus,
-        errorMessage: error instanceof Error ? error.message : "Erreur lors de la génération des embeddings",
-        updatedAt: Timestamp.now(),
-      });
-      return NextResponse.json(
-        {
-          error: "Erreur lors de la génération des embeddings",
-          message: error instanceof Error ? error.message : "Erreur inconnue",
-          code: (error as any)?.code || "EMBEDDING_ERROR",
-          step: "generate_embeddings",
-          details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.stack : undefined) : undefined,
-        },
-        {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-
-    // Étape 8 : Stocker chaque chunk dans Firestore
-    console.log("Stockage des chunks dans Firestore...");
-    try {
-      const batch = adminDb.batch();
-
-      // Créer les chunks avec leurs embeddings
-      for (let i = 0; i < chunks.length; i++) {
+      // Préparer les données des chunks
+      const chunksData: DocumentChunk[] = chunks.map((chunk, i) => {
         const chunkRef = adminDb.collection("rag_chunks").doc();
-        const tokenCount = estimateTokens(chunks[i]);
+        const tokenCount = estimateTokens(chunk);
         
-        const chunkData: DocumentChunk = {
+        return {
           id: chunkRef.id,
-          content: chunks[i],
+          content: chunk,
           embedding: embeddings[i],
           tokenCount: tokenCount,
           embeddingModel: embeddingModel,
@@ -534,37 +576,78 @@ export async function POST(request: NextRequest) {
             tags: tags,
           },
         };
-
-        batch.set(chunkRef, chunkData);
-      }
-
-      // Mettre à jour le document avec le nombre de chunks et le statut "indexed"
-      batch.update(documentRef, {
-        chunkCount: chunks.length,
-        status: "indexed" as DocumentStatus,
-        updatedAt: Timestamp.now(),
       });
 
-      await batch.commit();
-      console.log(`✅ ${chunks.length} chunks stockés dans Firestore`);
+      // Exécuter la transaction atomique
+      await storeDocumentWithChunksAtomically(sourceId, documentData, chunksData);
+      console.log(`   ✅ Transaction réussie : document + ${chunks.length} chunks créés atomiquement`);
+      
+      // Étape 7 : Traitements en arrière-plan
+      console.log("🔄 [Étape 7/7] Lancement des traitements en arrière-plan (catégorisation, résumé, contradictions)...");
+      
+      // Étape 7 : Traitements en arrière-plan (APRÈS création du document)
+      // Catégorisation automatique (si non fournie)
+      let finalCategory = category;
+      if (!finalCategory) {
+        categorizeDocument(documentTitle, text)
+          .then((cat) => {
+            if (cat) {
+              documentRef.update({ category: cat, updatedAt: Timestamp.now() }).catch(console.error);
+            }
+          })
+          .catch((err) => {
+            console.error("Erreur lors de la catégorisation:", err);
+          });
+      } else {
+        finalCategory = category;
+      }
+
+      // Génération du résumé (en arrière-plan)
+      generateDocumentSummary(documentTitle, text)
+        .then((summary) => {
+          if (summary) {
+            documentRef.update({ summary, updatedAt: Timestamp.now() }).catch(console.error);
+          }
+        })
+        .catch((err) => {
+          console.error("Erreur lors de la génération du résumé:", err);
+        });
+
+      // Détection de contradictions (en arrière-plan)
+      detectContradictions(documentTitle, text, finalCategory)
+        .then((contradictions) => {
+          if (contradictions && contradictions.length > 0) {
+            console.warn(`⚠️ ${contradictions.length} contradiction(s) détectée(s) avec d'autres documents`);
+            documentRef.update({
+              contradictions: contradictions.map((c) => ({
+                documentId: c.documentId,
+                documentTitle: c.documentTitle,
+                text: c.contradictionText,
+                severity: c.severity,
+              })),
+              updatedAt: Timestamp.now(),
+            }).catch(console.error);
+          }
+        })
+        .catch((err) => {
+          console.error("Erreur lors de la détection de contradictions:", err);
+        });
     } catch (error) {
-      console.error("❌ Erreur lors du stockage des chunks:", error);
+      console.error("❌ Erreur lors du stockage atomique:", error);
       console.error("Détails:", {
         message: error instanceof Error ? error.message : "Erreur inconnue",
         code: (error as any)?.code,
         stack: error instanceof Error ? error.stack : undefined,
       });
-      await documentRef.update({
-        status: "error" as DocumentStatus,
-        errorMessage: error instanceof Error ? error.message : "Erreur lors du stockage des chunks",
-        updatedAt: Timestamp.now(),
-      });
+      // Cleanup nécessaire : même si la transaction a échoué (document/chunks non créés),
+      // le fichier Storage a déjà été uploadé et doit être supprimé
+      await cleanupOnError("store_atomic");
       return NextResponse.json(
         {
-          error: "Erreur lors du stockage des chunks dans Firestore",
+          error: "Erreur lors du stockage atomique du document et des chunks",
           message: error instanceof Error ? error.message : "Erreur inconnue",
-          code: (error as any)?.code || "FIRESTORE_BATCH_ERROR",
-          step: "store_chunks",
+          code: (error as any)?.code || "FIRESTORE_TRANSACTION_ERROR",
+          step: "store_atomic",
           details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.stack : undefined) : undefined,
         },
         {
@@ -576,7 +659,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("Upload terminé avec succès");
+    const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log(`✅ Upload terminé avec succès en ${duration}s`);
+    console.log(`   Document ID: ${sourceId}`);
+    console.log(`   Titre: ${documentTitle}`);
+    console.log(`   Chunks: ${chunks.length}`);
+    console.log("═══════════════════════════════════════════════════════════");
+    
     return NextResponse.json(
       {
         success: true,
@@ -585,6 +675,7 @@ export async function POST(request: NextRequest) {
         title: documentTitle,
         chunkCount: chunks.length,
         status: "indexed",
+        duration: `${duration}s`,
       },
       {
         status: 200,
