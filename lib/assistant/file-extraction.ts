@@ -8,7 +8,7 @@
  */
 export interface ExtractionMetadata {
   extractionMethod: "pdf-parse" | "ocr" | "word" | "excel" | "image-ocr";
-  ocrEngine?: "openai_vision" | "none";
+  ocrEngine?: "openai_vision" | "google_vision" | "none";
   ocrPageCount?: number;
 }
 
@@ -217,154 +217,126 @@ async function convertPDFToImages(arrayBuffer: ArrayBuffer): Promise<ArrayBuffer
 }
 
 /**
- * Extrait le texte d'un PDF via OCR (pour PDFs scannés)
- * Convertit le PDF en images puis applique OCR sur chaque page
+ * Initialise le client Google Vision AI avec credentials depuis variable d'environnement
+ */
+async function getVisionClient() {
+  const { ImageAnnotatorClient } = await import("@google-cloud/vision");
+  const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+
+  if (!credentialsJson) {
+    throw new Error(
+      "GOOGLE_APPLICATION_CREDENTIALS_JSON manquante dans les variables d'environnement"
+    );
+  }
+
+  let credentials;
+  try {
+    credentials = JSON.parse(credentialsJson);
+  } catch (error) {
+    throw new Error(
+      "Erreur lors du parsing de GOOGLE_APPLICATION_CREDENTIALS_JSON: " +
+        (error instanceof Error ? error.message : "Format JSON invalide")
+    );
+  }
+
+  return new ImageAnnotatorClient({
+    credentials,
+  });
+}
+
+/**
+ * Extrait le texte d'un PDF via OCR Google Cloud Vision AI (pour PDFs scannés)
+ * Utilise asyncBatchAnnotateFiles pour un support natif des PDFs multi-pages
  */
 async function extractTextFromPDFViaOCR(arrayBuffer: ArrayBuffer): Promise<{ text: string; pageCount: number }> {
-  console.log("🔍 [extractTextFromPDFViaOCR] Début extraction OCR PDF");
+  console.log("🔍 [extractTextFromPDFViaOCR] Début extraction OCR PDF via Google Vision AI");
   
   try {
-    // Convertir PDF en images
-    const imageBuffers = await convertPDFToImages(arrayBuffer);
-    const pageCount = imageBuffers.length;
-    
-    console.log(`📄 [extractTextFromPDFViaOCR] ${pageCount} page(s) à traiter par OCR`);
-    
-    // Initialiser OpenAI
-    const openaiModule = await import("openai");
-    const OpenAI = (openaiModule as any).default || openaiModule.OpenAI || openaiModule;
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-    
     const Buffer = (await import("buffer")).Buffer;
-    const textParts: string[] = [];
-    const errors: string[] = [];
+    const pdfBuffer = Buffer.from(arrayBuffer);
     
-    // Traiter les pages en batch (5 pages à la fois pour éviter les timeouts)
-    const BATCH_SIZE = 5;
-    const PAGE_TIMEOUT_MS = 60000; // 60 secondes par page
-    const MAX_RETRIES = 2; // Nombre de tentatives en cas d'échec
+    // Vérifier la taille (max 20MB pour Vision AI)
+    const maxSize = 20 * 1024 * 1024; // 20MB
+    if (pdfBuffer.length > maxSize) {
+      throw new Error(
+        `Le fichier PDF est trop volumineux (max 20MB). Taille actuelle: ${Math.round(pdfBuffer.length / 1024 / 1024)}MB`
+      );
+    }
+
+    console.log(`📄 [extractTextFromPDFViaOCR] PDF à traiter: ${Math.round(pdfBuffer.length / 1024)}KB`);
+
+    // Initialiser le client Vision AI
+    const client = await getVisionClient();
+
+    // Convertir le buffer en base64 pour Vision AI
+    const base64Content = pdfBuffer.toString("base64");
+
+    // Préparer la requête pour asyncBatchAnnotateFiles
+    const visionRequest = {
+      requests: [
+        {
+          inputConfig: {
+            mimeType: "application/pdf",
+            content: base64Content,
+          },
+          features: [
+            {
+              type: "DOCUMENT_TEXT_DETECTION" as const,
+            },
+          ],
+        },
+      ],
+    };
+
+    // Appeler Vision AI avec asyncBatchAnnotateFiles (support PDF natif multi-pages)
+    console.log("   🔄 Appel à Google Vision AI (asyncBatchAnnotateFiles)...");
+    const [operation] = await client.asyncBatchAnnotateFiles(visionRequest);
     
-    // Fonction helper pour OCR d'une page avec timeout et retry
-    const processPageWithOCR = async (
-      imageBuffer: ArrayBuffer,
-      pageNum: number,
-      pageCount: number
-    ): Promise<{ success: boolean; pageNum: number; text: string }> => {
-      const buffer = Buffer.from(imageBuffer);
-      const base64 = buffer.toString("base64");
-      const dataUrl = `data:image/png;base64,${base64}`;
-      
-      // Retry logic
-      let lastError: Error | null = null;
-      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        try {
-          // Créer une promesse avec timeout
-          const ocrPromise = openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  {
-                    type: "text",
-                    text: "Extrait tout le texte visible dans cette image de document. Retourne uniquement le texte, sans commentaires ni explications. Préserve la structure et les sauts de ligne.",
-                  },
-                  {
-                    type: "image_url",
-                    image_url: {
-                      url: dataUrl,
-                    },
-                  },
-                ],
-              },
-            ],
-            max_tokens: 4000,
-          });
-          
-          // Ajouter un timeout
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error(`Timeout après ${PAGE_TIMEOUT_MS}ms`)), PAGE_TIMEOUT_MS);
-          });
-          
-          const response = await Promise.race([ocrPromise, timeoutPromise]);
-          const pageText = response.choices[0]?.message?.content || "";
-          
-          if (pageText.trim().length > 0) {
-            textParts.push(`\n\n--- Page ${pageNum} ---\n\n${pageText}`);
-            console.log(`   ✅ Page ${pageNum}/${pageCount} traitée par OCR (${pageText.length} caractères, tentative ${attempt})`);
-            return { success: true, pageNum, text: pageText };
-          } else {
-            if (attempt === MAX_RETRIES) {
-              console.warn(`   ⚠️ Page ${pageNum}/${pageCount}: aucun texte extrait après ${MAX_RETRIES} tentative(s)`);
-              return { success: false, pageNum, text: "" };
-            }
-            // Réessayer si texte vide
-            console.warn(`   ⚠️ Page ${pageNum}/${pageCount}: texte vide, nouvelle tentative (${attempt + 1}/${MAX_RETRIES})`);
-          }
-        } catch (pageError) {
-          lastError = pageError instanceof Error ? pageError : new Error(String(pageError));
-          if (attempt < MAX_RETRIES) {
-            console.warn(`   ⚠️ Page ${pageNum}/${pageCount}: erreur (tentative ${attempt}/${MAX_RETRIES}), nouvelle tentative...`, lastError.message);
-            // Attendre un peu avant de réessayer
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-          } else {
-            console.error(`   ❌ Page ${pageNum}/${pageCount}: erreur après ${MAX_RETRIES} tentative(s)`, lastError.message);
+    // Attendre la fin du traitement asynchrone
+    console.log("   ⏳ Attente de la fin du traitement asynchrone...");
+    const [result] = await operation.promise();
+
+    // Vérifier que la réponse contient des données
+    if (!result.responses || result.responses.length === 0) {
+      throw new Error("Aucune réponse de Google Vision AI");
+    }
+
+    // Extraire le texte de toutes les pages
+    const responses = result.responses;
+    let fullText = "";
+    let pageCount = 0;
+
+    for (const fileResponse of responses) {
+      // Vérifier s'il y a une erreur dans cette réponse
+      const responseWithError = fileResponse as unknown as { error?: { message?: string }; responses?: Array<{ fullTextAnnotation?: { text?: string } }> };
+      if (responseWithError.error) {
+        throw new Error(
+          `Erreur lors du traitement OCR par Google Vision AI: ${responseWithError.error.message || "Erreur inconnue"}`
+        );
+      }
+
+      // Extraire le texte des réponses de pages
+      const pageResponses = (fileResponse as unknown as { responses?: Array<{ fullTextAnnotation?: { text?: string } }> }).responses;
+      if (pageResponses) {
+        pageCount = pageResponses.length;
+        for (const pageResponse of pageResponses) {
+          if (pageResponse.fullTextAnnotation?.text) {
+            fullText += pageResponse.fullTextAnnotation.text + "\n\n";
           }
         }
       }
-      
-      // Toutes les tentatives ont échoué
-      const errorMsg = `Page ${pageNum}: ${lastError?.message || "Erreur inconnue"}`;
-      errors.push(errorMsg);
-      return { success: false, pageNum, text: "" };
-    };
-    
-    // Traiter les pages par batch
-    for (let i = 0; i < imageBuffers.length; i += BATCH_SIZE) {
-      const batch = imageBuffers.slice(i, i + BATCH_SIZE);
-      const batchPromises = batch.map((imageBuffer, batchIndex) => {
-        const pageNum = i + batchIndex + 1;
-        return processPageWithOCR(imageBuffer, pageNum, pageCount);
-      });
-      
-      // Attendre que le batch soit terminé avant de passer au suivant
-      await Promise.all(batchPromises);
     }
-    
-    // Concaténer tous les textes
-    const fullText = textParts.join("\n");
-    
-    // Validation : au moins une page doit avoir réussi
-    const successfulPages = pageCount - errors.length;
-    if (fullText.trim().length === 0) {
-      const errorDetails = errors.length > 0 ? ` Erreurs: ${errors.join("; ")}` : "";
-      throw new Error(
-        `Aucun texte extrait du PDF via OCR. Toutes les ${pageCount} page(s) ont échoué.${errorDetails}`
-      );
+
+    // Nettoyer le texte (supprimer les espaces multiples, etc.)
+    const cleanedText = fullText.trim().replace(/\n{3,}/g, "\n\n");
+
+    if (cleanedText.length === 0) {
+      throw new Error("Aucun texte extrait du PDF via OCR Google Vision AI");
     }
+
+    console.log(`✅ [extractTextFromPDFViaOCR] Extraction OCR réussie: ${cleanedText.length} caractères sur ${pageCount} page(s)`);
     
-    // Avertir si certaines pages ont échoué (mais continuer si au moins une a réussi)
-    if (errors.length > 0) {
-      console.warn(
-        `⚠️ [extractTextFromPDFViaOCR] ${errors.length} page(s) ont échoué sur ${pageCount} (${successfulPages} réussie(s)):`,
-        errors
-      );
-    }
-    
-    // Validation minimale : au moins 50% des pages doivent avoir réussi
-    const successRate = successfulPages / pageCount;
-    if (successRate < 0.5 && pageCount > 2) {
-      console.warn(
-        `⚠️ [extractTextFromPDFViaOCR] Taux de réussite faible (${(successRate * 100).toFixed(1)}%): ` +
-        `${successfulPages}/${pageCount} pages réussies. Le texte extrait pourrait être incomplet.`
-      );
-    }
-    
-    console.log(`✅ [extractTextFromPDFViaOCR] Extraction OCR réussie: ${fullText.length} caractères sur ${pageCount} page(s)`);
-    
-    return { text: fullText.trim(), pageCount };
+    return { text: cleanedText, pageCount };
   } catch (error) {
     console.error("❌ [extractTextFromPDFViaOCR] Erreur lors de l'extraction OCR:", error);
     if (error instanceof Error) {
@@ -670,7 +642,7 @@ async function extractTextFromPDFWithMetadata(
         text: ocrResult.text,
         metadata: {
           extractionMethod: "ocr",
-          ocrEngine: "openai_vision",
+          ocrEngine: "google_vision",
           ocrPageCount: ocrResult.pageCount,
         },
       };
@@ -734,7 +706,7 @@ async function extractTextFromPDFWithMetadata(
         text: ocrResult.text,
         metadata: {
           extractionMethod: "ocr",
-          ocrEngine: "openai_vision",
+          ocrEngine: "google_vision",
           ocrPageCount: ocrResult.pageCount,
         },
       };
