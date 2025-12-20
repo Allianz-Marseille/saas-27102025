@@ -44,60 +44,45 @@ async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
       throw new Error("Le buffer PDF est vide");
     }
     
-    // Importer pdf-parse
+    // Importer pdf-parse (même méthode que dans app/api/assistant/files/extract/route.ts)
     let pdfParse: any;
     try {
-      // Utiliser require pour pdf-parse (meilleure compatibilité avec les dépendances natives)
+      // Utiliser createRequire pour importer pdf-parse (module CommonJS)
+      // Cela garantit une compatibilité maximale avec Next.js/Turbopack
       const { createRequire } = await import("module");
       const require = createRequire(import.meta.url);
       pdfParse = require("pdf-parse");
       
-      // Vérifier que c'est bien une fonction
+      // Vérifier que pdfParse est bien une fonction
       if (typeof pdfParse !== "function") {
-        // Parfois pdf-parse exporte une fonction par défaut (CommonJS)
-        if (pdfParse && typeof pdfParse.default === "function") {
-          pdfParse = pdfParse.default;
-        }
-      }
-    } catch (requireError) {
-      // Si require échoue, essayer avec import ES6
-      try {
-        const pdfParseModule: any = await import("pdf-parse");
-        // pdf-parse peut exporter de différentes manières selon la version
-        // Essayer d'abord comme fonction directe, puis default, puis le module entier
-        if (typeof pdfParseModule === "function") {
-          pdfParse = pdfParseModule;
-        } else if (pdfParseModule.default && typeof pdfParseModule.default === "function") {
-          pdfParse = pdfParseModule.default;
-        } else if (pdfParseModule.pdfParse && typeof pdfParseModule.pdfParse === "function") {
-          pdfParse = pdfParseModule.pdfParse;
+        console.error("pdfParse n'est pas une fonction:", typeof pdfParse, pdfParse);
+        // Essayer d'accéder à default si présent
+        if (pdfParse && typeof (pdfParse as any).default === "function") {
+          pdfParse = (pdfParse as any).default;
         } else {
-          // Dernier recours : utiliser le module entier
-          pdfParse = pdfParseModule;
+          throw new Error(`pdf-parse n'est pas une fonction. Type: ${typeof pdfParse}`);
         }
-        
-        // Vérifier que c'est bien une fonction
-        if (typeof pdfParse !== "function") {
-          throw new Error("pdf-parse n'est pas une fonction après import");
-        }
-      } catch (importError) {
-        throw new Error(
-          `Impossible de charger pdf-parse. Vérifiez que la dépendance est installée: npm install pdf-parse. ` +
-          `Erreur require: ${requireError instanceof Error ? requireError.message : String(requireError)}, ` +
-          `Erreur import: ${importError instanceof Error ? importError.message : String(importError)}`
-        );
       }
-    }
-    
-    if (typeof pdfParse !== "function") {
+    } catch (error) {
+      console.error("Erreur lors du chargement de pdf-parse:", error);
       throw new Error(
-        `pdf-parse n'est pas une fonction. Type: ${typeof pdfParse}. ` +
-        `Vérifiez que la dépendance est correctement installée: npm install pdf-parse`
+        `Impossible de charger pdf-parse. Vérifiez que la dépendance est installée: npm install pdf-parse. ` +
+        `Erreur: ${error instanceof Error ? error.message : String(error)}`
       );
     }
     
     console.log(`Extraction PDF: buffer size = ${pdfBuffer.length} bytes`);
-    const pdfData = await pdfParse(pdfBuffer);
+    
+    // Parser le PDF
+    let pdfData: any;
+    try {
+      pdfData = await pdfParse(pdfBuffer);
+    } catch (parseError) {
+      console.error("Erreur lors du parsing PDF:", parseError);
+      throw new Error(
+        `Erreur lors du parsing du PDF: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+      );
+    }
     
     if (!pdfData) {
       throw new Error("pdf-parse n'a retourné aucune donnée");
@@ -110,14 +95,17 @@ async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
         numPages: pdfData.numpages,
         info: pdfData.info,
         metadata: pdfData.metadata,
+        hasText: !!pdfData.text,
+        textLength: pdfData.text ? pdfData.text.length : 0,
       });
       throw new Error(
-        "Aucun texte extrait du PDF. Le PDF pourrait être une image scannée ou protégé. " +
-        `Nombre de pages: ${pdfData.numpages || "inconnu"}`
+        "Aucun texte extrait du PDF. Le PDF pourrait être une image scannée, protégé, ou corrompu. " +
+        `Nombre de pages: ${pdfData.numpages || "inconnu"}. ` +
+        `Si le PDF contient du texte mais est une image scannée, utilisez un outil OCR.`
       );
     }
     
-    console.log(`Extraction PDF réussie: ${text.length} caractères extraits`);
+    console.log(`Extraction PDF réussie: ${text.length} caractères extraits sur ${pdfData.numpages || "?"} page(s)`);
     return text;
   } catch (error) {
     console.error("Erreur détaillée extraction PDF:", error);
