@@ -240,24 +240,58 @@ export async function POST(request: NextRequest) {
 
     // Étape 3 : Créer le document avec statut "uploaded"
     console.log("Création du document Firestore...");
+    console.log("Données du document:", {
+      id: sourceId,
+      title: documentTitle,
+      type: documentType,
+      category: category,
+      source: file.name,
+      storagePath: storagePath,
+      uploadedBy: auth.userId,
+      version: version,
+    });
+    
+    // Validation des données avant création
+    if (!auth.userId) {
+      throw new Error("userId manquant dans l'authentification");
+    }
+    if (!storagePath) {
+      throw new Error("storagePath manquant");
+    }
+    if (!documentTitle || documentTitle.trim() === "") {
+      throw new Error("title manquant ou vide");
+    }
+    
     try {
-      await documentRef.set({
+      const documentData: any = {
         id: sourceId,
-        title: documentTitle,
-        type: documentType,
-        category: category,
+        title: documentTitle.trim(),
+        type: documentType || "document",
         source: file.name,
         storagePath: storagePath,
-        tags: tags,
         status: "uploaded" as DocumentStatus,
         isActive: true,
         uploadedBy: auth.userId,
         chunkCount: 0,
-        version: version,
-        previousVersionId: previousVersionId,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
-      });
+      };
+      
+      // Ajouter les champs optionnels seulement s'ils existent
+      if (category && category.trim() !== "") {
+        documentData.category = category.trim();
+      }
+      if (tags && tags.length > 0) {
+        documentData.tags = tags.filter((tag: string) => tag.trim() !== "");
+      }
+      if (version !== undefined) {
+        documentData.version = version;
+      }
+      if (previousVersionId) {
+        documentData.previousVersionId = previousVersionId;
+      }
+      
+      await documentRef.set(documentData);
       console.log(`✅ Document Firestore créé : ${sourceId}`);
     } catch (error) {
       console.error("❌ Erreur lors de la création du document Firestore:", error);
