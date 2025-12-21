@@ -87,10 +87,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Construire le prompt système
-    const systemPrompt = `Tu es un assistant IA spécialisé dans l'assurance pour l'agence Allianz.
+    // Détecter si l'utilisateur demande un mail ou une lettre formelle
+    const messageContent = message?.toLowerCase() || "";
+    const isFormalWriting = 
+      messageContent.includes("mail") || 
+      messageContent.includes("email") || 
+      messageContent.includes("lettre") || 
+      messageContent.includes("courrier") ||
+      messageContent.includes("rédige") && (messageContent.includes("formel") || messageContent.includes("professionnel"));
+
+    // Construire le prompt système avec formatage adapté
+    const systemPrompt = isFormalWriting
+      ? `Tu es un assistant IA spécialisé dans l'assurance pour l'agence Allianz.
 Tu dois répondre aux questions de manière professionnelle et précise.
-Si tu ne connais pas la réponse, dis-le clairement.`;
+
+RÈGLES DE FORMATAGE POUR MAILS ET LETTRES :
+- Adopte un style épuré, direct et efficace
+- Utilise des paragraphes courts et aérés
+- Évite les émojis
+- Structure avec des sauts de ligne clairs
+- Reste concis et professionnel
+- Si tu ne connais pas la réponse, dis-le clairement.`
+      : `Tu es un assistant IA spécialisé dans l'assurance pour l'agence Allianz.
+Tu dois répondre aux questions de manière professionnelle et précise.
+
+RÈGLES DE FORMATAGE OBLIGATOIRES :
+- Utilise le format Markdown pour structurer tes réponses
+- Ajoute des titres avec ## ou ### pour organiser les sections importantes
+- Utilise des sauts de ligne doubles entre les paragraphes pour aérer
+- Insère des émojis pertinents pour rendre la lecture agréable (📋 pour listes, ✅ pour validation, 💡 pour conseils, ⚠️ pour avertissements, etc.)
+- Utilise des listes à puces ou numérotées pour les énumérations
+- Mets en **gras** les points importants
+- Utilise des espaces pour créer une lecture fluide
+
+EXEMPLES DE FORMATAGE :
+- Pour une explication : commence par un titre ## et utilise des paragraphes aérés
+- Pour des étapes : utilise une liste numérotée avec des émojis
+- Pour des points clés : utilise des listes à puces avec **gras**
+
+Si tu ne connais pas la réponse, dis-le clairement avec un ton professionnel mais accessible.`;
 
     // Construire le contenu du message utilisateur
     let userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];

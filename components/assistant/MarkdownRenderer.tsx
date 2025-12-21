@@ -30,6 +30,47 @@ export function MarkdownRenderer({ content, className = "" }: MarkdownRendererPr
 
   return (
     <div className={`prose prose-sm dark:prose-invert max-w-none ${className}`}>
+      <style jsx global>{`
+        .prose {
+          line-height: 1.7;
+        }
+        .prose h2 {
+          margin-top: 1.5em;
+          margin-bottom: 0.75em;
+          font-size: 1.35em;
+          font-weight: 700;
+          letter-spacing: -0.01em;
+        }
+        .prose h3 {
+          margin-top: 1.25em;
+          margin-bottom: 0.6em;
+          font-size: 1.15em;
+          font-weight: 600;
+        }
+        .prose p {
+          margin-top: 0.75em;
+          margin-bottom: 0.75em;
+        }
+        .prose ul, .prose ol {
+          margin-top: 0.75em;
+          margin-bottom: 0.75em;
+          padding-left: 1.5em;
+        }
+        .prose li {
+          margin-top: 0.35em;
+          margin-bottom: 0.35em;
+        }
+        .prose strong {
+          font-weight: 600;
+          color: inherit;
+        }
+        .prose blockquote {
+          font-style: italic;
+          border-left-width: 4px;
+          padding-left: 1em;
+          margin: 1em 0;
+        }
+      `}</style>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[]}
@@ -120,6 +161,69 @@ export function MarkdownRenderer({ content, className = "" }: MarkdownRendererPr
               >
                 {children}
               </a>
+            );
+          },
+          h1({ children }) {
+            return (
+              <h1 className="text-2xl font-bold mt-6 mb-3 leading-tight">
+                {children}
+              </h1>
+            );
+          },
+          h2({ children }) {
+            return (
+              <h2 className="text-xl font-bold mt-5 mb-2.5 leading-tight">
+                {children}
+              </h2>
+            );
+          },
+          h3({ children }) {
+            return (
+              <h3 className="text-lg font-semibold mt-4 mb-2 leading-tight">
+                {children}
+              </h3>
+            );
+          },
+          p({ children }) {
+            return (
+              <p className="my-3 leading-relaxed">
+                {children}
+              </p>
+            );
+          },
+          ul({ children }) {
+            return (
+              <ul className="my-3 space-y-1.5 list-disc pl-6">
+                {children}
+              </ul>
+            );
+          },
+          ol({ children }) {
+            return (
+              <ol className="my-3 space-y-1.5 list-decimal pl-6">
+                {children}
+              </ol>
+            );
+          },
+          li({ children }) {
+            return (
+              <li className="leading-relaxed">
+                {children}
+              </li>
+            );
+          },
+          strong({ children }) {
+            return (
+              <strong className="font-semibold text-foreground">
+                {children}
+              </strong>
+            );
+          },
+          em({ children }) {
+            return (
+              <em className="italic">
+                {children}
+              </em>
             );
           },
         }}
