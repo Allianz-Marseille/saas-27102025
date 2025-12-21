@@ -21,62 +21,135 @@ const KNOWLEDGE_BASE_PATH = join(process.cwd(), "docs", "knowledge");
  * Permet de détecter automatiquement quels fichiers charger selon le sujet
  */
 const KEYWORD_TO_FILE_MAP: Record<string, string[]> = {
-  // Produits
+  // Produits - Assurance Santé
   santé: ["produits/assurance-sante.md"],
+  "assurance santé": ["produits/assurance-sante.md"],
+  santé_individuelle: ["produits/assurance-sante.md"],
   santé_collective: ["produits/assurance-sante.md"],
   mutuelle: ["produits/assurance-sante.md"],
+  complémentaire: ["produits/assurance-sante.md"],
+  remboursement: ["produits/assurance-sante.md"],
+
+  // Produits - Assurance IARD
   iard: ["produits/assurance-iard.md"],
   auto: ["produits/assurance-iard.md"],
+  automobile: ["produits/assurance-iard.md"],
   habitation: ["produits/assurance-iard.md"],
   professionnelle: ["produits/assurance-iard.md"],
   décennale: ["produits/assurance-iard.md"],
+  "dommages ouvrage": ["produits/assurance-iard.md"],
+  dommages_ouvrage_produits: ["produits/assurance-iard.md"],
+
+  // Produits - Prévoyance
   prévoyance: ["produits/prevoyance.md"],
   tns: ["produits/prevoyance.md"],
+  "travailleur non salarié": ["produits/prevoyance.md"],
   décès: ["produits/prevoyance.md"],
   invalidité: ["produits/prevoyance.md"],
+  incapacité: ["produits/prevoyance.md"],
+  prévoyance_collective: ["produits/prevoyance.md"],
+
+  // Produits - Épargne
   épargne: ["produits/epargne.md"],
   retraite: ["produits/epargne.md"],
   per: ["produits/epargne.md"],
+  "plan épargne retraite": ["produits/epargne.md"],
   perp: ["produits/epargne.md"],
+  "plan épargne retraite populaire": ["produits/epargne.md"],
+  assurance_vie: ["produits/epargne.md"],
 
-  // Process
+  // Process - Leads
   lead: ["process/leads.md"],
   leads: ["process/leads.md"],
+  prospect: ["process/leads.md"],
+  prospection: ["process/leads.md"],
+  qualification: ["process/leads.md"],
+
+  // Process - M+3
   m+3: ["process/m-plus-3.md"],
   "m plus 3": ["process/m-plus-3.md"],
+  "m+3": ["process/m-plus-3.md"],
+  satisfaction: ["process/m-plus-3.md"],
+  relance_satisfaction: ["process/m-plus-3.md"],
+
+  // Process - Préterme
   préterme: ["process/preterme-auto.md", "process/preterme-ird.md"],
   préterme_auto: ["process/preterme-auto.md"],
   préterme_ird: ["process/preterme-ird.md"],
   renouvellement: ["process/preterme-auto.md", "process/preterme-ird.md"],
+  échéance: ["process/preterme-auto.md", "process/preterme-ird.md"],
+  échéance_auto: ["process/preterme-auto.md"],
+  échéance_habitation: ["process/preterme-ird.md"],
 
-  // Sinistres
+  // Sinistres - Général
   sinistre: ["process/sinistres.md"],
   sinistres: ["process/sinistres.md"],
+  déclaration_sinistre: ["process/sinistres.md"],
+  gestion_sinistre: ["process/sinistres.md"],
+
+  // Sinistres - Conventions inter-assureurs
+  convention: ["process/sinistres.md"],
   convention_irsa: ["process/sinistres.md"],
   irsa: ["process/sinistres.md"],
   irca: ["process/sinistres.md"],
   irsi: ["process/sinistres.md"],
-  convention: ["process/sinistres.md"],
+  cide_cop: ["process/sinistres.md"],
+  gestion_conventionnelle: ["process/sinistres.md"],
+  droit_commun: ["process/sinistres.md"],
+
+  // Sinistres - Types de sinistres
   dégâts_des_eaux: ["process/sinistres.md"],
   "dégâts des eaux": ["process/sinistres.md"],
   dégâts_eaux: ["process/sinistres.md"],
+  fuite: ["process/sinistres.md"],
+  inondation: ["process/sinistres.md"],
   incendie: ["process/sinistres.md"],
   explosion: ["process/sinistres.md"],
-  gestion_conventionnelle: ["process/sinistres.md"],
-  droit_commun: ["process/sinistres.md"],
+  accident: ["process/sinistres.md"],
+  accident_auto: ["process/sinistres.md"],
+  accident_circulation: ["process/sinistres.md"],
+
+  // Sinistres - Procédures
   expertise: ["process/sinistres.md"],
+  expert: ["process/sinistres.md"],
   indemnisation: ["process/sinistres.md"],
+  recours: ["process/sinistres.md"],
+  franchise: ["process/sinistres.md"],
+
+  // Sinistres - Conventions spécifiques
   badinter: ["process/sinistres.md"],
+  "loi badinter": ["process/sinistres.md"],
+  victime: ["process/sinistres.md"],
+  victimes: ["process/sinistres.md"],
+
+  // Sinistres - Construction
   construction: ["process/sinistres.md"],
-  décennale: ["process/sinistres.md"],
+  décennale_sinistre: ["process/sinistres.md"],
   dommages_ouvrage: ["process/sinistres.md"],
+  crac: ["process/sinistres.md"],
+  rcd: ["process/sinistres.md"],
+
+  // Sinistres - Corporel
+  corporel: ["process/sinistres.md"],
+  préjudice_corporel: ["process/sinistres.md"],
+  dommage_corporel: ["process/sinistres.md"],
+  dintilhac: ["process/sinistres.md"],
+  nomenclature_dintilhac: ["process/sinistres.md"],
+
+  // Sinistres - Catastrophes
   cat_nat: ["process/sinistres.md"],
+  "cat nat": ["process/sinistres.md"],
   catastrophe_naturelle: ["process/sinistres.md"],
+  catastrophes_naturelles: ["process/sinistres.md"],
   terrorisme: ["process/sinistres.md"],
+  attentat: ["process/sinistres.md"],
+  attentats: ["process/sinistres.md"],
+
+  // Sinistres - Fonds de garantie
   fgti: ["process/sinistres.md"],
   fgao: ["process/sinistres.md"],
-  dintilhac: ["process/sinistres.md"],
-  préjudice_corporel: ["process/sinistres.md"],
+  oniam: ["process/sinistres.md"],
+  "fonds de garantie": ["process/sinistres.md"],
 
   // Agences et coordonnées
   agence: ["core/agences.md"],
@@ -97,38 +170,61 @@ const KEYWORD_TO_FILE_MAP: Record<string, string[]> = {
 
   // Assistance et urgences
   assistance: ["core/numeros-assistance.md"],
+  "numéro d'assistance": ["core/numeros-assistance.md"],
   urgence: ["core/numeros-assistance.md"],
   numéro: ["core/numeros-assistance.md"],
   téléphone: ["core/numeros-assistance.md"],
   panne: ["core/numeros-assistance.md"],
   dépannage: ["core/numeros-assistance.md"],
+  crevaison: ["core/numeros-assistance.md"],
   plomberie: ["core/numeros-assistance.md"],
   serrurerie: ["core/numeros-assistance.md"],
+  "garde d'enfant": ["core/numeros-assistance.md"],
+  garde_enfant: ["core/numeros-assistance.md"],
   perte_carte: ["core/numeros-assistance.md"],
   vol_carte: ["core/numeros-assistance.md"],
+  "perte de carte": ["core/numeros-assistance.md"],
+  "vol de carte": ["core/numeros-assistance.md"],
+  chéquier: ["core/numeros-assistance.md"],
+  opposition: ["core/numeros-assistance.md"],
 
   // Devis et formulaires
   devis: ["core/liens-devis.md"],
+  "demande de devis": ["core/liens-devis.md"],
+  demande_devis: ["core/liens-devis.md"],
   formulaire: ["core/liens-devis.md"],
   formulaires: ["core/liens-devis.md"],
   lien: ["core/liens-devis.md"],
   liens: ["core/liens-devis.md"],
-  demande_devis: ["core/liens-devis.md"],
   code_agence: ["core/liens-devis.md"],
+  "code agence": ["core/liens-devis.md"],
+  h91358: ["core/liens-devis.md"],
+  rendez_vous: ["core/liens-devis.md"],
+  "rendez-vous": ["core/liens-devis.md"],
 
   // Réglementation et légal
   réglementation: ["core/reglementation.md"],
   légal: ["core/reglementation.md"],
+  juridique: ["core/reglementation.md"],
   acpr: ["core/reglementation.md"],
+  "autorité de contrôle": ["core/reglementation.md"],
+  devoir_conseil: ["core/reglementation.md"],
+  "devoir de conseil": ["core/reglementation.md"],
   rgpd: ["core/reglementation.md"],
+  "protection des données": ["core/reglementation.md"],
+  données_personnelles: ["core/reglementation.md"],
+  protection_données: ["core/reglementation.md"],
   médiation: ["core/reglementation.md"],
+  "médiateur de l'assurance": ["core/reglementation.md"],
   réclamation: ["core/reglementation.md"],
   siren: ["core/reglementation.md"],
   orias: ["core/reglementation.md"],
   rcs: ["core/reglementation.md"],
   conformité: ["core/reglementation.md"],
-  données_personnelles: ["core/reglementation.md"],
-  protection_données: ["core/reglementation.md"],
+  "informations légales": ["core/reglementation.md"],
+  informations_légales: ["core/reglementation.md"],
+  spéc: ["core/reglementation.md"],
+  "spec boetti-nogaro": ["core/reglementation.md"],
 
   // Identité agence
   identité: ["core/identite-agence.md"],
