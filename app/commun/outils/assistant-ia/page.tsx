@@ -1601,7 +1601,7 @@ export default function AssistantIAPage() {
                           <Filter className="h-3 w-3 mr-1" />
                           Tous
                         </Button>
-                        {Array.from(new Set(templates.map(t => t.category).filter(Boolean))).map((category) => {
+                        {Array.from(new Set(templates.map(t => t.category).filter((cat): cat is string => Boolean(cat)))).map((category) => {
                           const categoryLabels: Record<string, string> = {
                             commercial: "Commercial",
                             gestion: "Gestion",
