@@ -95,9 +95,8 @@ const KEYWORD_TO_FILE_MAP: Record<string, string[]> = {
   qualification: ["process/leads.md"],
 
   // Process - M+3
-  m+3: ["process/m-plus-3.md"],
-  "m plus 3": ["process/m-plus-3.md"],
   "m+3": ["process/m-plus-3.md"],
+  "m plus 3": ["process/m-plus-3.md"],
   satisfaction: ["process/m-plus-3.md"],
   relance_satisfaction: ["process/m-plus-3.md"],
 
