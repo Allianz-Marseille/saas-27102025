@@ -48,6 +48,63 @@ const KEYWORD_TO_FILE_MAP: Record<string, string[]> = {
   préterme_auto: ["process/preterme-auto.md"],
   préterme_ird: ["process/preterme-ird.md"],
   renouvellement: ["process/preterme-auto.md", "process/preterme-ird.md"],
+
+  // Agences et coordonnées
+  agence: ["core/agences.md"],
+  agences: ["core/agences.md"],
+  corniche: ["core/agences.md"],
+  rouvière: ["core/agences.md"],
+  adresse: ["core/agences.md"],
+  horaires: ["core/agences.md"],
+  whatsapp: ["core/agences.md"],
+  localisation: ["core/agences.md"],
+
+  // Effectif
+  effectif: ["core/effectif-agence.md"],
+  collaborateur: ["core/effectif-agence.md"],
+  collaborateurs: ["core/effectif-agence.md"],
+  équipe: ["core/effectif-agence.md"],
+  contact: ["core/effectif-agence.md"],
+
+  // Assistance et urgences
+  assistance: ["core/numeros-assistance.md"],
+  urgence: ["core/numeros-assistance.md"],
+  numéro: ["core/numeros-assistance.md"],
+  téléphone: ["core/numeros-assistance.md"],
+  panne: ["core/numeros-assistance.md"],
+  dépannage: ["core/numeros-assistance.md"],
+  plomberie: ["core/numeros-assistance.md"],
+  serrurerie: ["core/numeros-assistance.md"],
+  perte_carte: ["core/numeros-assistance.md"],
+  vol_carte: ["core/numeros-assistance.md"],
+
+  // Devis et formulaires
+  devis: ["core/liens-devis.md"],
+  formulaire: ["core/liens-devis.md"],
+  formulaires: ["core/liens-devis.md"],
+  lien: ["core/liens-devis.md"],
+  liens: ["core/liens-devis.md"],
+  demande_devis: ["core/liens-devis.md"],
+  code_agence: ["core/liens-devis.md"],
+
+  // Réglementation et légal
+  réglementation: ["core/reglementation.md"],
+  légal: ["core/reglementation.md"],
+  acpr: ["core/reglementation.md"],
+  rgpd: ["core/reglementation.md"],
+  médiation: ["core/reglementation.md"],
+  réclamation: ["core/reglementation.md"],
+  siren: ["core/reglementation.md"],
+  orias: ["core/reglementation.md"],
+  rcs: ["core/reglementation.md"],
+  conformité: ["core/reglementation.md"],
+  données_personnelles: ["core/reglementation.md"],
+  protection_données: ["core/reglementation.md"],
+
+  // Identité agence
+  identité: ["core/identite-agence.md"],
+  posture: ["core/identite-agence.md"],
+  valeurs: ["core/identite-agence.md"],
 };
 
 /**
