@@ -105,71 +105,46 @@ Pour les dommages < 1 500 € HT :
 - Déductible de l'indemnité
 - Non applicable en cas de tiers responsable identifié et assuré
 
----
+### IRSI – Convention d'Indemnisation et de Recours des Sinistres Immeuble
 
-## Sinistres Habitation - Dégâts des Eaux
+**Source** : France Assureurs – Convention IRSI, Entrée en vigueur : 1er juin 2018  
+⚠️ **Remplace CIDRE / CIDE-COP depuis 2018**
 
-### Convention dégâts des eaux
+#### Périmètre
 
-**Source** : Convention IRSA dégâts des eaux - FFSA/GEMA
+- **Dégâts des eaux**
+- **Incendie**
+- **Explosions**
+- Dans les immeubles (habitation / mixte)
+- Sinistres touchant plusieurs assurés ou parties communes
 
-#### Principes de la Convention dégâts des eaux
+#### Principe
 
-1. **Réparation sans expertise préalable**
-   - Réparation automatique si dommages < 1 200 € HT
-   - Devis établi par l'entreprise de réparation conventionnée
-   - Validation par l'assureur dans les 5 jours ouvrés
+- Assureur du local sinistré indemnise directement son assuré
+- Recours forfaitaires ou absence de recours selon les cas
+- Simplification de la gestion multi-assureurs
 
-2. **Procédure simplifiée**
-   - Pas d'expertise si le devis est < 1 200 € HT
-   - Réparation immédiate possible
-   - Facturation directe à l'assureur
+#### Seuils
 
-3. **Conditions d'application**
-   - Sinistre dégâts des eaux (fuite, débordement, rupture de canalisation)
-   - Dommages < 1 200 € HT
-   - Entreprise de réparation conventionnée
-   - Assurance habitation en cours
+- Sinistres ≤ **5 000 € HT** → gestion directe et simplifiée
+- Sinistres > 5 000 € HT → droit commun avec expertise
 
-#### Garanties exclues de la Convention dégâts des eaux
+#### Conditions d'application
 
-- Dommages > 1 200 € HT
-- Dommages nécessitant une expertise technique
-- Sinistres complexes (plusieurs logements concernés, origine incertaine)
-- Réparations nécessitant des travaux de gros œuvre
+- Sinistre dans un immeuble (copropriété ou logement individuel)
+- Plusieurs logements concernés ou parties communes
+- Assurances habitation en cours
+- Respect des délais de déclaration
 
-### Gestion conventionnelle IRSI (dégâts des eaux, incendie, explosion)
+### CIDE-COP (Convention historique – abrogée)
 
-#### Procédure IRSI
+⚠️ **Convention historique – abrogée depuis 2018**
 
-1. **Déclaration** : Par le sinistré dans les 5 jours
-2. **Évaluation** : Expertise si nécessaire (dommages > 5 000 € HT ou complexité)
-3. **Réparation** : Par entreprise conventionnée si < 5 000 € HT (gestion simplifiée)
-4. **Indemnisation** : Assureur du local sinistré indemnise directement
-5. **Recours** : Forfaitaires entre assureurs si plusieurs logements concernés
+- Ancienne convention dégâts des eaux / copropriété
+- **Remplacée intégralement par IRSI**
+- Ne plus faire référence à cette convention
 
-#### Identification du responsable
-
-- **Principe** : Recherche de l'origine du sinistre
-- **Responsable** : Propriétaire ou locataire selon l'origine (canalisation privée/commune)
-- **Indemnisation** : Par l'assureur du responsable (recours possible)
-
-### Gestion de droit commun - Dégâts des Eaux
-
-**Source** : Articles L125-1 et suivants du Code des assurances
-
-#### Principes
-
-1. **Déclaration obligatoire** dans les 5 jours
-2. **Expertise** si nécessaire (dommages importants ou litige)
-3. **Indemnisation** selon les garanties du contrat
-4. **Recours** : L'assureur peut exercer un recours contre le responsable
-
-#### Délais d'indemnisation
-
-- **Réparation directe** : Sous 5 jours après validation du devis
-- **Indemnisation en espèces** : Sous 30 jours après expertise
-- **Délai maximum** : 3 mois après réception de toutes les pièces
+**Source** : Archives France Assureurs
 
 ---
 
