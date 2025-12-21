@@ -71,6 +71,8 @@ export default function AssistantIAPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<{ messageId: string; index: number }[]>([]);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const chatFileInputRef = useRef<HTMLInputElement>(null);
@@ -376,13 +378,19 @@ export default function AssistantIAPage() {
     }
   };
 
+  // Ouvrir le dialog de confirmation de suppression
+  const handleDeleteClick = (conversationId: string) => {
+    setConversationToDelete(conversationId);
+    setShowDeleteDialog(true);
+  };
+
   // Supprimer une conversation sauvegardée
-  const handleDeleteConversation = async (conversationId: string) => {
-    if (!user || !confirm("Êtes-vous sûr de vouloir supprimer cette conversation ?")) return;
+  const handleDeleteConversation = async () => {
+    if (!user || !conversationToDelete) return;
 
     try {
       const token = await user.getIdToken();
-      const response = await fetch(`/api/assistant/conversations?id=${conversationId}`, {
+      const response = await fetch(`/api/assistant/conversations?id=${conversationToDelete}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -394,6 +402,8 @@ export default function AssistantIAPage() {
       }
 
       toast.success("Conversation supprimée avec succès");
+      setShowDeleteDialog(false);
+      setConversationToDelete(null);
       loadSavedConversations();
     } catch (error) {
       console.error("Erreur lors de la suppression:", error);
@@ -1384,7 +1394,8 @@ export default function AssistantIAPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteConversation(conv.id)}
+                            onClick={() => handleDeleteClick(conv.id)}
+                            className="hover:bg-red-50 dark:hover:bg-red-950/30"
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -1431,6 +1442,33 @@ export default function AssistantIAPage() {
                     Sauvegarder et continuer
                   </>
                 )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Dialog de confirmation pour supprimer une conversation */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Supprimer la conversation</AlertDialogTitle>
+              <AlertDialogDescription>
+                Êtes-vous sûr de vouloir supprimer cette conversation ? Cette action est irréversible.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setShowDeleteDialog(false);
+                setConversationToDelete(null);
+              }}>
+                Annuler
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteConversation}
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Supprimer
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
