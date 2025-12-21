@@ -6,7 +6,7 @@ import { isAdmin } from "@/lib/utils/roles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Sparkles, Image as ImageIcon, X, RotateCcw, Copy, Check, Plus, Save, XCircle, ClipboardCopy } from "lucide-react";
+import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Sparkles, Image as ImageIcon, X, RotateCcw, Copy, Check, Plus, Save, XCircle, ClipboardCopy, Search, Filter } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -63,6 +63,8 @@ export default function AssistantIAPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
   const [templateVariables, setTemplateVariables] = useState<Record<string, string>>({});
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchTemplateQuery, setSearchTemplateQuery] = useState("");
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showNewChatDialog, setShowNewChatDialog] = useState(false);
@@ -1476,54 +1478,89 @@ export default function AssistantIAPage() {
 
         {/* Dialogue pour sélectionner/appliquer un template */}
         {showTemplateDialog && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto">
-              <CardHeader>
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowTemplateDialog(false);
+                setSelectedTemplate(null);
+                setTemplateVariables({});
+                setSelectedCategory("all");
+                setSearchTemplateQuery("");
+              }
+            }}
+          >
+            <Card className="w-full max-w-4xl max-h-[85vh] overflow-hidden shadow-2xl border-2 border-primary/20 bg-gradient-to-br from-background via-background to-muted/30">
+              <CardHeader className="bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 border-b">
                 <div className="flex items-center justify-between">
-                  <CardTitle>Sélectionner un template</CardTitle>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
+                      <Sparkles className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-2xl bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                        Templates IA
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {templates.length} templates disponibles
+                      </p>
+                    </div>
+                  </div>
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="hover:bg-destructive/10 hover:text-destructive"
                     onClick={() => {
                       setShowTemplateDialog(false);
                       setSelectedTemplate(null);
                       setTemplateVariables({});
+                      setSelectedCategory("all");
+                      setSearchTemplateQuery("");
                     }}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="p-6 space-y-4 overflow-y-auto max-h-[calc(85vh-180px)]">
                 {selectedTemplate ? (
                   // Formulaire pour remplir les variables
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="font-semibold mb-2">{selectedTemplate.name}</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
+                  <div className="space-y-4 animate-in slide-in-from-right duration-300">
+                    <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border border-purple-200 dark:border-purple-800">
+                      <h3 className="font-bold text-lg mb-2 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                        {selectedTemplate.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
                         {selectedTemplate.description}
                       </p>
-                      <div className="space-y-2">
-                        {extractTemplateVariables(selectedTemplate.prompt).map((varName) => (
-                          <div key={varName}>
-                            <Label htmlFor={`var-${varName}`}>{varName}</Label>
-                            <Input
-                              id={`var-${varName}`}
-                              value={templateVariables[varName] || ""}
-                              onChange={(e) =>
-                                setTemplateVariables((prev) => ({
-                                  ...prev,
-                                  [varName]: e.target.value,
-                                }))
-                              }
-                              placeholder={`Entrez la valeur pour ${varName}`}
-                            />
-                          </div>
-                        ))}
-                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button onClick={handleConfirmTemplate} className="flex-1">
+                    <div className="space-y-3">
+                      {extractTemplateVariables(selectedTemplate.prompt).map((varName, idx) => (
+                        <div key={varName} className="animate-in fade-in slide-in-from-bottom duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
+                          <Label htmlFor={`var-${varName}`} className="text-sm font-medium">
+                            {varName}
+                          </Label>
+                          <Input
+                            id={`var-${varName}`}
+                            value={templateVariables[varName] || ""}
+                            onChange={(e) =>
+                              setTemplateVariables((prev) => ({
+                                ...prev,
+                                [varName]: e.target.value,
+                              }))
+                            }
+                            placeholder={`Entrez la valeur pour ${varName}`}
+                            className="mt-1 focus:ring-2 focus:ring-purple-500"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <Button 
+                        onClick={handleConfirmTemplate} 
+                        className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all"
+                      >
+                        <Sparkles className="h-4 w-4 mr-2" />
                         Appliquer
                       </Button>
                       <Button
@@ -1532,38 +1569,145 @@ export default function AssistantIAPage() {
                           setSelectedTemplate(null);
                           setTemplateVariables({});
                         }}
+                        className="border-2"
                       >
                         Retour
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  // Liste des templates
-                  <div className="space-y-2">
-                    {templates.map((template) => (
-                      <div
-                        key={template.id}
-                        className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => handleApplyTemplate(template)}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-semibold">{template.name}</h4>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {template.description}
-                            </p>
-                            {template.variables && template.variables.length > 0 && (
-                              <p className="text-xs text-muted-foreground mt-2">
-                                Variables : {template.variables.join(", ")}
-                              </p>
-                            )}
-                          </div>
-                          <Button variant="ghost" size="sm">
-                            Utiliser
-                          </Button>
-                        </div>
+                  // Liste des templates avec filtres
+                  <div className="space-y-4">
+                    {/* Barre de recherche et filtres */}
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Rechercher un template..."
+                          value={searchTemplateQuery}
+                          onChange={(e) => setSearchTemplateQuery(e.target.value)}
+                          className="pl-10 focus:ring-2 focus:ring-purple-500"
+                        />
                       </div>
-                    ))}
+                      
+                      {/* Filtres par catégorie */}
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant={selectedCategory === "all" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSelectedCategory("all")}
+                          className={selectedCategory === "all" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md" : ""}
+                        >
+                          <Filter className="h-3 w-3 mr-1" />
+                          Tous
+                        </Button>
+                        {Array.from(new Set(templates.map(t => t.category).filter(Boolean))).map((category) => {
+                          const categoryLabels: Record<string, string> = {
+                            commercial: "Commercial",
+                            gestion: "Gestion",
+                            sinistre: "Sinistre",
+                            iard: "IARD",
+                            santé: "Santé",
+                            prévoyance: "Prévoyance",
+                            retraite: "Retraite",
+                            support: "Support",
+                            formation: "Formation",
+                            interne: "Interne",
+                            procédure: "Procédure",
+                            vente: "Vente",
+                            email: "Email",
+                            analyse: "Analyse",
+                            devis: "Devis",
+                            resume: "Résumé",
+                            comparaison: "Comparaison",
+                          };
+                          return (
+                            <Button
+                              key={category}
+                              variant={selectedCategory === category ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setSelectedCategory(category)}
+                              className={selectedCategory === category ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md" : "hover:bg-purple-50 dark:hover:bg-purple-950/30"}
+                            >
+                              {categoryLabels[category] || category}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Liste des templates filtrés */}
+                    <div className="grid gap-3">
+                      {templates
+                        .filter((template) => {
+                          const matchesCategory = selectedCategory === "all" || template.category === selectedCategory;
+                          const matchesSearch = searchTemplateQuery.trim() === "" || 
+                            template.name.toLowerCase().includes(searchTemplateQuery.toLowerCase()) ||
+                            template.description.toLowerCase().includes(searchTemplateQuery.toLowerCase());
+                          return matchesCategory && matchesSearch;
+                        })
+                        .map((template, idx) => (
+                          <div
+                            key={template.id}
+                            className="group relative p-4 rounded-xl border-2 border-transparent bg-gradient-to-br from-background to-muted/30 hover:border-purple-300 dark:hover:border-purple-700 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300 cursor-pointer overflow-hidden"
+                            onClick={() => handleApplyTemplate(template)}
+                          >
+                            {/* Effet de brillance au survol */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                            
+                            <div className="relative flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h4 className="font-bold text-base group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                                    {template.name}
+                                  </h4>
+                                  {template.category && (
+                                    <span className="px-2 py-0.5 text-xs rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium">
+                                      {template.category}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground line-clamp-2">
+                                  {template.description}
+                                </p>
+                                {template.variables && template.variables.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {template.variables.map((varName) => (
+                                      <span
+                                        key={varName}
+                                        className="px-2 py-0.5 text-xs rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                                      >
+                                        {varName}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                              >
+                                Utiliser
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      
+                      {templates.filter((template) => {
+                        const matchesCategory = selectedCategory === "all" || template.category === selectedCategory;
+                        const matchesSearch = searchTemplateQuery.trim() === "" || 
+                          template.name.toLowerCase().includes(searchTemplateQuery.toLowerCase()) ||
+                          template.description.toLowerCase().includes(searchTemplateQuery.toLowerCase());
+                        return matchesCategory && matchesSearch;
+                      }).length === 0 && (
+                        <div className="text-center py-12 text-muted-foreground">
+                          <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p className="font-medium">Aucun template trouvé</p>
+                          <p className="text-sm mt-1">Essayez de modifier vos filtres</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </CardContent>
