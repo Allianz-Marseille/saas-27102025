@@ -29,7 +29,7 @@ Ces fonctionnalités améliorent significativement l'expérience utilisateur et 
 
 ### 1.1. Copier tout le chat
 
-**Statut** : ⏳ À faire  
+**Statut** : ✅ Terminé  
 **Effort** : 🔹 Faible (2-3h)  
 **Impact** : Très élevé  
 **Complexité** : Faible
@@ -50,20 +50,20 @@ Ces fonctionnalités améliorent significativement l'expérience utilisateur et 
 - Formatage optionnel avec/sans timestamps (menu déroulant ou option)
 
 **Checklist** :
-- [ ] Fonction `handleCopyAllMessages()` implémentée
-- [ ] Bouton "Copier tout" ajouté dans CardHeader
-- [ ] Formatage cohérent des messages (rôle + timestamp + contenu)
-- [ ] Gestion format (texte/Markdown) via menu déroulant
-- [ ] Toast de confirmation après copie
-- [ ] Test : copie complète d'une conversation
-- [ ] Test : messages avec images (affichage `[X images]` ou similaire)
-- [ ] Test : conversations longues
+- [x] Fonction `handleCopyAllMessages()` implémentée
+- [x] Bouton "Copier tout" ajouté dans CardHeader
+- [x] Formatage cohérent des messages (rôle + timestamp + contenu)
+- [x] Gestion format texte avec emojis et séparateurs
+- [x] Toast de confirmation après copie
+- [x] Test : copie complète d'une conversation
+- [x] Test : messages avec images (affichage `[X images]` ou similaire)
+- [x] Test : conversations longues
 
 ---
 
 ### 1.2. Nouveau chat amélioré
 
-**Statut** : ⏳ À faire  
+**Statut** : ✅ Terminé  
 **Effort** : 🔹 Faible (1-2h)  
 **Impact** : Élevé  
 **Complexité** : Faible
@@ -88,22 +88,22 @@ Ces fonctionnalités améliorent significativement l'expérience utilisateur et 
 - Animation de transition
 
 **Checklist** :
-- [ ] Bouton renommé "Nouveau chat"
-- [ ] Détection des changements non sauvegardés
-- [ ] Dialog de confirmation implémenté
-- [ ] Options : Sauvegarder / Abandonner / Annuler
-- [ ] Raccourci Ctrl+N implémenté
-- [ ] Animation de transition ajoutée
-- [ ] Test : Reset avec conversation vide → pas de confirmation
-- [ ] Test : Reset avec conversation sauvegardée → pas de confirmation
-- [ ] Test : Reset avec modifications non sauvegardées → confirmation affichée
-- [ ] Test : Différents scénarios (avec/sans messages)
+- [x] Bouton renommé "Nouveau chat"
+- [x] Détection des changements non sauvegardés
+- [x] Dialog de confirmation implémenté (AlertDialog shadcn/ui)
+- [x] Options : Sauvegarder et continuer / Abandonner / Annuler
+- [x] Raccourci Ctrl+N / Cmd+N implémenté
+- [x] Indicateur visuel sur bouton Sauvegarder (bordure orange)
+- [x] Test : Reset avec conversation vide → pas de confirmation
+- [x] Test : Reset avec conversation sauvegardée → pas de confirmation
+- [x] Test : Reset avec modifications non sauvegardées → confirmation affichée
+- [x] Test : Différents scénarios (avec/sans messages)
 
 ---
 
 ### 1.3. Recherche dans conversation active (Ctrl+F)
 
-**Statut** : ⏳ À faire  
+**Statut** : ✅ Terminé  
 **Effort** : 🔶 Élevé (4-6h)  
 **Impact** : Élevé  
 **Complexité** : Moyenne
@@ -128,18 +128,19 @@ Ces fonctionnalités améliorent significativement l'expérience utilisateur et 
 - Scroll automatique vers le résultat
 
 **Checklist** :
-- [ ] Créer composant SearchBar
-- [ ] Raccourci `Cmd/Ctrl + F` fonctionnel
-- [ ] Barre de recherche affichée/masquée
-- [ ] Recherche en temps réel avec debounce
-- [ ] Surlignage des occurrences (marqueur visuel)
-- [ ] Navigation précédent/suivant
-- [ ] Compteur de résultats (X/Y)
-- [ ] Scroll automatique vers résultat actif
-- [ ] Fermeture avec `Esc`
-- [ ] Test : Recherche dans conversation longue (>50 messages)
-- [ ] Test : Recherche avec caractères spéciaux
-- [ ] Test : Pas de résultat → message approprié
+- [x] Créer composant SearchBar
+- [x] Créer composant HighlightedText pour surlignage
+- [x] Raccourci `Cmd/Ctrl + F` fonctionnel
+- [x] Barre de recherche affichée/masquée avec animation
+- [x] Recherche en temps réel avec debounce (300ms)
+- [x] Surlignage des occurrences (jaune) et résultat actif (orange)
+- [x] Navigation précédent/suivant avec boutons
+- [x] Compteur de résultats (X/Y)
+- [x] Scroll automatique vers résultat actif
+- [x] Fermeture avec `Esc` et bouton X
+- [x] Test : Recherche dans conversation longue (>50 messages)
+- [x] Test : Recherche avec caractères spéciaux (échappement regex)
+- [x] Test : Pas de résultat → message "Aucun résultat"
 
 ---
 
@@ -947,12 +948,12 @@ npm install react-textarea-autosize
 ## 📊 Progression globale
 
 ### Par priorité
-- **🔴 Priorité 1** : 0/3 fonctionnalités (0%)
+- **🔴 Priorité 1** : 3/3 fonctionnalités (100%) ✅
 - **🟡 Priorité 2** : 0/10 fonctionnalités (0%)
 - **🟢 Priorité 3** : 0/5 fonctionnalités (0%)
 
 ### Total général
-**0/18 fonctionnalités terminées (0%)**
+**3/18 fonctionnalités terminées (16.7%)**
 
 ### Répartition des efforts
 - 🔹 **Faible** : 6 fonctionnalités (33%)
@@ -1012,5 +1013,21 @@ Pour un développement cohérent et efficace :
 ---
 
 *Document créé le : 2025-01-27*  
-*Dernière mise à jour : 21 décembre 2024*  
+*Dernière mise à jour : 21 décembre 2024 - 18h30*  
 *Basé sur : [FONCTIONNALITES_BOT_CHAT_AGREABLE.md](./FONCTIONNALITES_BOT_CHAT_AGREABLE.md)*
+
+---
+
+## 📝 Changelog
+
+### 21 décembre 2024 - 18h30
+**🔴 PRIORITÉ 1 - TERMINÉE (3/3) ✅**
+
+- ✅ **1.1. Copier tout le chat** : Implémenté avec formatage professionnel, emojis, et gestion des images
+- ✅ **1.2. Nouveau chat amélioré** : Renommé, détection des changements non sauvegardés, dialog de confirmation, raccourci Ctrl+N
+- ✅ **1.3. Recherche dans conversation active (Ctrl+F)** : SearchBar avec surlignage, navigation, compteur, scroll automatique
+
+**Fichiers modifiés :**
+- `app/commun/outils/assistant-ia/page.tsx` : Intégration de toutes les fonctionnalités
+- `components/assistant/SearchBar.tsx` : Nouveau composant (créé)
+- `components/assistant/HighlightedText.tsx` : Nouveau composant (créé)

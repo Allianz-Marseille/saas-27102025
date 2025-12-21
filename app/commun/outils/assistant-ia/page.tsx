@@ -6,13 +6,25 @@ import { isAdmin } from "@/lib/utils/roles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Sparkles, Image as ImageIcon, X, RotateCcw, Copy, Check } from "lucide-react";
+import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Sparkles, Image as ImageIcon, X, RotateCcw, Copy, Check, Plus, Save, XCircle, ClipboardCopy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { MarkdownRenderer } from "@/components/assistant/MarkdownRenderer";
+import { SearchBar } from "@/components/assistant/SearchBar";
+import { HighlightedText } from "@/components/assistant/HighlightedText";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
 import type { PromptTemplate } from "@/lib/assistant/templates";
@@ -45,16 +57,24 @@ export default function AssistantIAPage() {
   const [savedConversations, setSavedConversations] = useState<SavedConversation[]>([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [isSavingConversation, setIsSavingConversation] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [historySearchQuery, setHistorySearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
   const [templates, setTemplates] = useState<PromptTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
   const [templateVariables, setTemplateVariables] = useState<Record<string, string>>({});
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showNewChatDialog, setShowNewChatDialog] = useState(false);
+  const [lastSavedMessagesCount, setLastSavedMessagesCount] = useState(0);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{ messageId: string; index: number }[]>([]);
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const chatFileInputRef = useRef<HTMLInputElement>(null);
+  const searchResultRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const isUserAdmin = isAdmin(userData);
 
@@ -63,12 +83,41 @@ export default function AssistantIAPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Détecter les changements non sauvegardés
+  useEffect(() => {
+    if (messages.length > 0 && messages.length !== lastSavedMessagesCount) {
+      setHasUnsavedChanges(true);
+    } else if (messages.length === 0) {
+      setHasUnsavedChanges(false);
+    }
+  }, [messages, lastSavedMessagesCount]);
+
   // Charger les conversations sauvegardées et les templates
   useEffect(() => {
     loadSavedConversations();
     loadTemplates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  // Raccourcis clavier
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+N / Cmd+N pour nouveau chat
+      if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+        e.preventDefault();
+        handleNewChatClick();
+      }
+      // Ctrl+F / Cmd+F pour rechercher
+      if ((e.ctrlKey || e.metaKey) && e.key === "f") {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasUnsavedChanges, messages.length]);
 
   // Gérer les fichiers images
   const handleImageFiles = async (files: File[]) => {
@@ -272,6 +321,8 @@ export default function AssistantIAPage() {
       }
 
       toast.success("Conversation sauvegardée avec succès");
+      setLastSavedMessagesCount(messages.length);
+      setHasUnsavedChanges(false);
       loadSavedConversations();
     } catch (error) {
       console.error("Erreur lors de la sauvegarde:", error);
@@ -400,13 +451,104 @@ export default function AssistantIAPage() {
     setShowTemplateDialog(false);
   };
 
+  // Clic sur "Nouveau chat" - vérifier si changements non sauvegardés
+  const handleNewChatClick = () => {
+    if (hasUnsavedChanges && messages.length > 0) {
+      setShowNewChatDialog(true);
+    } else {
+      handleResetConversation();
+    }
+  };
+
   // Réinitialiser la conversation
   const handleResetConversation = () => {
     setMessages([]);
     setInput("");
     setSelectedImages([]);
     setSelectedFiles([]);
-    toast.success("Conversation réinitialisée");
+    setHasUnsavedChanges(false);
+    setLastSavedMessagesCount(0);
+    setShowNewChatDialog(false);
+    toast.success("Nouvelle conversation démarrée");
+  };
+
+  // Sauvegarder puis nouveau chat
+  const handleSaveAndNewChat = async () => {
+    await handleSaveConversation();
+    handleResetConversation();
+  };
+
+  // Gérer la recherche
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    
+    if (!query.trim()) {
+      setSearchResults([]);
+      setCurrentSearchIndex(0);
+      return;
+    }
+
+    // Trouver toutes les occurrences dans les messages
+    const results: { messageId: string; index: number }[] = [];
+    const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+
+    messages.forEach((message) => {
+      let matchCount = 0;
+      let match;
+      while ((match = regex.exec(message.content)) !== null) {
+        results.push({
+          messageId: message.id,
+          index: matchCount,
+        });
+        matchCount++;
+      }
+    });
+
+    setSearchResults(results);
+    setCurrentSearchIndex(0);
+
+    // Scroll vers le premier résultat
+    if (results.length > 0) {
+      scrollToSearchResult(0);
+    }
+  };
+
+  // Naviguer dans les résultats de recherche
+  const handleSearchNavigate = (direction: "prev" | "next") => {
+    if (searchResults.length === 0) return;
+
+    let newIndex = currentSearchIndex;
+    if (direction === "next") {
+      newIndex = (currentSearchIndex + 1) % searchResults.length;
+    } else {
+      newIndex = currentSearchIndex === 0 ? searchResults.length - 1 : currentSearchIndex - 1;
+    }
+
+    setCurrentSearchIndex(newIndex);
+    scrollToSearchResult(newIndex);
+  };
+
+  // Scroll vers un résultat de recherche
+  const scrollToSearchResult = (index: number) => {
+    if (index < 0 || index >= searchResults.length) return;
+
+    const result = searchResults[index];
+    const messageElement = document.getElementById(`message-${result.messageId}`);
+    
+    if (messageElement) {
+      messageElement.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  };
+
+  // Fermer la recherche
+  const handleCloseSearch = () => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+    setSearchResults([]);
+    setCurrentSearchIndex(0);
   };
 
   // Copier un message
@@ -419,6 +561,52 @@ export default function AssistantIAPage() {
     } catch (error) {
       console.error("Erreur lors de la copie:", error);
       toast.error("Erreur lors de la copie");
+    }
+  };
+
+  // Copier toute la conversation
+  const handleCopyAllMessages = async () => {
+    if (messages.length === 0) {
+      toast.error("Aucun message à copier");
+      return;
+    }
+
+    try {
+      let text = "=".repeat(60) + "\n";
+      text += "CONVERSATION ASSISTANT IA\n";
+      text += `Date: ${new Date().toLocaleDateString("fr-FR", { 
+        day: "numeric", 
+        month: "long", 
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      })}\n`;
+      text += `Messages: ${messages.length}\n`;
+      text += "=".repeat(60) + "\n\n";
+
+      for (const message of messages) {
+        const role = message.role === "user" ? "👤 UTILISATEUR" : "🤖 ASSISTANT";
+        const timestamp = message.timestamp.toLocaleString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        });
+        
+        text += `${role} - ${timestamp}\n`;
+        text += "-".repeat(60) + "\n";
+        
+        if (message.images && message.images.length > 0) {
+          text += `[${message.images.length} image(s) jointe(s)]\n\n`;
+        }
+        
+        text += message.content + "\n\n";
+      }
+
+      await navigator.clipboard.writeText(text);
+      toast.success(`${messages.length} message(s) copié(s) dans le presse-papier`);
+    } catch (error) {
+      console.error("Erreur lors de la copie:", error);
+      toast.error("Erreur lors de la copie de la conversation");
     }
   };
 
@@ -649,6 +837,14 @@ export default function AssistantIAPage() {
 
         <TabsContent value="chat" className="mt-6">
           <Card className="h-[600px] flex flex-col">
+            <SearchBar
+              onSearch={handleSearch}
+              onNavigate={handleSearchNavigate}
+              onClose={handleCloseSearch}
+              currentIndex={currentSearchIndex}
+              totalResults={searchResults.length}
+              isOpen={isSearchOpen}
+            />
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Conversation</CardTitle>
@@ -669,17 +865,27 @@ export default function AssistantIAPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleResetConversation}
-                        title="Réinitialiser la conversation"
+                        onClick={handleCopyAllMessages}
+                        title="Copier toute la conversation"
                       >
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        Réinitialiser
+                        <ClipboardCopy className="h-4 w-4 mr-2" />
+                        Copier tout
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleNewChatClick}
+                        title="Nouveau chat (Ctrl+N / Cmd+N)"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Nouveau chat
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={handleSaveConversation}
                         disabled={isSavingConversation}
+                        className={hasUnsavedChanges ? "border-orange-500 text-orange-600" : ""}
                       >
                         {isSavingConversation ? (
                           <>
@@ -688,8 +894,9 @@ export default function AssistantIAPage() {
                           </>
                         ) : (
                           <>
-                            <FileText className="h-4 w-4 mr-2" />
+                            <Save className="h-4 w-4 mr-2" />
                             Sauvegarder
+                            {hasUnsavedChanges && <span className="ml-1">•</span>}
                           </>
                         )}
                       </Button>
@@ -709,64 +916,92 @@ export default function AssistantIAPage() {
                     </div>
                   </div>
                 ) : (
-                  messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${
-                        message.role === "user" ? "justify-end" : "justify-start"
-                      }`}
-                    >
+                  messages.map((message, msgIndex) => {
+                    // Calculer l'index de correspondance pour ce message
+                    let matchIndexInMessage = -1;
+                    if (searchQuery && searchResults.length > 0) {
+                      const currentResult = searchResults[currentSearchIndex];
+                      if (currentResult && currentResult.messageId === message.id) {
+                        matchIndexInMessage = currentResult.index;
+                      }
+                    }
+
+                    return (
                       <div
-                        className={`max-w-[80%] rounded-lg p-4 ${
-                          message.role === "user"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
+                        key={message.id}
+                        id={`message-${message.id}`}
+                        className={`flex ${
+                          message.role === "user" ? "justify-end" : "justify-start"
                         }`}
                       >
-                        {message.role === "user" ? (
-                          <>
-                            {message.images && message.images.length > 0 && (
-                              <div className="mb-3 flex flex-wrap gap-2">
-                                {message.images.map((img, idx) => (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img
-                                    key={idx}
-                                    src={img}
-                                    alt={`Image ${idx + 1}`}
-                                    className="max-w-[200px] max-h-[200px] rounded-md object-cover"
+                        <div
+                          className={`max-w-[80%] rounded-lg p-4 ${
+                            message.role === "user"
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted"
+                          }`}
+                        >
+                          {message.role === "user" ? (
+                            <>
+                              {message.images && message.images.length > 0 && (
+                                <div className="mb-3 flex flex-wrap gap-2">
+                                  {message.images.map((img, idx) => (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      key={idx}
+                                      src={img}
+                                      alt={`Image ${idx + 1}`}
+                                      className="max-w-[200px] max-h-[200px] rounded-md object-cover"
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                              <p className="whitespace-pre-wrap">
+                                <HighlightedText
+                                  text={message.content}
+                                  searchQuery={searchQuery}
+                                  currentMatchIndex={matchIndexInMessage}
+                                />
+                              </p>
+                            </>
+                          ) : (
+                            <div className="relative group">
+                              {searchQuery ? (
+                                <div className="prose prose-sm dark:prose-invert max-w-none">
+                                  <HighlightedText
+                                    text={message.content}
+                                    searchQuery={searchQuery}
+                                    currentMatchIndex={matchIndexInMessage}
                                   />
-                                ))}
-                              </div>
-                            )}
-                            <p className="whitespace-pre-wrap">{message.content}</p>
-                          </>
-                        ) : (
-                          <div className="relative group">
-                            <MarkdownRenderer content={message.content} />
-                            {message.role === "assistant" && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => handleCopyMessage(message.id, message.content)}
-                                aria-label="Copier le message"
-                                title="Copier le message"
-                              >
-                                {copiedMessageId === message.id ? (
-                                  <Check className="h-3.5 w-3.5 text-green-600" />
-                                ) : (
-                                  <Copy className="h-3.5 w-3.5" />
-                                )}
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                        <p className="text-xs opacity-70 mt-2">
-                          {message.timestamp.toLocaleTimeString()}
-                        </p>
+                                </div>
+                              ) : (
+                                <MarkdownRenderer content={message.content} />
+                              )}
+                              {message.role === "assistant" && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => handleCopyMessage(message.id, message.content)}
+                                  aria-label="Copier le message"
+                                  title="Copier le message"
+                                >
+                                  {copiedMessageId === message.id ? (
+                                    <Check className="h-3.5 w-3.5 text-green-600" />
+                                  ) : (
+                                    <Copy className="h-3.5 w-3.5" />
+                                  )}
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                          <p className="text-xs opacity-70 mt-2">
+                            {message.timestamp.toLocaleTimeString()}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
                 {isLoading && (
                   <div className="flex justify-start">
@@ -1009,8 +1244,8 @@ export default function AssistantIAPage() {
                 <div className="flex-1">
                   <Input
                     placeholder="Rechercher dans les conversations..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    value={historySearchQuery}
+                    onChange={(e) => setHistorySearchQuery(e.target.value)}
                   />
                 </div>
                 <div className="flex gap-2">
@@ -1078,8 +1313,8 @@ export default function AssistantIAPage() {
                 }
 
                 // Filtre par recherche
-                if (searchQuery.trim()) {
-                  const query = searchQuery.toLowerCase();
+                if (historySearchQuery.trim()) {
+                  const query = historySearchQuery.toLowerCase();
                   filtered = filtered.filter(
                     (conv) =>
                       conv.title.toLowerCase().includes(query) ||
@@ -1150,6 +1385,44 @@ export default function AssistantIAPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Dialog de confirmation pour nouveau chat */}
+        <AlertDialog open={showNewChatDialog} onOpenChange={setShowNewChatDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Conversation non sauvegardée</AlertDialogTitle>
+              <AlertDialogDescription>
+                Vous avez des modifications non sauvegardées. Que souhaitez-vous faire ?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <AlertDialogCancel onClick={() => setShowNewChatDialog(false)}>
+                Annuler
+              </AlertDialogCancel>
+              <Button
+                variant="outline"
+                onClick={handleResetConversation}
+                className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Abandonner
+              </Button>
+              <AlertDialogAction onClick={handleSaveAndNewChat} disabled={isSavingConversation}>
+                {isSavingConversation ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sauvegarde...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Sauvegarder et continuer
+                  </>
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Dialogue pour sélectionner/appliquer un template */}
         {showTemplateDialog && (
