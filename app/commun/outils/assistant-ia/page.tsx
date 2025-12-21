@@ -1383,6 +1383,7 @@ export default function AssistantIAPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleLoadConversation(conv.id)}
+                            className="hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:border-blue-300 dark:hover:border-blue-700"
                           >
                             Charger
                           </Button>
@@ -1390,6 +1391,7 @@ export default function AssistantIAPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleExportConversation(conv.id, "txt")}
+                            className="hover:bg-green-50 dark:hover:bg-green-950/30 hover:border-green-300 dark:hover:border-green-700"
                           >
                             Exporter
                           </Button>
@@ -1397,9 +1399,11 @@ export default function AssistantIAPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteClick(conv.id)}
-                            className="hover:bg-red-50 dark:hover:bg-red-950/30"
+                            className="group relative hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-200 dark:hover:border-red-900 border-2 border-transparent hover:border-red-300 dark:hover:border-red-700 transition-all duration-300 hover:scale-105"
+                            title="Supprimer la conversation"
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300 transition-colors group-hover:rotate-12 transition-transform duration-300" />
+                            <span className="absolute inset-0 rounded-md bg-red-500/0 group-hover:bg-red-500/10 transition-all duration-300" />
                           </Button>
                         </div>
                       </div>
