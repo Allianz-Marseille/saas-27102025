@@ -37,7 +37,7 @@ export const TEMPLATE_TAGS = {
 /**
  * Liste plate de tous les tags disponibles
  */
-export const ALL_TAGS: string[] = [
+export const ALL_TAGS: readonly string[] = [
   // Commercial
   "commercial", "vente", "prospection", "argumentaire", "objection", "relance", "appel", "email",
   // Gestion
@@ -58,12 +58,12 @@ export const ALL_TAGS: string[] = [
   "support", "client", "question", "urgence", "numéro",
   // Interne
   "interne", "formation", "note", "pédagogie",
-];
+] as const;
 
 /**
  * Obtenir tous les tags d'une catégorie
  */
-export function getTagsByCategory(category: keyof typeof TEMPLATE_TAGS): string[] {
+export function getTagsByCategory(category: keyof typeof TEMPLATE_TAGS): readonly string[] {
   return TEMPLATE_TAGS[category] || [];
 }
 
@@ -77,7 +77,7 @@ export function isValidTag(tag: string): boolean {
 /**
  * Obtenir les tags suggérés selon un mot-clé
  */
-export function suggestTags(keyword: string): string[] {
+export function suggestTags(keyword: string): readonly string[] {
   const keywordLower = keyword.toLowerCase();
   return ALL_TAGS.filter(tag => 
     tag.toLowerCase().includes(keywordLower) || 

@@ -364,22 +364,22 @@ export async function loadRelevantKnowledge(
  * @param userMessage Le message de l'utilisateur
  * @returns Le tableau de messages enrichi (ou inchangé si pas de connaissances pertinentes)
  */
-export async function enrichMessagesWithKnowledge(
-  messages: Array<{ role: string; content: string | any }>,
+export async function enrichMessagesWithKnowledge<T extends { role: string; content?: any }>(
+  messages: T[],
   userMessage: string
-): Promise<Array<{ role: string; content: string | any }>> {
+): Promise<T[]> {
   // Charger les connaissances pertinentes selon le message utilisateur
   // Limité à 1 fichier pour éviter la surcharge de tokens
   const relevantKnowledge = await loadRelevantKnowledge(userMessage, 1);
   
   if (relevantKnowledge) {
     // Insérer les connaissances après le system prompt
-    const enrichedMessages = [...messages];
+    const enrichedMessages = [...messages] as T[];
     if (enrichedMessages.length > 0 && enrichedMessages[0].role === "system") {
       enrichedMessages.splice(1, 0, {
         role: "system",
         content: relevantKnowledge,
-      });
+      } as T);
     }
     return enrichedMessages;
   }
