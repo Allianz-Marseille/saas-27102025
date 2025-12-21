@@ -1,6 +1,6 @@
 # Gestion des Sinistres
 
-Document de référence pour la gestion des sinistres d'assurance, incluant les conventions sectorielles et les règles de droit commun.
+Document de référence complet pour la gestion des sinistres d'assurance, incluant toutes les conventions inter-assureurs, les régimes légaux et les règles de droit commun applicables en France.
 
 ## Principes généraux de gestion des sinistres
 
@@ -20,40 +20,64 @@ La gestion des sinistres peut s'effectuer selon deux régimes distincts :
 
 ---
 
-## Sinistres Auto - Conventions
+## 1. Conventions Inter-Assureurs (cœur de la gestion sinistres)
 
-### Convention IRSA (Indemnisation Rapide des Sinistres Automobiles)
+### IRSA – Convention d'Indemnisation et de Recours des Sinistres Automobiles
 
-La Convention IRSA, signée entre les assureurs et les professionnels de l'automobile, régit la réparation des véhicules assurés en dommages collision (tiers).
+**Source** : France Assureurs - Convention IRSA (ex-FFSA / ex-GEMA)
 
-#### Principes de la Convention IRSA
+#### Périmètre
 
-**Source** : Convention IRSA - Fiche pratique FFSA/GEMA
+- Accidents de la circulation impliquant **au moins deux véhicules terrestres à moteur**
+- Dommages matériels (et parfois corporels simples)
+- Gestion des recours entre assureurs
 
-1. **Réparation sans expertise préalable**
-   - Réparation automatique si dommages < 1 500 € HT (hors réparation d'urgence)
-   - Devis établi par le réparateur agréé
-   - Validation par l'assureur dans les 5 jours ouvrés
+#### Principe
 
-2. **Procédure simplifiée**
-   - Pas d'expertise si le devis est < 1 500 € HT
-   - Réparation immédiate possible
-   - Facturation directe à l'assureur
+- Chaque assureur indemnise **son propre assuré**
+- Les recours sont forfaitaires entre assureurs
+- Simplification maximale du règlement
 
-3. **Conditions d'application**
-   - Véhicule < 8 ans
-   - Dommages < 1 500 € HT
-   - Réparateur conventionné
-   - Assurance tous risques (dommages collision)
+#### Seuils clés
 
-#### Garanties exclues de la Convention IRSA
+- Dommages matériels ≤ **6 500 € HT** (règle centrale de la convention)
+- Au-delà de ce seuil : application du droit commun
 
-- Dommages > 1 500 € HT
-- Véhicules > 8 ans
-- Réparations d'urgence non couvertes
-- Dommages nécessitant une expertise technique
+#### Procédure simplifiée (petits sinistres)
 
-### Convention Auto - Règles générales
+Pour les dommages < 1 500 € HT :
+- Réparation automatique sans expertise préalable
+- Véhicule < 8 ans
+- Réparateur conventionné
+- Validation par l'assureur dans les 5 jours ouvrés
+
+#### Conditions d'application
+
+- Accidents impliquant au moins 2 véhicules
+- Dommages matériels ≤ 6 500 € HT pour la gestion simplifiée
+- Assurance en cours
+- Respect des délais de déclaration
+
+### IRCA – Convention d'Indemnisation et de Recours Corporels Automobiles
+
+**Source** : France Assureurs – Convention IRCA, Loi n°85-677 du 5 juillet 1985 (Badinter)
+
+#### Périmètre
+
+- Accidents auto avec **dommages corporels**
+- Complément de l'IRSA pour les aspects corporels
+
+#### Principe
+
+- Organisation des recours entre assureurs
+- Respect du droit commun (loi Badinter)
+- Indemnisation des victimes selon barèmes conventionnels
+
+#### Application
+
+- Coordination avec la Convention IRSA pour les dommages mixtes
+- Application de la loi Badinter en parallèle
+- Barèmes d'indemnisation standardisés
 
 **Source** : Article L113-1 et suivants du Code des assurances, Conditions Générales d'Assurance (CGA)
 
@@ -114,14 +138,15 @@ La Convention IRSA, signée entre les assureurs et les professionnels de l'autom
 - Sinistres complexes (plusieurs logements concernés, origine incertaine)
 - Réparations nécessitant des travaux de gros œuvre
 
-### Gestion conventionnelle dégâts des eaux
+### Gestion conventionnelle IRSI (dégâts des eaux, incendie, explosion)
 
-#### Procédure
+#### Procédure IRSI
 
 1. **Déclaration** : Par le sinistré dans les 5 jours
-2. **Constats** : Expertise si nécessaire (dommages > seuil ou complexité)
-3. **Réparation** : Par entreprise conventionnée si < 1 200 € HT
-4. **Indemnisation** : Remboursement direct ou facturation à l'assureur
+2. **Évaluation** : Expertise si nécessaire (dommages > 5 000 € HT ou complexité)
+3. **Réparation** : Par entreprise conventionnée si < 5 000 € HT (gestion simplifiée)
+4. **Indemnisation** : Assureur du local sinistré indemnise directement
+5. **Recours** : Forfaitaires entre assureurs si plusieurs logements concernés
 
 #### Identification du responsable
 
@@ -148,6 +173,167 @@ La Convention IRSA, signée entre les assureurs et les professionnels de l'autom
 
 ---
 
+## 2. Conventions Spécifiques aux Victimes et Assurés
+
+### Convention Badinter (régime légal, pas inter-assureurs)
+
+**Source** : Loi n°85-677 du 5 juillet 1985
+
+#### Périmètre
+
+- Accidents de la circulation
+- Protection des victimes (piétons, passagers, cyclistes)
+- Régime spécial d'indemnisation
+
+#### Principe
+
+- Indemnisation quasi automatique des victimes non conductrices
+- Responsabilité atténuée du conducteur
+- Droit à indemnisation renforcé pour les victimes
+- Application même si faute de la victime (sauf faute inexcusable)
+
+#### Application
+
+- Coordination avec Convention IRCA pour les recours entre assureurs
+- Barèmes d'indemnisation selon la nomenclature Dintilhac
+- Indemnisation des dommages corporels (préjudice matériel, corporel, moral)
+
+### Convention Assurance Construction (CRAC / RCD)
+
+**Source** : Code des assurances - Articles L.242-1 et suivants, Conventions professionnelles assureurs construction
+
+#### Périmètre
+
+- Sinistres construction
+- Dommages Ouvrage (DO)
+- Responsabilité décennale
+- Garanties biennale, parfait achèvement
+
+#### Principe
+
+- Coordination DO ↔ Responsabilité décennale
+- Préfinancement par la Dommages Ouvrage
+- Gestion simplifiée des sinistres construction
+- Recours organisés entre assureurs construction
+
+#### Application
+
+- Sinistres affectant la solidité ou rendant impropre à la destination
+- Délais de garantie : décennale (10 ans), biennale (2 ans)
+- Indemnisation rapide via DO, puis recours sur décennale
+
+---
+
+## 3. Conventions Santé & Corporel
+
+### IRCA Corporel hors auto
+
+**Source** : Accords professionnels France Assureurs, Nomenclature Dintilhac (référence)
+
+#### Périmètre
+
+- RC vie privée
+- Accidents corporels hors circulation
+- Responsabilité civile familiale
+
+#### Principe
+
+- Barèmes communs d'indemnisation
+- Coordination expertises médicales
+- Standardisation des méthodes d'évaluation
+
+### Nomenclature Dintilhac
+
+⚠️ **Référentiel d'indemnisation – pas une convention**
+
+**Source** : Groupe de travail Dintilhac (Cour de cassation)
+
+#### Périmètre
+
+- Référentiel utilisé par assureurs et tribunaux
+- Évaluation des préjudices corporels
+- Standardisation de l'indemnisation
+
+#### Principes
+
+- Classification des préjudices (économique, moral, esthétique, d'agrément)
+- Barèmes de référence
+- Utilisation dans toutes les conventions corporelles
+- Outil d'harmonisation de l'indemnisation
+
+---
+
+## 4. Conventions Catastrophes & Événements Exceptionnels
+
+### Convention CAT-NAT
+
+**Source** : Articles L.125-1 et suivants du Code des assurances, Arrêté interministériel CAT-NAT
+
+#### Périmètre
+
+- Catastrophes naturelles (inondations, sécheresse, tempêtes, tremblements de terre...)
+- Événements reconnus par arrêté interministériel
+
+#### Principe
+
+- Régime légal d'indemnisation
+- Intervention CCR (Caisse Centrale de Réassurance) + assureurs
+- Franchise légale (380 € habitation, 1 140 € entreprise)
+- Extension automatique des garanties habitation/entreprise
+
+#### Conditions
+
+- Arrêté de reconnaissance de l'état de catastrophe naturelle
+- Sinistres directement liés à l'événement
+- Assurance en cours au moment du sinistre
+
+### Convention Attentats / Terrorisme
+
+**Source** : Code des assurances, FGTI (Fonds de Garantie des Victimes des actes de Terrorisme)
+
+#### Périmètre
+
+- Actes de terrorisme
+- Dommages matériels et corporels
+
+#### Principe
+
+- Indemnisation via fonds dédiés (FGTI)
+- Coordination avec assureurs
+- Régime spécial d'indemnisation
+
+---
+
+## 5. Fonds de Garantie
+
+Les fonds de garantie interviennent lorsque les mécanismes d'assurance classiques ne peuvent s'appliquer.
+
+| Fonds | Périmètre                    | Source              |
+|-------|------------------------------|---------------------|
+| FGAO  | Accidents auto sans assureur | Code des assurances |
+| FGTI  | Terrorisme                   | Code des assurances |
+| ONIAM | Accidents médicaux           | Code santé publique |
+
+### FGAO (Fonds de Garantie des Assurances Obligatoires)
+
+- Accidents de la circulation avec véhicule non assuré ou non identifié
+- Dommages corporels des victimes
+- Recours possible sur le responsable si identifié
+
+### FGTI (Fonds de Garantie des Victimes des actes de Terrorisme)
+
+- Indemnisation des victimes d'attentats
+- Dommages corporels et matériels
+- Financement par une taxe sur les contrats d'assurance
+
+### ONIAM (Office National d'Indemnisation des Accidents Médicaux)
+
+- Accidents médicaux, affections iatrogènes, infections nosocomiales
+- Indemnisation lorsque la responsabilité ne peut être établie
+- Régime spécifique au secteur de la santé
+
+---
+
 ## Règles générales de gestion des sinistres
 
 ### Gestion conventionnelle
@@ -155,24 +341,31 @@ La Convention IRSA, signée entre les assureurs et les professionnels de l'autom
 #### Avantages
 
 - **Rapidité** : Procédures simplifiées, réparation immédiate
-- **Simplicité** : Pas d'expertise pour les petits sinistres
+- **Simplicité** : Pas d'expertise pour les sinistres sous seuils
 - **Efficacité** : Facturation directe, moins de paperasserie
+- **Recours simplifiés** : Forfaitaires entre assureurs
 
 #### Conditions d'application
 
-- Respect des seuils conventionnels (1 500 € HT auto, 1 200 € HT dégâts des eaux)
+- Respect des seuils conventionnels :
+  - IRSA Auto : ≤ 6 500 € HT (gestion simplifiée < 1 500 € HT)
+  - IRSI Immeuble : ≤ 5 000 € HT
 - Réparateur/entreprise conventionnée
 - Dommages simples, sans litige
 - Accord préalable de l'assuré
+- Application de la convention correspondante
 
 ### Gestion de droit commun
 
 #### Application
 
-- Sinistres dépassant les seuils conventionnels
+- Sinistres dépassant les seuils conventionnels :
+  - IRSA Auto : > 6 500 € HT
+  - IRSI Immeuble : > 5 000 € HT
 - Sinistres complexes nécessitant une expertise
 - Litiges sur l'origine, la responsabilité ou l'évaluation
 - Demande expresse de l'assuré pour une expertise
+- Sinistres non couverts par les conventions inter-assureurs
 
 #### Procédure
 
@@ -227,30 +420,55 @@ La Convention IRSA, signée entre les assureurs et les professionnels de l'autom
 
 ---
 
+## Synthèse rapide (tableau récapitulatif)
+
+| Domaine       | Convention      | Seuil       | Source                    |
+|---------------|-----------------|-------------|---------------------------|
+| Auto matériel | IRSA            | ≤ 6 500 € HT| France Assureurs          |
+| Auto corporel | IRCA + Badinter | -           | France Assureurs + Loi 1985|
+| Immeuble      | IRSI            | ≤ 5 000 € HT| France Assureurs (2018)  |
+| Construction  | DO / Décennale  | -           | Code assurances L.242-1  |
+| Corporel      | Dintilhac       | -           | Référentiel Cour cassation|
+| Catastrophes  | CAT-NAT         | -           | Code assurances L.125-1  |
+| Terrorisme    | FGTI            | -           | Code assurances + FGTI   |
+
 ## Sources et références
 
 ### Textes réglementaires
 
 1. **Code des assurances**
    - Article L113-1 : Obligation de déclaration
-   - Article L125-1 : Sinistres en matière de dommages
+   - Article L125-1 : Sinistres en matière de dommages / CAT-NAT
    - Article L114-1 : Garanties et exclusions
+   - Articles L.242-1 et suivants : Assurance Construction (DO, décennale)
 
-2. **Conventions sectorielles**
-   - Convention IRSA (Indemnisation Rapide des Sinistres Automobiles)
-   - Convention IRSA dégâts des eaux
-   - Conventions entre assureurs et professionnels
+2. **Lois spéciales**
+   - Loi n°85-677 du 5 juillet 1985 (Badinter) : Accidents de la circulation
+   - Code de la santé publique : ONIAM (accidents médicaux)
 
-3. **Conditions Générales d'Assurance (CGA)**
+3. **Conventions inter-assureurs (France Assureurs)**
+   - **IRSA** : Convention d'Indemnisation et de Recours des Sinistres Automobiles
+   - **IRCA** : Convention d'Indemnisation et de Recours Corporels Automobiles
+   - **IRSI** : Convention d'Indemnisation et de Recours des Sinistres Immeuble (depuis 2018, remplace CIDRE/CIDE-COP)
+   - Conventions professionnelles construction (CRAC/RCD)
+
+4. **Référentiels**
+   - Nomenclature Dintilhac : Évaluation préjudices corporels (Cour de cassation)
+
+5. **Conditions Générales d'Assurance (CGA)**
    - Clauses contractuelles spécifiques à chaque assureur
    - Garanties et exclusions détaillées
    - Procédures de déclaration et d'indemnisation
 
 ### Organismes de référence
 
-- **FFSA/GEMA** : Fédération Française des Sociétés d'Assurances / Groupement des Entreprises Mutuelles d'Assurance
+- **France Assureurs** : Fédération professionnelle (ex-FFSA / ex-GEMA) - Éditeur des conventions IRSA, IRCA, IRSI
 - **ACPR** : Autorité de Contrôle Prudentiel et de Résolution
 - **Médiation de l'Assurance** : TSA 50110, 75441 PARIS CEDEX 09
+- **CCR** : Caisse Centrale de Réassurance (CAT-NAT)
+- **FGAO** : Fonds de Garantie des Assurances Obligatoires
+- **FGTI** : Fonds de Garantie des Victimes des actes de Terrorisme
+- **ONIAM** : Office National d'Indemnisation des Accidents Médicaux
 
 ---
 
@@ -258,19 +476,44 @@ La Convention IRSA, signée entre les assureurs et les professionnels de l'autom
 
 ### Lors des réponses sur les sinistres
 
-1. **Distinguer** toujours gestion conventionnelle et de droit commun
-2. **Préciser les seuils** conventionnels (1 500 € HT auto, 1 200 € HT dégâts des eaux)
-3. **Mentionner les délais** légaux (5 jours déclaration, 3 mois indemnisation)
-4. **Citer les sources** (Convention IRSA, Code des assurances)
-5. **Rester prudent** : Toujours préciser "selon votre contrat" et "généralement"
+1. **Identifier la bonne convention** selon le type de sinistre :
+   - Auto matériel → IRSA (seuil 6 500 € HT)
+   - Auto corporel → IRCA + Badinter
+   - Dégâts des eaux/incendie immeuble → IRSI (seuil 5 000 € HT)
+   - Construction → DO/Décennale
+   - Catastrophe naturelle → CAT-NAT
+
+2. **Distinguer** toujours gestion conventionnelle et de droit commun
+
+3. **Préciser les seuils** conventionnels corrects :
+   - IRSA Auto : 6 500 € HT (gestion simplifiée < 1 500 € HT)
+   - IRSI Immeuble : 5 000 € HT
+
+4. **Mentionner les délais** légaux (5 jours déclaration, 3 mois indemnisation)
+
+5. **Citer les sources** : Toujours mentionner la convention applicable (IRSA, IRCA, IRSI, etc.) et les références légales
+
+6. **Rester prudent** : Toujours préciser "selon votre contrat", "généralement", "selon la convention applicable"
+
+7. **Ne pas confondre** :
+   - IRSI (actuelle depuis 2018) vs CIDE-COP (abrogée)
+   - IRSA (inter-assureurs) vs Badinter (régime légal victimes)
 
 ### Formulations prudentes
 
 ✅ **Correct** :
-> "Selon la Convention IRSA, pour les dommages auto inférieurs à 1 500 € HT, la réparation peut s'effectuer sans expertise préalable. Cependant, je recommande de vérifier dans votre contrat si cette convention s'applique à votre situation."
+> "Selon la Convention IRSA, pour les accidents auto impliquant au moins deux véhicules et des dommages matériels inférieurs à 6 500 € HT, la gestion peut s'effectuer selon une procédure simplifiée. Cependant, je recommande de vérifier dans votre contrat si cette convention s'applique à votre situation et si les conditions sont réunies (véhicule < 8 ans pour la réparation sans expertise, réparateur conventionné, etc.)."
 
 ❌ **Incorrect** :
 > "Votre sinistre sera réparé sans expertise car il est inférieur à 1 500 €."
+
+### Exemples de réponses structurées
+
+**Pour un sinistre auto** :
+> "Pour un accident de la circulation, la Convention IRSA (France Assureurs) s'applique si au moins deux véhicules sont impliqués. Les dommages ≤ 6 500 € HT bénéficient d'une gestion simplifiée. Je recommande de déclarer le sinistre sous 5 jours et de vérifier si un réparateur conventionné peut intervenir directement."
+
+**Pour un sinistre dégâts des eaux** :
+> "Pour un sinistre dégâts des eaux dans un immeuble, la Convention IRSI (France Assureurs, en vigueur depuis 2018) s'applique. Les sinistres ≤ 5 000 € HT bénéficient d'une gestion directe. Votre assureur vous indemnisera et gérera les recours avec les autres assureurs si plusieurs logements sont concernés."
 
 ---
 
