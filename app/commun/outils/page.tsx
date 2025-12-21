@@ -54,7 +54,7 @@ export default function OutilsPage() {
     {
       id: "assistant-ia",
       title: "Assistant IA",
-      description: "Assistant IA intelligent pour vous aider dans vos tâches quotidiennes. Mode RAG disponible pour les administrateurs.",
+      description: "Assistant IA intelligent pour vous aider dans vos tâches quotidiennes.",
       icon: Bot,
       href: "/commun/outils/assistant-ia",
     },
