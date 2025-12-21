@@ -12,9 +12,6 @@
  * - pdfjs nécessite un environnement Node.js complet avec accès système
  * - Les deux sont trop lourds pour un runtime serverless
  * 
- * Indexation RAG :
- * Le texte OCR brut retourné peut être indexé dans votre système RAG
- * via app/api/assistant/rag/upload/route.ts après traitement
  */
 
 import { NextRequest, NextResponse } from "next/server";

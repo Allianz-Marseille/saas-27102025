@@ -1,6 +1,6 @@
 /**
- * API Route pour le chatbot standard (sans RAG)
- * POST : Chat avec OpenAI sans contexte enrichi
+ * API Route pour le chatbot
+ * POST : Chat avec OpenAI
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -18,7 +18,7 @@ const openai = new OpenAI({
 
 /**
  * POST /api/assistant/chat
- * Chat standard : génère une réponse OpenAI sans contexte RAG
+ * Génère une réponse OpenAI
  */
 export async function POST(request: NextRequest) {
   try {

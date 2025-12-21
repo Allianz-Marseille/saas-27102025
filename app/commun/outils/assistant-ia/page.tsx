@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Bot, Upload, FileText, Trash2, Loader2, Send, Sparkles, Image as ImageIcon, X, RotateCcw, Copy, Check } from "lucide-react";
+import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Sparkles, Image as ImageIcon, X, RotateCcw, Copy, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,30 +19,13 @@ import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assist
 import type { PromptTemplate } from "@/lib/assistant/templates";
 import { replaceTemplateVariables, extractTemplateVariables } from "@/lib/assistant/templates";
 
-interface SourceWithScore {
-  title: string;
-  score: number;
-  documentId: string;
-}
-
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   images?: string[]; // Base64 data URLs
-  sources?: string[];
-  sourcesWithScores?: SourceWithScore[];
   timestamp: Date;
   context?: string; // Pour le mode debug
-}
-
-interface RAGDocument {
-  id: string;
-  title: string;
-  type: string;
-  source: string;
-  chunkCount: number;
-  createdAt: Date;
 }
 
 export default function AssistantIAPage() {
@@ -51,9 +34,6 @@ export default function AssistantIAPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [useRAG, setUseRAG] = useState(false);
-  const [documents, setDocuments] = useState<RAGDocument[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
   const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<ProcessedFile[]>([]);
@@ -76,7 +56,6 @@ export default function AssistantIAPage() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const chatFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -87,41 +66,12 @@ export default function AssistantIAPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Charger les documents indexés (admin uniquement)
-  useEffect(() => {
-    if (isUserAdmin) {
-      loadDocuments();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isUserAdmin]);
-
   // Charger les conversations sauvegardées et les templates
   useEffect(() => {
     loadSavedConversations();
     loadTemplates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
-
-  const loadDocuments = async () => {
-    try {
-      const token = await user?.getIdToken();
-      const response = await fetch("/api/assistant/rag/documents", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Erreur lors du chargement des documents");
-      }
-
-      const data = await response.json();
-      setDocuments(data.documents || []);
-    } catch (error) {
-      console.error("Erreur lors du chargement des documents:", error);
-      toast.error("Erreur lors du chargement des documents");
-    }
-  };
 
   // Gérer les fichiers images
   const handleImageFiles = async (files: File[]) => {
@@ -306,8 +256,6 @@ export default function AssistantIAPage() {
         content: msg.content,
         images: msg.images,
         timestamp: msg.timestamp,
-        sources: msg.sources,
-        sourcesWithScores: msg.sourcesWithScores,
       }));
 
       const response = await fetch("/api/assistant/conversations", {
@@ -363,16 +311,12 @@ export default function AssistantIAPage() {
           content: string;
           images?: string[];
           timestamp: Date | string;
-          sources?: string[];
-          sourcesWithScores?: SourceWithScore[];
         }) => ({
           id: msg.id,
           role: msg.role,
           content: msg.content,
           images: msg.images,
           timestamp: new Date(msg.timestamp),
-          sources: msg.sources,
-          sourcesWithScores: msg.sourcesWithScores,
         }));
 
         setMessages(loadedMessages);
@@ -549,7 +493,7 @@ export default function AssistantIAPage() {
     const assistantMessageId = (Date.now() + 1).toString();
 
     try {
-      const endpoint = useRAG && isUserAdmin ? "/api/assistant/rag" : "/api/assistant/chat";
+      const endpoint = "/api/assistant/chat";
       const assistantMessage: Message = {
         id: assistantMessageId,
         role: "assistant",
@@ -578,7 +522,6 @@ export default function AssistantIAPage() {
           images: imagesToSend.length > 0 ? imagesToSend : undefined,
           files: filesToSend.length > 0 ? filesToSend : undefined,
           history: conversationHistory,
-          useRAG: useRAG && isUserAdmin,
           stream: true, // Activer le streaming
           showDebug: showDebug,
         }),
@@ -623,8 +566,6 @@ export default function AssistantIAPage() {
                         msg.id === assistantMessageId
                           ? {
                               ...msg,
-                              sources: parsed.sources,
-                              sourcesWithScores: parsed.sourcesWithScores,
                               context: parsed.context,
                             }
                           : msg
@@ -669,8 +610,6 @@ export default function AssistantIAPage() {
               ? {
                   ...msg,
                   content: data.response || data.message || "Aucune réponse reçue",
-                  sources: data.sources,
-                  sourcesWithScores: data.sourcesWithScores,
                   context: data.context,
                 }
               : msg
@@ -686,137 +625,6 @@ export default function AssistantIAPage() {
       setMessages((prev) => prev.filter((msg) => msg.id !== assistantMessageId));
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      console.log("Aucun fichier sélectionné");
-      return;
-    }
-
-    console.log("Fichier sélectionné:", file.name, file.type, file.size);
-
-    if (file.type !== "application/pdf") {
-      toast.error("Seuls les fichiers PDF sont acceptés");
-      return;
-    }
-
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error("Le fichier est trop volumineux (maximum 20 MB)");
-      return;
-    }
-
-    setIsUploading(true);
-    console.log("Début de l'upload...");
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("title", file.name.replace(".pdf", ""));
-      formData.append("type", "document");
-
-      console.log("Récupération du token...");
-      const token = await user?.getIdToken();
-      if (!token) {
-        throw new Error("Token d'authentification manquant");
-      }
-      console.log("Token récupéré, envoi de la requête...");
-
-      const response = await fetch("/api/assistant/rag/upload", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      console.log("Réponse reçue:", response.status, response.statusText, response.headers.get("content-type"));
-
-      if (!response.ok) {
-        // Toujours utiliser response.text() d'abord pour voir la vraie erreur
-        let errorText = "";
-        try {
-          errorText = await response.text();
-          console.error("Réponse erreur (texte brut):", errorText);
-        } catch (e) {
-          console.error("Impossible de lire le texte de la réponse:", e);
-        }
-
-        // Essayer de parser en JSON si possible
-        let errorData: { error?: string; message?: string; details?: string } = {};
-        if (errorText && errorText.trim()) {
-          try {
-            errorData = JSON.parse(errorText);
-          } catch {
-            // Si ce n'est pas du JSON, utiliser le texte brut comme message d'erreur
-            errorData = { error: errorText };
-          }
-        }
-
-        console.error("Erreur API complète:", {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText,
-          parsed: errorData,
-        });
-
-        const errorMessage =
-          errorData.error ||
-          errorData.message ||
-          errorData.details ||
-          errorText ||
-          `Erreur API (${response.status}): ${response.statusText}`;
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-      console.log("Upload réussi:", data);
-      toast.success(`Document "${data.title}" indexé avec succès (${data.chunkCount} chunks)`);
-      
-      // Recharger la liste des documents
-      loadDocuments();
-      
-      // Réinitialiser l'input file
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    } catch (error) {
-      console.error("Erreur upload:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Erreur lors de l'upload du document"
-      );
-    } finally {
-      setIsUploading(false);
-      console.log("Upload terminé (succès ou échec)");
-    }
-  };
-
-  const handleDeleteDocument = async (documentId: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer ce document ?")) return;
-
-    try {
-      const token = await user?.getIdToken();
-      const response = await fetch(`/api/assistant/rag/documents?id=${documentId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Erreur lors de la suppression");
-      }
-
-      toast.success("Document supprimé avec succès");
-      loadDocuments();
-    } catch (error) {
-      console.error("Erreur suppression:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Erreur lors de la suppression du document"
-      );
     }
   };
 
@@ -850,42 +658,23 @@ export default function AssistantIAPage() {
           {isUserAdmin && (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-orange-500" />
-                <Label htmlFor="rag-mode" className="cursor-pointer">
-                  Mode RAG
+                <Label htmlFor="debug-mode" className="cursor-pointer text-xs">
+                  Debug
                 </Label>
                 <Switch
-                  id="rag-mode"
-                  checked={useRAG}
-                  onCheckedChange={setUseRAG}
+                  id="debug-mode"
+                  checked={showDebug}
+                  onCheckedChange={setShowDebug}
                 />
               </div>
-              {useRAG && (
-                <>
-                  <span className="text-xs text-orange-500 font-medium">
-                    Réponses enrichies avec contexte métier
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="debug-mode" className="cursor-pointer text-xs">
-                      Debug
-                    </Label>
-                    <Switch
-                      id="debug-mode"
-                      checked={showDebug}
-                      onCheckedChange={setShowDebug}
-                    />
-                  </div>
-                </>
-              )}
             </div>
           )}
         </div>
       </div>
 
       <Tabs defaultValue="chat" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-1">
           <TabsTrigger value="chat">Chat</TabsTrigger>
-          {isUserAdmin && <TabsTrigger value="documents">Base de connaissances</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="chat" className="mt-6">
@@ -947,11 +736,6 @@ export default function AssistantIAPage() {
                     <div className="text-center">
                       <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>Commencez une conversation avec l&apos;assistant IA</p>
-                      {isUserAdmin && useRAG && (
-                        <p className="text-sm mt-2 text-orange-500">
-                          Mode RAG activé - Les réponses seront enrichies avec le contexte métier
-                        </p>
-                      )}
                     </div>
                   </div>
                 ) : (
@@ -1005,73 +789,6 @@ export default function AssistantIAPage() {
                                 )}
                               </Button>
                             )}
-                          </div>
-                        )}
-                        {message.sourcesWithScores && message.sourcesWithScores.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-border/50">
-                            <p className="text-xs font-semibold mb-2 flex items-center gap-2">
-                              <FileText className="h-3 w-3" />
-                              Sources utilisées :
-                            </p>
-                            <ul className="text-xs space-y-2">
-                              {message.sourcesWithScores.map((source, idx) => {
-                                const scorePercent = Math.round(source.score * 100);
-                                return (
-                                  <li key={idx} className="flex items-center justify-between gap-2 p-2 bg-background/50 rounded hover:bg-background/70 transition-colors">
-                                    <div className="flex items-center gap-2 flex-1">
-                                      <FileText className="h-3 w-3 text-muted-foreground" />
-                                      <button
-                                        onClick={() => {
-                                          // Scroll vers l'onglet documents et highlight le document
-                                          if (typeof window !== "undefined") {
-                                            const documentsTab = window.document.querySelector('[value="documents"]') as HTMLElement;
-                                            if (documentsTab) {
-                                              documentsTab.click();
-                                              setTimeout(() => {
-                                                const docElement = window.document.querySelector(`[data-document-id="${source.documentId}"]`);
-                                                docElement?.scrollIntoView({ behavior: "smooth", block: "center" });
-                                                docElement?.classList.add("ring-2", "ring-orange-500");
-                                                setTimeout(() => {
-                                                  docElement?.classList.remove("ring-2", "ring-orange-500");
-                                                }, 2000);
-                                              }, 100);
-                                            }
-                                          }
-                                        }}
-                                        className="font-medium hover:text-orange-500 transition-colors text-left"
-                                      >
-                                        {source.title}
-                                      </button>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs text-muted-foreground min-w-[3rem] text-right">
-                                        {scorePercent}%
-                                      </span>
-                                      <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                                        <div
-                                          className="h-full bg-orange-500 transition-all"
-                                          style={{ width: `${scorePercent}%` }}
-                                          title={`Score de similarité: ${scorePercent}%`}
-                                        />
-                                      </div>
-                                    </div>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          </div>
-                        )}
-                        {message.sources && message.sources.length > 0 && !message.sourcesWithScores && (
-                          <div className="mt-3 pt-3 border-t border-border/50">
-                            <p className="text-xs font-semibold mb-2">Sources :</p>
-                            <ul className="text-xs space-y-1">
-                              {message.sources.map((source, idx) => (
-                                <li key={idx} className="flex items-center gap-2">
-                                  <FileText className="h-3 w-3" />
-                                  {source}
-                                </li>
-                              ))}
-                            </ul>
                           </div>
                         )}
                         {showDebug && message.context && (
@@ -1573,92 +1290,6 @@ export default function AssistantIAPage() {
           </div>
         )}
 
-        {isUserAdmin && (
-          <TabsContent value="documents" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Base de connaissances</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Section upload */}
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
-                  <div className="flex flex-col items-center justify-center gap-4">
-                    <Upload className="h-12 w-12 text-muted-foreground" />
-                    <div className="text-center">
-                      <h3 className="font-semibold mb-2">Ajouter un document PDF</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Les documents seront indexés et utilisés pour enrichir les réponses RAG
-                      </p>
-                      <Input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".pdf"
-                        onChange={handleFileUpload}
-                        disabled={isUploading}
-                        className="hidden"
-                        id="file-upload"
-                      />
-                      <Button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                        variant="outline"
-                      >
-                        {isUploading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Indexation en cours...
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="h-4 w-4 mr-2" />
-                            Choisir un fichier PDF
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Liste des documents */}
-                <div>
-                  <h3 className="font-semibold mb-4">Documents indexés</h3>
-                  {documents.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">
-                      Aucun document indexé pour le moment
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {documents.map((doc) => (
-                        <div
-                          key={doc.id}
-                          data-document-id={doc.id}
-                          className="flex items-center justify-between p-4 border rounded-lg transition-all"
-                        >
-                          <div className="flex items-center gap-3">
-                            <FileText className="h-5 w-5 text-muted-foreground" />
-                            <div>
-                              <p className="font-medium">{doc.title}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {doc.chunkCount} chunks • {doc.type}
-                              </p>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteDocument(doc.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
       </Tabs>
     </div>
   );

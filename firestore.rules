@@ -128,27 +128,6 @@ service cloud.firestore {
       allow delete: if isAdmin(); // Seuls les admins peuvent supprimer
     }
     
-    // RAG documents collection
-    // Base de connaissances RAG - lecture pour tous authentifiés, écriture admin uniquement
-    match /rag_documents/{documentId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-    
-    // RAG chunks collection
-    // Chunks vectoriels - lecture pour tous authentifiés, écriture serveur uniquement
-    match /rag_chunks/{chunkId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Uniquement via Admin SDK côté serveur
-    }
-    
-    // RAG source usage collection
-    // Statistiques d'utilisation des sources - lecture pour tous authentifiés, écriture serveur uniquement
-    match /rag_source_usage/{usageId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Uniquement via Admin SDK côté serveur
-    }
-    
     // Assistant conversations collection
     // Conversations sauvegardées - lecture/écriture pour le propriétaire
     // Note: La vérification du partage se fait côté serveur dans l'API car Firestore Rules
