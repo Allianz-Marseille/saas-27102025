@@ -84,10 +84,22 @@ export async function saveConversation(
   const conversationData = {
     userId,
     title: conversationTitle,
-    messages: messages.map((msg) => ({
-      ...msg,
-      timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp),
-    })),
+    messages: messages.map((msg) => {
+      // Filtrer les champs undefined pour éviter l'erreur Firestore
+      const cleanedMsg: any = {
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp),
+      };
+      
+      // Ajouter seulement les champs qui ne sont pas undefined
+      if (msg.images !== undefined) cleanedMsg.images = msg.images;
+      if (msg.sources !== undefined) cleanedMsg.sources = msg.sources;
+      if (msg.sourcesWithScores !== undefined) cleanedMsg.sourcesWithScores = msg.sourcesWithScores;
+      
+      return cleanedMsg;
+    }),
     tags: tags || [],
     isFavorite: false,
     autoSaved: autoSaved,
@@ -118,10 +130,22 @@ export async function autoSaveConversation(
       const doc = await adminDb.collection("assistant_conversations").doc(conversationId).get();
       if (doc.exists && doc.data()?.userId === userId) {
         await adminDb.collection("assistant_conversations").doc(conversationId).update({
-          messages: messages.map((msg) => ({
-            ...msg,
-            timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp),
-          })),
+          messages: messages.map((msg) => {
+            // Filtrer les champs undefined pour éviter l'erreur Firestore
+            const cleanedMsg: any = {
+              id: msg.id,
+              role: msg.role,
+              content: msg.content,
+              timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp),
+            };
+            
+            // Ajouter seulement les champs qui ne sont pas undefined
+            if (msg.images !== undefined) cleanedMsg.images = msg.images;
+            if (msg.sources !== undefined) cleanedMsg.sources = msg.sources;
+            if (msg.sourcesWithScores !== undefined) cleanedMsg.sourcesWithScores = msg.sourcesWithScores;
+            
+            return cleanedMsg;
+          }),
           autoSaved: true,
           updatedAt: new Date(),
         });
@@ -273,10 +297,22 @@ export async function updateConversation(
   }
 
   if (updates.messages !== undefined) {
-    updateData.messages = updates.messages.map((msg) => ({
-      ...msg,
-      timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp),
-    }));
+    updateData.messages = updates.messages.map((msg) => {
+      // Filtrer les champs undefined pour éviter l'erreur Firestore
+      const cleanedMsg: any = {
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp),
+      };
+      
+      // Ajouter seulement les champs qui ne sont pas undefined
+      if (msg.images !== undefined) cleanedMsg.images = msg.images;
+      if (msg.sources !== undefined) cleanedMsg.sources = msg.sources;
+      if (msg.sourcesWithScores !== undefined) cleanedMsg.sourcesWithScores = msg.sourcesWithScores;
+      
+      return cleanedMsg;
+    });
   }
 
   if (updates.tags !== undefined) {
