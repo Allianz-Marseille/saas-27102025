@@ -5,7 +5,6 @@ import { useAuth } from "@/lib/firebase/use-auth";
 import { isAdmin } from "@/lib/utils/roles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Sparkles, Image as ImageIcon, X, RotateCcw, Copy, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -25,7 +24,6 @@ interface Message {
   content: string;
   images?: string[]; // Base64 data URLs
   timestamp: Date;
-  context?: string; // Pour le mode debug
 }
 
 export default function AssistantIAPage() {
@@ -34,7 +32,6 @@ export default function AssistantIAPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
   const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<ProcessedFile[]>([]);
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
@@ -523,7 +520,6 @@ export default function AssistantIAPage() {
           files: filesToSend.length > 0 ? filesToSend : undefined,
           history: conversationHistory,
           stream: true, // Activer le streaming
-          showDebug: showDebug,
         }),
       });
 
@@ -560,18 +556,7 @@ export default function AssistantIAPage() {
                 try {
                   const parsed = JSON.parse(data);
                   
-                  if (parsed.type === "metadata") {
-                    setMessages((prev) =>
-                      prev.map((msg) =>
-                        msg.id === assistantMessageId
-                          ? {
-                              ...msg,
-                              context: parsed.context,
-                            }
-                          : msg
-                      )
-                    );
-                  } else if (parsed.type === "content" && parsed.content) {
+                  if (parsed.type === "content" && parsed.content) {
                     accumulatedContent += parsed.content;
                     setMessages((prev) =>
                       prev.map((msg) =>
@@ -610,7 +595,6 @@ export default function AssistantIAPage() {
               ? {
                   ...msg,
                   content: data.response || data.message || "Aucune réponse reçue",
-                  context: data.context,
                 }
               : msg
           )
@@ -655,20 +639,6 @@ export default function AssistantIAPage() {
             </p>
           </div>
 
-          {isUserAdmin && (
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="debug-mode" className="cursor-pointer text-xs">
-                  Debug
-                </Label>
-                <Switch
-                  id="debug-mode"
-                  checked={showDebug}
-                  onCheckedChange={setShowDebug}
-                />
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -789,18 +759,6 @@ export default function AssistantIAPage() {
                                 )}
                               </Button>
                             )}
-                          </div>
-                        )}
-                        {showDebug && message.context && (
-                          <div className="mt-3 pt-3 border-t border-dashed border-border/50">
-                            <details className="text-xs">
-                              <summary className="cursor-pointer font-semibold text-muted-foreground hover:text-foreground">
-                                🔍 Contexte utilisé (Debug)
-                              </summary>
-                              <pre className="mt-2 p-2 bg-background/50 rounded text-xs overflow-auto max-h-40">
-                                {message.context}
-                              </pre>
-                            </details>
                           </div>
                         )}
                         <p className="text-xs opacity-70 mt-2">
