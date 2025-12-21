@@ -845,16 +845,22 @@ export default function AssistantIAPage() {
               totalResults={searchResults.length}
               isOpen={isSearchOpen}
             />
-            <CardHeader>
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
               <div className="flex items-center justify-between">
-                <CardTitle>Conversation</CardTitle>
-                <div className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600">
+                    <Bot className="h-5 w-5 text-white" />
+                  </div>
+                  Conversation
+                </CardTitle>
+                <div className="flex items-center gap-2 flex-wrap">
                   {/* Menu templates */}
                   {templates.length > 0 && (
                     <Button
-                      variant="outline"
+                      variant="default"
                       size="sm"
                       onClick={() => setShowTemplateDialog(true)}
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-md hover:shadow-lg transition-all"
                     >
                       <Sparkles className="h-4 w-4 mr-2" />
                       Templates
@@ -867,6 +873,7 @@ export default function AssistantIAPage() {
                         size="sm"
                         onClick={handleCopyAllMessages}
                         title="Copier toute la conversation"
+                        className="border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30"
                       >
                         <ClipboardCopy className="h-4 w-4 mr-2" />
                         Copier tout
@@ -876,16 +883,19 @@ export default function AssistantIAPage() {
                         size="sm"
                         onClick={handleNewChatClick}
                         title="Nouveau chat (Ctrl+N / Cmd+N)"
+                        className="border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-950/30"
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Nouveau chat
                       </Button>
                       <Button
-                        variant="outline"
+                        variant={hasUnsavedChanges ? "default" : "outline"}
                         size="sm"
                         onClick={handleSaveConversation}
                         disabled={isSavingConversation}
-                        className={hasUnsavedChanges ? "border-orange-500 text-orange-600" : ""}
+                        className={hasUnsavedChanges 
+                          ? "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-md hover:shadow-lg transition-all" 
+                          : "border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-950/30"}
                       >
                         {isSavingConversation ? (
                           <>
@@ -896,7 +906,7 @@ export default function AssistantIAPage() {
                           <>
                             <Save className="h-4 w-4 mr-2" />
                             Sauvegarder
-                            {hasUnsavedChanges && <span className="ml-1">•</span>}
+                            {hasUnsavedChanges && <span className="ml-1 animate-pulse">•</span>}
                           </>
                         )}
                       </Button>
