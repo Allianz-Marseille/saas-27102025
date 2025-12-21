@@ -89,6 +89,35 @@ Présente une comparaison détaillée incluant :
     category: "comparaison",
     isSystem: true,
   },
+  {
+    name: "Trouver les bons arguments de vente",
+    description: "Aide à identifier les arguments de vente adaptés à la situation",
+    prompt: `Je vais t'aider à trouver les bons arguments de vente pour convaincre ton client.
+
+Pour te proposer les arguments les plus pertinents, j'ai besoin de mieux comprendre ta situation. Je vais te poser quelques questions :
+
+1. **Quel produit d'assurance veux-tu vendre ?**
+   - Santé individuelle, santé collective, dommages ouvrage, décennale, auto, habitation, autre ?
+
+2. **Quel est le profil de ton client ?**
+   - Particulier, professionnel, entreprise (TPE/PME/Grande entreprise) ?
+   - Secteur d'activité si professionnel ?
+   - Tranche d'âge approximative ?
+
+3. **Quels sont ses besoins spécifiques ou préoccupations ?**
+   - Budget limité, recherche de garanties maximales, besoin de rapidité ?
+   - A-t-il déjà une assurance ? Pourquoi cherche-t-il à changer ?
+   - Points de douleur identifiés ?
+
+4. **Contexte de la vente :**
+   - Premier contact, relance, client existant ?
+   - Objections déjà exprimées ?
+
+Réponds à ces questions et je te proposerai des arguments de vente personnalisés et percutants adaptés à ta situation ! 🎯`,
+    variables: [],
+    category: "vente",
+    isSystem: true,
+  },
 ];
 
 /**
