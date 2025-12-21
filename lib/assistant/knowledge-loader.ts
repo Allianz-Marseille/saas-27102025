@@ -49,6 +49,20 @@ const KEYWORD_TO_FILE_MAP: Record<string, string[]> = {
   préterme_ird: ["process/preterme-ird.md"],
   renouvellement: ["process/preterme-auto.md", "process/preterme-ird.md"],
 
+  // Sinistres
+  sinistre: ["process/sinistres.md"],
+  sinistres: ["process/sinistres.md"],
+  convention_irsa: ["process/sinistres.md"],
+  irsa: ["process/sinistres.md"],
+  convention: ["process/sinistres.md"],
+  dégâts_des_eaux: ["process/sinistres.md"],
+  "dégâts des eaux": ["process/sinistres.md"],
+  dégâts_eaux: ["process/sinistres.md"],
+  gestion_conventionnelle: ["process/sinistres.md"],
+  droit_commun: ["process/sinistres.md"],
+  expertise: ["process/sinistres.md"],
+  indemnisation: ["process/sinistres.md"],
+
   // Agences et coordonnées
   agence: ["core/agences.md"],
   agences: ["core/agences.md"],
