@@ -418,6 +418,14 @@ export function FloatingAssistant() {
     const imageBase64s = await convertImagesToBase64(selectedImages);
     const filesToSend = selectedFiles;
 
+    // ⚠️ CORRECTION : Construire l'historique AVANT d'ajouter les nouveaux messages
+    // Utiliser messages actuel (état React) pour construire l'historique
+    const conversationHistory = messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+      // Ne pas inclure les images et fichiers dans l'historique pour éviter la surcharge
+    }));
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
@@ -446,14 +454,6 @@ export function FloatingAssistant() {
     setMessages((prev) => [...prev, assistantMessage]);
 
     try {
-      // Préparer l'historique de conversation (sans les fichiers/images pour éviter la surcharge)
-      const conversationHistory = messages
-        .filter((msg) => msg.id !== assistantMessageId) // Exclure le message assistant en cours
-        .map((msg) => ({
-          role: msg.role,
-          content: msg.content,
-          // Ne pas inclure les images et fichiers dans l'historique pour éviter la surcharge
-        }));
 
       const response = await fetch("/api/assistant/chat", {
         method: "POST",
