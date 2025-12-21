@@ -133,14 +133,14 @@ service cloud.firestore {
     // Note: La vérification du partage se fait côté serveur dans l'API car Firestore Rules
     // ne permet pas facilement de vérifier si un userId est dans un tableau d'objets
     match /assistant_conversations/{conversationId} {
-      // Le propriétaire peut tout faire
-      allow read, write: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      
-      // Création : l'utilisateur doit être le propriétaire
+      // Création : l'utilisateur doit être le propriétaire (request.resource pour nouveau doc)
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       
-      // Les admins peuvent lire toutes les conversations (pour support)
-      allow read: if isAdmin();
+      // Lecture, mise à jour, suppression : le propriétaire peut tout faire (resource pour doc existant)
+      allow read, update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Les admins peuvent tout faire (pour support)
+      allow read, write: if isAdmin();
       
       // Note: Les conversations partagées sont gérées via l'API qui vérifie les permissions côté serveur
     }
