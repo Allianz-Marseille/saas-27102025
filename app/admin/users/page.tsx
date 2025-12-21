@@ -48,6 +48,8 @@ interface User {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  contrat?: string; // CDI, Alternant, etc.
+  etp?: string; // Équivalent Temps Plein : 100%, 60%, 50%, etc.
 }
 
 const roleConfig = {
@@ -104,6 +106,8 @@ export default function UsersManagementPage() {
     firstName: "",
     lastName: "",
     phone: "",
+    contrat: "",
+    etp: "",
   });
   
   const [formData, setFormData] = useState({
@@ -221,6 +225,8 @@ export default function UsersManagementPage() {
           firstName: editData.firstName || undefined,
           lastName: editData.lastName || undefined,
           phone: editData.phone || undefined,
+          contrat: editData.contrat || undefined,
+          etp: editData.etp || undefined,
         }),
       });
 
@@ -229,7 +235,7 @@ export default function UsersManagementPage() {
       toast.success("Informations utilisateur mises à jour");
       setIsEditDialogOpen(false);
       setSelectedUser(null);
-      setEditData({ firstName: "", lastName: "", phone: "" });
+      setEditData({ firstName: "", lastName: "", phone: "", contrat: "", etp: "" });
       loadUsers();
     } catch (error: unknown) {
       toast.error((error as Error).message);
@@ -507,9 +513,21 @@ export default function UsersManagementPage() {
                                       {targetUser.phone}
                                     </p>
                                   )}
-                                  <Badge variant="outline" className={`text-xs mt-1 ${config.badgeColor}`}>
-                                    {config.label}
-                                  </Badge>
+                                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                    <Badge variant="outline" className={`text-xs ${config.badgeColor}`}>
+                                      {config.label}
+                                    </Badge>
+                                    {targetUser.contrat && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {targetUser.contrat}
+                                      </Badge>
+                                    )}
+                                    {targetUser.etp && (
+                                      <Badge variant="outline" className="text-xs">
+                                        ETP: {targetUser.etp}
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -555,6 +573,8 @@ export default function UsersManagementPage() {
                                         firstName: targetUser.firstName || "",
                                         lastName: targetUser.lastName || "",
                                         phone: targetUser.phone || "",
+                                        contrat: targetUser.contrat || "",
+                                        etp: targetUser.etp || "",
                                       });
                                       setIsEditDialogOpen(true);
                                     }}
@@ -821,6 +841,43 @@ export default function UsersManagementPage() {
                   onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
                   placeholder="+33 6 12 34 56 78"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-contrat">Contrat</Label>
+                <Select
+                  value={editData.contrat}
+                  onValueChange={(value) => setEditData({ ...editData, contrat: value })}
+                >
+                  <SelectTrigger id="edit-contrat">
+                    <SelectValue placeholder="Sélectionner un type de contrat" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Aucun</SelectItem>
+                    <SelectItem value="CDI">CDI</SelectItem>
+                    <SelectItem value="Alternant">Alternant</SelectItem>
+                    <SelectItem value="-">-</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-etp">ETP (Équivalent Temps Plein)</Label>
+                <Select
+                  value={editData.etp}
+                  onValueChange={(value) => setEditData({ ...editData, etp: value })}
+                >
+                  <SelectTrigger id="edit-etp">
+                    <SelectValue placeholder="Sélectionner un ETP" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Aucun</SelectItem>
+                    <SelectItem value="100%">100%</SelectItem>
+                    <SelectItem value="60%">60%</SelectItem>
+                    <SelectItem value="50%">50%</SelectItem>
+                    <SelectItem value="40%">40%</SelectItem>
+                    <SelectItem value="30%">30%</SelectItem>
+                    <SelectItem value="20%">20%</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <DialogFooter>

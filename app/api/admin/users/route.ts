@@ -72,6 +72,8 @@ export async function GET(request: NextRequest) {
         firstName: userData.firstName || undefined,
         lastName: userData.lastName || undefined,
         phone: userData.phone || undefined,
+        contrat: userData.contrat || undefined,
+        etp: userData.etp || undefined,
       };
     });
 
@@ -169,7 +171,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { uid, role, active, password, firstName, lastName, phone } = body;
+    const { uid, role, active, password, firstName, lastName, phone, contrat, etp } = body;
 
     if (!uid) {
       return NextResponse.json(
@@ -200,7 +202,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // Mettre à jour firstName, lastName, phone
+    // Mettre à jour firstName, lastName, phone, contrat, etp
     if (firstName !== undefined) {
       updateData.firstName = firstName || admin.firestore.FieldValue.delete();
     }
@@ -209,6 +211,12 @@ export async function PATCH(request: NextRequest) {
     }
     if (phone !== undefined) {
       updateData.phone = phone || admin.firestore.FieldValue.delete();
+    }
+    if (contrat !== undefined) {
+      updateData.contrat = contrat || admin.firestore.FieldValue.delete();
+    }
+    if (etp !== undefined) {
+      updateData.etp = etp || admin.firestore.FieldValue.delete();
     }
 
     // Appliquer les mises à jour Firestore si nécessaire
@@ -243,6 +251,8 @@ export async function PATCH(request: NextRequest) {
       if (firstName !== undefined) changes.firstName = firstName || "(supprimé)";
       if (lastName !== undefined) changes.lastName = lastName || "(supprimé)";
       if (phone !== undefined) changes.phone = phone || "(supprimé)";
+      if (contrat !== undefined) changes.contrat = contrat || "(supprimé)";
+      if (etp !== undefined) changes.etp = etp || "(supprimé)";
       
       const changeDescription = Object.entries(changes)
         .map(([key, value]) => `${key}: ${value}`)

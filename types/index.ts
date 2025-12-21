@@ -9,6 +9,8 @@ export interface User {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  contrat?: string; // CDI, Alternant, etc.
+  etp?: string; // Équivalent Temps Plein : 100%, 60%, 50%, etc.
 }
 
 export interface ActSuivi {
