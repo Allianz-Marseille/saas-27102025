@@ -437,6 +437,8 @@ export default function AssistantIAPage() {
       // Appliquer directement le template
       setInput(template.prompt);
       setSelectedTemplate(null);
+      setShowTemplateDialog(false);
+      toast.success("Template appliqué");
     }
   };
 
