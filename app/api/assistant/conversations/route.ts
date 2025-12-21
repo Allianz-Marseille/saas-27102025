@@ -135,13 +135,13 @@ export async function POST(request: NextRequest) {
     await logAction(
       auth.userId!,
       "conversation_created",
-      { conversationId },
+      { conversationId: savedConversationId },
       { ip: request.headers.get("x-forwarded-for") || undefined }
     ).catch((err) => console.error("Erreur logging audit:", err));
 
     return NextResponse.json({
       success: true,
-      conversationId,
+      conversationId: savedConversationId,
     });
   } catch (error) {
     console.error("Erreur POST /api/assistant/conversations:", error);
