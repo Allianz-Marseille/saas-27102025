@@ -368,23 +368,21 @@ export async function enrichMessagesWithKnowledge(
   messages: Array<{ role: string; content: string | any }>,
   userMessage: string
 ): Promise<Array<{ role: string; content: string | any }>> {
-  // Pour l'instant, cette fonction est prête mais pas activée par défaut
-  // car le system prompt enrichi couvre déjà l'essentiel.
-  // 
-  // Pour l'activer, décommenter le code ci-dessous :
-
-  // const relevantKnowledge = await loadRelevantKnowledge(userMessage, 1);
-  // if (relevantKnowledge) {
-  //   // Insérer les connaissances après le system prompt
-  //   const enrichedMessages = [...messages];
-  //   if (enrichedMessages.length > 0 && enrichedMessages[0].role === "system") {
-  //     enrichedMessages.splice(1, 0, {
-  //       role: "system",
-  //       content: relevantKnowledge,
-  //     });
-  //   }
-  //   return enrichedMessages;
-  // }
+  // Charger les connaissances pertinentes selon le message utilisateur
+  // Limité à 1 fichier pour éviter la surcharge de tokens
+  const relevantKnowledge = await loadRelevantKnowledge(userMessage, 1);
+  
+  if (relevantKnowledge) {
+    // Insérer les connaissances après le system prompt
+    const enrichedMessages = [...messages];
+    if (enrichedMessages.length > 0 && enrichedMessages[0].role === "system") {
+      enrichedMessages.splice(1, 0, {
+        role: "system",
+        content: relevantKnowledge,
+      });
+    }
+    return enrichedMessages;
+  }
 
   return messages;
 }

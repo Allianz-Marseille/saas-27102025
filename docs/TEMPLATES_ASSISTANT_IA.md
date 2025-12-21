@@ -8,6 +8,37 @@ Ce document liste toutes les amorces de chat possibles pour l'assistant IA, orga
 - **Variables** : Les variables `{{variable}}` peuvent être remplacées par des valeurs réelles
 - **Tags** : Permettent de filtrer et rechercher les templates par domaine
 - **Catégories** : Organisation par domaine métier de l'assurance
+- **Base de connaissance** : Chaque template est enrichi avec des références aux fichiers de connaissance pertinents
+
+## 🏷️ Tags disponibles
+
+Les tags permettent de filtrer et rechercher les templates. Voici les principales catégories :
+
+### Catégories principales
+- **Commercial** : `commercial`, `vente`, `prospection`, `argumentaire`, `objection`, `relance`, `appel`, `email`
+- **Gestion** : `gestion`, `renouvellement`, `modification`, `conformité`, `administration`, `courrier`, `rendez-vous`, `changement`
+- **Sinistre** : `sinistre`, `déclaration`, `expertise`, `indemnisation`, `litige`, `suivi`, `rapport`, `procédure`, `assistance`
+
+### Types de produits
+- **Produits** : `auto`, `habitation`, `santé`, `prévoyance`, `épargne`, `iard`, `retraite`
+
+### Conventions et réglementation
+- **Conventions** : `irsa`, `irca`, `irsi`, `badinter`, `cat-nat`, `dintilhac`, `convention`
+
+### Processus métier
+- **Processus** : `leads`, `m+3`, `préterme`, `qualification`, `relance_satisfaction`
+
+### Canaux de communication
+- **Canaux** : `email`, `téléphone`, `courrier`, `whatsapp`, `communication`
+
+### Actions
+- **Actions** : `analyse`, `devis`, `comparaison`, `calcul`, `explication`, `conseil`, `documentation`
+
+### Support
+- **Support** : `support`, `client`, `question`, `assistance`, `urgence`, `numéro`
+
+### Interne
+- **Interne** : `interne`, `formation`, `note`, `procédure`, `pédagogie`
 
 ---
 
@@ -15,13 +46,15 @@ Ce document liste toutes les amorces de chat possibles pour l'assistant IA, orga
 
 ### 1. Trouver les bons arguments de vente
 **Description** : Aide à identifier les arguments de vente adaptés à la situation  
-**Tags** : `commercial`, `vente`, `argumentaire`  
+**Tags** : `commercial`, `vente`, `argumentaire`, `prospection`  
+**Base de connaissance** : `core/identite-agence.md`  
 **Variables** : Aucune (le bot pose des questions)  
 **Exemple** : "Je vais t'aider à trouver les bons arguments de vente. Quel produit veux-tu vendre ?"
 
 ### 2. Rédiger un email de relance client
 **Description** : Rédiger un email professionnel de relance pour un client  
-**Tags** : `commercial`, `email`, `relance`  
+**Tags** : `commercial`, `email`, `relance`, `communication`  
+**Base de connaissance** : `core/identite-agence.md`  
 **Variables** : `{{nomClient}}`, `{{sujet}}`  
 **Exemple** : "Rédige un email de relance professionnel pour le client {{nomClient}} concernant {{sujet}}."
 
@@ -95,7 +128,8 @@ Ce document liste toutes les amorces de chat possibles pour l'assistant IA, orga
 
 ### 1. Déclarer un sinistre
 **Description** : Guider la déclaration d'un sinistre étape par étape  
-**Tags** : `sinistre`, `déclaration`, `procédure`  
+**Tags** : `sinistre`, `déclaration`, `procédure`, `assistance`  
+**Base de connaissance** : `process/sinistres.md`, `core/numeros-assistance.md`  
 **Variables** : `{{typeSinistre}}`, `{{client}}`  
 **Exemple** : "Guide-moi pour déclarer un sinistre {{typeSinistre}} pour {{client}}."
 
@@ -331,11 +365,179 @@ Ce document liste toutes les amorces de chat possibles pour l'assistant IA, orga
 
 ---
 
+## 🆕 NOUVEAUX TEMPLATES (Basés sur la base de connaissance)
+
+### 🚨 SINISTRES - Conventions
+
+#### 1. Expliquer la Convention IRSA
+**Description** : Expliquer la Convention IRSA pour les sinistres auto matériels  
+**Tags** : `sinistre`, `irsa`, `convention`, `auto`, `explication`  
+**Base de connaissance** : `process/sinistres.md`  
+**Variables** : `{{typeSinistre}}`, `{{montant}}`  
+**Exemple** : "Explique la Convention IRSA pour un sinistre auto avec montant estimé {{montant}}."
+
+#### 2. Expliquer la Convention IRCA
+**Description** : Expliquer la Convention IRCA pour les sinistres auto corporels  
+**Tags** : `sinistre`, `irca`, `convention`, `corporel`, `badinter`, `explication`  
+**Base de connaissance** : `process/sinistres.md`  
+**Variables** : `{{contexte}}`  
+**Exemple** : "Explique la Convention IRCA pour un accident auto avec dommages corporels."
+
+#### 3. Expliquer la Convention IRSI
+**Description** : Expliquer la Convention IRSI pour les sinistres immeuble  
+**Tags** : `sinistre`, `irsi`, `convention`, `immeuble`, `dégâts_des_eaux`, `explication`  
+**Base de connaissance** : `process/sinistres.md`  
+**Variables** : `{{typeSinistre}}`, `{{montant}}`  
+**Exemple** : "Explique la Convention IRSI pour un sinistre dégâts des eaux dans un immeuble."
+
+#### 4. Déterminer gestion conventionnelle ou droit commun
+**Description** : Aider à déterminer si un sinistre relève de la gestion conventionnelle ou du droit commun  
+**Tags** : `sinistre`, `convention`, `droit_commun`, `analyse`, `seuil`  
+**Base de connaissance** : `process/sinistres.md`  
+**Variables** : `{{typeSinistre}}`, `{{montant}}`, `{{contexte}}`  
+**Exemple** : "Détermine si ce sinistre auto de {{montant}} € relève de la gestion conventionnelle."
+
+#### 5. Expliquer la loi Badinter
+**Description** : Expliquer la loi Badinter pour les victimes d'accidents de la circulation  
+**Tags** : `sinistre`, `badinter`, `victime`, `corporel`, `explication`  
+**Base de connaissance** : `process/sinistres.md`  
+**Variables** : `{{profilVictime}}`, `{{contexte}}`  
+**Exemple** : "Explique la loi Badinter pour un piéton victime d'un accident."
+
+#### 6. Expliquer la nomenclature Dintilhac
+**Description** : Expliquer la nomenclature Dintilhac pour l'évaluation des préjudices corporels  
+**Tags** : `sinistre`, `dintilhac`, `corporel`, `indemnisation`, `explication`  
+**Base de connaissance** : `process/sinistres.md`  
+**Variables** : `{{contexte}}`  
+**Exemple** : "Explique la nomenclature Dintilhac pour évaluer les préjudices corporels."
+
+#### 7. Expliquer les fonds de garantie (FGAO, FGTI, ONIAM)
+**Description** : Expliquer le rôle des fonds de garantie pour l'indemnisation  
+**Tags** : `sinistre`, `fonds_garantie`, `fgao`, `fgti`, `oniam`, `explication`  
+**Base de connaissance** : `process/sinistres.md`  
+**Variables** : `{{typeSinistre}}`, `{{contexte}}`  
+**Exemple** : "Explique le rôle du FGAO pour un accident auto sans assureur."
+
+#### 8. Indemnisation catastrophe naturelle (CAT-NAT)
+**Description** : Expliquer l'indemnisation des catastrophes naturelles  
+**Tags** : `sinistre`, `cat-nat`, `catastrophe_naturelle`, `indemnisation`, `explication`  
+**Base de connaissance** : `process/sinistres.md`  
+**Variables** : `{{typeEvenement}}`, `{{contexte}}`  
+**Exemple** : "Explique l'indemnisation CAT-NAT pour une inondation."
+
+### 📊 PROCESSUS MÉTIER
+
+#### 9. Qualifier un lead
+**Description** : Qualifier un lead/prospect selon le processus métier  
+**Tags** : `leads`, `qualification`, `prospection`, `commercial`  
+**Base de connaissance** : `process/leads.md`  
+**Variables** : `{{informationsLead}}`  
+**Exemple** : "Aide-moi à qualifier ce lead : {{informationsLead}}."
+
+#### 10. Relance M+3 satisfaction client
+**Description** : Préparer une relance M+3 pour mesurer la satisfaction client  
+**Tags** : `m+3`, `satisfaction`, `relance`, `client`, `gestion`  
+**Base de connaissance** : `process/m-plus-3.md`  
+**Variables** : `{{nomClient}}`, `{{typeContrat}}`, `{{dateSouscription}}`  
+**Exemple** : "Prépare une relance M+3 pour {{nomClient}} ayant souscrit {{typeContrat}} le {{dateSouscription}}."
+
+#### 11. Préterme Auto - Renouvellement
+**Description** : Préparer le renouvellement d'un contrat auto (préterme)  
+**Tags** : `préterme`, `auto`, `renouvellement`, `échéance`, `gestion`  
+**Base de connaissance** : `process/preterme-auto.md`  
+**Variables** : `{{nomClient}}`, `{{numeroContrat}}`, `{{dateEcheance}}`, `{{vehicule}}`  
+**Exemple** : "Prépare le renouvellement du contrat auto {{numeroContrat}} pour {{nomClient}}."
+
+#### 12. Préterme Habitation - Renouvellement
+**Description** : Préparer le renouvellement d'un contrat habitation (préterme)  
+**Tags** : `préterme`, `habitation`, `renouvellement`, `échéance`, `gestion`  
+**Base de connaissance** : `process/preterme-ird.md`  
+**Variables** : `{{nomClient}}`, `{{numeroContrat}}`, `{{dateEcheance}}`, `{{bien}}`  
+**Exemple** : "Prépare le renouvellement du contrat habitation {{numeroContrat}} pour {{nomClient}}."
+
+#### 13. Gérer un lead froid
+**Description** : Stratégie pour relancer un lead froid  
+**Tags** : `leads`, `relance`, `prospection`, `commercial`  
+**Base de connaissance** : `process/leads.md`  
+**Variables** : `{{nomLead}}`, `{{dernierContact}}`, `{{contexte}}`  
+**Exemple** : "Aide-moi à relancer ce lead froid : {{nomLead}}, dernier contact {{dernierContact}}."
+
+### 🏢 INFORMATIONS AGENCE
+
+#### 14. Trouver les horaires de l'agence
+**Description** : Fournir les horaires d'ouverture de l'agence  
+**Tags** : `agence`, `horaires`, `contact`, `support`  
+**Base de connaissance** : `core/agences.md`  
+**Variables** : `{{nomClient}}`, `{{agence}}`  
+**Exemple** : "Fournis les horaires de l'agence Corniche pour {{nomClient}}."
+
+#### 15. Obtenir un numéro d'assistance
+**Description** : Fournir le numéro d'assistance approprié selon le type d'urgence  
+**Tags** : `assistance`, `urgence`, `numéro`, `support`, `dépannage`  
+**Base de connaissance** : `core/numeros-assistance.md`  
+**Variables** : `{{typeUrgence}}`, `{{contexte}}`  
+**Exemple** : "Fournis le numéro d'assistance pour une panne auto."
+
+#### 16. Générer un lien de devis personnalisé
+**Description** : Fournir un lien de devis personnalisé avec code agence  
+**Tags** : `devis`, `lien`, `code_agence`, `commercial`  
+**Base de connaissance** : `core/liens-devis.md`  
+**Variables** : `{{nomClient}}`, `{{typeDevis}}`  
+**Exemple** : "Génère un lien de devis auto pour {{nomClient}}."
+
+#### 17. Prendre rendez-vous en agence
+**Description** : Aider à organiser un rendez-vous en agence  
+**Tags** : `agence`, `rendez-vous`, `planning`, `gestion`  
+**Base de connaissance** : `core/agences.md`, `core/liens-devis.md`  
+**Variables** : `{{nomClient}}`, `{{agence}}`, `{{objectif}}`, `{{horaire}}`  
+**Exemple** : "Organise un rendez-vous en agence Corniche pour {{nomClient}}."
+
+#### 18. Contact WhatsApp agence
+**Description** : Fournir les informations de contact WhatsApp de l'agence  
+**Tags** : `whatsapp`, `contact`, `agence`, `support`, `communication`  
+**Base de connaissance** : `core/agences.md`  
+**Variables** : `{{nomClient}}`, `{{agence}}`  
+**Exemple** : "Fournis le contact WhatsApp de l'agence Corniche."
+
+### 🚗 PRODUITS SPÉCIFIQUES
+
+#### 19. Expliquer le bonus-malus auto
+**Description** : Expliquer le système bonus-malus (coefficient de réduction majoration)  
+**Tags** : `auto`, `bonus_malus`, `crm`, `explication`, `calcul`  
+**Base de connaissance** : `produits/assurance-vtm-allianz.md`  
+**Variables** : `{{coefficient}}`, `{{historique}}`  
+**Exemple** : "Explique le bonus-malus pour un coefficient de {{coefficient}}."
+
+#### 20. Transfert de bonus entre véhicules
+**Description** : Expliquer le transfert de bonus-malus entre véhicules  
+**Tags** : `auto`, `bonus_malus`, `transfert`, `modification`  
+**Base de connaissance** : `produits/assurance-vtm-allianz.md`  
+**Variables** : `{{nomClient}}`, `{{ancienVehicule}}`, `{{ancienCoefficient}}`, `{{nouveauVehicule}}`  
+**Exemple** : "Explique le transfert de bonus de {{ancienVehicule}} vers {{nouveauVehicule}}."
+
+#### 21. PER - Avantages fiscaux
+**Description** : Expliquer les avantages fiscaux du Plan Épargne Retraite  
+**Tags** : `retraite`, `per`, `fiscal`, `avantages`, `explication`  
+**Base de connaissance** : `produits/epargne.md`  
+**Variables** : `{{nomClient}}`, `{{profil}}`, `{{trancheImposition}}`  
+**Exemple** : "Explique les avantages fiscaux du PER pour un salarié en tranche {{trancheImposition}}."
+
+#### 22. Prévoyance TNS (Travailleurs Non Salariés)
+**Description** : Expliquer les garanties prévoyance pour les TNS  
+**Tags** : `prévoyance`, `tns`, `travailleur_non_salarié`, `explication`, `conseil`  
+**Base de connaissance** : `produits/prevoyance.md`  
+**Variables** : `{{nomClient}}`, `{{activite}}`, `{{revenus}}`  
+**Exemple** : "Explique les garanties prévoyance TNS pour un {{activite}} avec revenus {{revenus}}."
+
+---
+
 ## 📊 Statistiques
 
-- **Total de templates** : 48 templates
-- **Catégories** : 8 domaines métier
-- **Templates par catégorie** : 6 templates en moyenne
+- **Total de templates** : 73 templates (48 existants + 25 nouveaux)
+- **Catégories** : 8 domaines métier principaux
+- **Templates par catégorie** : 6-10 templates en moyenne
+- **Tags disponibles** : ~50 tags organisés en catégories
+- **Fichiers de connaissance référencés** : 15 fichiers couvrant tous les domaines métier
 
 ## 🔄 Mise à jour
 
@@ -345,5 +547,5 @@ Pour ajouter un nouveau template, suivre le format existant avec nom, descriptio
 ---
 
 *Document créé le : 2025-12-21*  
-*Dernière mise à jour : 2025-12-21*
+*Dernière mise à jour : 2025-01-27 (enrichissement avec base de connaissance et nouveaux templates)*
 

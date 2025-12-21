@@ -11,6 +11,7 @@ import { checkBudgetLimit } from "@/lib/assistant/budget-alerts";
 import { openaiWithRetry } from "@/lib/assistant/retry";
 import { logUsage } from "@/lib/assistant/monitoring";
 import { logAction } from "@/lib/assistant/audit";
+import { enrichMessagesWithKnowledge } from "@/lib/assistant/knowledge-loader";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -369,6 +370,10 @@ EXEMPLES DE FORMATAGE :
       content: userContent.length > 0 ? userContent : message,
     });
 
+    // Enrichir les messages avec les connaissances pertinentes de la base de connaissance
+    const userMessageText = typeof message === "string" ? message : "";
+    const enrichedMessages = await enrichMessagesWithKnowledge(messages, userMessageText);
+
     // Récupérer le paramètre stream depuis le body
     const { stream: useStream = false } = body;
 
@@ -391,7 +396,7 @@ EXEMPLES DE FORMATAGE :
               () =>
                 openai.chat.completions.create({
                   model: modelToUse,
-                  messages,
+                  messages: enrichedMessages,
                   temperature: 0.7,
                   max_tokens: 2000,
                   stream: true,
@@ -494,7 +499,7 @@ EXEMPLES DE FORMATAGE :
           openai.chat.completions.create(
             {
               model: modelToUse,
-              messages,
+              messages: enrichedMessages,
               temperature: 0.7,
               max_tokens: 2000,
             },

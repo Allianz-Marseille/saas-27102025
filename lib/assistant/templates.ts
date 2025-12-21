@@ -10,6 +10,8 @@ export interface PromptTemplate {
   prompt: string;
   variables?: string[]; // Variables personnalisables (ex: ["nomClient", "typeContrat"])
   category?: string; // Catégorie du template (ex: "email", "analyse", "devis")
+  tags?: string[]; // Tags pour filtrage et recherche (ex: ["commercial", "email", "relance"])
+  knowledgeFiles?: string[]; // Références aux fichiers de connaissance (ex: ["process/sinistres.md"])
   isSystem?: boolean; // Template système (non modifiable par les utilisateurs)
   createdBy?: string; // userId du créateur (si template utilisateur)
   createdAt: Date;
@@ -27,6 +29,8 @@ export const DEFAULT_TEMPLATES: Omit<PromptTemplate, "id" | "createdAt" | "updat
 L'email doit être courtois, professionnel et inciter le client à répondre.`,
     variables: ["nomClient", "sujet"],
     category: "email",
+    tags: ["commercial", "email", "relance", "communication"],
+    knowledgeFiles: ["core/identite-agence.md"],
     isSystem: true,
   },
   {
@@ -43,6 +47,8 @@ L'email doit être courtois, professionnel et inciter le client à répondre.`,
 Présente les informations de manière claire et structurée.`,
     variables: [],
     category: "analyse",
+    tags: ["analyse", "contrat", "documentation", "gestion"],
+    knowledgeFiles: [],
     isSystem: true,
   },
   {
@@ -56,6 +62,8 @@ Présente les informations de manière claire et structurée.`,
 Le devis doit être détaillé, professionnel et inclure les garanties recommandées.`,
     variables: ["nomClient", "typeAssurance", "besoins", "budget"],
     category: "devis",
+    tags: ["commercial", "devis", "proposition", "vente"],
+    knowledgeFiles: ["core/liens-devis.md"],
     isSystem: true,
   },
   {
@@ -70,6 +78,8 @@ Le devis doit être détaillé, professionnel et inclure les garanties recommand
 Le résumé doit être clair et actionnable.`,
     variables: ["nomClient"],
     category: "resume",
+    tags: ["gestion", "résumé", "téléphone", "communication"],
+    knowledgeFiles: [],
     isSystem: true,
   },
   {
@@ -87,6 +97,8 @@ Présente une comparaison détaillée incluant :
 - Recommandation`,
     variables: ["offre1", "offre2"],
     category: "comparaison",
+    tags: ["commercial", "comparaison", "analyse", "conseil"],
+    knowledgeFiles: [],
     isSystem: true,
   },
   {
@@ -116,6 +128,8 @@ Pour te proposer les arguments les plus pertinents, j'ai besoin de mieux compren
 Réponds à ces questions et je te proposerai des arguments de vente personnalisés et percutants adaptés à ta situation ! 🎯`,
     variables: [],
     category: "vente",
+    tags: ["commercial", "vente", "argumentaire", "prospection"],
+    knowledgeFiles: ["core/identite-agence.md"],
     isSystem: true,
   },
   // COMMERCIAL - Suite
@@ -137,6 +151,8 @@ Je dois préparer :
 Structure la préparation de manière claire et actionnable.`,
     variables: ["nomClient", "produit", "contexte"],
     category: "commercial",
+    tags: ["commercial", "appel", "prospection", "préparation"],
+    knowledgeFiles: ["core/identite-agence.md"],
     isSystem: true,
   },
   {
@@ -156,6 +172,8 @@ Je dois :
 Reste bienveillant, professionnel et orienté solution.`,
     variables: ["objection", "produit"],
     category: "commercial",
+    tags: ["commercial", "objection", "argumentaire", "vente"],
+    knowledgeFiles: ["core/identite-agence.md"],
     isSystem: true,
   },
   {
@@ -175,6 +193,8 @@ Je dois analyser :
 Présente l'analyse de manière structurée avec des recommandations claires.`,
     variables: ["profilClient", "situation"],
     category: "commercial",
+    tags: ["commercial", "analyse", "conseil", "besoins"],
+    knowledgeFiles: [],
     isSystem: true,
   },
   // GESTION
@@ -194,6 +214,8 @@ Je dois préparer :
 Sois proactif et orienté satisfaction client.`,
     variables: ["nomClient", "typeContrat", "dateEcheance"],
     category: "gestion",
+    tags: ["gestion", "renouvellement", "contrat", "relance"],
+    knowledgeFiles: ["process/preterme-auto.md", "process/preterme-ird.md"],
     isSystem: true,
   },
   {
@@ -214,6 +236,8 @@ Le courrier doit être :
 Utilise un ton adapté au destinataire et au contexte.`,
     variables: ["destinataire", "objet", "contenu"],
     category: "gestion",
+    tags: ["gestion", "courrier", "administration", "communication"],
+    knowledgeFiles: ["core/identite-agence.md"],
     isSystem: true,
   },
   {
@@ -233,6 +257,8 @@ Je dois vérifier :
 Présente un rapport de conformité clair avec les éléments manquants ou à corriger.`,
     variables: ["typeDossier", "documents"],
     category: "gestion",
+    tags: ["gestion", "conformité", "dossier", "vérification"],
+    knowledgeFiles: ["core/reglementation.md"],
     isSystem: true,
   },
   {
@@ -254,6 +280,8 @@ Je dois préparer :
 Structure la préparation pour maximiser l'efficacité du rendez-vous.`,
     variables: ["nomClient", "objectif", "durée"],
     category: "gestion",
+    tags: ["gestion", "rendez-vous", "planning", "préparation"],
+    knowledgeFiles: ["core/agences.md"],
     isSystem: true,
   },
   {
@@ -274,6 +302,8 @@ Je dois expliquer :
 Sois précis et guide l'utilisateur étape par étape.`,
     variables: ["nomClient", "changement", "typeContrat"],
     category: "gestion",
+    tags: ["gestion", "changement", "modification", "contrat"],
+    knowledgeFiles: [],
     isSystem: true,
   },
   // SINISTRE
@@ -294,6 +324,8 @@ Je dois expliquer :
 Sois clair, rassurant et précis dans les instructions.`,
     variables: ["typeSinistre", "client"],
     category: "sinistre",
+    tags: ["sinistre", "déclaration", "procédure", "assistance"],
+    knowledgeFiles: ["process/sinistres.md", "core/numeros-assistance.md"],
     isSystem: true,
   },
   {
@@ -314,6 +346,8 @@ Je dois expliquer :
 Rassure le client sur le suivi et la transparence du processus.`,
     variables: ["numeroDossier", "typeSinistre"],
     category: "sinistre",
+    tags: ["sinistre", "suivi", "dossier", "processus"],
+    knowledgeFiles: ["process/sinistres.md"],
     isSystem: true,
   },
   {
@@ -334,6 +368,8 @@ Je dois expliquer :
 Guide l'utilisateur pour bien préparer l'expertise.`,
     variables: ["typeSinistre", "dommages"],
     category: "sinistre",
+    tags: ["sinistre", "expertise", "évaluation", "préparation"],
+    knowledgeFiles: ["process/sinistres.md"],
     isSystem: true,
   },
   {
@@ -354,6 +390,8 @@ Je dois expliquer :
 Sois pédagogique et transparent sur le calcul.`,
     variables: ["typeSinistre", "montantDommages"],
     category: "sinistre",
+    tags: ["sinistre", "indemnisation", "calcul", "évaluation"],
+    knowledgeFiles: ["process/sinistres.md"],
     isSystem: true,
   },
   {
@@ -375,6 +413,8 @@ Je dois expliquer :
 Sois objectif et orienté solution.`,
     variables: ["numeroDossier", "motifContestation"],
     category: "sinistre",
+    tags: ["sinistre", "litige", "contestation", "médiation"],
+    knowledgeFiles: ["process/sinistres.md", "core/reglementation.md"],
     isSystem: true,
   },
   {
@@ -395,6 +435,8 @@ Le rapport doit inclure :
 Structure le rapport de manière professionnelle et complète.`,
     variables: ["typeSinistre", "faits"],
     category: "sinistre",
+    tags: ["sinistre", "rapport", "documentation", "analyse"],
+    knowledgeFiles: ["process/sinistres.md"],
     isSystem: true,
   },
   // IARD
@@ -415,6 +457,8 @@ Je dois analyser :
 Présente l'analyse de manière claire et structurée.`,
     variables: ["nomClient"],
     category: "iard",
+    tags: ["iard", "habitation", "analyse", "contrat"],
+    knowledgeFiles: ["produits/assurance-iard.md"],
     isSystem: true,
   },
   {
@@ -436,6 +480,8 @@ Je dois comparer :
 Présente une comparaison détaillée et objective.`,
     variables: ["offre1", "offre2"],
     category: "iard",
+    tags: ["iard", "auto", "comparaison", "conseil"],
+    knowledgeFiles: ["produits/assurance-iard.md", "produits/assurance-vtm-allianz.md"],
     isSystem: true,
   },
   {
@@ -454,6 +500,8 @@ Je dois expliquer :
 Sois pédagogique et utilise des exemples concrets.`,
     variables: ["typeAssurance", "niveauGarantie"],
     category: "iard",
+    tags: ["iard", "garanties", "explication", "conseil"],
+    knowledgeFiles: ["produits/assurance-iard.md"],
     isSystem: true,
   },
   {
@@ -474,6 +522,8 @@ Je dois expliquer :
 Sois pédagogique et transparent sur le calcul.`,
     variables: ["typeAssurance", "caracteristiques"],
     category: "iard",
+    tags: ["iard", "prime", "calcul", "explication"],
+    knowledgeFiles: ["produits/assurance-iard.md"],
     isSystem: true,
   },
   {
@@ -495,6 +545,8 @@ Je dois expliquer :
 Guide l'utilisateur étape par étape.`,
     variables: ["nomClient", "ancienVehicule", "nouveauVehicule"],
     category: "iard",
+    tags: ["iard", "auto", "modification", "véhicule"],
+    knowledgeFiles: ["produits/assurance-vtm-allianz.md"],
     isSystem: true,
   },
   {
@@ -517,6 +569,8 @@ Le devis doit inclure :
 Sois précis et adapté à l'activité de l'entreprise.`,
     variables: ["entreprise", "activite", "risques"],
     category: "iard",
+    tags: ["iard", "professionnel", "devis", "entreprise"],
+    knowledgeFiles: ["produits/assurance-iard.md"],
     isSystem: true,
   },
   // SANTÉ
@@ -537,6 +591,8 @@ Je dois expliquer :
 Sois clair et utilise des exemples chiffrés.`,
     variables: ["formule", "niveauCouverture"],
     category: "santé",
+    tags: ["santé", "individuelle", "garanties", "explication"],
+    knowledgeFiles: ["produits/assurance-sante.md"],
     isSystem: true,
   },
   {
@@ -556,6 +612,8 @@ Je dois comparer :
 Présente une comparaison détaillée et objective.`,
     variables: ["offre1", "offre2"],
     category: "santé",
+    tags: ["santé", "mutuelle", "comparaison", "conseil"],
+    knowledgeFiles: ["produits/assurance-sante.md"],
     isSystem: true,
   },
   {
@@ -578,6 +636,8 @@ Le devis doit inclure :
 Adapte la proposition au budget et aux besoins.`,
     variables: ["entreprise", "nombreSalaries", "budget"],
     category: "santé",
+    tags: ["santé", "collective", "devis", "entreprise"],
+    knowledgeFiles: ["produits/assurance-sante.md"],
     isSystem: true,
   },
   {
@@ -597,6 +657,8 @@ Je dois expliquer :
 Sois pédagogique avec des exemples concrets.`,
     variables: ["typeSoin", "formule"],
     category: "santé",
+    tags: ["santé", "remboursement", "procédure", "explication"],
+    knowledgeFiles: ["produits/assurance-sante.md"],
     isSystem: true,
   },
   {
@@ -616,6 +678,8 @@ Je dois expliquer :
 Guide l'utilisateur avec précision.`,
     variables: ["nomClient", "changement"],
     category: "santé",
+    tags: ["santé", "changement", "modification", "contrat"],
+    knowledgeFiles: ["produits/assurance-sante.md"],
     isSystem: true,
   },
   {
@@ -634,6 +698,8 @@ Je dois analyser :
 Présente une analyse structurée avec recommandations personnalisées.`,
     variables: ["profilClient", "besoins"],
     category: "santé",
+    tags: ["santé", "analyse", "conseil", "besoins"],
+    knowledgeFiles: ["produits/assurance-sante.md"],
     isSystem: true,
   },
   // PRÉVOYANCE
@@ -654,6 +720,8 @@ Je dois expliquer :
 Sois précis et utilise des exemples concrets.`,
     variables: ["typeGarantie", "montant"],
     category: "prévoyance",
+    tags: ["prévoyance", "garanties", "explication", "conseil"],
+    knowledgeFiles: ["produits/prevoyance.md"],
     isSystem: true,
   },
   {
@@ -672,6 +740,8 @@ Je dois expliquer :
 Sois pédagogique et transparent.`,
     variables: ["age", "profession", "capital"],
     category: "prévoyance",
+    tags: ["prévoyance", "prime", "calcul", "explication"],
+    knowledgeFiles: ["produits/prevoyance.md"],
     isSystem: true,
   },
   {
@@ -694,6 +764,8 @@ Le devis doit inclure :
 Adapte la proposition au budget et aux besoins.`,
     variables: ["nomClient", "besoins", "budget"],
     category: "prévoyance",
+    tags: ["prévoyance", "devis", "proposition", "conseil"],
+    knowledgeFiles: ["produits/prevoyance.md"],
     isSystem: true,
   },
   {
@@ -713,6 +785,8 @@ Je dois expliquer :
 Sois clair et rassurant dans l'explication.`,
     variables: ["capital", "bénéficiaires"],
     category: "prévoyance",
+    tags: ["prévoyance", "décès", "garantie", "explication"],
+    knowledgeFiles: ["produits/prevoyance.md"],
     isSystem: true,
   },
   {
@@ -732,6 +806,8 @@ Je dois expliquer :
 Sois rassurant et guide l'utilisateur étape par étape.`,
     variables: ["typeSinistre", "nomClient"],
     category: "prévoyance",
+    tags: ["prévoyance", "sinistre", "indemnisation", "procédure"],
+    knowledgeFiles: ["produits/prevoyance.md", "process/sinistres.md"],
     isSystem: true,
   },
   {
@@ -751,6 +827,8 @@ Je dois comparer :
 Présente une comparaison détaillée et objective.`,
     variables: ["offre1", "offre2"],
     category: "prévoyance",
+    tags: ["prévoyance", "comparaison", "offres", "conseil"],
+    knowledgeFiles: ["produits/prevoyance.md"],
     isSystem: true,
   },
   // RETRAITE
@@ -771,6 +849,8 @@ Je dois expliquer :
 Sois pédagogique et utilise des exemples chiffrés.`,
     variables: ["typeContrat", "versements"],
     category: "retraite",
+    tags: ["retraite", "complémentaire", "explication", "conseil"],
+    knowledgeFiles: ["produits/epargne.md"],
     isSystem: true,
   },
   {
@@ -789,6 +869,8 @@ Je dois expliquer :
 Sois pédagogique et transparent sur le calcul.`,
     variables: ["age", "annéesCotisation", "salaire"],
     category: "retraite",
+    tags: ["retraite", "pension", "calcul", "explication"],
+    knowledgeFiles: ["produits/epargne.md"],
     isSystem: true,
   },
   {
@@ -811,6 +893,8 @@ Le devis doit inclure :
 Adapte la proposition à l'objectif et à l'horizon.`,
     variables: ["nomClient", "objectif", "horizon"],
     category: "retraite",
+    tags: ["retraite", "épargne", "devis", "conseil"],
+    knowledgeFiles: ["produits/epargne.md"],
     isSystem: true,
   },
   {
@@ -829,6 +913,8 @@ Je dois expliquer :
 Sois précis avec des exemples concrets.`,
     variables: ["typeProduit", "trancheImposition"],
     category: "retraite",
+    tags: ["retraite", "fiscal", "avantages", "explication"],
+    knowledgeFiles: ["produits/epargne.md"],
     isSystem: true,
   },
   {
@@ -848,6 +934,8 @@ Je dois expliquer :
 Sois transparent sur les conséquences du rachat.`,
     variables: ["nomClient", "montant"],
     category: "retraite",
+    tags: ["retraite", "rachat", "procédure", "fiscal"],
+    knowledgeFiles: ["produits/epargne.md"],
     isSystem: true,
   },
   {
@@ -867,6 +955,8 @@ Je dois comparer :
 Présente une comparaison détaillée et objective.`,
     variables: ["produit1", "produit2"],
     category: "retraite",
+    tags: ["retraite", "comparaison", "produits", "conseil"],
+    knowledgeFiles: ["produits/epargne.md"],
     isSystem: true,
   },
   // AUTRES
@@ -889,6 +979,8 @@ Je dois :
 Reste professionnel et orienté solution.`,
     variables: ["question", "contexte"],
     category: "support",
+    tags: ["support", "client", "question", "communication"],
+    knowledgeFiles: ["core/identite-agence.md"],
     isSystem: true,
   },
   {
@@ -909,6 +1001,8 @@ L'email doit être :
 Utilise un ton adapté à la situation.`,
     variables: ["nomClient", "sujet", "solution"],
     category: "support",
+    tags: ["support", "email", "client", "communication"],
+    knowledgeFiles: ["core/identite-agence.md"],
     isSystem: true,
   },
   {
@@ -927,6 +1021,8 @@ Je dois préparer :
 Adapte le contenu à la durée et à l'audience.`,
     variables: ["produit", "audience", "durée"],
     category: "formation",
+    tags: ["formation", "produit", "pédagogie", "interne"],
+    knowledgeFiles: [],
     isSystem: true,
   },
   {
@@ -946,6 +1042,8 @@ La note doit être :
 Utilise un ton adapté à une communication interne.`,
     variables: ["destinataire", "objet", "contenu"],
     category: "interne",
+    tags: ["interne", "note", "communication", "administration"],
+    knowledgeFiles: [],
     isSystem: true,
   },
   {
@@ -965,6 +1063,527 @@ Je dois expliquer :
 Sois clair et actionnable dans l'explication.`,
     variables: ["procedure", "contexte"],
     category: "procédure",
+    tags: ["procédure", "interne", "explication", "formation"],
+    knowledgeFiles: [],
+    isSystem: true,
+  },
+  // NOUVEAUX TEMPLATES - SINISTRES (Conventions)
+  {
+    name: "Expliquer la Convention IRSA",
+    description: "Expliquer la Convention IRSA pour les sinistres auto matériels",
+    prompt: `Explique la Convention IRSA (Indemnisation et Recours des Sinistres Automobiles) pour un sinistre auto.
+
+Type de sinistre : {{typeSinistre}}
+Montant estimé : {{montant}}
+
+Je dois expliquer :
+- Périmètre d'application (au moins 2 véhicules, dommages matériels)
+- Seuil conventionnel (6 500 € HT)
+- Procédure simplifiée pour sinistres < 1 500 € HT
+- Gestion conventionnelle vs droit commun
+- Recours entre assureurs
+- Conditions d'application
+- Avantages de la convention
+
+Référence : Convention IRSA (France Assureurs). Sois précis sur les seuils et conditions.`,
+    variables: ["typeSinistre", "montant"],
+    category: "sinistre",
+    tags: ["sinistre", "irsa", "convention", "auto", "explication"],
+    knowledgeFiles: ["process/sinistres.md"],
+    isSystem: true,
+  },
+  {
+    name: "Expliquer la Convention IRCA",
+    description: "Expliquer la Convention IRCA pour les sinistres auto corporels",
+    prompt: `Explique la Convention IRCA (Indemnisation et Recours Corporels Automobiles) pour un sinistre auto avec dommages corporels.
+
+Contexte : {{contexte}}
+
+Je dois expliquer :
+- Périmètre d'application (accidents auto avec dommages corporels)
+- Coordination avec Convention IRSA
+- Application de la loi Badinter
+- Barèmes d'indemnisation standardisés
+- Recours entre assureurs
+- Processus d'indemnisation des victimes
+
+Référence : Convention IRCA (France Assureurs) + Loi Badinter (1985).`,
+    variables: ["contexte"],
+    category: "sinistre",
+    tags: ["sinistre", "irca", "convention", "corporel", "badinter", "explication"],
+    knowledgeFiles: ["process/sinistres.md"],
+    isSystem: true,
+  },
+  {
+    name: "Expliquer la Convention IRSI",
+    description: "Expliquer la Convention IRSI pour les sinistres immeuble",
+    prompt: `Explique la Convention IRSI (Indemnisation et Recours des Sinistres Immeuble) pour un sinistre dans un immeuble.
+
+Type de sinistre : {{typeSinistre}} (dégâts des eaux, incendie, explosion)
+Montant estimé : {{montant}}
+
+Je dois expliquer :
+- Périmètre d'application (immeubles, plusieurs assurés ou parties communes)
+- Seuil conventionnel (5 000 € HT)
+- Gestion directe et simplifiée sous seuil
+- Recours forfaitaires entre assureurs
+- Remplacement de CIDE-COP depuis 2018
+- Conditions d'application
+
+Référence : Convention IRSI (France Assureurs, 2018).`,
+    variables: ["typeSinistre", "montant"],
+    category: "sinistre",
+    tags: ["sinistre", "irsi", "convention", "immeuble", "dégâts_des_eaux", "explication"],
+    knowledgeFiles: ["process/sinistres.md"],
+    isSystem: true,
+  },
+  {
+    name: "Déterminer gestion conventionnelle ou droit commun",
+    description: "Aider à déterminer si un sinistre relève de la gestion conventionnelle ou du droit commun",
+    prompt: `Détermine si ce sinistre relève de la gestion conventionnelle ou du droit commun.
+
+Type de sinistre : {{typeSinistre}}
+Montant estimé : {{montant}}
+Contexte : {{contexte}}
+
+Je dois analyser :
+- Type de sinistre (auto, immeuble, etc.)
+- Montant par rapport aux seuils conventionnels :
+  * IRSA Auto : 6 500 € HT
+  * IRSI Immeuble : 5 000 € HT
+- Complexité du sinistre
+- Présence de litige
+- Recommandation : conventionnelle ou droit commun
+- Justification de la recommandation
+
+Sois précis sur les seuils et conditions d'application.`,
+    variables: ["typeSinistre", "montant", "contexte"],
+    category: "sinistre",
+    tags: ["sinistre", "convention", "droit_commun", "analyse", "seuil"],
+    knowledgeFiles: ["process/sinistres.md"],
+    isSystem: true,
+  },
+  {
+    name: "Expliquer la loi Badinter",
+    description: "Expliquer la loi Badinter pour les victimes d'accidents de la circulation",
+    prompt: `Explique la loi Badinter (Loi n°85-677 du 5 juillet 1985) pour une victime d'accident de la circulation.
+
+Profil de la victime : {{profilVictime}} (piéton, passager, cycliste, etc.)
+Contexte : {{contexte}}
+
+Je dois expliquer :
+- Protection renforcée des victimes non conductrices
+- Indemnisation quasi automatique
+- Responsabilité atténuée du conducteur
+- Droit à indemnisation même en cas de faute de la victime (sauf faute inexcusable)
+- Coordination avec Convention IRCA
+- Barèmes d'indemnisation (nomenclature Dintilhac)
+- Types de préjudices indemnisables
+
+Référence : Loi Badinter (1985). Sois clair sur les droits de la victime.`,
+    variables: ["profilVictime", "contexte"],
+    category: "sinistre",
+    tags: ["sinistre", "badinter", "victime", "corporel", "explication"],
+    knowledgeFiles: ["process/sinistres.md"],
+    isSystem: true,
+  },
+  {
+    name: "Expliquer la nomenclature Dintilhac",
+    description: "Expliquer la nomenclature Dintilhac pour l'évaluation des préjudices corporels",
+    prompt: `Explique la nomenclature Dintilhac pour évaluer les préjudices corporels d'un sinistre.
+
+Contexte : {{contexte}}
+
+Je dois expliquer :
+- Référentiel d'indemnisation des préjudices corporels
+- Classification des préjudices :
+  * Préjudice économique
+  * Préjudice moral
+  * Préjudice esthétique
+  * Préjudice d'agrément
+- Barèmes de référence
+- Utilisation par assureurs et tribunaux
+- Standardisation de l'indemnisation
+- Exemples de calcul
+
+Référence : Nomenclature Dintilhac (Cour de cassation).`,
+    variables: ["contexte"],
+    category: "sinistre",
+    tags: ["sinistre", "dintilhac", "corporel", "indemnisation", "explication"],
+    knowledgeFiles: ["process/sinistres.md"],
+    isSystem: true,
+  },
+  {
+    name: "Expliquer les fonds de garantie (FGAO, FGTI, ONIAM)",
+    description: "Expliquer le rôle des fonds de garantie pour l'indemnisation",
+    prompt: `Explique le rôle des fonds de garantie pour ce sinistre.
+
+Type de sinistre : {{typeSinistre}}
+Contexte : {{contexte}}
+
+Je dois expliquer :
+- FGAO (Fonds de Garantie des Assurances Obligatoires) : accidents auto sans assureur
+- FGTI (Fonds de Garantie des Victimes des actes de Terrorisme) : attentats
+- ONIAM (Office National d'Indemnisation des Accidents Médicaux) : accidents médicaux
+- Conditions d'intervention de chaque fonds
+- Procédure d'indemnisation
+- Recours possibles
+- Contacts utiles
+
+Sois précis sur le fonds applicable selon le type de sinistre.`,
+    variables: ["typeSinistre", "contexte"],
+    category: "sinistre",
+    tags: ["sinistre", "fonds_garantie", "fgao", "fgti", "oniam", "explication"],
+    knowledgeFiles: ["process/sinistres.md"],
+    isSystem: true,
+  },
+  {
+    name: "Indemnisation catastrophe naturelle (CAT-NAT)",
+    description: "Expliquer l'indemnisation des catastrophes naturelles",
+    prompt: `Explique l'indemnisation pour une catastrophe naturelle (CAT-NAT).
+
+Type d'événement : {{typeEvenement}} (inondation, sécheresse, tempête, etc.)
+Contexte : {{contexte}}
+
+Je dois expliquer :
+- Régime légal d'indemnisation (Code des assurances L.125-1)
+- Nécessité d'un arrêté interministériel de reconnaissance
+- Intervention CCR (Caisse Centrale de Réassurance) + assureurs
+- Franchises légales :
+  * Habitation : 380 €
+  * Entreprise : 1 140 €
+- Extension automatique des garanties habitation/entreprise
+- Conditions d'application
+- Procédure de déclaration
+
+Référence : Code des assurances + Arrêté CAT-NAT.`,
+    variables: ["typeEvenement", "contexte"],
+    category: "sinistre",
+    tags: ["sinistre", "cat-nat", "catastrophe_naturelle", "indemnisation", "explication"],
+    knowledgeFiles: ["process/sinistres.md"],
+    isSystem: true,
+  },
+  // NOUVEAUX TEMPLATES - PROCESSUS MÉTIER
+  {
+    name: "Qualifier un lead",
+    description: "Qualifier un lead/prospect selon le processus métier",
+    prompt: `Aide-moi à qualifier ce lead selon notre processus de qualification.
+
+Informations du lead : {{informationsLead}}
+
+Je dois qualifier selon :
+- Profil (particulier, professionnel, entreprise)
+- Besoins identifiés
+- Budget approximatif
+- Urgence
+- Potentiel commercial
+- Prochaines étapes recommandées
+- Score de qualification
+
+Référence : Processus de qualification des leads.`,
+    variables: ["informationsLead"],
+    category: "commercial",
+    tags: ["leads", "qualification", "prospection", "commercial"],
+    knowledgeFiles: ["process/leads.md"],
+    isSystem: true,
+  },
+  {
+    name: "Relance M+3 satisfaction client",
+    description: "Préparer une relance M+3 pour mesurer la satisfaction client",
+    prompt: `Prépare une relance M+3 (3 mois après souscription) pour mesurer la satisfaction du client {{nomClient}}.
+
+Contrat souscrit : {{typeContrat}}
+Date de souscription : {{dateSouscription}}
+
+Je dois préparer :
+- Email/appel de relance personnalisé
+- Questions de satisfaction à poser
+- Points à vérifier (utilisation, questions, problèmes)
+- Opportunités de vente complémentaire
+- Calendrier de suivi
+- Actions correctives si nécessaire
+
+Référence : Processus M+3 satisfaction client.`,
+    variables: ["nomClient", "typeContrat", "dateSouscription"],
+    category: "gestion",
+    tags: ["m+3", "satisfaction", "relance", "client", "gestion"],
+    knowledgeFiles: ["process/m-plus-3.md"],
+    isSystem: true,
+  },
+  {
+    name: "Préterme Auto - Renouvellement",
+    description: "Préparer le renouvellement d'un contrat auto (préterme)",
+    prompt: `Prépare le renouvellement d'un contrat auto (préterme) pour {{nomClient}}.
+
+Contrat actuel : {{numeroContrat}}
+Date d'échéance : {{dateEcheance}}
+Véhicule : {{vehicule}}
+
+Je dois préparer :
+- Checklist de préparation (historique, sinistres, bonus-malus)
+- Proposition de renouvellement
+- Ajustements éventuels (changement véhicule, garanties)
+- Courrier/email de relance
+- Calendrier des actions
+- Points de négociation
+
+Référence : Processus préterme auto.`,
+    variables: ["nomClient", "numeroContrat", "dateEcheance", "vehicule"],
+    category: "gestion",
+    tags: ["préterme", "auto", "renouvellement", "échéance", "gestion"],
+    knowledgeFiles: ["process/preterme-auto.md"],
+    isSystem: true,
+  },
+  {
+    name: "Préterme Habitation - Renouvellement",
+    description: "Préparer le renouvellement d'un contrat habitation (préterme)",
+    prompt: `Prépare le renouvellement d'un contrat habitation (préterme) pour {{nomClient}}.
+
+Contrat actuel : {{numeroContrat}}
+Date d'échéance : {{dateEcheance}}
+Bien assuré : {{bien}}
+
+Je dois préparer :
+- Checklist de préparation (historique, sinistres, changements)
+- Vérification des valeurs assurées
+- Proposition de renouvellement
+- Ajustements éventuels (changement de situation, garanties)
+- Courrier/email de relance
+- Calendrier des actions
+
+Référence : Processus préterme habitation.`,
+    variables: ["nomClient", "numeroContrat", "dateEcheance", "bien"],
+    category: "gestion",
+    tags: ["préterme", "habitation", "renouvellement", "échéance", "gestion"],
+    knowledgeFiles: ["process/preterme-ird.md"],
+    isSystem: true,
+  },
+  {
+    name: "Gérer un lead froid",
+    description: "Stratégie pour relancer un lead froid",
+    prompt: `Aide-moi à relancer ce lead froid.
+
+Lead : {{nomLead}}
+Dernier contact : {{dernierContact}}
+Contexte : {{contexte}}
+
+Je dois proposer :
+- Stratégie de relance adaptée
+- Message/email de relance personnalisé
+- Timing optimal
+- Arguments de relance
+- Objections potentielles et réponses
+- Alternatives si pas de réponse
+
+Référence : Processus de gestion des leads.`,
+    variables: ["nomLead", "dernierContact", "contexte"],
+    category: "commercial",
+    tags: ["leads", "relance", "prospection", "commercial"],
+    knowledgeFiles: ["process/leads.md"],
+    isSystem: true,
+  },
+  // NOUVEAUX TEMPLATES - INFORMATIONS AGENCE
+  {
+    name: "Trouver les horaires de l'agence",
+    description: "Fournir les horaires d'ouverture de l'agence",
+    prompt: `Fournis les horaires d'ouverture de l'agence pour le client {{nomClient}}.
+
+Agence demandée : {{agence}} (Corniche ou Rouvière)
+
+Je dois fournir :
+- Horaires d'ouverture (lundi-vendredi, samedi)
+- Adresse complète
+- Coordonnées (téléphone, email)
+- Contact WhatsApp si disponible
+- Informations sur les rendez-vous
+
+Référence : Informations agences.`,
+    variables: ["nomClient", "agence"],
+    category: "support",
+    tags: ["agence", "horaires", "contact", "support"],
+    knowledgeFiles: ["core/agences.md"],
+    isSystem: true,
+  },
+  {
+    name: "Obtenir un numéro d'assistance",
+    description: "Fournir le numéro d'assistance approprié selon le type d'urgence",
+    prompt: `Fournis le numéro d'assistance approprié pour cette situation.
+
+Type d'urgence : {{typeUrgence}} (dépannage auto, plomberie, serrurerie, garde d'enfant, perte/vol carte, etc.)
+Contexte : {{contexte}}
+
+Je dois fournir :
+- Numéro d'assistance approprié
+- Horaires de disponibilité
+- Informations sur le service
+- Procédure à suivre
+- Documents nécessaires si applicable
+
+Référence : Numéros d'assistance.`,
+    variables: ["typeUrgence", "contexte"],
+    category: "support",
+    tags: ["assistance", "urgence", "numéro", "support", "dépannage"],
+    knowledgeFiles: ["core/numeros-assistance.md"],
+    isSystem: true,
+  },
+  {
+    name: "Générer un lien de devis personnalisé",
+    description: "Fournir un lien de devis personnalisé avec code agence",
+    prompt: `Génère un lien de devis personnalisé pour le client {{nomClient}}.
+
+Type de devis : {{typeDevis}} (auto, habitation, santé, etc.)
+Code agence : H91358
+
+Je dois fournir :
+- Lien de devis personnalisé avec code agence
+- Instructions pour utiliser le lien
+- Informations sur le suivi du devis
+- Contact pour assistance
+
+Référence : Liens de devis.`,
+    variables: ["nomClient", "typeDevis"],
+    category: "commercial",
+    tags: ["devis", "lien", "code_agence", "commercial"],
+    knowledgeFiles: ["core/liens-devis.md"],
+    isSystem: true,
+  },
+  {
+    name: "Prendre rendez-vous en agence",
+    description: "Aider à organiser un rendez-vous en agence",
+    prompt: `Aide-moi à organiser un rendez-vous en agence pour {{nomClient}}.
+
+Agence : {{agence}} (Corniche ou Rouvière)
+Objectif : {{objectif}}
+Préférence horaire : {{horaire}}
+
+Je dois préparer :
+- Disponibilités de l'agence
+- Proposition de créneaux
+- Informations à communiquer au client
+- Documents à préparer
+- Confirmation du rendez-vous
+
+Référence : Informations agences et liens de devis.`,
+    variables: ["nomClient", "agence", "objectif", "horaire"],
+    category: "gestion",
+    tags: ["agence", "rendez-vous", "planning", "gestion"],
+    knowledgeFiles: ["core/agences.md", "core/liens-devis.md"],
+    isSystem: true,
+  },
+  {
+    name: "Contact WhatsApp agence",
+    description: "Fournir les informations de contact WhatsApp de l'agence",
+    prompt: `Fournis les informations de contact WhatsApp de l'agence pour {{nomClient}}.
+
+Agence : {{agence}} (Corniche ou Rouvière)
+
+Je dois fournir :
+- Numéro WhatsApp de l'agence
+- Horaires de disponibilité WhatsApp
+- Types de demandes traitées par WhatsApp
+- Temps de réponse habituel
+- Alternative si WhatsApp indisponible
+
+Référence : Informations agences.`,
+    variables: ["nomClient", "agence"],
+    category: "support",
+    tags: ["whatsapp", "contact", "agence", "support", "communication"],
+    knowledgeFiles: ["core/agences.md"],
+    isSystem: true,
+  },
+  // NOUVEAUX TEMPLATES - PRODUITS SPÉCIFIQUES
+  {
+    name: "Expliquer le bonus-malus auto",
+    description: "Expliquer le système bonus-malus (coefficient de réduction majoration)",
+    prompt: `Explique le système bonus-malus (CRM - Coefficient de Réduction Majoration) pour un contrat auto.
+
+Coefficient actuel : {{coefficient}}
+Historique : {{historique}}
+
+Je dois expliquer :
+- Fonctionnement du bonus-malus
+- Calcul du coefficient (départ, évolution)
+- Impact sur la prime
+- Transfert de bonus entre véhicules
+- Perte de bonus en cas de sinistre
+- Récupération du bonus
+- Exemples de calcul
+
+Référence : Assurance VTM Allianz - Bonus-malus.`,
+    variables: ["coefficient", "historique"],
+    category: "iard",
+    tags: ["auto", "bonus_malus", "crm", "explication", "calcul"],
+    knowledgeFiles: ["produits/assurance-vtm-allianz.md"],
+    isSystem: true,
+  },
+  {
+    name: "Transfert de bonus entre véhicules",
+    description: "Expliquer le transfert de bonus-malus entre véhicules",
+    prompt: `Explique le transfert de bonus-malus entre deux véhicules pour {{nomClient}}.
+
+Ancien véhicule : {{ancienVehicule}} (coefficient : {{ancienCoefficient}})
+Nouveau véhicule : {{nouveauVehicule}}
+
+Je dois expliquer :
+- Conditions de transfert
+- Procédure à suivre
+- Documents nécessaires
+- Délais et échéances
+- Impact sur la prime du nouveau véhicule
+- Points d'attention
+
+Référence : Assurance VTM Allianz - Transfert de bonus.`,
+    variables: ["nomClient", "ancienVehicule", "ancienCoefficient", "nouveauVehicule"],
+    category: "iard",
+    tags: ["auto", "bonus_malus", "transfert", "modification"],
+    knowledgeFiles: ["produits/assurance-vtm-allianz.md"],
+    isSystem: true,
+  },
+  {
+    name: "PER - Avantages fiscaux",
+    description: "Expliquer les avantages fiscaux du Plan Épargne Retraite",
+    prompt: `Explique les avantages fiscaux du PER (Plan Épargne Retraite) pour {{nomClient}}.
+
+Profil : {{profil}} (salarié, TNS, etc.)
+Tranche d'imposition : {{trancheImposition}}
+
+Je dois expliquer :
+- Mécanismes fiscaux (déduction des cotisations)
+- Économies d'impôt réalisables
+- Plafonds de déduction
+- Exemples chiffrés selon le profil
+- Conditions d'éligibilité
+- Optimisations possibles
+- Fiscalité au déblocage
+
+Référence : Produits épargne retraite.`,
+    variables: ["nomClient", "profil", "trancheImposition"],
+    category: "retraite",
+    tags: ["retraite", "per", "fiscal", "avantages", "explication"],
+    knowledgeFiles: ["produits/epargne.md"],
+    isSystem: true,
+  },
+  {
+    name: "Prévoyance TNS (Travailleurs Non Salariés)",
+    description: "Expliquer les garanties prévoyance pour les TNS",
+    prompt: `Explique les garanties prévoyance adaptées aux TNS (Travailleurs Non Salariés) pour {{nomClient}}.
+
+Activité : {{activite}}
+Revenus : {{revenus}}
+
+Je dois expliquer :
+- Garanties spécifiques TNS (décès, invalidité, incapacité)
+- Capital recommandé selon l'activité
+- Avantages de la prévoyance TNS
+- Comparaison avec prévoyance salarié
+- Optimisations possibles
+- Points d'attention spécifiques TNS
+
+Référence : Produits prévoyance TNS.`,
+    variables: ["nomClient", "activite", "revenus"],
+    category: "prévoyance",
+    tags: ["prévoyance", "tns", "travailleur_non_salarié", "explication", "conseil"],
+    knowledgeFiles: ["produits/prevoyance.md"],
     isSystem: true,
   },
 ];
@@ -997,6 +1616,22 @@ export function extractTemplateVariables(template: string): string[] {
     }
   }
   return variables;
+}
+
+/**
+ * Rechercher des templates par tags
+ */
+export function searchTemplatesByTags(
+  templates: PromptTemplate[],
+  tags: string[]
+): PromptTemplate[] {
+  if (tags.length === 0) {
+    return templates;
+  }
+  
+  return templates.filter(template => 
+    tags.some(tag => template.tags?.includes(tag))
+  );
 }
 
 
