@@ -845,14 +845,14 @@ export default function UsersManagementPage() {
               <div className="space-y-2">
                 <Label htmlFor="edit-contrat">Contrat</Label>
                 <Select
-                  value={editData.contrat}
-                  onValueChange={(value) => setEditData({ ...editData, contrat: value })}
+                  value={editData.contrat || "none"}
+                  onValueChange={(value) => setEditData({ ...editData, contrat: value === "none" ? "" : value })}
                 >
                   <SelectTrigger id="edit-contrat">
                     <SelectValue placeholder="Sélectionner un type de contrat" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Aucun</SelectItem>
+                    <SelectItem value="none">Aucun</SelectItem>
                     <SelectItem value="CDI">CDI</SelectItem>
                     <SelectItem value="Alternant">Alternant</SelectItem>
                     <SelectItem value="-">-</SelectItem>
@@ -862,14 +862,14 @@ export default function UsersManagementPage() {
               <div className="space-y-2">
                 <Label htmlFor="edit-etp">ETP (Équivalent Temps Plein)</Label>
                 <Select
-                  value={editData.etp}
-                  onValueChange={(value) => setEditData({ ...editData, etp: value })}
+                  value={editData.etp || "none"}
+                  onValueChange={(value) => setEditData({ ...editData, etp: value === "none" ? "" : value })}
                 >
                   <SelectTrigger id="edit-etp">
                     <SelectValue placeholder="Sélectionner un ETP" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Aucun</SelectItem>
+                    <SelectItem value="none">Aucun</SelectItem>
                     <SelectItem value="100%">100%</SelectItem>
                     <SelectItem value="60%">60%</SelectItem>
                     <SelectItem value="50%">50%</SelectItem>
