@@ -3,9 +3,12 @@ import { Timestamp } from "firebase/firestore";
 export interface User {
   id: string;
   email: string;
-  role: "ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL";
+  role: "ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL" | "COMMERCIAL_SANTE_COLLECTIVE" | "GESTIONNAIRE_SINISTRE";
   active: boolean;
   createdAt: Date;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
 }
 
 export interface ActSuivi {

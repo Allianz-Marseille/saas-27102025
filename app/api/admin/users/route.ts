@@ -69,6 +69,9 @@ export async function GET(request: NextRequest) {
         active: userData.active !== false,
         createdAt: user.metadata.creationTime,
         emailVerified: user.emailVerified,
+        firstName: userData.firstName || undefined,
+        lastName: userData.lastName || undefined,
+        phone: userData.phone || undefined,
       };
     });
 
@@ -166,7 +169,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { uid, role, active, password } = body;
+    const { uid, role, active, password, firstName, lastName, phone } = body;
 
     if (!uid) {
       return NextResponse.json(
@@ -179,20 +182,38 @@ export async function PATCH(request: NextRequest) {
     const auth = adminInstance.auth();
     const db = adminInstance.firestore();
 
+    const updateData: Record<string, unknown> = {};
+
     // Mettre à jour le rôle dans Firestore
     if (role) {
-      await db.collection("users").doc(uid).update({ role });
+      updateData.role = role;
     }
 
     // Mettre à jour active dans Firestore
     if (typeof active === "boolean") {
-      await db.collection("users").doc(uid).update({ active });
+      updateData.active = active;
       // Désactiver/Activer l'utilisateur dans Auth aussi
       if (!active) {
         await auth.updateUser(uid, { disabled: true });
       } else {
         await auth.updateUser(uid, { disabled: false });
       }
+    }
+
+    // Mettre à jour firstName, lastName, phone
+    if (firstName !== undefined) {
+      updateData.firstName = firstName || admin.firestore.FieldValue.delete();
+    }
+    if (lastName !== undefined) {
+      updateData.lastName = lastName || admin.firestore.FieldValue.delete();
+    }
+    if (phone !== undefined) {
+      updateData.phone = phone || admin.firestore.FieldValue.delete();
+    }
+
+    // Appliquer les mises à jour Firestore si nécessaire
+    if (Object.keys(updateData).length > 0) {
+      await db.collection("users").doc(uid).update(updateData);
     }
 
     // Mettre à jour le mot de passe dans Auth
@@ -219,6 +240,9 @@ export async function PATCH(request: NextRequest) {
       if (role) changes.role = role;
       if (typeof active === "boolean") changes.active = active;
       if (password) changes.password = "***";
+      if (firstName !== undefined) changes.firstName = firstName || "(supprimé)";
+      if (lastName !== undefined) changes.lastName = lastName || "(supprimé)";
+      if (phone !== undefined) changes.phone = phone || "(supprimé)";
       
       const changeDescription = Object.entries(changes)
         .map(([key, value]) => `${key}: ${value}`)

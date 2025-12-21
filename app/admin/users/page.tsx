@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, UserX, UserCheck, Trash2, KeyRound, Users, Shield, Heart, Building2, AlertTriangle, TrendingUp, CheckCircle2, Mail, MailCheck } from "lucide-react";
+import { Plus, UserX, UserCheck, Trash2, KeyRound, Users, Shield, Heart, Building2, AlertTriangle, TrendingUp, CheckCircle2, Mail, MailCheck, Phone, Edit } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -45,6 +45,9 @@ interface User {
   active: boolean;
   createdAt: string;
   emailVerified: boolean;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
 }
 
 const roleConfig = {
@@ -93,9 +96,15 @@ export default function UsersManagementPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState<User["role"]>("CDC_COMMERCIAL");
+  const [editData, setEditData] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+  });
   
   const [formData, setFormData] = useState({
     email: "",
@@ -194,6 +203,33 @@ export default function UsersManagementPage() {
       toast.success(`Rôle mis à jour : ${roleConfig[newRole].label}`);
       setIsRoleDialogOpen(false);
       setSelectedUser(null);
+      loadUsers();
+    } catch (error: unknown) {
+      toast.error((error as Error).message);
+    }
+  };
+
+  const handleUpdateUserInfo = async () => {
+    if (!selectedUser) return;
+
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          uid: selectedUser.uid,
+          firstName: editData.firstName || undefined,
+          lastName: editData.lastName || undefined,
+          phone: editData.phone || undefined,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Erreur mise à jour");
+      
+      toast.success("Informations utilisateur mises à jour");
+      setIsEditDialogOpen(false);
+      setSelectedUser(null);
+      setEditData({ firstName: "", lastName: "", phone: "" });
       loadUsers();
     } catch (error: unknown) {
       toast.error((error as Error).message);
@@ -458,8 +494,19 @@ export default function UsersManagementPage() {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <p className="font-medium text-sm truncate" title={targetUser.email}>
+                                    {targetUser.firstName && targetUser.lastName 
+                                      ? `${targetUser.firstName} ${targetUser.lastName}`
+                                      : targetUser.email}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate" title={targetUser.email}>
                                     {targetUser.email}
                                   </p>
+                                  {targetUser.phone && (
+                                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                      <Phone className="h-3 w-3" />
+                                      {targetUser.phone}
+                                    </p>
+                                  )}
                                   <Badge variant="outline" className={`text-xs mt-1 ${config.badgeColor}`}>
                                     {config.label}
                                   </Badge>
@@ -502,8 +549,31 @@ export default function UsersManagementPage() {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => handleToggleActive(targetUser)}
+                                    onClick={() => {
+                                      setSelectedUser(targetUser);
+                                      setEditData({
+                                        firstName: targetUser.firstName || "",
+                                        lastName: targetUser.lastName || "",
+                                        phone: targetUser.phone || "",
+                                      });
+                                      setIsEditDialogOpen(true);
+                                    }}
                                     className="flex-1"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Modifier les informations</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleToggleActive(targetUser)}
                                   >
                                     {targetUser.active ? (
                                       <UserX className="h-4 w-4" />
@@ -713,6 +783,57 @@ export default function UsersManagementPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Dialog modification informations utilisateur */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Modifier les informations</DialogTitle>
+              <DialogDescription>
+                Modifier les informations de {selectedUser?.email}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-firstName">Prénom</Label>
+                <Input
+                  id="edit-firstName"
+                  value={editData.firstName}
+                  onChange={(e) => setEditData({ ...editData, firstName: e.target.value })}
+                  placeholder="Prénom"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-lastName">Nom</Label>
+                <Input
+                  id="edit-lastName"
+                  value={editData.lastName}
+                  onChange={(e) => setEditData({ ...editData, lastName: e.target.value })}
+                  placeholder="Nom"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">Téléphone</Label>
+                <Input
+                  id="edit-phone"
+                  type="tel"
+                  value={editData.phone}
+                  onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
+                  placeholder="+33 6 12 34 56 78"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleUpdateUserInfo}>
+                <Edit className="mr-2 h-4 w-4" />
+                Enregistrer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Dialog réinitialisation mot de passe */}
         <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
