@@ -55,7 +55,7 @@ export function TemplateSelector({
   }
 
   return (
-    <div className={cn("flex flex-col", compact ? "max-h-[400px]" : "h-full min-h-0")}>
+    <div className={cn("flex flex-col w-full", compact ? "max-h-[400px]" : "h-full min-h-[300px]")}>
       {/* Header avec recherche */}
       <div className={cn("space-y-4 mb-4 pb-4 border-b shrink-0", compact && "mb-3 pb-3")}>
         <div className="relative">
@@ -84,7 +84,7 @@ export function TemplateSelector({
       {/* Liste des templates */}
       <div
         className={cn(
-          "flex-1 overflow-y-auto pr-2 min-h-0",
+          "flex-1 overflow-y-auto pr-2 min-h-[200px]",
           compact ? "space-y-2" : "space-y-3"
         )}
       >

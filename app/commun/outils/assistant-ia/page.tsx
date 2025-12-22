@@ -441,9 +441,12 @@ export default function AssistantIAPage() {
       }
 
       const data = await response.json();
-      setTemplates(data.templates || []);
+      const loadedTemplates = data.templates || [];
+      setTemplates(loadedTemplates);
+      console.log("Templates chargés:", loadedTemplates.length);
     } catch (error) {
       console.error("Erreur lors du chargement des templates:", error);
+      toast.error("Erreur lors du chargement des templates");
     }
   };
 
@@ -936,28 +939,33 @@ export default function AssistantIAPage() {
             </CardHeader>
             <CardContent className="flex-1 flex flex-col overflow-hidden p-6">
               {/* Zone de messages et templates */}
-              <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 min-h-0">
-                {messages.length === 0 ? (
-                  <div className="flex flex-col h-full">
-                    {/* État vide avec templates intégrés */}
-                    <div className="flex-1 flex flex-col min-h-0">
-                      <div className="text-center mb-6 shrink-0">
-                        <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p className="text-muted-foreground mb-2">Choisissez un template ou commencez à écrire</p>
-                      </div>
-                      {templates.length > 0 && (
-                        <div className="flex-1 min-h-0">
-                          <TemplateSelector
-                            templates={templates}
-                            onSelectTemplate={handleSelectTemplate}
-                            showEmptyState={true}
-                          />
-                        </div>
-                      )}
-                    </div>
+              {messages.length === 0 ? (
+                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                  {/* État vide avec templates intégrés */}
+                  <div className="text-center mb-4 shrink-0">
+                    <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-muted-foreground mb-2">Choisissez un template ou commencez à écrire</p>
                   </div>
-                ) : (
-                  messages.map((message, msgIndex) => {
+                  {templates.length > 0 ? (
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                      <TemplateSelector
+                        templates={templates}
+                        onSelectTemplate={handleSelectTemplate}
+                        showEmptyState={true}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="text-center text-muted-foreground">
+                        <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin" />
+                        <p>Chargement des templates...</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 min-h-0">
+                  {messages.map((message, msgIndex) => {
                     // Calculer l'index de correspondance pour ce message
                     let matchIndexInMessage = -1;
                     if (searchQuery && searchResults.length > 0) {
@@ -1055,8 +1063,7 @@ export default function AssistantIAPage() {
                         </div>
                       </div>
                     );
-                  })
-                )}
+                  })}
                 {isLoading && (
                   <div className="flex justify-start">
                     <div className="bg-muted rounded-lg p-4">
@@ -1081,7 +1088,8 @@ export default function AssistantIAPage() {
                     />
                   </div>
                 )}
-              </div>
+                </div>
+              )}
 
               {/* Formulaire de variables de template inline */}
               {selectedTemplate && (
