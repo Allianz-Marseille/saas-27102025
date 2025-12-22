@@ -13,6 +13,11 @@ interface TemplateSelectorProps {
   onSelectTemplate: (template: PromptTemplate) => void;
   compact?: boolean;
   showEmptyState?: boolean;
+  selectedCategory?: string;
+  onCategoryChange?: (category: string) => void;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+  hideSearchAndFilters?: boolean;
 }
 
 export function TemplateSelector({
@@ -20,9 +25,20 @@ export function TemplateSelector({
   onSelectTemplate,
   compact = false,
   showEmptyState = false,
+  selectedCategory: externalSelectedCategory,
+  onCategoryChange: externalOnCategoryChange,
+  searchQuery: externalSearchQuery,
+  onSearchChange: externalOnSearchChange,
+  hideSearchAndFilters = false,
 }: TemplateSelectorProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [internalSelectedCategory, setInternalSelectedCategory] = useState<string>("all");
+  const [internalSearchQuery, setInternalSearchQuery] = useState("");
+  
+  const selectedCategory = externalSelectedCategory ?? internalSelectedCategory;
+  const searchQuery = externalSearchQuery ?? internalSearchQuery;
+  
+  const setSelectedCategory = externalOnCategoryChange ?? setInternalSelectedCategory;
+  const setSearchQuery = externalOnSearchChange ?? setInternalSearchQuery;
 
   // Filtrer les templates
   const filteredTemplates = useMemo(() => {
@@ -56,30 +72,32 @@ export function TemplateSelector({
 
   return (
     <div className={cn("flex flex-col w-full", compact ? "max-h-[400px]" : "h-full min-h-[300px]")}>
-      {/* Header avec recherche */}
-      <div className={cn("space-y-4 mb-4 pb-4 border-b shrink-0", compact && "mb-3 pb-3")}>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher un template..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={cn(
-              "pl-10 focus:ring-2 focus:ring-purple-500",
-              compact && "h-8 text-sm"
-            )}
-          />
-        </div>
+      {/* Header avec recherche - masqué si hideSearchAndFilters est true */}
+      {!hideSearchAndFilters && (
+        <div className={cn("space-y-4 mb-4 pb-4 border-b shrink-0", compact && "mb-3 pb-3")}>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher un template..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={cn(
+                "pl-10 focus:ring-2 focus:ring-purple-500",
+                compact && "h-8 text-sm"
+              )}
+            />
+          </div>
 
-        {/* Filtres par catégorie */}
-        <div className="overflow-x-auto -mx-1 px-1">
-          <CategoryFilters
-            templates={templates}
-            selectedCategory={selectedCategory}
-            onCategoryChange={setSelectedCategory}
-          />
+          {/* Filtres par catégorie */}
+          <div className="overflow-x-auto -mx-1 px-1">
+            <CategoryFilters
+              templates={templates}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Liste des templates */}
       <div

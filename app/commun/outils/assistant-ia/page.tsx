@@ -6,7 +6,7 @@ import { isAdmin } from "@/lib/utils/roles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Image as ImageIcon, X, RotateCcw, Copy, Check, Plus, Save, XCircle, ClipboardCopy } from "lucide-react";
+import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Image as ImageIcon, X, RotateCcw, Copy, Check, Plus, Save, XCircle, ClipboardCopy, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,6 +28,7 @@ import { HighlightedText } from "@/components/assistant/HighlightedText";
 import { TemplateSelector } from "@/components/assistant/TemplateSelector";
 import { TemplateVariablesForm } from "@/components/assistant/TemplateVariablesForm";
 import { QuickReplyButtons } from "@/components/assistant/QuickReplyButtons";
+import { CategoryFilters } from "@/components/assistant/CategoryFilters";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
 import type { PromptTemplate } from "@/lib/assistant/templates";
@@ -64,6 +65,8 @@ export default function AssistantIAPage() {
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
   const [templates, setTemplates] = useState<PromptTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchTemplateQuery, setSearchTemplateQuery] = useState("");
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showNewChatDialog, setShowNewChatDialog] = useState(false);
@@ -880,12 +883,12 @@ export default function AssistantIAPage() {
               isOpen={isSearchOpen}
             />
             <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <CardTitle className="flex items-center gap-2">
                   <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600">
                     <Bot className="h-5 w-5 text-white" />
                   </div>
-                  Conversation
+                  Votre chatbot
                 </CardTitle>
                 <div className="flex items-center gap-2 flex-wrap">
                   {messages.length > 0 && (
@@ -936,22 +939,44 @@ export default function AssistantIAPage() {
                   )}
                 </div>
               </div>
+              {/* Filtres et recherche directement dans le header si pas de messages */}
+              {messages.length === 0 && templates.length > 0 && (
+                <div className="space-y-3 pt-4 border-t">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Rechercher un template..."
+                      value={searchTemplateQuery}
+                      onChange={(e) => setSearchTemplateQuery(e.target.value)}
+                      className="pl-10 focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div className="overflow-x-auto -mx-1 px-1">
+                    <CategoryFilters
+                      templates={templates}
+                      selectedCategory={selectedCategory}
+                      onCategoryChange={setSelectedCategory}
+                    />
+                  </div>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="flex-1 flex flex-col overflow-hidden p-6">
               {/* Zone de messages et templates */}
               {messages.length === 0 ? (
                 <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                  {/* État vide avec templates intégrés */}
-                  <div className="text-center mb-4 shrink-0">
-                    <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-muted-foreground mb-2">Choisissez un template ou commencez à écrire</p>
-                  </div>
+                  {/* Templates directement affichés sans espace vide */}
                   {templates.length > 0 ? (
                     <div className="flex-1 min-h-0 overflow-hidden">
                       <TemplateSelector
                         templates={templates}
                         onSelectTemplate={handleSelectTemplate}
                         showEmptyState={true}
+                        selectedCategory={selectedCategory}
+                        onCategoryChange={setSelectedCategory}
+                        searchQuery={searchTemplateQuery}
+                        onSearchChange={setSearchTemplateQuery}
+                        hideSearchAndFilters={true}
                       />
                     </div>
                   ) : (
