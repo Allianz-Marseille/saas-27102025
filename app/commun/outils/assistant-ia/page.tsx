@@ -6,7 +6,7 @@ import { isAdmin } from "@/lib/utils/roles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Image as ImageIcon, X, RotateCcw, Copy, Check, Plus, Save, XCircle, ClipboardCopy, Search } from "lucide-react";
+import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Image as ImageIcon, X, RotateCcw, Copy, Check, Plus, Save, XCircle, ClipboardCopy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,14 +25,12 @@ import {
 import { MarkdownRenderer } from "@/components/assistant/MarkdownRenderer";
 import { SearchBar } from "@/components/assistant/SearchBar";
 import { HighlightedText } from "@/components/assistant/HighlightedText";
-import { TemplateSelector } from "@/components/assistant/TemplateSelector";
-import { TemplateVariablesForm } from "@/components/assistant/TemplateVariablesForm";
 import { QuickReplyButtons } from "@/components/assistant/QuickReplyButtons";
-import { CategoryFilters } from "@/components/assistant/CategoryFilters";
+import { RCTFlow } from "@/components/assistant/RCTFlow";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
-import type { PromptTemplate } from "@/lib/assistant/templates";
-import { replaceTemplateVariables, extractTemplateVariables } from "@/lib/assistant/templates";
+import type { RCTData } from "@/lib/assistant/rct-utils";
+import { generateSystemPromptFromRCT, isRCTComplete, getRCTSummary } from "@/lib/assistant/rct-utils";
 
 interface Message {
   id: string;
@@ -63,10 +61,7 @@ export default function AssistantIAPage() {
   const [isSavingConversation, setIsSavingConversation] = useState(false);
   const [historySearchQuery, setHistorySearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
-  const [templates, setTemplates] = useState<PromptTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [searchTemplateQuery, setSearchTemplateQuery] = useState("");
+  const [rctData, setRctData] = useState<RCTData>({});
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showNewChatDialog, setShowNewChatDialog] = useState(false);
@@ -110,10 +105,9 @@ export default function AssistantIAPage() {
     }
   }, [messages, lastSavedMessagesCount]);
 
-  // Charger les conversations sauvegardées et les templates
+  // Charger les conversations sauvegardées
   useEffect(() => {
     loadSavedConversations();
-    loadTemplates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -427,64 +421,21 @@ export default function AssistantIAPage() {
     }
   };
 
-  // Charger les templates
-  const loadTemplates = async () => {
-    if (!user) return;
-
-    try {
-      const token = await user.getIdToken();
-      const response = await fetch("/api/assistant/templates", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Erreur lors du chargement des templates");
-      }
-
-      const data = await response.json();
-      const loadedTemplates = data.templates || [];
-      setTemplates(loadedTemplates);
-      console.log("Templates chargés:", loadedTemplates.length);
-    } catch (error) {
-      console.error("Erreur lors du chargement des templates:", error);
-      toast.error("Erreur lors du chargement des templates");
-    }
-  };
-
-  // Appliquer un template
-  const handleSelectTemplate = (template: PromptTemplate) => {
-    const variables = extractTemplateVariables(template.prompt);
-    
-    if (variables.length > 0) {
-      // Afficher le formulaire de variables inline
-      setSelectedTemplate(template);
-    } else {
-      // Appliquer directement le template
-      setInput(template.prompt);
-      toast.success("Template appliqué");
-      // Focus sur le textarea
-      setTimeout(() => {
-        textareaRef.current?.focus();
-      }, 100);
-    }
-  };
-
-  // Appliquer le template avec variables remplies
-  const handleApplyTemplateWithVariables = (filledPrompt: string) => {
-    setInput(filledPrompt);
-    setSelectedTemplate(null);
-    toast.success("Template appliqué");
+  // Gérer la complétion du RCT
+  const handleRCTComplete = (data: RCTData) => {
+    setRctData(data);
+    toast.success("Configuration RCT terminée ! Vous pouvez maintenant commencer à converser.");
     // Focus sur le textarea
     setTimeout(() => {
       textareaRef.current?.focus();
     }, 100);
   };
 
-  // Annuler la sélection de template
-  const handleCancelTemplate = () => {
-    setSelectedTemplate(null);
+  // Réinitialiser le RCT
+  const handleRCTReset = () => {
+    setRctData({});
+    setMessages([]);
+    toast.success("RCT réinitialisé");
   };
 
   // Clic sur "Nouveau chat" - vérifier si changements non sauvegardés
@@ -502,6 +453,7 @@ export default function AssistantIAPage() {
     setInput("");
     setSelectedImages([]);
     setSelectedFiles([]);
+    setRctData({});
     setHasUnsavedChanges(false);
     setLastSavedMessagesCount(0);
     setShowNewChatDialog(false);
@@ -732,6 +684,11 @@ export default function AssistantIAPage() {
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
+      // Générer le prompt système RCT si disponible
+      const rctSystemPrompt = isRCTComplete(rctData)
+        ? generateSystemPromptFromRCT(rctData)
+        : undefined;
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -743,6 +700,7 @@ export default function AssistantIAPage() {
           images: imagesToSend.length > 0 ? imagesToSend : undefined,
           files: filesToSend.length > 0 ? filesToSend : undefined,
           history: conversationHistory,
+          rctPrompt: rctSystemPrompt, // Ajouter le prompt RCT
           stream: true, // Activer le streaming
         }),
       });
@@ -939,51 +897,49 @@ export default function AssistantIAPage() {
                   )}
                 </div>
               </div>
-              {/* Filtres et recherche directement dans le header si pas de messages */}
-              {messages.length === 0 && templates.length > 0 && (
-                <div className="space-y-3 pt-4 border-t">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Rechercher un template..."
-                      value={searchTemplateQuery}
-                      onChange={(e) => setSearchTemplateQuery(e.target.value)}
-                      className="pl-10 focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                  <div className="overflow-x-auto -mx-1 px-1">
-                    <CategoryFilters
-                      templates={templates}
-                      selectedCategory={selectedCategory}
-                      onCategoryChange={setSelectedCategory}
-                    />
+              {/* Badge RCT si configuré */}
+              {isRCTComplete(rctData) && (
+                <div className="pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span className="px-2 py-1 rounded-md bg-primary/10 text-primary font-medium">
+                        RCT configuré
+                      </span>
+                      <span>{getRCTSummary(rctData)}</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRCTReset}
+                      className="text-xs"
+                    >
+                      <RotateCcw className="h-3 w-3 mr-1" />
+                      Réinitialiser
+                    </Button>
                   </div>
                 </div>
               )}
             </CardHeader>
             <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
-              {/* Zone de messages et templates */}
+              {/* Zone de messages et RCT */}
               {messages.length === 0 ? (
                 <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                  {/* Templates directement affichés sans espace vide */}
-                  {templates.length > 0 ? (
+                  {/* RCT Flow si non complété */}
+                  {!isRCTComplete(rctData) ? (
                     <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
-                      <TemplateSelector
-                        templates={templates}
-                        onSelectTemplate={handleSelectTemplate}
-                        showEmptyState={true}
-                        selectedCategory={selectedCategory}
-                        onCategoryChange={setSelectedCategory}
-                        searchQuery={searchTemplateQuery}
-                        onSearchChange={setSearchTemplateQuery}
-                        hideSearchAndFilters={true}
+                      <RCTFlow
+                        onComplete={handleRCTComplete}
+                        onReset={handleRCTReset}
+                        initialData={rctData}
                       />
                     </div>
                   ) : (
                     <div className="flex-1 flex items-center justify-center px-6">
-                      <div className="text-center text-muted-foreground">
-                        <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin" />
-                        <p>Chargement des templates...</p>
+                      <div className="text-center text-muted-foreground max-w-md">
+                        <Bot className="h-12 w-12 mx-auto mb-4 text-primary/50" />
+                        <p className="font-medium mb-2">RCT configuré</p>
+                        <p className="text-sm">{getRCTSummary(rctData)}</p>
+                        <p className="text-sm mt-4">Commencez à écrire votre message ci-dessous.</p>
                       </div>
                     </div>
                   )}
@@ -1097,33 +1053,6 @@ export default function AssistantIAPage() {
                   </div>
                 )}
                 <div ref={messagesEndRef} />
-                
-                {/* Templates compacts en bas si conversation en cours */}
-                {messages.length > 0 && templates.length > 0 && (
-                  <div className="mt-6 pt-6 border-t">
-                    <div className="mb-3">
-                      <p className="text-sm font-medium text-muted-foreground mb-2">
-                        Templates disponibles
-                      </p>
-                    </div>
-                    <TemplateSelector
-                      templates={templates}
-                      onSelectTemplate={handleSelectTemplate}
-                      compact={true}
-                    />
-                  </div>
-                )}
-                </div>
-              )}
-
-              {/* Formulaire de variables de template inline */}
-              {selectedTemplate && (
-                <div className="px-6 pb-4">
-                  <TemplateVariablesForm
-                    template={selectedTemplate}
-                    onApply={handleApplyTemplateWithVariables}
-                    onCancel={handleCancelTemplate}
-                  />
                 </div>
               )}
 

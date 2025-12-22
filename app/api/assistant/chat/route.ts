@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les paramètres depuis le body
     const body = await request.json();
-    const { message, images, files, history = [], model = "gpt-4o" } = body;
+    const { message, images, files, history = [], model = "gpt-4o", rctPrompt } = body;
 
     // Le message peut être vide si seulement des images ou fichiers sont envoyés
     if (!message && (!images || images.length === 0) && (!files || files.length === 0)) {
@@ -299,7 +299,9 @@ EXEMPLES DE FORMATAGE :
 - Pour des étapes : utilise une liste numérotée avec des émojis
 - Pour des points clés : utilise des listes à puces avec **gras**`;
 
-    const systemPrompt = `${coreKnowledge}\n\n${formattingRules}`;
+    // Intégrer le prompt RCT si fourni
+    const rctSection = rctPrompt ? `\n\n---\n\n${rctPrompt}\n\n---\n\n` : "";
+    const systemPrompt = `${coreKnowledge}${rctSection}${formattingRules}`;
 
     // Construire le contenu du message utilisateur
     let userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];
