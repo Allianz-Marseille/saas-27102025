@@ -26,11 +26,9 @@ import { MarkdownRenderer } from "@/components/assistant/MarkdownRenderer";
 import { SearchBar } from "@/components/assistant/SearchBar";
 import { HighlightedText } from "@/components/assistant/HighlightedText";
 import { QuickReplyButtons } from "@/components/assistant/QuickReplyButtons";
-import { RCTFlow } from "@/components/assistant/RCTFlow";
+import { TagSelector } from "@/components/assistant/TagSelector";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
-import type { RCTData } from "@/lib/assistant/rct-utils";
-import { generateSystemPromptFromRCT, isRCTComplete, getRCTSummary } from "@/lib/assistant/rct-utils";
 
 interface Message {
   id: string;
@@ -61,7 +59,8 @@ export default function AssistantIAPage() {
   const [isSavingConversation, setIsSavingConversation] = useState(false);
   const [historySearchQuery, setHistorySearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
-  const [rctData, setRctData] = useState<RCTData>({});
+  const [selectedMainTag, setSelectedMainTag] = useState<string>("");
+  const [selectedOptionalTags, setSelectedOptionalTags] = useState<string[]>([]);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showNewChatDialog, setShowNewChatDialog] = useState(false);
@@ -421,21 +420,23 @@ export default function AssistantIAPage() {
     }
   };
 
-  // Gérer la complétion du RCT
-  const handleRCTComplete = (data: RCTData) => {
-    setRctData(data);
-    toast.success("Configuration RCT terminée ! Vous pouvez maintenant commencer à converser.");
-    // Focus sur le textarea
-    setTimeout(() => {
-      textareaRef.current?.focus();
-    }, 100);
+  // Gérer la sélection du tag principal
+  const handleMainTagSelect = (tagId: string) => {
+    setSelectedMainTag(tagId);
+    if (tagId) {
+      toast.success("Domaine métier sélectionné");
+    }
   };
 
-  // Réinitialiser le RCT
-  const handleRCTReset = () => {
-    setRctData({});
-    setMessages([]);
-    toast.success("RCT réinitialisé");
+  // Gérer la sélection des tags optionnels
+  const handleOptionalTagToggle = (tagId: string) => {
+    setSelectedOptionalTags((prev) => {
+      if (prev.includes(tagId)) {
+        return prev.filter((id) => id !== tagId);
+    } else {
+        return [...prev, tagId];
+      }
+    });
   };
 
   // Clic sur "Nouveau chat" - vérifier si changements non sauvegardés
@@ -453,7 +454,8 @@ export default function AssistantIAPage() {
     setInput("");
     setSelectedImages([]);
     setSelectedFiles([]);
-    setRctData({});
+    setSelectedMainTag("");
+    setSelectedOptionalTags([]);
     setHasUnsavedChanges(false);
     setLastSavedMessagesCount(0);
     setShowNewChatDialog(false);
@@ -641,7 +643,7 @@ export default function AssistantIAPage() {
 
   const handleSendMessage = async (customMessage?: string) => {
     const messageToSend = customMessage || input;
-    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading) return;
+    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || !selectedMainTag) return;
 
     // Convertir les images en Base64
     const imageBase64s = await convertImagesToBase64(selectedImages);
@@ -684,11 +686,6 @@ export default function AssistantIAPage() {
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Générer le prompt système RCT si disponible
-      const rctSystemPrompt = isRCTComplete(rctData)
-        ? generateSystemPromptFromRCT(rctData)
-        : undefined;
-
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -700,7 +697,8 @@ export default function AssistantIAPage() {
           images: imagesToSend.length > 0 ? imagesToSend : undefined,
           files: filesToSend.length > 0 ? filesToSend : undefined,
           history: conversationHistory,
-          rctPrompt: rctSystemPrompt, // Ajouter le prompt RCT
+          mainTag: selectedMainTag || undefined,
+          optionalTags: selectedOptionalTags.length > 0 ? selectedOptionalTags : undefined,
           stream: true, // Activer le streaming
         }),
       });
@@ -897,54 +895,28 @@ export default function AssistantIAPage() {
                   )}
                 </div>
               </div>
-              {/* Badge RCT si configuré */}
-              {isRCTComplete(rctData) && (
-                <div className="pt-4 border-t">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span className="px-2 py-1 rounded-md bg-primary/10 text-primary font-medium">
-                        RCT configuré
-                      </span>
-                      <span>{getRCTSummary(rctData)}</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleRCTReset}
-                      className="text-xs"
-                    >
-                      <RotateCcw className="h-3 w-3 mr-1" />
-                      Réinitialiser
-                    </Button>
-                  </div>
-                </div>
-              )}
+              {/* TagSelector toujours visible */}
+              <div className="pt-4 border-t">
+                <TagSelector
+                  selectedMainTag={selectedMainTag}
+                  selectedOptionalTags={selectedOptionalTags}
+                  onMainTagSelect={handleMainTagSelect}
+                  onOptionalTagToggle={handleOptionalTagToggle}
+                  compact={messages.length > 0}
+                />
+              </div>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
-              {/* Zone de messages et RCT */}
-              {messages.length === 0 ? (
-                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                  {/* RCT Flow si non complété */}
-                  {!isRCTComplete(rctData) ? (
-                    <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
-                      <RCTFlow
-                        onComplete={handleRCTComplete}
-                        onReset={handleRCTReset}
-                        initialData={rctData}
-                      />
+              {/* Zone de messages */}
+              {messages.length === 0 && !selectedMainTag ? (
+                <div className="flex-1 flex items-center justify-center px-6">
+                  <div className="text-center text-muted-foreground max-w-md">
+                    <Bot className="h-12 w-12 mx-auto mb-4 text-primary/50" />
+                    <p className="font-medium mb-2">Sélectionnez un domaine métier</p>
+                    <p className="text-sm">Choisissez un domaine métier ci-dessus pour commencer la conversation.</p>
                     </div>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center px-6">
-                      <div className="text-center text-muted-foreground max-w-md">
-                        <Bot className="h-12 w-12 mx-auto mb-4 text-primary/50" />
-                        <p className="font-medium mb-2">RCT configuré</p>
-                        <p className="text-sm">{getRCTSummary(rctData)}</p>
-                        <p className="text-sm mt-4">Commencez à écrire votre message ci-dessous.</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
+                  </div>
+                ) : (
                 <div className="flex-1 overflow-y-auto mb-4 space-y-4 px-6 py-4 min-h-0">
                   {messages.map((message, msgIndex) => {
                     // Calculer l'index de correspondance pour ce message
@@ -1006,7 +978,7 @@ export default function AssistantIAPage() {
                                 </div>
                               ) : (
                                 <>
-                                  <MarkdownRenderer content={message.content} />
+                                <MarkdownRenderer content={message.content} />
                                   {/* Boutons de réponse rapide pour les questions avec alternatives */}
                                   {message.role === "assistant" && (
                                     <QuickReplyButtons
@@ -1053,7 +1025,7 @@ export default function AssistantIAPage() {
                   </div>
                 )}
                 <div ref={messagesEndRef} />
-                </div>
+              </div>
               )}
 
               {/* Prévisualisation des images */}
@@ -1118,20 +1090,25 @@ export default function AssistantIAPage() {
                 </div>
               )}
 
-              {/* Zone de saisie */}
+              {/* Zone de saisie - désactivée si pas de tag principal */}
               <div className="px-6 pb-6 shrink-0">
-                <div
-                  className={`border-2 border-dashed rounded-lg p-2 transition-colors ${
-                    isDragging
-                      ? "border-primary bg-primary/10"
-                      : "border-transparent"
-                  }`}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={async (e) => {
+                {!selectedMainTag && (
+                  <div className="mb-4 p-4 rounded-lg bg-muted border border-dashed text-center text-sm text-muted-foreground">
+                    Veuillez sélectionner un domaine métier pour commencer à converser.
+                  </div>
+                )}
+              <div
+                className={`border-2 border-dashed rounded-lg p-2 transition-colors ${
+                  isDragging
+                    ? "border-primary bg-primary/10"
+                    : "border-transparent"
+                }`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={async (e) => {
                   e.preventDefault();
                   setIsDragging(false);
                   const files = Array.from(e.dataTransfer.files);
@@ -1263,7 +1240,7 @@ export default function AssistantIAPage() {
                   </div>
                   <Button
                     onClick={() => handleSendMessage()}
-                    disabled={isLoading || (!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0)}
+                    disabled={!selectedMainTag || isLoading || (!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0)}
                     size="lg"
                   >
                     {isLoading ? (

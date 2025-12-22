@@ -744,27 +744,27 @@ export function FloatingAssistant() {
                 {messages.length === 0 ? (
                   <div className="space-y-4">
                     <div className="text-center text-muted-foreground py-4">
-                      <div className="relative mx-auto mb-4 w-16 h-16 flex items-center justify-center">
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-full opacity-20 blur-xl" />
-                        <div className="relative bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 p-3 rounded-full">
-                          <MessageSquare className="h-8 w-8 text-white" />
-                        </div>
-                        <motion.div
-                          className="absolute -top-1 -right-1"
-                          animate={{
-                            rotate: [0, 360],
-                            scale: [1, 1.2, 1],
-                          }}
-                          transition={{
-                            duration: 3,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                          }}
-                        >
-                          <Sparkles className="h-5 w-5 text-amber-400" />
-                        </motion.div>
+                    <div className="relative mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-full opacity-20 blur-xl" />
+                      <div className="relative bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 p-3 rounded-full">
+                        <MessageSquare className="h-8 w-8 text-white" />
                       </div>
-                      <p className="font-medium">Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
+                      <motion.div
+                        className="absolute -top-1 -right-1"
+                        animate={{
+                          rotate: [0, 360],
+                          scale: [1, 1.2, 1],
+                        }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        <Sparkles className="h-5 w-5 text-amber-400" />
+                      </motion.div>
+                    </div>
+                    <p className="font-medium">Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
                     </div>
                     {/* Boutons d'action rapide */}
                     <QuickActionButtons

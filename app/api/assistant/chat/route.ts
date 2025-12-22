@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les paramètres depuis le body
     const body = await request.json();
-    const { message, images, files, history = [], model = "gpt-4o", rctPrompt } = body;
+    const { message, images, files, history = [], model = "gpt-4o", mainTag, optionalTags = [] } = body;
 
     // Le message peut être vide si seulement des images ou fichiers sont envoyés
     if (!message && (!images || images.length === 0) && (!files || files.length === 0)) {
@@ -107,20 +107,35 @@ export async function POST(request: NextRequest) {
           const lastName = userData?.lastName || "";
           const name = firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || undefined;
           
-          // Mapping des rôles vers les fonctions pour l'affichage
-          const roleToFunction: Record<string, string> = {
-            "ADMINISTRATEUR": "Administrateur",
-            "CDC_COMMERCIAL": "Commercial",
-            "COMMERCIAL_SANTE_INDIVIDUEL": "Santé",
-            "COMMERCIAL_SANTE_COLLECTIVE": "Santé",
-            "GESTIONNAIRE_SINISTRE": "Sinistre",
-          };
+          // Mapping des rôles vers les fonctions pour l'affichage (rôles réels dans l'agence)
+          // Ne pas utiliser "Administrateur" dans les signatures, c'est un rôle technique
+          const email = auth.userEmail?.toLowerCase() || "";
+          let functionTitle: string | undefined;
+          
+          // Détection par email pour les rôles spécifiques
+          if (email.includes("jeanmichel") || email.includes("julien") || email.includes("juliien")) {
+            functionTitle = "Agent général";
+          } else if (email.includes("karen") || email.includes("kheira")) {
+            functionTitle = "Spécialiste santé";
+          } else if (email.includes("virginie") || email.includes("nejma")) {
+            functionTitle = "Gestionnaire sinistres";
+          } else {
+            // Par défaut, utiliser le mapping par rôle technique
+            const roleToFunction: Record<string, string> = {
+              "ADMINISTRATEUR": "Agent général", // Ne pas afficher "Administrateur"
+              "CDC_COMMERCIAL": "Chargé(e) de clientèle",
+              "COMMERCIAL_SANTE_INDIVIDUEL": "Spécialiste santé",
+              "COMMERCIAL_SANTE_COLLECTIVE": "Spécialiste santé",
+              "GESTIONNAIRE_SINISTRE": "Gestionnaire sinistres",
+            };
+            functionTitle = userData?.role ? roleToFunction[userData.role] || "Chargé(e) de clientèle" : "Chargé(e) de clientèle";
+          }
 
           currentUserInfo = {
             email: auth.userEmail,
             name: name || auth.userEmail.split("@")[0],
             phone: userData?.phone || undefined,
-            function: userData?.role ? roleToFunction[userData.role] || userData.role : undefined,
+            function: functionTitle,
           };
         }
       }
@@ -155,10 +170,10 @@ L'agence dispose de deux sites :
 
 EFFECTIF DE L'AGENCE :
 L'agence compte 13 collaborateurs :
-- Agents : Jean-Michel Nogaro (jeanmichel@allianz-nogaro.fr, +33 6 08 18 33 38), Julien Boetti (juliien.boetti@allianz-nogaro.fr, +33 6 47 00 52 78)
-- Commerciaux : Donia Sahraoui (donia.sahraoui@allianz-nogaro.fr, +33 7 67 58 17 67), Audrey Humbert (audrey.humbert@allianz-nogaro.fr, +33 7 67 58 17 67), Emma Nogaro (emma@allianz-nogaro.fr, +33 7 44 71 18 14), Joëlle Abi Karam (joelle.abikaram@allianz-nogaro.fr, +33 7 68 38 49 41), Astrid Ulrich (astrid.ulrich@allianz-nogaro.fr, +33 7 44 93 43 26), Corentin Ulrich (corentin.ulrich@allianz-nogaro.fr, +33 7 66 94 18 69)
-- Santé : Karen Chollet (karen.chollet@allianz-nogaro.fr, +33 6 48 74 02 75), Kheira Bagnasco (kheira.bagnasco@allianz-nogaro.fr, +33 7 81 25 31 54)
-- Sinistres : Virginie Tommasini (virginie.tommasini@allianz-nogaro.fr, +33 7 81 90 16 43), Nejma Hariati (nejma.hariati@allianz-nogaro.fr, +33 7 81 49 65 4)
+- Agents généraux : Jean-Michel Nogaro (jeanmichel@allianz-nogaro.fr, +33 6 08 18 33 38), Julien Boetti (juliien.boetti@allianz-nogaro.fr, +33 6 47 00 52 78)
+- Chargé(e)s de clientèle : Donia Sahraoui (donia.sahraoui@allianz-nogaro.fr, +33 7 67 58 17 67), Audrey Humbert (audrey.humbert@allianz-nogaro.fr, +33 7 67 58 17 67), Emma Nogaro (emma@allianz-nogaro.fr, +33 7 44 71 18 14), Joëlle Abi Karam (joelle.abikaram@allianz-nogaro.fr, +33 7 68 38 49 41), Astrid Ulrich (astrid.ulrich@allianz-nogaro.fr, +33 7 44 93 43 26), Corentin Ulrich (corentin.ulrich@allianz-nogaro.fr, +33 7 66 94 18 69)
+- Spécialistes santé : Karen Chollet (karen.chollet@allianz-nogaro.fr, +33 6 48 74 02 75), Kheira Bagnasco (kheira.bagnasco@allianz-nogaro.fr, +33 7 81 25 31 54)
+- Gestionnaires sinistres : Virginie Tommasini (virginie.tommasini@allianz-nogaro.fr, +33 7 81 90 16 43), Nejma Hariati (nejma.hariati@allianz-nogaro.fr, +33 7 81 49 65 4)
 
 UTILISATEUR CONNECTÉ :
 ${currentUserInfo 
@@ -299,9 +314,16 @@ EXEMPLES DE FORMATAGE :
 - Pour des étapes : utilise une liste numérotée avec des émojis
 - Pour des points clés : utilise des listes à puces avec **gras**`;
 
-    // Intégrer le prompt RCT si fourni
-    const rctSection = rctPrompt ? `\n\n---\n\n${rctPrompt}\n\n---\n\n` : "";
-    const systemPrompt = `${coreKnowledge}${rctSection}${formattingRules}`;
+    // Intégrer le prompt basé sur les tags si fourni
+    let tagSection = "";
+    if (mainTag) {
+      const { generateSystemPromptFromTags } = await import("@/lib/assistant/tags-definitions");
+      const tagPrompt = generateSystemPromptFromTags(mainTag, optionalTags);
+      if (tagPrompt) {
+        tagSection = `\n\n---\n\n${tagPrompt}\n\n---\n\n`;
+      }
+    }
+    const systemPrompt = `${coreKnowledge}${tagSection}${formattingRules}`;
 
     // Construire le contenu du message utilisateur
     let userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];
@@ -374,7 +396,7 @@ EXEMPLES DE FORMATAGE :
 
     // Enrichir les messages avec les connaissances pertinentes de la base de connaissance
     const userMessageText = typeof message === "string" ? message : "";
-    const enrichedMessages = await enrichMessagesWithKnowledge(messages, userMessageText);
+    const enrichedMessages = await enrichMessagesWithKnowledge(messages, userMessageText, mainTag, optionalTags);
 
     // Récupérer le paramètre stream depuis le body
     const { stream: useStream = false } = body;

@@ -364,13 +364,54 @@ export async function loadRelevantKnowledge(
  * @param userMessage Le message de l'utilisateur
  * @returns Le tableau de messages enrichi (ou inchangé si pas de connaissances pertinentes)
  */
+/**
+ * Charge les fichiers de connaissance selon les tags
+ */
+export async function loadKnowledgeByTags(
+  mainTag?: string,
+  optionalTags: string[] = [],
+  maxFiles: number = 2
+): Promise<string | null> {
+  if (!mainTag) {
+    return null;
+  }
+
+  const { getKnowledgeFilesForTags } = await import("./tag-knowledge-loader");
+  const files = getKnowledgeFilesForTags(mainTag, optionalTags);
+  
+  if (files.length === 0) {
+    return null;
+  }
+
+  // Limiter le nombre de fichiers
+  const filesToLoad = files.slice(0, maxFiles);
+  const contents = await loadKnowledgeFiles(filesToLoad);
+
+  if (contents.length === 0) {
+    return null;
+  }
+
+  // Formater pour injection dans le prompt
+  return `\n\n--- Connaissances métier pertinentes (tags: ${mainTag}${optionalTags.length > 0 ? `, ${optionalTags.join(", ")}` : ""}) ---\n\n${contents.join("\n\n---\n\n")}`;
+}
+
 export async function enrichMessagesWithKnowledge<T extends { role: string; content?: any }>(
   messages: T[],
-  userMessage: string
+  userMessage: string,
+  mainTag?: string,
+  optionalTags: string[] = []
 ): Promise<T[]> {
-  // Charger les connaissances pertinentes selon le message utilisateur
-  // Limité à 1 fichier pour éviter la surcharge de tokens
-  const relevantKnowledge = await loadRelevantKnowledge(userMessage, 1);
+  // Priorité aux tags si fournis
+  let relevantKnowledge: string | null = null;
+  
+  if (mainTag) {
+    relevantKnowledge = await loadKnowledgeByTags(mainTag, optionalTags, 2);
+  }
+  
+  // Sinon, utiliser la détection par mots-clés
+  if (!relevantKnowledge) {
+    relevantKnowledge = await loadRelevantKnowledge(userMessage, 1);
+  }
   
   if (relevantKnowledge) {
     // Insérer les connaissances après le system prompt
