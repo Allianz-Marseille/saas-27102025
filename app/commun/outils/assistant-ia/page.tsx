@@ -918,7 +918,16 @@ export default function AssistantIAPage() {
                   </div>
                 ) : (
                 <div className="flex-1 overflow-y-auto mb-4 space-y-4 px-6 py-4 min-h-0">
-                  {messages.map((message, msgIndex) => {
+                  {messages.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center min-h-[400px]">
+                      <div className="text-center text-muted-foreground max-w-md">
+                        <Bot className="h-12 w-12 mx-auto mb-4 text-primary/50" />
+                        <p className="font-medium mb-2">Prêt à converser</p>
+                        <p className="text-sm">Commencez à écrire votre message ci-dessous.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    messages.map((message, msgIndex) => {
                     // Calculer l'index de correspondance pour ce message
                     let matchIndexInMessage = -1;
                     if (searchQuery && searchResults.length > 0) {
@@ -1016,7 +1025,8 @@ export default function AssistantIAPage() {
                         </div>
                       </div>
                     );
-                  })}
+                    })
+                  )}
                 {isLoading && (
                   <div className="flex justify-start">
                     <div className="bg-muted rounded-lg p-4">
