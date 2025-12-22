@@ -18,6 +18,48 @@ interface QuickReplyButtonsProps {
  * - "Option 1, Option 2, Option 3"
  * - Questions avec "ou" entre options
  */
+/**
+ * Valide qu'une option est valide (pas un fragment, pas trop courte, etc.)
+ */
+function isValidOption(option: string): boolean {
+  // Longueur minimale : au moins 3 caractères
+  if (option.length < 3) {
+    return false;
+  }
+  
+  // Longueur maximale : 50 caractères
+  if (option.length > 50) {
+    return false;
+  }
+  
+  // Ne doit pas être juste une lettre ou un chiffre
+  if (/^[a-z0-9]$/i.test(option)) {
+    return false;
+  }
+  
+  // Ne doit pas être juste des ponctuations
+  if (/^[.,;:!?\-_\s]+$/.test(option)) {
+    return false;
+  }
+  
+  // Doit contenir au moins une lettre
+  if (!/[a-zàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ]/i.test(option)) {
+    return false;
+  }
+  
+  // Ne doit pas être un mot de liaison seul
+  const stopWords = [
+    'préfères', 'choisissez', 'souhaitez', 'voulez', 'désirez', 'préférez',
+    'tu', 'vous', 'le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'pour',
+    'avec', 'sans', 'dans', 'sur', 'par', 'et', 'ou', 'mais', 'donc', 'car'
+  ];
+  if (stopWords.includes(option.toLowerCase())) {
+    return false;
+  }
+  
+  return true;
+}
+
 function extractOptions(content: string): string[] {
   const options: string[] = [];
   
@@ -30,12 +72,12 @@ function extractOptions(content: string): string[] {
     .trim();
 
   // Pattern 1: "Tu préfères X ou Y ?" - Le plus commun
-  const ouPattern = /(?:tu\s+)?(?:préfères?|choisissez?|souhaitez?|voulez?|désirez?|préférez?)\s+(?:la\s+|le\s+|les\s+|un\s+|une\s+)?([^?,\n]+?)\s+ou\s+(?:la\s+|le\s+|les\s+|un\s+|une\s+)?([^?,\n]+?)\??/i;
+  const ouPattern = /(?:tu\s+)?(?:préfères?|choisissez?|souhaitez?|voulez?|désirez?|préférez?)\s+(?:la\s+|le\s+|les\s+|un\s+|une\s+)?([^?,\n]{3,30}?)\s+ou\s+(?:la\s+|le\s+|les\s+|un\s+|une\s+)?([^?,\n]{3,30}?)\??/i;
   const ouMatch = cleanContent.match(ouPattern);
   if (ouMatch) {
     const option1 = ouMatch[1].trim().replace(/[.,;:!?]$/, '');
     const option2 = ouMatch[2].trim().replace(/[.,;:!?]$/, '');
-    if (option1 && option2 && option1.length < 50 && option2.length < 50) {
+    if (isValidOption(option1) && isValidOption(option2)) {
       return [option1, option2];
     }
   }
@@ -49,50 +91,46 @@ function extractOptions(content: string): string[] {
     const splitOptions = optionsText.split(/\s*,\s*(?:ou\s*)?|\s+ou\s+/i);
     const cleaned = splitOptions
       .map(opt => opt.trim().replace(/^[-•*]\s*/, '').replace(/[.,;:!?]$/, ''))
-      .filter(opt => opt.length > 0 && opt.length < 50);
+      .filter(opt => isValidOption(opt));
     if (cleaned.length >= 2 && cleaned.length <= 4) {
       return cleaned;
     }
   }
 
-  // Pattern 3: "X ou Y" simple dans une phrase interrogative
-  const simpleOuPattern = /\b([a-zàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ][^?,\n]{0,30}?)\s+ou\s+([a-zàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ][^?,\n]{0,30}?)\??/i;
+  // Pattern 3: "X ou Y" simple dans une phrase interrogative (plus strict)
+  // Ne matcher que si c'est dans une vraie question avec "?" à la fin
+  const simpleOuPattern = /([a-zàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ][^?,\n]{2,25}?)\s+ou\s+([a-zàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ][^?,\n]{2,25}?)\s*\?/i;
   const simpleOuMatch = cleanContent.match(simpleOuPattern);
   if (simpleOuMatch) {
     const opt1 = simpleOuMatch[1].trim().replace(/[.,;:!?]$/, '');
     const opt2 = simpleOuMatch[2].trim().replace(/[.,;:!?]$/, '');
     // Vérifier que ce ne sont pas des phrases complètes (max 4 mots)
-    if (opt1 && opt2 && 
+    if (isValidOption(opt1) && isValidOption(opt2) &&
         opt1.split(/\s+/).length <= 4 && 
-        opt2.split(/\s+/).length <= 4 &&
-        opt1.length < 50 && opt2.length < 50) {
-      // Exclure les mots de liaison
-      if (!opt1.match(/^(préfères?|choisissez?|souhaitez?|voulez?|désirez?|préférez?|tu|vous)$/i) &&
-          !opt2.match(/^(préfères?|choisissez?|souhaitez?|voulez?|désirez?|préférez?|tu|vous)$/i)) {
-        return [opt1, opt2];
-      }
+        opt2.split(/\s+/).length <= 4) {
+      return [opt1, opt2];
     }
   }
 
   // Pattern 4: Format structuré avec tirets, puces ou numéros
-  const structuredPattern = /(?:^|\n)[\s]*[-•*]\s*([^\n]{1,50}?)(?:\n|$)/g;
+  const structuredPattern = /(?:^|\n)[\s]*[-•*]\s*([^\n]{3,50}?)(?:\n|$)/g;
   const structuredMatches = Array.from(cleanContent.matchAll(structuredPattern));
   if (structuredMatches.length >= 2 && structuredMatches.length <= 4) {
     const extracted = structuredMatches
       .map(m => m[1].trim().replace(/[.,;:!?]$/, ''))
-      .filter(opt => opt.length > 0 && opt.length < 50);
+      .filter(opt => isValidOption(opt));
     if (extracted.length >= 2) {
       return extracted;
     }
   }
 
   // Pattern 5: Liste numérotée 1. 2. 3.
-  const numberedPattern = /(?:^|\n)[\s]*\d+[.)]\s*([^\n]{1,50}?)(?:\n|$)/g;
+  const numberedPattern = /(?:^|\n)[\s]*\d+[.)]\s*([^\n]{3,50}?)(?:\n|$)/g;
   const numberedMatches = Array.from(cleanContent.matchAll(numberedPattern));
   if (numberedMatches.length >= 2 && numberedMatches.length <= 4) {
     const extracted = numberedMatches
       .map(m => m[1].trim().replace(/[.,;:!?]$/, ''))
-      .filter(opt => opt.length > 0 && opt.length < 50);
+      .filter(opt => isValidOption(opt));
     if (extracted.length >= 2) {
       return extracted;
     }
