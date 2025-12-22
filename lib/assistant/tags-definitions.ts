@@ -278,12 +278,9 @@ export function getOptionalTagsByCategory(
 }
 
 /**
- * Génère un prompt système basé sur les tags sélectionnés
+ * Génère un prompt système basé sur le tag principal sélectionné
  */
-export function generateSystemPromptFromTags(
-  mainTag: string,
-  optionalTags: string[] = []
-): string {
+export function generateSystemPromptFromTags(mainTag: string): string {
   const main = getTagById(mainTag);
   if (!main) {
     return "";
@@ -292,17 +289,6 @@ export function generateSystemPromptFromTags(
   let prompt = `**Domaine métier** : ${main.label}\n`;
   if (main.description) {
     prompt += `${main.description}\n\n`;
-  }
-
-  if (optionalTags.length > 0) {
-    prompt += `**Contexte supplémentaire** :\n`;
-    optionalTags.forEach((tagId) => {
-      const tag = getTagById(tagId);
-      if (tag) {
-        prompt += `- ${tag.label}\n`;
-      }
-    });
-    prompt += "\n";
   }
 
   // Instructions selon le tag principal

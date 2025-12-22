@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les paramètres depuis le body
     const body = await request.json();
-    const { message, images, files, history = [], model = "gpt-4o", mainTag, optionalTags = [] } = body;
+    const { message, images, files, history = [], model = "gpt-4o", mainTag } = body;
 
     // Le message peut être vide si seulement des images ou fichiers sont envoyés
     if (!message && (!images || images.length === 0) && (!files || files.length === 0)) {
@@ -314,13 +314,37 @@ EXEMPLES DE FORMATAGE :
 - Pour des étapes : utilise une liste numérotée avec des émojis
 - Pour des points clés : utilise des listes à puces avec **gras**`;
 
-    // Intégrer le prompt basé sur les tags si fourni
+    // Intégrer le prompt basé sur le tag si fourni
     let tagSection = "";
     if (mainTag) {
       const { generateSystemPromptFromTags } = await import("@/lib/assistant/tags-definitions");
-      const tagPrompt = generateSystemPromptFromTags(mainTag, optionalTags);
+      const tagPrompt = generateSystemPromptFromTags(mainTag);
       if (tagPrompt) {
         tagSection = `\n\n---\n\n${tagPrompt}\n\n---\n\n`;
+      }
+      
+      // Si des informations de flux sont fournies, les ajouter
+      const { flowRole, flowContext, flowTask } = body;
+      if (flowRole || flowContext || flowTask) {
+        const flowInfo: string[] = [];
+        if (flowRole) {
+          const { ROLES_BY_TAG } = await import("@/lib/assistant/interactive-flow");
+          const role = ROLES_BY_TAG[mainTag]?.find((r) => r.id === flowRole);
+          if (role) flowInfo.push(`Rôle : ${role.label}`);
+        }
+        if (flowContext) {
+          const { CONTEXTS_BY_ROLE } = await import("@/lib/assistant/interactive-flow");
+          const context = CONTEXTS_BY_ROLE[flowRole || ""]?.find((c) => c.id === flowContext);
+          if (context) flowInfo.push(`Contexte : ${context.label}`);
+        }
+        if (flowTask) {
+          const { TASKS } = await import("@/lib/assistant/interactive-flow");
+          const task = TASKS.find((t) => t.id === flowTask);
+          if (task) flowInfo.push(`Tâche : ${task.label}`);
+        }
+        if (flowInfo.length > 0) {
+          tagSection += `\n\n**Configuration utilisateur** :\n${flowInfo.join("\n")}\n\n`;
+        }
       }
     }
     const systemPrompt = `${coreKnowledge}${tagSection}${formattingRules}`;
@@ -396,7 +420,7 @@ EXEMPLES DE FORMATAGE :
 
     // Enrichir les messages avec les connaissances pertinentes de la base de connaissance
     const userMessageText = typeof message === "string" ? message : "";
-    const enrichedMessages = await enrichMessagesWithKnowledge(messages, userMessageText, mainTag, optionalTags);
+    const enrichedMessages = await enrichMessagesWithKnowledge(messages, userMessageText, mainTag);
 
     // Récupérer le paramètre stream depuis le body
     const { stream: useStream = false } = body;

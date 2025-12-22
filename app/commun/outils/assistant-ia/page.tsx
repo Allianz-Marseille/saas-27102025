@@ -26,7 +26,17 @@ import { MarkdownRenderer } from "@/components/assistant/MarkdownRenderer";
 import { SearchBar } from "@/components/assistant/SearchBar";
 import { HighlightedText } from "@/components/assistant/HighlightedText";
 import { QuickReplyButtons } from "@/components/assistant/QuickReplyButtons";
+import { FlowReplyButtons } from "@/components/assistant/FlowReplyButtons";
 import { TagSelector } from "@/components/assistant/TagSelector";
+import {
+  generateRoleQuestionMessage,
+  generateContextQuestionMessage,
+  generateTaskQuestionMessage,
+  generateCompletionMessage,
+  getFlowOptions,
+  isFlowComplete,
+  type InteractiveFlowState,
+} from "@/lib/assistant/interactive-flow";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
 
@@ -60,7 +70,7 @@ export default function AssistantIAPage() {
   const [historySearchQuery, setHistorySearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
   const [selectedMainTag, setSelectedMainTag] = useState<string>("");
-  const [selectedOptionalTags, setSelectedOptionalTags] = useState<string[]>([]);
+  const [flowState, setFlowState] = useState<InteractiveFlowState>({});
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showNewChatDialog, setShowNewChatDialog] = useState(false);
@@ -421,22 +431,85 @@ export default function AssistantIAPage() {
   };
 
   // Gérer la sélection du tag principal
-  const handleMainTagSelect = (tagId: string) => {
+  const handleMainTagSelect = async (tagId: string) => {
     setSelectedMainTag(tagId);
+    setFlowState({}); // Réinitialiser le flux
+    setMessages([]); // Réinitialiser les messages
+    
     if (tagId) {
-      toast.success("Domaine métier sélectionné");
+      // Envoyer automatiquement le message du bot pour demander le rôle
+      const roleQuestion = generateRoleQuestionMessage(tagId);
+      const botMessage: Message = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content: roleQuestion,
+        timestamp: new Date(),
+      };
+      setMessages([botMessage]);
+      
+      // Scroll vers le bas
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     }
   };
 
-  // Gérer la sélection des tags optionnels
-  const handleOptionalTagToggle = (tagId: string) => {
-    setSelectedOptionalTags((prev) => {
-      if (prev.includes(tagId)) {
-        return prev.filter((id) => id !== tagId);
-    } else {
-        return [...prev, tagId];
-      }
-    });
+  // Gérer la sélection d'une option du flux interactif
+  const handleFlowOptionSelect = async (optionId: string, step: "role" | "context" | "task") => {
+    const newFlowState = { ...flowState };
+    
+    if (step === "role") {
+      newFlowState.role = optionId;
+      newFlowState.context = undefined; // Réinitialiser les étapes suivantes
+      newFlowState.task = undefined;
+      
+      // Envoyer le message du bot pour demander le contexte
+      const contextQuestion = generateContextQuestionMessage(optionId);
+      const botMessage: Message = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content: contextQuestion,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, botMessage]);
+    } else if (step === "context") {
+      newFlowState.context = optionId;
+      newFlowState.task = undefined; // Réinitialiser la tâche
+      
+      // Envoyer le message du bot pour demander la tâche
+      const taskQuestion = generateTaskQuestionMessage();
+      const botMessage: Message = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content: taskQuestion,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, botMessage]);
+    } else if (step === "task") {
+      newFlowState.task = optionId;
+      
+      // Envoyer le message de confirmation
+      const completionMessage = generateCompletionMessage(
+        selectedMainTag,
+        newFlowState.role!,
+        newFlowState.context!,
+        optionId
+      );
+      const botMessage: Message = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content: completionMessage,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, botMessage]);
+    }
+    
+    setFlowState(newFlowState);
+    
+    // Scroll vers le bas
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   };
 
   // Clic sur "Nouveau chat" - vérifier si changements non sauvegardés
@@ -455,7 +528,7 @@ export default function AssistantIAPage() {
     setSelectedImages([]);
     setSelectedFiles([]);
     setSelectedMainTag("");
-    setSelectedOptionalTags([]);
+    setFlowState({});
     setHasUnsavedChanges(false);
     setLastSavedMessagesCount(0);
     setShowNewChatDialog(false);
@@ -698,7 +771,9 @@ export default function AssistantIAPage() {
           files: filesToSend.length > 0 ? filesToSend : undefined,
           history: conversationHistory,
           mainTag: selectedMainTag || undefined,
-          optionalTags: selectedOptionalTags.length > 0 ? selectedOptionalTags : undefined,
+          flowRole: flowState.role || undefined,
+          flowContext: flowState.context || undefined,
+          flowTask: flowState.task || undefined,
           stream: true, // Activer le streaming
         }),
       });
@@ -899,9 +974,7 @@ export default function AssistantIAPage() {
               <div className="pt-4 border-t">
                 <TagSelector
                   selectedMainTag={selectedMainTag}
-                  selectedOptionalTags={selectedOptionalTags}
                   onMainTagSelect={handleMainTagSelect}
-                  onOptionalTagToggle={handleOptionalTagToggle}
                   compact={messages.length > 0}
                 />
               </div>
@@ -987,9 +1060,67 @@ export default function AssistantIAPage() {
                                 </div>
                               ) : (
                                 <>
-                                <MarkdownRenderer content={message.content} />
-                                  {/* Boutons de réponse rapide pour les questions avec alternatives */}
-                                  {message.role === "assistant" && (
+                                  <MarkdownRenderer content={message.content} />
+                                  {/* Boutons de réponse pour le flux interactif */}
+                                  {message.role === "assistant" && selectedMainTag && !isFlowComplete(flowState) && (
+                                    <>
+                                      {/* Demande de rôle - détection par contenu du message */}
+                                      {!flowState.role &&
+                                        (message.content.toLowerCase().includes("préciser votre rôle") ||
+                                          message.content.toLowerCase().includes("préciser mon rôle") ||
+                                          message.content.toLowerCase().includes("votre rôle")) && (
+                                        <FlowReplyButtons
+                                          options={getFlowOptions("role", selectedMainTag)}
+                                          onSelect={(optionId) => handleFlowOptionSelect(optionId, "role")}
+                                          disabled={isLoading}
+                                          color="green"
+                                          showOther={true}
+                                          onOtherSelect={() => {
+                                            setInput("Je suis ");
+                                            setTimeout(() => textareaRef.current?.focus(), 100);
+                                          }}
+                                        />
+                                      )}
+                                      {/* Demande de contexte */}
+                                      {flowState.role &&
+                                        !flowState.context &&
+                                        (message.content.toLowerCase().includes("contexte") ||
+                                          message.content.toLowerCase().includes("situation")) && (
+                                        <FlowReplyButtons
+                                          options={getFlowOptions("context", selectedMainTag, flowState.role)}
+                                          onSelect={(optionId) => handleFlowOptionSelect(optionId, "context")}
+                                          disabled={isLoading}
+                                          color="blue"
+                                          showOther={true}
+                                          onOtherSelect={() => {
+                                            setInput("Le contexte est ");
+                                            setTimeout(() => textareaRef.current?.focus(), 100);
+                                          }}
+                                        />
+                                      )}
+                                      {/* Demande de tâche */}
+                                      {flowState.role &&
+                                        flowState.context &&
+                                        !flowState.task &&
+                                        (message.content.toLowerCase().includes("souhaitez-vous") ||
+                                          message.content.toLowerCase().includes("souhaitez que") ||
+                                          message.content.toLowerCase().includes("que je fasse")) && (
+                                        <FlowReplyButtons
+                                          options={getFlowOptions("task")}
+                                          onSelect={(optionId) => handleFlowOptionSelect(optionId, "task")}
+                                          disabled={isLoading}
+                                          color="green"
+                                          showOther={true}
+                                          onOtherSelect={() => {
+                                            setInput("Je souhaite ");
+                                            setTimeout(() => textareaRef.current?.focus(), 100);
+                                          }}
+                                        />
+                                      )}
+                                    </>
+                                  )}
+                                  {/* Boutons de réponse rapide pour les questions avec alternatives (après flux complété) */}
+                                  {message.role === "assistant" && isFlowComplete(flowState) && (
                                     <QuickReplyButtons
                                       content={message.content}
                                       onSelect={(option) => {

@@ -76,24 +76,9 @@ export function getKnowledgeFilesForTag(tagId: string): string[] {
 }
 
 /**
- * Récupère tous les fichiers de connaissance pour plusieurs tags
+ * Récupère tous les fichiers de connaissance pour le tag principal
  */
-export function getKnowledgeFilesForTags(
-  mainTag: string,
-  optionalTags: string[] = []
-): string[] {
-  const files = new Set<string>();
-
-  // Fichiers du tag principal
-  const mainFiles = getKnowledgeFilesForTag(mainTag);
-  mainFiles.forEach((file) => files.add(file));
-
-  // Fichiers des tags optionnels
-  optionalTags.forEach((tagId) => {
-    const tagFiles = getKnowledgeFilesForTag(tagId);
-    tagFiles.forEach((file) => files.add(file));
-  });
-
-  return Array.from(files);
+export function getKnowledgeFilesForTags(mainTag: string): string[] {
+  return getKnowledgeFilesForTag(mainTag);
 }
 
