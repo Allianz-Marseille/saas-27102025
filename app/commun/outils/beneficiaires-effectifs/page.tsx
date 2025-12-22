@@ -23,6 +23,8 @@ import {
   Target,
   Network,
   Scale,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -205,6 +207,7 @@ export default function BeneficiairesEffectifsPage() {
   const [results, setResults] = useState<ApiResponse["data"] | null>(null);
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copiedSection, setCopiedSection] = useState<string | null>(null);
 
   // Validation et conversion SIRET → SIREN
   const validateAndExtractSiren = (input: string): string | null => {
@@ -362,6 +365,167 @@ export default function BeneficiairesEffectifsPage() {
       return `${dateStr.substring(6, 8)}/${dateStr.substring(4, 6)}/${dateStr.substring(0, 4)}`;
     }
     return dateStr;
+  };
+
+  const copyToClipboard = async (text: string, sectionId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedSection(sectionId);
+      toast.success("Données copiées dans le presse-papier");
+      setTimeout(() => setCopiedSection(null), 2000);
+    } catch (err) {
+      toast.error("Erreur lors de la copie");
+    }
+  };
+
+  const formatInformationsForCopy = (): string => {
+    if (!results) return "";
+    const entreprise = results.entreprise;
+    let text = `INFORMATIONS ENTREPRISE\n`;
+    text += `${"=".repeat(50)}\n\n`;
+    text += `Dénomination: ${entreprise.denomination}\n`;
+    if (entreprise.sigle) text += `Sigle: ${entreprise.sigle}\n`;
+    text += `Forme juridique: ${entreprise.forme_juridique}\n`;
+    text += `Adresse: ${entreprise.adresse}\n`;
+    text += `SIREN: ${entreprise.siren}\n`;
+    if (entreprise.siret_siege) text += `SIRET siège: ${entreprise.siret_siege}\n`;
+    if (entreprise.num_tva_intracommunautaire) text += `TVA intracommunautaire: ${entreprise.num_tva_intracommunautaire}\n`;
+    if (entreprise.rcs) text += `RCS: ${entreprise.rcs}\n`;
+    if (entreprise.capital !== null && entreprise.capital !== undefined) {
+      text += `Capital: ${entreprise.capital_formate || formatCurrency(entreprise.capital)}`;
+      if (entreprise.devise_capital) text += ` ${entreprise.devise_capital}`;
+      text += `\n`;
+    }
+    if (entreprise.code_naf) {
+      text += `Code NAF/APE: ${entreprise.code_naf} - ${entreprise.libelle_code_naf || "Non disponible"}\n`;
+    }
+    if (entreprise.date_creation_formatee) text += `Date de création: ${entreprise.date_creation_formatee}\n`;
+    if (entreprise.statut) text += `Statut: ${entreprise.statut}\n`;
+    if (entreprise.effectif !== null && entreprise.effectif !== undefined) {
+      text += `Effectif: ${entreprise.effectif} personnes`;
+      if (entreprise.annee_effectif) text += ` (${entreprise.annee_effectif})`;
+      text += `\n`;
+    }
+    return text;
+  };
+
+  const formatBeneficiairesForCopy = (): string => {
+    if (!results || !results.beneficiaires_effectifs || results.beneficiaires_effectifs.length === 0) return "";
+    let text = `BÉNÉFICIAIRES EFFECTIFS\n`;
+    text += `${"=".repeat(50)}\n\n`;
+    results.beneficiaires_effectifs.forEach((beneficiaire, index) => {
+      text += `Bénéficiaire ${index + 1}:\n`;
+      text += `  Nom complet: ${beneficiaire.nom_complet}\n`;
+      text += `  Date de naissance: ${beneficiaire.date_naissance}\n`;
+      text += `  Nationalité: ${beneficiaire.nationalite}\n`;
+      if (beneficiaire.pourcentage_parts > 0) {
+        text += `  Pourcentage de parts (total): ${beneficiaire.pourcentage_parts.toFixed(2)}%\n`;
+      }
+      if (beneficiaire.pourcentage_parts_directes > 0) {
+        text += `  Parts directes: ${beneficiaire.pourcentage_parts_directes.toFixed(2)}%\n`;
+      }
+      if (beneficiaire.pourcentage_parts_indirectes > 0) {
+        text += `  Parts indirectes: ${beneficiaire.pourcentage_parts_indirectes.toFixed(2)}%\n`;
+      }
+      if (beneficiaire.pourcentage_votes > 0) {
+        text += `  Pourcentage de votes: ${beneficiaire.pourcentage_votes.toFixed(2)}%\n`;
+      }
+      text += `\n`;
+    });
+    return text;
+  };
+
+  const formatDirigeantsForCopy = (): string => {
+    if (!results || !results.dirigeants || results.dirigeants.length === 0) return "";
+    let text = `DIRIGEANTS\n`;
+    text += `${"=".repeat(50)}\n\n`;
+    results.dirigeants.forEach((dirigeant, index) => {
+      text += `Dirigeant ${index + 1}:\n`;
+      text += `  Nom complet: ${dirigeant.nom_complet}\n`;
+      text += `  Fonction: ${dirigeant.fonction}\n`;
+      if (dirigeant.date_naissance) text += `  Date de naissance: ${dirigeant.date_naissance}\n`;
+      if (dirigeant.nationalite) text += `  Nationalité: ${dirigeant.nationalite}\n`;
+      if (dirigeant.date_debut_formatee) text += `  Début de mandat: ${dirigeant.date_debut_formatee}\n`;
+      if (dirigeant.date_fin_formatee) text += `  Fin de mandat: ${dirigeant.date_fin_formatee}\n`;
+      if (dirigeant.pourcentage_parts !== null && dirigeant.pourcentage_parts !== undefined) {
+        text += `  Pourcentage de détention: ${dirigeant.pourcentage_parts.toFixed(2)}%\n`;
+      }
+      text += `\n`;
+    });
+    return text;
+  };
+
+  const formatFinancierForCopy = (): string => {
+    if (!results) return "";
+    let text = `INFORMATIONS FINANCIÈRES\n`;
+    text += `${"=".repeat(50)}\n\n`;
+    
+    if (results.bilans && results.bilans.length > 0) {
+      text += `BILANS\n`;
+      text += `${"-".repeat(30)}\n`;
+      results.bilans.slice(0, 5).forEach((bilan, index) => {
+        text += `Bilan ${index + 1}:\n`;
+        text += `  Année: ${bilan.annee || (bilan.date_cloture_formatee ? formatDate(bilan.date_cloture_formatee) : "N/A")}\n`;
+        text += `  Type: ${bilan.type_bilan || "Non spécifié"}\n`;
+        if (bilan.actif_total !== null && bilan.actif_total !== undefined) {
+          text += `  Actif total: ${formatCurrency(bilan.actif_total)} ${bilan.devise || "EUR"}\n`;
+        }
+        if (bilan.chiffre_affaires !== null && bilan.chiffre_affaires !== undefined) {
+          text += `  Chiffre d'affaires: ${formatCurrency(bilan.chiffre_affaires)} ${bilan.devise || "EUR"}\n`;
+        }
+        if (bilan.resultat_net !== null && bilan.resultat_net !== undefined) {
+          text += `  Résultat net: ${formatCurrency(bilan.resultat_net)} ${bilan.devise || "EUR"}\n`;
+        }
+        if (bilan.effectif !== null && bilan.effectif !== undefined) {
+          text += `  Effectif: ${bilan.effectif} personnes\n`;
+        }
+        text += `\n`;
+      });
+    }
+
+    if (results.procedures_collectives && results.procedures_collectives.length > 0) {
+      text += `PROCÉDURES COLLECTIVES\n`;
+      text += `${"-".repeat(30)}\n`;
+      results.procedures_collectives.forEach((proc, index) => {
+        text += `Procédure ${index + 1}:\n`;
+        text += `  Type: ${proc.type}\n`;
+        text += `  Période: ${proc.date_ouverture_formatee ? `Du ${proc.date_ouverture_formatee}` : "Date inconnue"}`;
+        text += `${proc.date_cloture_formatee ? ` au ${proc.date_cloture_formatee}` : " (en cours)"}\n`;
+        if (proc.administrateur) text += `  Administrateur: ${proc.administrateur}\n`;
+        if (proc.tribunal) text += `  Tribunal: ${proc.tribunal}\n`;
+        text += `\n`;
+      });
+    }
+
+    if (results.filiales && results.filiales.length > 0) {
+      text += `FILIALES\n`;
+      text += `${"-".repeat(30)}\n`;
+      results.filiales.forEach((filiale, index) => {
+        text += `Filiale ${index + 1}:\n`;
+        text += `  Dénomination: ${filiale.denomination}\n`;
+        text += `  SIREN: ${filiale.siren}\n`;
+        if (filiale.pourcentage !== null && filiale.pourcentage !== undefined) {
+          text += `  Détention: ${filiale.pourcentage.toFixed(2)}%\n`;
+        }
+        text += `\n`;
+      });
+    }
+
+    if (results.participations && results.participations.length > 0) {
+      text += `PARTICIPATIONS\n`;
+      text += `${"-".repeat(30)}\n`;
+      results.participations.forEach((participation, index) => {
+        text += `Participation ${index + 1}:\n`;
+        text += `  Dénomination: ${participation.denomination}\n`;
+        text += `  SIREN: ${participation.siren}\n`;
+        if (participation.pourcentage !== null && participation.pourcentage !== undefined) {
+          text += `  Détention: ${participation.pourcentage.toFixed(2)}%\n`;
+        }
+        text += `\n`;
+      });
+    }
+
+    return text;
   };
 
   return (
@@ -593,22 +757,70 @@ export default function BeneficiairesEffectifsPage() {
           className="space-y-6"
         >
           <Tabs defaultValue="infos" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 mb-6">
-              <TabsTrigger value="infos">Informations</TabsTrigger>
-              <TabsTrigger value="beneficiaires">Bénéficiaires</TabsTrigger>
-              <TabsTrigger value="dirigeants">Dirigeants</TabsTrigger>
-              <TabsTrigger value="financier">Financier</TabsTrigger>
-            </TabsList>
+            <div className="flex items-center justify-between mb-6">
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+                <TabsTrigger value="infos">Informations</TabsTrigger>
+                <TabsTrigger value="beneficiaires">Bénéficiaires</TabsTrigger>
+                <TabsTrigger value="dirigeants">Dirigeants</TabsTrigger>
+                <TabsTrigger value="financier">Financier</TabsTrigger>
+              </TabsList>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const allData = [
+                    formatInformationsForCopy(),
+                    formatBeneficiairesForCopy(),
+                    formatDirigeantsForCopy(),
+                    formatFinancierForCopy(),
+                  ].filter(Boolean).join("\n\n");
+                  copyToClipboard(allData, "all");
+                }}
+                className="gap-2 ml-4"
+              >
+                {copiedSection === "all" ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Tout copié
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    Copier tout
+                  </>
+                )}
+              </Button>
+            </div>
 
             {/* Onglet Informations */}
             <TabsContent value="infos" className="space-y-6">
               {/* Informations de base */}
               <Card className="bg-card text-card-foreground rounded-xl border shadow-sm">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-xl">
-                    <Building2 className="h-5 w-5" />
-                    Informations légales
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <Building2 className="h-5 w-5" />
+                      Informations légales
+                    </CardTitle>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(formatInformationsForCopy(), "infos")}
+                      className="gap-2"
+                    >
+                      {copiedSection === "infos" ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Copié
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4" />
+                          Copier
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -783,10 +995,30 @@ export default function BeneficiairesEffectifsPage() {
               {results.beneficiaires_effectifs && results.beneficiaires_effectifs.length > 0 ? (
                 <Card className="bg-card text-card-foreground rounded-xl border shadow-sm">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                      <Users className="h-5 w-5" />
-                      Bénéficiaires effectifs ({results.beneficiaires_effectifs.length})
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2 text-xl">
+                        <Users className="h-5 w-5" />
+                        Bénéficiaires effectifs ({results.beneficiaires_effectifs.length})
+                      </CardTitle>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(formatBeneficiairesForCopy(), "beneficiaires")}
+                        className="gap-2"
+                      >
+                        {copiedSection === "beneficiaires" ? (
+                          <>
+                            <Check className="h-4 w-4" />
+                            Copié
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4" />
+                            Copier
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -886,10 +1118,30 @@ export default function BeneficiairesEffectifsPage() {
               {results.dirigeants && results.dirigeants.length > 0 ? (
                 <Card className="bg-card text-card-foreground rounded-xl border shadow-sm">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                      <Users className="h-5 w-5" />
-                      Dirigeants ({results.dirigeants.length})
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2 text-xl">
+                        <Users className="h-5 w-5" />
+                        Dirigeants ({results.dirigeants.length})
+                      </CardTitle>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(formatDirigeantsForCopy(), "dirigeants")}
+                        className="gap-2"
+                      >
+                        {copiedSection === "dirigeants" ? (
+                          <>
+                            <Check className="h-4 w-4" />
+                            Copié
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4" />
+                            Copier
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -979,6 +1231,28 @@ export default function BeneficiairesEffectifsPage() {
 
             {/* Onglet Financier */}
             <TabsContent value="financier" className="space-y-6">
+              {/* Bouton copier toutes les infos financières */}
+              <div className="flex justify-end mb-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(formatFinancierForCopy(), "financier")}
+                  className="gap-2"
+                >
+                  {copiedSection === "financier" ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Copié
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      Copier toutes les informations financières
+                    </>
+                  )}
+                </Button>
+              </div>
+
               {/* Bilans */}
               {results.bilans && results.bilans.length > 0 && (
                 <Card className="bg-card text-card-foreground rounded-xl border shadow-sm">
