@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { MarkdownRenderer } from "./MarkdownRenderer";
+import { QuickActionButtons } from "./QuickActionButtons";
+import { QuickReplyButtons } from "./QuickReplyButtons";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
 
@@ -61,6 +63,16 @@ export function FloatingAssistant() {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isOpen, isMinimized]);
+
+  // Focus automatique sur le textarea quand la réponse du bot est terminée
+  useEffect(() => {
+    if (!isLoading && messages.length > 0 && isOpen && !isMinimized) {
+      const timer = setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, messages.length, isOpen, isMinimized]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -411,8 +423,9 @@ export function FloatingAssistant() {
     }
   };
 
-  const handleSendMessage = async () => {
-    if ((!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !user) return;
+  const handleSendMessage = async (customMessage?: string) => {
+    const messageToSend = customMessage || input;
+    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !user) return;
 
     // Convertir les images en Base64
     const imageBase64s = await convertImagesToBase64(selectedImages);
@@ -429,14 +442,14 @@ export function FloatingAssistant() {
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input.trim() || (imageBase64s.length > 0 ? "Analyse cette image" : "") || (filesToSend.length > 0 ? "Analyse ces fichiers" : ""),
+      content: messageToSend.trim() || (imageBase64s.length > 0 ? "Analyse cette image" : "") || (filesToSend.length > 0 ? "Analyse ces fichiers" : ""),
       images: imageBase64s.length > 0 ? imageBase64s : undefined,
       files: filesToSend.length > 0 ? filesToSend.map(f => ({ name: f.name, type: f.type, content: f.content, error: f.error })) : undefined,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    const messageText = input.trim();
+    const messageText = messageToSend.trim();
     const imagesToSend = imageBase64s;
     setInput("");
     setSelectedImages([]);
@@ -729,29 +742,41 @@ export function FloatingAssistant() {
             {!isMinimized && (
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8">
-                    <div className="relative mx-auto mb-4 w-16 h-16 flex items-center justify-center">
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-full opacity-20 blur-xl" />
-                      <div className="relative bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 p-3 rounded-full">
-                        <MessageSquare className="h-8 w-8 text-white" />
+                  <div className="space-y-4">
+                    <div className="text-center text-muted-foreground py-4">
+                      <div className="relative mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-full opacity-20 blur-xl" />
+                        <div className="relative bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 p-3 rounded-full">
+                          <MessageSquare className="h-8 w-8 text-white" />
+                        </div>
+                        <motion.div
+                          className="absolute -top-1 -right-1"
+                          animate={{
+                            rotate: [0, 360],
+                            scale: [1, 1.2, 1],
+                          }}
+                          transition={{
+                            duration: 3,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }}
+                        >
+                          <Sparkles className="h-5 w-5 text-amber-400" />
+                        </motion.div>
                       </div>
-                      <motion.div
-                        className="absolute -top-1 -right-1"
-                        animate={{
-                          rotate: [0, 360],
-                          scale: [1, 1.2, 1],
-                        }}
-                        transition={{
-                          duration: 3,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      >
-                        <Sparkles className="h-5 w-5 text-amber-400" />
-                      </motion.div>
+                      <p className="font-medium">Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
                     </div>
-                    <p className="font-medium">Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
-                    <p className="text-sm mt-2 opacity-70">Posez-moi une question ou envoyez-moi un fichier</p>
+                    {/* Boutons d'action rapide */}
+                    <QuickActionButtons
+                      onSelect={(prompt) => {
+                        setInput(prompt);
+                        // Focus sur le textarea
+                        setTimeout(() => {
+                          textareaRef.current?.focus();
+                        }, 100);
+                      }}
+                      onOpenFullAssistant={() => setIsOpen(false)}
+                    />
                   </div>
                 ) : (
                   messages.map((message) => (
@@ -799,6 +824,16 @@ export function FloatingAssistant() {
                         ) : (
                           <div className="relative group">
                             <MarkdownRenderer content={message.content} />
+                            {/* Boutons de réponse rapide pour les questions avec alternatives */}
+                            {message.role === "assistant" && (
+                              <QuickReplyButtons
+                                content={message.content}
+                                onSelect={(option) => {
+                                  handleSendMessage(option);
+                                }}
+                                disabled={isLoading}
+                              />
+                            )}
                             {message.role === "assistant" && (
                               <Button
                                 variant="ghost"
@@ -960,7 +995,7 @@ export function FloatingAssistant() {
                     </div>
                   </div>
                   <Button
-                    onClick={handleSendMessage}
+                    onClick={() => handleSendMessage()}
                     disabled={(!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles}
                     size="icon"
                     className="shrink-0 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"

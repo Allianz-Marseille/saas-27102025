@@ -6,7 +6,7 @@ import { isAdmin } from "@/lib/utils/roles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Sparkles, Image as ImageIcon, X, RotateCcw, Copy, Check, Plus, Save, XCircle, ClipboardCopy, Search, Filter } from "lucide-react";
+import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Image as ImageIcon, X, RotateCcw, Copy, Check, Plus, Save, XCircle, ClipboardCopy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,6 +25,9 @@ import {
 import { MarkdownRenderer } from "@/components/assistant/MarkdownRenderer";
 import { SearchBar } from "@/components/assistant/SearchBar";
 import { HighlightedText } from "@/components/assistant/HighlightedText";
+import { TemplateSelector } from "@/components/assistant/TemplateSelector";
+import { TemplateVariablesForm } from "@/components/assistant/TemplateVariablesForm";
+import { QuickReplyButtons } from "@/components/assistant/QuickReplyButtons";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
 import type { PromptTemplate } from "@/lib/assistant/templates";
@@ -61,10 +64,6 @@ export default function AssistantIAPage() {
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
   const [templates, setTemplates] = useState<PromptTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
-  const [templateVariables, setTemplateVariables] = useState<Record<string, string>>({});
-  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [searchTemplateQuery, setSearchTemplateQuery] = useState("");
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showNewChatDialog, setShowNewChatDialog] = useState(false);
@@ -78,6 +77,7 @@ export default function AssistantIAPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const chatFileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const searchResultRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const isUserAdmin = isAdmin(userData);
@@ -86,6 +86,17 @@ export default function AssistantIAPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Focus automatique sur le textarea quand la réponse du bot est terminée
+  useEffect(() => {
+    if (!isLoading && messages.length > 0) {
+      // Attendre un court délai pour s'assurer que le DOM est mis à jour
+      const timer = setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, messages.length]);
 
   // Détecter les changements non sauvegardés
   useEffect(() => {
@@ -437,32 +448,37 @@ export default function AssistantIAPage() {
   };
 
   // Appliquer un template
-  const handleApplyTemplate = (template: PromptTemplate) => {
-    setSelectedTemplate(template);
+  const handleSelectTemplate = (template: PromptTemplate) => {
     const variables = extractTemplateVariables(template.prompt);
     
     if (variables.length > 0) {
-      // Ouvrir un dialogue pour remplir les variables
-      setTemplateVariables({});
-      setShowTemplateDialog(true);
+      // Afficher le formulaire de variables inline
+      setSelectedTemplate(template);
     } else {
       // Appliquer directement le template
       setInput(template.prompt);
-      setSelectedTemplate(null);
-      setShowTemplateDialog(false);
       toast.success("Template appliqué");
+      // Focus sur le textarea
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
     }
   };
 
-  // Confirmer l'application du template avec variables
-  const handleConfirmTemplate = () => {
-    if (!selectedTemplate) return;
-
-    const filledPrompt = replaceTemplateVariables(selectedTemplate.prompt, templateVariables);
+  // Appliquer le template avec variables remplies
+  const handleApplyTemplateWithVariables = (filledPrompt: string) => {
     setInput(filledPrompt);
     setSelectedTemplate(null);
-    setTemplateVariables({});
-    setShowTemplateDialog(false);
+    toast.success("Template appliqué");
+    // Focus sur le textarea
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 100);
+  };
+
+  // Annuler la sélection de template
+  const handleCancelTemplate = () => {
+    setSelectedTemplate(null);
   };
 
   // Clic sur "Nouveau chat" - vérifier si changements non sauvegardés
@@ -665,8 +681,9 @@ export default function AssistantIAPage() {
     }
   };
 
-  const handleSendMessage = async () => {
-    if ((!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading) return;
+  const handleSendMessage = async (customMessage?: string) => {
+    const messageToSend = customMessage || input;
+    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading) return;
 
     // Convertir les images en Base64
     const imageBase64s = await convertImagesToBase64(selectedImages);
@@ -682,13 +699,13 @@ export default function AssistantIAPage() {
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input,
+      content: messageToSend,
       images: imageBase64s.length > 0 ? imageBase64s : undefined,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    const messageText = input;
+    const messageText = messageToSend;
     const imagesToSend = imageBase64s;
     const filesToSend = selectedFiles;
     setInput("");
@@ -868,18 +885,6 @@ export default function AssistantIAPage() {
                   Conversation
                 </CardTitle>
                 <div className="flex items-center gap-2 flex-wrap">
-                  {/* Menu templates */}
-                  {templates.length > 0 && (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => setShowTemplateDialog(true)}
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-md hover:shadow-lg transition-all"
-                    >
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Templates
-                    </Button>
-                  )}
                   {messages.length > 0 && (
                     <>
                       <Button
@@ -929,14 +934,26 @@ export default function AssistantIAPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col overflow-hidden">
-              {/* Zone de messages */}
-              <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2">
+            <CardContent className="flex-1 flex flex-col overflow-hidden p-6">
+              {/* Zone de messages et templates */}
+              <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 min-h-0">
                 {messages.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-muted-foreground">
-                    <div className="text-center">
-                      <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>Commencez une conversation avec l&apos;assistant IA</p>
+                  <div className="flex flex-col h-full">
+                    {/* État vide avec templates intégrés */}
+                    <div className="flex-1 flex flex-col min-h-0">
+                      <div className="text-center mb-6 shrink-0">
+                        <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-muted-foreground mb-2">Choisissez un template ou commencez à écrire</p>
+                      </div>
+                      {templates.length > 0 && (
+                        <div className="flex-1 min-h-0">
+                          <TemplateSelector
+                            templates={templates}
+                            onSelectTemplate={handleSelectTemplate}
+                            showEmptyState={true}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -999,7 +1016,20 @@ export default function AssistantIAPage() {
                                   />
                                 </div>
                               ) : (
-                                <MarkdownRenderer content={message.content} />
+                                <>
+                                  <MarkdownRenderer content={message.content} />
+                                  {/* Boutons de réponse rapide pour les questions avec alternatives */}
+                                  {message.role === "assistant" && (
+                                    <QuickReplyButtons
+                                      content={message.content}
+                                      onSelect={(option) => {
+                                        // Envoyer directement le message avec l'option sélectionnée
+                                        handleSendMessage(option);
+                                      }}
+                                      disabled={isLoading}
+                                    />
+                                  )}
+                                </>
                               )}
                               {message.role === "assistant" && (
                                 <Button
@@ -1035,7 +1065,32 @@ export default function AssistantIAPage() {
                   </div>
                 )}
                 <div ref={messagesEndRef} />
+                
+                {/* Templates compacts en bas si conversation en cours */}
+                {messages.length > 0 && templates.length > 0 && (
+                  <div className="mt-6 pt-6 border-t">
+                    <div className="mb-3">
+                      <p className="text-sm font-medium text-muted-foreground mb-2">
+                        Templates disponibles
+                      </p>
+                    </div>
+                    <TemplateSelector
+                      templates={templates}
+                      onSelectTemplate={handleSelectTemplate}
+                      compact={true}
+                    />
+                  </div>
+                )}
               </div>
+
+              {/* Formulaire de variables de template inline */}
+              {selectedTemplate && (
+                <TemplateVariablesForm
+                  template={selectedTemplate}
+                  onApply={handleApplyTemplateWithVariables}
+                  onCancel={handleCancelTemplate}
+                />
+              )}
 
               {/* Prévisualisation des images */}
               {selectedImages.length > 0 && (
@@ -1148,6 +1203,7 @@ export default function AssistantIAPage() {
                 <div className="flex gap-2">
                   <div className="flex-1 flex flex-col gap-2">
                     <Textarea
+                      ref={textareaRef}
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -1241,7 +1297,7 @@ export default function AssistantIAPage() {
                     </div>
                   </div>
                   <Button
-                    onClick={handleSendMessage}
+                    onClick={() => handleSendMessage()}
                     disabled={isLoading || (!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0)}
                     size="lg"
                   >
@@ -1480,247 +1536,9 @@ export default function AssistantIAPage() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Dialogue pour sélectionner/appliquer un template */}
-        {showTemplateDialog && (
-          <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowTemplateDialog(false);
-                setSelectedTemplate(null);
-                setTemplateVariables({});
-                setSelectedCategory("all");
-                setSearchTemplateQuery("");
-              }
-            }}
-          >
-            <Card className="w-full max-w-4xl max-h-[85vh] overflow-hidden shadow-2xl border-2 border-primary/20 bg-gradient-to-br from-background via-background to-muted/30">
-              <CardHeader className="bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
-                      <Sparkles className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-2xl bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                        Templates IA
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {templates.length} templates disponibles
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => {
-                      setShowTemplateDialog(false);
-                      setSelectedTemplate(null);
-                      setTemplateVariables({});
-                      setSelectedCategory("all");
-                      setSearchTemplateQuery("");
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-6 space-y-4 overflow-y-auto max-h-[calc(85vh-180px)]">
-                {selectedTemplate ? (
-                  // Formulaire pour remplir les variables
-                  <div className="space-y-4 animate-in slide-in-from-right duration-300">
-                    <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border border-purple-200 dark:border-purple-800">
-                      <h3 className="font-bold text-lg mb-2 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                        {selectedTemplate.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {selectedTemplate.description}
-                      </p>
-                    </div>
-                    <div className="space-y-3">
-                      {extractTemplateVariables(selectedTemplate.prompt).map((varName, idx) => (
-                        <div key={varName} className="animate-in fade-in slide-in-from-bottom duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
-                          <Label htmlFor={`var-${varName}`} className="text-sm font-medium">
-                            {varName}
-                          </Label>
-                          <Input
-                            id={`var-${varName}`}
-                            value={templateVariables[varName] || ""}
-                            onChange={(e) =>
-                              setTemplateVariables((prev) => ({
-                                ...prev,
-                                [varName]: e.target.value,
-                              }))
-                            }
-                            placeholder={`Entrez la valeur pour ${varName}`}
-                            className="mt-1 focus:ring-2 focus:ring-purple-500"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex gap-2 pt-2">
-                      <Button 
-                        onClick={handleConfirmTemplate} 
-                        className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all"
-                      >
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Appliquer
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedTemplate(null);
-                          setTemplateVariables({});
-                        }}
-                        className="border-2"
-                      >
-                        Retour
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  // Liste des templates avec filtres
-                  <div className="space-y-4">
-                    {/* Barre de recherche et filtres */}
-                    <div className="space-y-3">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Rechercher un template..."
-                          value={searchTemplateQuery}
-                          onChange={(e) => setSearchTemplateQuery(e.target.value)}
-                          className="pl-10 focus:ring-2 focus:ring-purple-500"
-                        />
-                      </div>
-                      
-                      {/* Filtres par catégorie */}
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          variant={selectedCategory === "all" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setSelectedCategory("all")}
-                          className={selectedCategory === "all" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md" : ""}
-                        >
-                          <Filter className="h-3 w-3 mr-1" />
-                          Tous
-                        </Button>
-                        {Array.from(new Set(templates.map(t => t.category).filter((cat): cat is string => Boolean(cat)))).map((category) => {
-                          const categoryLabels: Record<string, string> = {
-                            commercial: "Commercial",
-                            gestion: "Gestion",
-                            sinistre: "Sinistre",
-                            iard: "IARD",
-                            santé: "Santé",
-                            prévoyance: "Prévoyance",
-                            retraite: "Retraite",
-                            support: "Support",
-                            formation: "Formation",
-                            interne: "Interne",
-                            procédure: "Procédure",
-                            vente: "Vente",
-                            email: "Email",
-                            analyse: "Analyse",
-                            devis: "Devis",
-                            resume: "Résumé",
-                            comparaison: "Comparaison",
-                          };
-                          return (
-                            <Button
-                              key={category}
-                              variant={selectedCategory === category ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setSelectedCategory(category)}
-                              className={selectedCategory === category ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md" : "hover:bg-purple-50 dark:hover:bg-purple-950/30"}
-                            >
-                              {categoryLabels[category] || category}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Liste des templates filtrés */}
-                    <div className="grid gap-3">
-                      {templates
-                        .filter((template) => {
-                          const matchesCategory = selectedCategory === "all" || template.category === selectedCategory;
-                          const matchesSearch = searchTemplateQuery.trim() === "" || 
-                            template.name.toLowerCase().includes(searchTemplateQuery.toLowerCase()) ||
-                            template.description.toLowerCase().includes(searchTemplateQuery.toLowerCase());
-                          return matchesCategory && matchesSearch;
-                        })
-                        .map((template, idx) => (
-                          <div
-                            key={template.id}
-                            className="group relative p-4 rounded-xl border-2 border-transparent bg-gradient-to-br from-background to-muted/30 hover:border-purple-300 dark:hover:border-purple-700 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300 cursor-pointer overflow-hidden"
-                            onClick={() => handleApplyTemplate(template)}
-                          >
-                            {/* Effet de brillance au survol */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                            
-                            <div className="relative flex items-start justify-between gap-4">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <h4 className="font-bold text-base group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                                    {template.name}
-                                  </h4>
-                                  {template.category && (
-                                    <span className="px-2 py-0.5 text-xs rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium">
-                                      {template.category}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-sm text-muted-foreground line-clamp-2">
-                                  {template.description}
-                                </p>
-                                {template.variables && template.variables.length > 0 && (
-                                  <div className="flex flex-wrap gap-1 mt-2">
-                                    {template.variables.map((varName) => (
-                                      <span
-                                        key={varName}
-                                        className="px-2 py-0.5 text-xs rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                                      >
-                                        {varName}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
-                              >
-                                Utiliser
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      
-                      {templates.filter((template) => {
-                        const matchesCategory = selectedCategory === "all" || template.category === selectedCategory;
-                        const matchesSearch = searchTemplateQuery.trim() === "" || 
-                          template.name.toLowerCase().includes(searchTemplateQuery.toLowerCase()) ||
-                          template.description.toLowerCase().includes(searchTemplateQuery.toLowerCase());
-                        return matchesCategory && matchesSearch;
-                      }).length === 0 && (
-                        <div className="text-center py-12 text-muted-foreground">
-                          <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                          <p className="font-medium">Aucun template trouvé</p>
-                          <p className="text-sm mt-1">Essayez de modifier vos filtres</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
       </Tabs>
     </div>
   );
 }
+
 
