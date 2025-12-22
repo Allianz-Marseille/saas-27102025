@@ -71,7 +71,7 @@ export function TemplateSelector({
   }
 
   return (
-    <div className={cn("flex flex-col w-full", compact ? "max-h-[400px]" : "h-full min-h-[300px]")}>
+    <div className={cn("flex flex-col w-full h-full", compact ? "max-h-[400px]" : "min-h-0")}>
       {/* Header avec recherche - masqué si hideSearchAndFilters est true */}
       {!hideSearchAndFilters && (
         <div className={cn("space-y-4 mb-4 pb-4 border-b shrink-0", compact && "mb-3 pb-3")}>
@@ -102,28 +102,36 @@ export function TemplateSelector({
       {/* Liste des templates */}
       <div
         className={cn(
-          "flex-1 overflow-y-auto pr-2 min-h-[200px]",
-          compact ? "space-y-2" : "space-y-3"
+          "flex-1 overflow-y-auto min-h-0",
+          compact ? "space-y-2 pr-2" : "space-y-3 pr-2 pb-4"
         )}
       >
         {filteredTemplates.length > 0 ? (
-          <div
-            className={cn(
-              "grid gap-3",
-              compact
-                ? "grid-cols-1"
-                : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-            )}
-          >
-            {filteredTemplates.map((template) => (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                onClick={onSelectTemplate}
-                compact={compact}
-              />
-            ))}
-          </div>
+          <>
+            <div
+              className={cn(
+                "grid gap-3",
+                compact
+                  ? "grid-cols-1"
+                  : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+              )}
+            >
+              {filteredTemplates.map((template) => (
+                <TemplateCard
+                  key={template.id}
+                  template={template}
+                  onClick={onSelectTemplate}
+                  compact={compact}
+                />
+              ))}
+            </div>
+            {/* Compteur en bas de la liste */}
+            <div className="mt-4 pt-4 border-t text-center">
+              <p className="text-xs text-muted-foreground">
+                {filteredTemplates.length} template{filteredTemplates.length > 1 ? "s" : ""} disponible{filteredTemplates.length > 1 ? "s" : ""}
+              </p>
+            </div>
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="p-4 rounded-full bg-muted mb-4">
@@ -136,15 +144,6 @@ export function TemplateSelector({
           </div>
         )}
       </div>
-
-      {/* Compteur */}
-      {filteredTemplates.length > 0 && (
-        <div className="mt-4 pt-4 border-t text-center">
-          <p className="text-xs text-muted-foreground">
-            {filteredTemplates.length} template{filteredTemplates.length > 1 ? "s" : ""} disponible{filteredTemplates.length > 1 ? "s" : ""}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
