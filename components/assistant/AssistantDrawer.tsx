@@ -166,9 +166,8 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, onReset, messa
 
   const handleSendMessage = async (customMessage?: string) => {
     const messageToSend = customMessage !== undefined ? customMessage : input;
-    // Vérifier qu'un bouton principal est sélectionné (et sous-bouton si nécessaire)
-    const canSend = selectedMainButton && (!requiresSubButton(selectedMainButton) || selectedSubButton);
-    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !user || !canSend) return;
+    // Permettre l'envoi même sans bouton sélectionné (chat libre)
+    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !user) return;
 
     const imageBase64s = await convertImagesToBase64(selectedImages);
     const filesToSend = selectedFiles;
@@ -575,30 +574,25 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, onReset, messa
               )}
 
               {/* Zone de saisie */}
-              {!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton) ? (
-                <div className="text-center py-4 text-sm text-muted-foreground">
-                  Sélectionnez un domaine métier pour commencer
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <div className="flex-1 flex flex-col gap-2">
-                    <Textarea
-                      ref={textareaRef}
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                      onPaste={handlePasteImage}
-                      placeholder="Tapez votre message... (Vous pouvez coller des images avec Ctrl+V / Cmd+V)"
-                      className="min-h-[60px] max-h-[120px] resize-none"
-                      disabled={isLoading || isProcessingFiles}
-                      aria-label="Zone de saisie du message"
-                      aria-describedby="textarea-help"
-                    />
+              <div className="flex gap-2">
+                <div className="flex-1 flex flex-col gap-2">
+                  <Textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    onPaste={handlePasteImage}
+                    placeholder="Tapez votre message... (Vous pouvez coller des images avec Ctrl+V / Cmd+V)"
+                    className="min-h-[60px] max-h-[120px] resize-none"
+                    disabled={isLoading || isProcessingFiles}
+                    aria-label="Zone de saisie du message"
+                    aria-describedby="textarea-help"
+                  />
                   <div className="flex items-center gap-2">
                     <input
                       ref={imageInputRef}
@@ -660,7 +654,6 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, onReset, messa
                   )}
                 </Button>
               </div>
-              )}
             </div>
       </div>
     </>

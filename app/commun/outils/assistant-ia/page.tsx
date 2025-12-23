@@ -658,9 +658,8 @@ export default function AssistantIAPage() {
 
   const handleSendMessage = async (customMessage?: string) => {
     const messageToSend = customMessage !== undefined ? customMessage : input;
-    // Vérifier qu'un bouton principal est sélectionné (et sous-bouton si nécessaire)
-    const canSend = selectedMainButton && (!requiresSubButton(selectedMainButton) || selectedSubButton);
-    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || !canSend) return;
+    // Permettre l'envoi même sans bouton sélectionné (chat libre)
+    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading) return;
 
     // Convertir les images en Base64
     const imageBase64s = await convertImagesToBase64(selectedImages);
@@ -1127,11 +1126,6 @@ export default function AssistantIAPage() {
 
               {/* Zone de saisie - désactivée si pas de tag principal */}
               <div className="px-6 pb-6 shrink-0">
-                {(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) && (
-                  <div className="mb-4 p-4 rounded-lg bg-muted border border-dashed text-center text-sm text-muted-foreground">
-                    Veuillez sélectionner un domaine métier pour commencer à converser.
-                  </div>
-                )}
               <div
                 className={`border-2 border-dashed rounded-lg p-2 transition-colors ${
                   isDragging
@@ -1275,7 +1269,7 @@ export default function AssistantIAPage() {
                   </div>
                   <Button
                     onClick={() => handleSendMessage()}
-                    disabled={(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) || isLoading || (!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0)}
+                    disabled={isLoading || (!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0)}
                     size="lg"
                   >
                     {isLoading ? (

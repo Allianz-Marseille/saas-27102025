@@ -464,9 +464,8 @@ export function FloatingAssistant() {
 
   const handleSendMessage = async (customMessage?: string) => {
     const messageToSend = customMessage !== undefined ? customMessage : input;
-    // Vérifier qu'un bouton principal est sélectionné (et sous-bouton si nécessaire)
-    const canSend = selectedMainButton && (!requiresSubButton(selectedMainButton) || selectedSubButton);
-    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !user || !canSend) return;
+    // Permettre l'envoi même sans bouton sélectionné (chat libre)
+    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !user) return;
 
     // Convertir les images en Base64
     const imageBase64s = await convertImagesToBase64(selectedImages);
@@ -900,11 +899,6 @@ export function FloatingAssistant() {
             {/* Zone de saisie */}
             {!isMinimized && (
               <div className="px-6 pb-6 shrink-0">
-                {(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) && (
-                  <div className="mb-4 p-4 rounded-lg bg-muted border border-dashed text-center text-sm text-muted-foreground">
-                    Veuillez sélectionner un domaine métier pour commencer à converser.
-                  </div>
-                )}
                 <div
                   className={`border-2 border-dashed rounded-lg p-2 transition-colors ${
                     isDragging
@@ -927,7 +921,7 @@ export function FloatingAssistant() {
                         onKeyDown={handleKeyDown}
                         placeholder="Tapez votre message... (Vous pouvez coller des images avec Ctrl+V / Cmd+V)"
                         className="min-h-[60px]"
-                        disabled={(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) || isLoading || isProcessingFiles}
+                        disabled={isLoading || isProcessingFiles}
                       />
                       {(selectedImages.length > 0 || selectedFiles.length > 0) && (
                         <div className="flex flex-wrap gap-2">
@@ -999,7 +993,7 @@ export function FloatingAssistant() {
                           variant="outline"
                           size="sm"
                           onClick={() => imageInputRef.current?.click()}
-                          disabled={(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) || isLoading || isProcessingFiles}
+                          disabled={isLoading || isProcessingFiles}
                           className="text-xs"
                         >
                           <ImageIcon className="h-4 w-4 mr-1" />
@@ -1009,7 +1003,7 @@ export function FloatingAssistant() {
                           variant="outline"
                           size="sm"
                           onClick={() => fileInputRef.current?.click()}
-                          disabled={(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) || isLoading || isProcessingFiles || selectedFiles.length >= MAX_FILES_PER_MESSAGE}
+                          disabled={isLoading || isProcessingFiles || selectedFiles.length >= MAX_FILES_PER_MESSAGE}
                           className="text-xs"
                         >
                           <FileText className="h-4 w-4 mr-1" />
@@ -1019,7 +1013,7 @@ export function FloatingAssistant() {
                     </div>
                     <Button
                       onClick={() => handleSendMessage()}
-                      disabled={(!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)}
+                      disabled={(!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles}
                       size="icon"
                       className="shrink-0 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
