@@ -783,7 +783,7 @@ export function FloatingAssistant() {
 
             {/* Messages */}
             {!isMinimized && (
-              <div className="flex-1 overflow-y-auto p-3 space-y-1" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}>
+              <div className="flex-1 overflow-y-auto mb-4 space-y-1 px-4 py-4 min-h-0 bg-[#ECE5DD] dark:bg-[#0b141a]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}>
                 {messages.length === 0 ? (
                   <div className="flex justify-start">
                     <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
@@ -897,151 +897,140 @@ export function FloatingAssistant() {
               </div>
             )}
 
-            {/* Input */}
+            {/* Zone de saisie */}
             {!isMinimized && (
-              <div
-                className="p-3 border-t bg-white dark:bg-gray-800"
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              >
-                {/* Prévisualisation des images */}
-                {selectedImages.length > 0 && (
-                  <div className="mb-2 flex flex-wrap gap-2">
-                    {selectedImages.map((img) => (
-                      <div key={img.id} className="relative group">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={img.preview}
-                          alt="Preview"
-                          className="w-16 h-16 object-cover rounded border"
+              <div className="px-6 pb-6 shrink-0">
+                {(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) && (
+                  <div className="mb-4 p-4 rounded-lg bg-muted border border-dashed text-center text-sm text-muted-foreground">
+                    Veuillez sélectionner un domaine métier pour commencer à converser.
+                  </div>
+                )}
+                <div
+                  className={`border-2 border-dashed rounded-lg p-2 transition-colors ${
+                    isDragging
+                      ? "border-primary bg-primary/10"
+                      : "border-transparent"
+                  }`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                >
+                  <div className="flex gap-2">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <Textarea
+                        ref={textareaRef}
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Tapez votre message... (Vous pouvez coller des images avec Ctrl+V / Cmd+V)"
+                        className="min-h-[60px]"
+                        disabled={(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) || isLoading || isProcessingFiles}
+                      />
+                      {(selectedImages.length > 0 || selectedFiles.length > 0) && (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedImages.map((image) => (
+                            <div key={image.id} className="relative group">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={image.preview}
+                                alt="Preview"
+                                className="h-16 w-16 object-cover rounded border border-gray-200 dark:border-gray-700"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 hover:bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => removeImage(image.id)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                          {selectedFiles.map((file) => (
+                            <div
+                              key={file.id}
+                              className="flex items-center gap-2 p-2 bg-background border border-border rounded-md text-sm"
+                            >
+                              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate">{file.name}</p>
+                                {file.error && (
+                                  <p className="text-xs text-destructive">{file.error}</p>
+                                )}
+                                {file.content && (
+                                  <p className="text-xs text-green-600">Texte extrait</p>
+                                )}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 shrink-0"
+                                onClick={() => removeFile(file.id)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <input
+                          ref={imageInputRef}
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          id="floating-assistant-image-upload"
+                        />
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                          multiple
+                          onChange={handleFileUpload}
+                          className="hidden"
+                          id="floating-assistant-file-upload"
                         />
                         <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => removeImage(img.id)}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => imageInputRef.current?.click()}
+                          disabled={(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) || isLoading || isProcessingFiles}
+                          className="text-xs"
                         >
-                          <X className="h-3 w-3" />
+                          <ImageIcon className="h-4 w-4 mr-1" />
+                          Image
                         </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Prévisualisation des fichiers */}
-                {selectedFiles.length > 0 && (
-                  <div className="mb-2 space-y-1">
-                    {selectedFiles.map((file) => (
-                      <div
-                        key={file.id}
-                        className="flex items-center justify-between p-2 bg-background/50 rounded-md border"
-                      >
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {(file.size / 1024).toFixed(1)} KB
-                              {file.error && (
-                                <span className="text-destructive ml-2">• {file.error}</span>
-                              )}
-                            </p>
-                          </div>
-                        </div>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 shrink-0"
-                          onClick={() => removeFile(file.id)}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) || isLoading || isProcessingFiles || selectedFiles.length >= MAX_FILES_PER_MESSAGE}
+                          className="text-xs"
                         >
-                          <X className="h-3 w-3" />
+                          <FileText className="h-4 w-4 mr-1" />
+                          Fichier
                         </Button>
                       </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Zone de drag & drop visuelle */}
-                {isDragging && (
-                  <div className="mb-2 p-4 border-2 border-dashed border-primary rounded-lg bg-primary/10 text-center">
-                    <p className="text-sm text-primary">Déposez les fichiers ici</p>
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <div className="flex-1 flex flex-col gap-2">
-                    <Textarea
-                      ref={textareaRef}
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder={selectedMainButton && (!requiresSubButton(selectedMainButton) || selectedSubButton) ? "Tapez votre message..." : "Sélectionnez un domaine métier pour commencer"}
-                      className="min-h-[60px] max-h-[120px] resize-none"
-                      disabled={(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) || isLoading || isProcessingFiles}
-                    />
-                    <div className="flex items-center gap-2">
-                      <input
-                        ref={imageInputRef}
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        id="floating-assistant-image-upload"
-                      />
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
-                        multiple
-                        onChange={handleFileUpload}
-                        className="hidden"
-                        id="floating-assistant-file-upload"
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => imageInputRef.current?.click()}
-                        disabled={(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) || isLoading || isProcessingFiles}
-                        className="text-xs"
-                      >
-                        <ImageIcon className="h-3 w-3 mr-1" />
-                        Image
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) || isLoading || isProcessingFiles || selectedFiles.length >= MAX_FILES_PER_MESSAGE}
-                        className="text-xs"
-                      >
-                        <FileText className="h-3 w-3 mr-1" />
-                        Fichier
-                      </Button>
                     </div>
-                  </div>
-                    {(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) && (
-                      <div className="mb-2 p-2 rounded-lg bg-muted border border-dashed text-center text-xs text-muted-foreground">
-                        Sélectionnez un domaine métier pour commencer
-                      </div>
-                    )}
                     <Button
                       onClick={() => handleSendMessage()}
                       disabled={(!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)}
                       size="icon"
                       className="shrink-0 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                    {isLoading || isProcessingFiles ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
+                      {isLoading || isProcessingFiles ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Appuyez sur Entrée pour envoyer, Shift+Entrée pour une nouvelle ligne. Collez une image avec Ctrl+V / Cmd+V
-                </p>
               </div>
             )}
           </motion.div>

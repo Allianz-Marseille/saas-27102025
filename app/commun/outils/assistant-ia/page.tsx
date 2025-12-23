@@ -427,9 +427,11 @@ export default function AssistantIAPage() {
   const handleMainButtonSelect = (buttonId: string) => {
     setSelectedMainButton(buttonId);
     setSelectedSubButton(null);
-    // Si pas de sous-bouton nécessaire, envoyer automatiquement un message initial
-    const { requiresSubButton } = require("@/lib/assistant/main-buttons");
+    // Si le bouton nécessite un sous-bouton, on ne démarre pas encore la conversation
+    // Sinon, on peut commencer directement
     if (!requiresSubButton(buttonId)) {
+      // Pas de sous-bouton nécessaire, on peut commencer la conversation
+      // Envoyer automatiquement un message initial pour déclencher l'IA
       setTimeout(() => {
         handleSendMessage("Bonjour"); // Message initial pour déclencher le prompt système
       }, 100);
