@@ -9,21 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { MarkdownRenderer } from "./MarkdownRenderer";
-import { QuickActionButtons } from "./QuickActionButtons";
 import { QuickReplyButtons } from "./QuickReplyButtons";
-import { FlowReplyButtons } from "./FlowReplyButtons";
-import { TagSelector } from "./TagSelector";
+import { MainButtonMenu } from "./MainButtonMenu";
+import { SubButtonMenu } from "./SubButtonMenu";
+import { requiresSubButton } from "@/lib/assistant/main-buttons";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
-import {
-  generateRoleQuestionMessage,
-  generateContextQuestionMessage,
-  generateTaskQuestionMessage,
-  generateCompletionMessage,
-  getFlowOptions,
-  isFlowComplete,
-  type InteractiveFlowState,
-} from "@/lib/assistant/interactive-flow";
 
 interface Message {
   id: string;
@@ -46,8 +37,8 @@ export function FloatingAssistant() {
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
-  const [selectedMainTag, setSelectedMainTag] = useState<string>("");
-  const [flowState, setFlowState] = useState<InteractiveFlowState>({});
+  const [selectedMainButton, setSelectedMainButton] = useState<string | null>(null);
+  const [selectedSubButton, setSelectedSubButton] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -421,8 +412,8 @@ export function FloatingAssistant() {
     setInput("");
     setSelectedImages([]);
     setSelectedFiles([]);
-    setSelectedMainTag("");
-    setFlowState({});
+    setSelectedMainButton(null);
+    setSelectedSubButton(null);
     toast.success("Conversation réinitialisée");
   };
 
@@ -438,87 +429,36 @@ export function FloatingAssistant() {
     }
   };
 
-  // Gérer la sélection du tag principal
-  const handleMainTagSelect = async (tagId: string) => {
-    setSelectedMainTag(tagId);
-    setFlowState({}); // Réinitialiser le flux
-    setMessages([]); // Réinitialiser les messages
+  // Gérer la sélection du bouton principal
+  const handleMainButtonSelect = (buttonId: string) => {
+    setSelectedMainButton(buttonId);
+    setSelectedSubButton(null);
     
-    if (tagId) {
-      // Envoyer automatiquement le message du bot pour demander le rôle
-      const roleQuestion = generateRoleQuestionMessage(tagId);
-      const botMessage: Message = {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: roleQuestion,
-        timestamp: new Date(),
-      };
-      setMessages([botMessage]);
-      
-      // Scroll vers le bas
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+    // Si le bouton nécessite un sous-bouton, on ne démarre pas encore la conversation
+    // Sinon, on peut commencer directement
+    if (!requiresSubButton(buttonId)) {
+      // Pas de sous-bouton nécessaire, on peut commencer la conversation
+      // L'utilisateur peut maintenant envoyer un message
     }
   };
 
-  // Gérer la sélection d'une option du flux interactif
-  const handleFlowOptionSelect = async (optionId: string, step: "role" | "context" | "task") => {
-    const newFlowState = { ...flowState };
-    
-    if (step === "role") {
-      newFlowState.role = optionId;
-      newFlowState.context = undefined;
-      newFlowState.task = undefined;
-      
-      const contextQuestion = generateContextQuestionMessage(optionId);
-      const botMessage: Message = {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: contextQuestion,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMessage]);
-    } else if (step === "context") {
-      newFlowState.context = optionId;
-      newFlowState.task = undefined;
-      
-      const taskQuestion = generateTaskQuestionMessage();
-      const botMessage: Message = {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: taskQuestion,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMessage]);
-    } else if (step === "task") {
-      newFlowState.task = optionId;
-      
-      const completionMessage = generateCompletionMessage(
-        selectedMainTag,
-        newFlowState.role!,
-        newFlowState.context!,
-        optionId
-      );
-      const botMessage: Message = {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: completionMessage,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMessage]);
-    }
-    
-    setFlowState(newFlowState);
-    
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+  // Gérer la sélection du sous-bouton
+  const handleSubButtonSelect = (subButtonId: string) => {
+    setSelectedSubButton(subButtonId);
+    // L'utilisateur peut maintenant envoyer un message
+  };
+
+  // Gérer le retour au menu principal
+  const handleBackToMainMenu = () => {
+    setSelectedMainButton(null);
+    setSelectedSubButton(null);
   };
 
   const handleSendMessage = async (customMessage?: string) => {
     const messageToSend = customMessage || input;
-    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !user || !selectedMainTag) return;
+    // Vérifier qu'un bouton principal est sélectionné (et sous-bouton si nécessaire)
+    const canSend = selectedMainButton && (!requiresSubButton(selectedMainButton) || selectedSubButton);
+    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !user || !canSend) return;
 
     // Convertir les images en Base64
     const imageBase64s = await convertImagesToBase64(selectedImages);
@@ -572,10 +512,8 @@ export function FloatingAssistant() {
             images: imagesToSend.length > 0 ? imagesToSend : undefined,
             files: filesToSend.length > 0 ? filesToSend.map(f => ({ name: f.name, type: f.type, content: f.content })) : undefined,
             history: conversationHistory,
-            mainTag: selectedMainTag || undefined,
-            flowRole: flowState.role || undefined,
-            flowContext: flowState.context || undefined,
-            flowTask: flowState.task || undefined,
+            mainButton: selectedMainButton || undefined,
+            subButton: selectedSubButton || undefined,
             stream: true,
           }),
       });
@@ -863,26 +801,22 @@ export function FloatingAssistant() {
                     </div>
                     <p className="font-medium">Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
                     </div>
-                    {/* Sélecteur de tag */}
-                    <div className="mt-4 pb-4 border-b">
-                      <TagSelector
-                        selectedMainTag={selectedMainTag}
-                        onMainTagSelect={handleMainTagSelect}
-                        compact={true}
-                      />
+                    {/* Menu principal ou sous-menu */}
+                    <div className="mt-4 pb-4">
+                      {!selectedMainButton ? (
+                        <MainButtonMenu
+                          onSelect={handleMainButtonSelect}
+                          disabled={isLoading}
+                        />
+                      ) : requiresSubButton(selectedMainButton) && !selectedSubButton ? (
+                        <SubButtonMenu
+                          mainButtonId={selectedMainButton}
+                          onSelect={handleSubButtonSelect}
+                          onBack={handleBackToMainMenu}
+                          disabled={isLoading}
+                        />
+                      ) : null}
                     </div>
-                    {/* Boutons d'action rapide - seulement si pas de tag sélectionné */}
-                    {!selectedMainTag && (
-                      <QuickActionButtons
-                        onSelect={(prompt) => {
-                          setInput(prompt);
-                          setTimeout(() => {
-                            textareaRef.current?.focus();
-                          }, 100);
-                        }}
-                        onOpenFullAssistant={() => setIsOpen(false)}
-                      />
-                    )}
                   </div>
                 ) : (
                   messages.map((message) => (
@@ -930,66 +864,8 @@ export function FloatingAssistant() {
                         ) : (
                           <div className="relative group">
                             <MarkdownRenderer content={message.content} />
-                            {/* Boutons de réponse pour le flux interactif */}
-                            {message.role === "assistant" && selectedMainTag && !isFlowComplete(flowState) && (
-                              <>
-                                {/* Demande de rôle */}
-                                {!flowState.role &&
-                                  (message.content.toLowerCase().includes("préciser votre rôle") ||
-                                    message.content.toLowerCase().includes("préciser mon rôle") ||
-                                    message.content.toLowerCase().includes("votre rôle")) && (
-                                  <FlowReplyButtons
-                                    options={getFlowOptions("role", selectedMainTag)}
-                                    onSelect={(optionId) => handleFlowOptionSelect(optionId, "role")}
-                                    disabled={isLoading}
-                                    color="green"
-                                    showOther={true}
-                                    onOtherSelect={() => {
-                                      setInput("Je suis ");
-                                      setTimeout(() => textareaRef.current?.focus(), 100);
-                                    }}
-                                  />
-                                )}
-                                {/* Demande de contexte */}
-                                {flowState.role &&
-                                  !flowState.context &&
-                                  (message.content.toLowerCase().includes("contexte") ||
-                                    message.content.toLowerCase().includes("situation")) && (
-                                  <FlowReplyButtons
-                                    options={getFlowOptions("context", selectedMainTag, flowState.role)}
-                                    onSelect={(optionId) => handleFlowOptionSelect(optionId, "context")}
-                                    disabled={isLoading}
-                                    color="blue"
-                                    showOther={true}
-                                    onOtherSelect={() => {
-                                      setInput("Le contexte est ");
-                                      setTimeout(() => textareaRef.current?.focus(), 100);
-                                    }}
-                                  />
-                                )}
-                                {/* Demande de tâche */}
-                                {flowState.role &&
-                                  flowState.context &&
-                                  !flowState.task &&
-                                  (message.content.toLowerCase().includes("souhaitez-vous") ||
-                                    message.content.toLowerCase().includes("souhaitez que") ||
-                                    message.content.toLowerCase().includes("que je fasse")) && (
-                                  <FlowReplyButtons
-                                    options={getFlowOptions("task")}
-                                    onSelect={(optionId) => handleFlowOptionSelect(optionId, "task")}
-                                    disabled={isLoading}
-                                    color="green"
-                                    showOther={true}
-                                    onOtherSelect={() => {
-                                      setInput("Je souhaite ");
-                                      setTimeout(() => textareaRef.current?.focus(), 100);
-                                    }}
-                                  />
-                                )}
-                              </>
-                            )}
-                            {/* Boutons de réponse rapide pour les questions avec alternatives (après flux complété) */}
-                            {message.role === "assistant" && isFlowComplete(flowState) && (
+                            {/* Boutons de réponse rapide pour les questions avec alternatives */}
+                            {message.role === "assistant" && (
                               <QuickReplyButtons
                                 content={message.content}
                                 onSelect={(option) => {
@@ -1113,9 +989,9 @@ export function FloatingAssistant() {
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      placeholder={selectedMainTag ? "Tapez votre message..." : "Sélectionnez un domaine métier pour commencer"}
+                      placeholder={selectedMainButton && (!requiresSubButton(selectedMainButton) || selectedSubButton) ? "Tapez votre message..." : "Sélectionnez un domaine métier pour commencer"}
                       className="min-h-[60px] max-h-[120px] resize-none"
-                      disabled={!selectedMainTag || isLoading || isProcessingFiles}
+                      disabled={(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) || isLoading || isProcessingFiles}
                     />
                     <div className="flex items-center gap-2">
                       <input
@@ -1140,7 +1016,7 @@ export function FloatingAssistant() {
                         variant="outline"
                         size="sm"
                         onClick={() => imageInputRef.current?.click()}
-                        disabled={!selectedMainTag || isLoading || isProcessingFiles}
+                        disabled={(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) || isLoading || isProcessingFiles}
                         className="text-xs"
                       >
                         <ImageIcon className="h-3 w-3 mr-1" />
@@ -1150,7 +1026,7 @@ export function FloatingAssistant() {
                         variant="outline"
                         size="sm"
                         onClick={() => fileInputRef.current?.click()}
-                        disabled={!selectedMainTag || isLoading || isProcessingFiles || selectedFiles.length >= MAX_FILES_PER_MESSAGE}
+                        disabled={(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) || isLoading || isProcessingFiles || selectedFiles.length >= MAX_FILES_PER_MESSAGE}
                         className="text-xs"
                       >
                         <FileText className="h-3 w-3 mr-1" />
@@ -1158,14 +1034,14 @@ export function FloatingAssistant() {
                       </Button>
                     </div>
                   </div>
-                    {!selectedMainTag && (
+                    {(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) && (
                       <div className="mb-2 p-2 rounded-lg bg-muted border border-dashed text-center text-xs text-muted-foreground">
                         Sélectionnez un domaine métier pour commencer
                       </div>
                     )}
                     <Button
                       onClick={() => handleSendMessage()}
-                      disabled={(!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !selectedMainTag}
+                      disabled={(!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)}
                       size="icon"
                       className="shrink-0 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >

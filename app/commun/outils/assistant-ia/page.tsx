@@ -26,17 +26,9 @@ import { MarkdownRenderer } from "@/components/assistant/MarkdownRenderer";
 import { SearchBar } from "@/components/assistant/SearchBar";
 import { HighlightedText } from "@/components/assistant/HighlightedText";
 import { QuickReplyButtons } from "@/components/assistant/QuickReplyButtons";
-import { FlowReplyButtons } from "@/components/assistant/FlowReplyButtons";
-import { TagSelector } from "@/components/assistant/TagSelector";
-import {
-  generateRoleQuestionMessage,
-  generateContextQuestionMessage,
-  generateTaskQuestionMessage,
-  generateCompletionMessage,
-  getFlowOptions,
-  isFlowComplete,
-  type InteractiveFlowState,
-} from "@/lib/assistant/interactive-flow";
+import { MainButtonMenu } from "@/components/assistant/MainButtonMenu";
+import { SubButtonMenu } from "@/components/assistant/SubButtonMenu";
+import { requiresSubButton } from "@/lib/assistant/main-buttons";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
 
@@ -69,8 +61,8 @@ export default function AssistantIAPage() {
   const [isSavingConversation, setIsSavingConversation] = useState(false);
   const [historySearchQuery, setHistorySearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
-  const [selectedMainTag, setSelectedMainTag] = useState<string>("");
-  const [flowState, setFlowState] = useState<InteractiveFlowState>({});
+  const [selectedMainButton, setSelectedMainButton] = useState<string | null>(null);
+  const [selectedSubButton, setSelectedSubButton] = useState<string | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showNewChatDialog, setShowNewChatDialog] = useState(false);
@@ -430,86 +422,21 @@ export default function AssistantIAPage() {
     }
   };
 
-  // Gérer la sélection du tag principal
-  const handleMainTagSelect = async (tagId: string) => {
-    setSelectedMainTag(tagId);
-    setFlowState({}); // Réinitialiser le flux
-    setMessages([]); // Réinitialiser les messages
-    
-    if (tagId) {
-      // Envoyer automatiquement le message du bot pour demander le rôle
-      const roleQuestion = generateRoleQuestionMessage(tagId);
-      const botMessage: Message = {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: roleQuestion,
-        timestamp: new Date(),
-      };
-      setMessages([botMessage]);
-      
-      // Scroll vers le bas
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-    }
+  // Gérer la sélection du bouton principal
+  const handleMainButtonSelect = (buttonId: string) => {
+    setSelectedMainButton(buttonId);
+    setSelectedSubButton(null);
   };
 
-  // Gérer la sélection d'une option du flux interactif
-  const handleFlowOptionSelect = async (optionId: string, step: "role" | "context" | "task") => {
-    const newFlowState = { ...flowState };
-    
-    if (step === "role") {
-      newFlowState.role = optionId;
-      newFlowState.context = undefined; // Réinitialiser les étapes suivantes
-      newFlowState.task = undefined;
-      
-      // Envoyer le message du bot pour demander le contexte
-      const contextQuestion = generateContextQuestionMessage(optionId);
-      const botMessage: Message = {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: contextQuestion,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMessage]);
-    } else if (step === "context") {
-      newFlowState.context = optionId;
-      newFlowState.task = undefined; // Réinitialiser la tâche
-      
-      // Envoyer le message du bot pour demander la tâche
-      const taskQuestion = generateTaskQuestionMessage();
-      const botMessage: Message = {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: taskQuestion,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMessage]);
-    } else if (step === "task") {
-      newFlowState.task = optionId;
-      
-      // Envoyer le message de confirmation
-      const completionMessage = generateCompletionMessage(
-        selectedMainTag,
-        newFlowState.role!,
-        newFlowState.context!,
-        optionId
-      );
-      const botMessage: Message = {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: completionMessage,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMessage]);
-    }
-    
-    setFlowState(newFlowState);
-    
-    // Scroll vers le bas
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+  // Gérer la sélection du sous-bouton
+  const handleSubButtonSelect = (subButtonId: string) => {
+    setSelectedSubButton(subButtonId);
+  };
+
+  // Gérer le retour au menu principal
+  const handleBackToMainMenu = () => {
+    setSelectedMainButton(null);
+    setSelectedSubButton(null);
   };
 
   // Clic sur "Nouveau chat" - vérifier si changements non sauvegardés
@@ -527,8 +454,8 @@ export default function AssistantIAPage() {
     setInput("");
     setSelectedImages([]);
     setSelectedFiles([]);
-    setSelectedMainTag("");
-    setFlowState({});
+    setSelectedMainButton(null);
+    setSelectedSubButton(null);
     setHasUnsavedChanges(false);
     setLastSavedMessagesCount(0);
     setShowNewChatDialog(false);
@@ -716,7 +643,9 @@ export default function AssistantIAPage() {
 
   const handleSendMessage = async (customMessage?: string) => {
     const messageToSend = customMessage || input;
-    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || !selectedMainTag) return;
+    // Vérifier qu'un bouton principal est sélectionné (et sous-bouton si nécessaire)
+    const canSend = selectedMainButton && (!requiresSubButton(selectedMainButton) || selectedSubButton);
+    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || !canSend) return;
 
     // Convertir les images en Base64
     const imageBase64s = await convertImagesToBase64(selectedImages);
@@ -770,10 +699,8 @@ export default function AssistantIAPage() {
           images: imagesToSend.length > 0 ? imagesToSend : undefined,
           files: filesToSend.length > 0 ? filesToSend : undefined,
           history: conversationHistory,
-          mainTag: selectedMainTag || undefined,
-          flowRole: flowState.role || undefined,
-          flowContext: flowState.context || undefined,
-          flowTask: flowState.task || undefined,
+          mainButton: selectedMainButton || undefined,
+          subButton: selectedSubButton || undefined,
           stream: true, // Activer le streaming
         }),
       });
@@ -970,18 +897,28 @@ export default function AssistantIAPage() {
                   )}
                 </div>
               </div>
-              {/* TagSelector toujours visible */}
-              <div className="pt-4 border-t">
-                <TagSelector
-                  selectedMainTag={selectedMainTag}
-                  onMainTagSelect={handleMainTagSelect}
-                  compact={messages.length > 0}
-                />
-              </div>
+              {/* Menu principal ou sous-menu */}
+              {messages.length === 0 && (
+                <div className="pt-4 border-t px-6">
+                  {!selectedMainButton ? (
+                    <MainButtonMenu
+                      onSelect={handleMainButtonSelect}
+                      disabled={isLoading}
+                    />
+                  ) : requiresSubButton(selectedMainButton) && !selectedSubButton ? (
+                    <SubButtonMenu
+                      mainButtonId={selectedMainButton}
+                      onSelect={handleSubButtonSelect}
+                      onBack={handleBackToMainMenu}
+                      disabled={isLoading}
+                    />
+                  ) : null}
+                </div>
+              )}
             </CardHeader>
             <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
               {/* Zone de messages */}
-              {messages.length === 0 && !selectedMainTag ? (
+              {messages.length === 0 && !selectedMainButton ? (
                 <div className="flex-1 flex items-center justify-center px-6">
                   <div className="text-center text-muted-foreground max-w-md">
                     <Bot className="h-12 w-12 mx-auto mb-4 text-primary/50" />
@@ -1061,66 +998,8 @@ export default function AssistantIAPage() {
                               ) : (
                                 <>
                                   <MarkdownRenderer content={message.content} />
-                                  {/* Boutons de réponse pour le flux interactif */}
-                                  {message.role === "assistant" && selectedMainTag && !isFlowComplete(flowState) && (
-                                    <>
-                                      {/* Demande de rôle - détection par contenu du message */}
-                                      {!flowState.role &&
-                                        (message.content.toLowerCase().includes("préciser votre rôle") ||
-                                          message.content.toLowerCase().includes("préciser mon rôle") ||
-                                          message.content.toLowerCase().includes("votre rôle")) && (
-                                        <FlowReplyButtons
-                                          options={getFlowOptions("role", selectedMainTag)}
-                                          onSelect={(optionId) => handleFlowOptionSelect(optionId, "role")}
-                                          disabled={isLoading}
-                                          color="green"
-                                          showOther={true}
-                                          onOtherSelect={() => {
-                                            setInput("Je suis ");
-                                            setTimeout(() => textareaRef.current?.focus(), 100);
-                                          }}
-                                        />
-                                      )}
-                                      {/* Demande de contexte */}
-                                      {flowState.role &&
-                                        !flowState.context &&
-                                        (message.content.toLowerCase().includes("contexte") ||
-                                          message.content.toLowerCase().includes("situation")) && (
-                                        <FlowReplyButtons
-                                          options={getFlowOptions("context", selectedMainTag, flowState.role)}
-                                          onSelect={(optionId) => handleFlowOptionSelect(optionId, "context")}
-                                          disabled={isLoading}
-                                          color="blue"
-                                          showOther={true}
-                                          onOtherSelect={() => {
-                                            setInput("Le contexte est ");
-                                            setTimeout(() => textareaRef.current?.focus(), 100);
-                                          }}
-                                        />
-                                      )}
-                                      {/* Demande de tâche */}
-                                      {flowState.role &&
-                                        flowState.context &&
-                                        !flowState.task &&
-                                        (message.content.toLowerCase().includes("souhaitez-vous") ||
-                                          message.content.toLowerCase().includes("souhaitez que") ||
-                                          message.content.toLowerCase().includes("que je fasse")) && (
-                                        <FlowReplyButtons
-                                          options={getFlowOptions("task")}
-                                          onSelect={(optionId) => handleFlowOptionSelect(optionId, "task")}
-                                          disabled={isLoading}
-                                          color="green"
-                                          showOther={true}
-                                          onOtherSelect={() => {
-                                            setInput("Je souhaite ");
-                                            setTimeout(() => textareaRef.current?.focus(), 100);
-                                          }}
-                                        />
-                                      )}
-                                    </>
-                                  )}
-                                  {/* Boutons de réponse rapide pour les questions avec alternatives (après flux complété) */}
-                                  {message.role === "assistant" && isFlowComplete(flowState) && (
+                                  {/* Boutons de réponse rapide pour les questions avec alternatives */}
+                                  {message.role === "assistant" && (
                                     <QuickReplyButtons
                                       content={message.content}
                                       onSelect={(option) => {
@@ -1233,7 +1112,7 @@ export default function AssistantIAPage() {
 
               {/* Zone de saisie - désactivée si pas de tag principal */}
               <div className="px-6 pb-6 shrink-0">
-                {!selectedMainTag && (
+                {(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) && (
                   <div className="mb-4 p-4 rounded-lg bg-muted border border-dashed text-center text-sm text-muted-foreground">
                     Veuillez sélectionner un domaine métier pour commencer à converser.
                   </div>
@@ -1381,7 +1260,7 @@ export default function AssistantIAPage() {
                   </div>
                   <Button
                     onClick={() => handleSendMessage()}
-                    disabled={!selectedMainTag || isLoading || (!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0)}
+                    disabled={(!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton)) || isLoading || (!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0)}
                     size="lg"
                   >
                     {isLoading ? (
