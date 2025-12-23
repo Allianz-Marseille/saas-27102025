@@ -38,7 +38,7 @@ export function AssistantWrapper() {
     toast.success("Conversation réinitialisée");
   }, []);
 
-  const handleSendMessage = useCallback(async (input: string, images: string[], files: ProcessedFile[]) => {
+  const handleSendMessage = useCallback(async (input: string, images: string[], files: ProcessedFile[], mainButton?: string, subButton?: string) => {
     if (!user) {
       toast.error("Vous devez être connecté pour utiliser l'assistant.");
       return;
@@ -85,6 +85,8 @@ export function AssistantWrapper() {
           images: images.length > 0 ? images : undefined,
           files: files.length > 0 ? files.map(f => ({ name: f.name, type: f.type, content: f.content })) : undefined,
           history: conversationHistory,
+          mainButton: mainButton || undefined,
+          subButton: subButton || undefined,
           stream: true,
         }),
       });
@@ -196,15 +198,15 @@ export function AssistantWrapper() {
   return (
     <>
       <AssistantTrigger onClick={handleOpenDrawer} />
-      <AssistantDrawer
-        isOpen={isOpen}
-        onClose={handleCloseDrawer}
-        onSendMessage={handleSendMessage}
-        onReset={handleResetConversation}
-        messages={messages}
-        isLoading={isLoading}
-        responseProgress={responseProgress}
-      />
+          <AssistantDrawer
+            isOpen={isOpen}
+            onClose={handleCloseDrawer}
+            onSendMessage={handleSendMessage}
+            onReset={handleResetConversation}
+            messages={messages}
+            isLoading={isLoading}
+            responseProgress={responseProgress}
+          />
     </>
   );
 }

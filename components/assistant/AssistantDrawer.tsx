@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, Send, FileText, Image as ImageIcon, FileSpreadsheet, Loader2, MessageSquare, RotateCcw, Copy, Check } from "lucide-react";
+import { X, Send, FileText, Image as ImageIcon, Loader2, MessageSquare, RotateCcw, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { toast } from "sonner";
+import { MainButtonMenu } from "./MainButtonMenu";
+import { SubButtonMenu } from "./SubButtonMenu";
+import { requiresSubButton } from "@/lib/assistant/main-buttons";
 
 interface Message {
   id: string;
@@ -20,63 +21,10 @@ interface Message {
   timestamp: Date;
 }
 
-interface Suggestion {
-  id: string;
-  title: string;
-  description: string;
-  prompt: string;
-  icon: React.ReactNode;
-}
-
-const SUGGESTIONS: Suggestion[] = [
-  {
-    id: "analyze-quote",
-    title: "Analyser un devis",
-    description: "Extrayez les informations clés d'un devis PDF",
-    prompt: "Analyse ce devis et extrait les informations principales : montant, garanties, exclusions, et conditions.",
-    icon: <FileText className="h-5 w-5" />,
-  },
-  {
-    id: "summarize-contract",
-    title: "Résumer un contrat",
-    description: "Synthétisez les points essentiels d'un contrat d'assurance",
-    prompt: "Résume ce contrat d'assurance en mettant en évidence les garanties, exclusions, franchises et conditions de résiliation.",
-    icon: <FileText className="h-5 w-5" />,
-  },
-  {
-    id: "explain-kpi",
-    title: "Expliquer les KPI",
-    description: "Analysez les performances et indicateurs clés",
-    prompt: "Analyse ces données de performance et explique-moi les indicateurs clés, les tendances et les points d'attention.",
-    icon: <FileSpreadsheet className="h-5 w-5" />,
-  },
-  {
-    id: "write-email",
-    title: "Rédiger un mail client",
-    description: "Créez un email professionnel de relance ou d'information",
-    prompt: "Rédige un email professionnel pour un client concernant :",
-    icon: <FileText className="h-5 w-5" />,
-  },
-  {
-    id: "compare-contracts",
-    title: "Comparer deux contrats",
-    description: "Mettez en évidence les différences entre deux offres",
-    prompt: "Compare ces deux contrats d'assurance et identifie les différences en termes de garanties, prix, franchises et conditions.",
-    icon: <FileText className="h-5 w-5" />,
-  },
-  {
-    id: "analyze-image",
-    title: "Analyser une image",
-    description: "Extrayez le texte et analysez le contenu d'une image",
-    prompt: "Analyse cette image et extrait toutes les informations pertinentes.",
-    icon: <ImageIcon className="h-5 w-5" />,
-  },
-];
-
 interface AssistantDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSendMessage: (message: string, images: string[], files: ProcessedFile[]) => Promise<void>;
+  onSendMessage: (message: string, images: string[], files: ProcessedFile[], mainButton?: string, subButton?: string) => Promise<void>;
   onReset?: () => void;
   messages: Message[];
   isLoading: boolean;
@@ -92,6 +40,8 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, onReset, messa
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [selectedMainButton, setSelectedMainButton] = useState<string | null>(null);
+  const [selectedSubButton, setSelectedSubButton] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -183,23 +133,54 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, onReset, messa
     }
   }, [input]);
 
-  const handleSuggestionClick = (suggestion: Suggestion) => {
-    setInput(suggestion.prompt);
-    textareaRef.current?.focus();
+  // Gérer la sélection du bouton principal
+  const handleMainButtonSelect = (buttonId: string) => {
+    setSelectedMainButton(buttonId);
+    setSelectedSubButton(null);
+    // Si le bouton nécessite un sous-bouton, on ne démarre pas encore la conversation
+    // Sinon, on peut commencer directement
+    if (!requiresSubButton(buttonId)) {
+      // Pas de sous-bouton nécessaire, on peut commencer la conversation
+      // Envoyer automatiquement un message initial pour déclencher l'IA
+      setTimeout(() => {
+        handleSendMessage("Bonjour"); // Message initial pour déclencher le prompt système
+      }, 100);
+    }
   };
 
-  const handleSendMessage = async () => {
-    if ((!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !user) return;
+  // Gérer la sélection du sous-bouton
+  const handleSubButtonSelect = (subButtonId: string) => {
+    setSelectedSubButton(subButtonId);
+    // Envoyer automatiquement un message initial pour déclencher l'IA
+    // Utiliser un petit délai pour s'assurer que l'état est mis à jour
+    setTimeout(() => {
+      handleSendMessage("Bonjour"); // Message initial pour déclencher le prompt système
+    }, 100);
+  };
+
+  // Gérer le retour au menu principal
+  const handleBackToMainMenu = () => {
+    setSelectedMainButton(null);
+    setSelectedSubButton(null);
+  };
+
+  const handleSendMessage = async (customMessage?: string) => {
+    const messageToSend = customMessage !== undefined ? customMessage : input;
+    // Vérifier qu'un bouton principal est sélectionné (et sous-bouton si nécessaire)
+    const canSend = selectedMainButton && (!requiresSubButton(selectedMainButton) || selectedSubButton);
+    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !user || !canSend) return;
 
     const imageBase64s = await convertImagesToBase64(selectedImages);
     const filesToSend = selectedFiles;
-    const messageText = input.trim();
+    const messageText = messageToSend.trim();
 
-    // Appeler la fonction onSendMessage passée en prop
-    await onSendMessage(messageText, imageBase64s, filesToSend);
+    // Appeler la fonction onSendMessage passée en prop avec les boutons sélectionnés
+    await onSendMessage(messageText, imageBase64s, filesToSend, selectedMainButton || undefined, selectedSubButton || undefined);
 
     // Réinitialiser l'input et les fichiers sélectionnés
-    setInput("");
+    if (!customMessage) {
+      setInput("");
+    }
     setSelectedImages([]);
     setSelectedFiles([]);
   };
@@ -359,32 +340,25 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, onReset, messa
 
   if (!user) return null;
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Overlay */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-          />
+  if (!isOpen) return null;
 
-          {/* Drawer */}
-          <motion.div
-            ref={drawerRef}
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
-            className="fixed right-0 top-0 h-full w-full sm:max-w-2xl bg-background/95 backdrop-blur-lg border-l border-border/50 shadow-2xl z-50 flex flex-col"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="assistant-drawer-title"
-            aria-describedby="assistant-drawer-description"
-          >
+  return (
+    <>
+      {/* Overlay */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+      />
+
+      {/* Drawer */}
+      <div
+        ref={drawerRef}
+        className="fixed right-0 top-0 h-full w-full sm:max-w-2xl bg-background/95 backdrop-blur-lg border-l border-border/50 shadow-2xl z-50 flex flex-col"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="assistant-drawer-title"
+        aria-describedby="assistant-drawer-description"
+      >
             {/* Header */}
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border/50 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
@@ -406,7 +380,11 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, onReset, messa
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={onReset}
+                    onClick={() => {
+                      setSelectedMainButton(null);
+                      setSelectedSubButton(null);
+                      onReset();
+                    }}
                     aria-label="Réinitialiser la conversation"
                     className="hover:bg-muted/50"
                     title="Réinitialiser la conversation"
@@ -427,66 +405,44 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, onReset, messa
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto">
-              {/* Suggestions (affichées seulement si pas de messages) */}
-              {messages.length === 0 && (
-                <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
-                  <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground">
-                    <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-amber-500" />
-                    Suggestions intelligentes
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                    {SUGGESTIONS.map((suggestion, index) => (
-                      <motion.div
-                        key={suggestion.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        whileHover={{ scale: 1.02, y: -2 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <Card
-                          className="p-4 cursor-pointer hover:bg-muted/50 hover:border-amber-500/20 transition-all duration-200 border-border/50 group"
-                          onClick={() => handleSuggestionClick(suggestion)}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="p-2.5 rounded-lg bg-gradient-to-br from-amber-500/10 to-amber-600/5 text-amber-500 shrink-0 group-hover:from-amber-500/20 group-hover:to-amber-600/10 transition-colors">
-                              {suggestion.icon}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-sm mb-1.5 group-hover:text-foreground transition-colors">
-                                {suggestion.title}
-                              </h3>
-                              <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                                {suggestion.description}
-                              </p>
-                            </div>
-                          </div>
-                        </Card>
-                      </motion.div>
-                    ))}
+            <div className="flex-1 overflow-y-auto mb-4 space-y-1 px-4 py-4 min-h-0 bg-[#ECE5DD] dark:bg-[#0b141a]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}>
+              {/* Menu de boutons (affichés seulement si pas de messages) */}
+              {messages.length === 0 ? (
+                <div className="flex justify-start">
+                  <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <p className="text-sm text-gray-900 dark:text-gray-100 mb-3">Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
+                    {/* Menu principal ou sous-menu */}
+                    {!selectedMainButton ? (
+                      <MainButtonMenu
+                        onSelect={handleMainButtonSelect}
+                        disabled={isLoading}
+                      />
+                    ) : requiresSubButton(selectedMainButton) && !selectedSubButton ? (
+                      <SubButtonMenu
+                        mainButtonId={selectedMainButton}
+                        onSelect={handleSubButtonSelect}
+                        onBack={handleBackToMainMenu}
+                        disabled={isLoading}
+                      />
+                    ) : null}
                   </div>
                 </div>
-              )}
+              ) : (
 
-              {/* Messages */}
-              {messages.length > 0 && (
-                <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-                  {messages.map((message) => (
-                    <motion.div
-                      key={message.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${
+                      message.role === "user" ? "justify-end" : "justify-start"
+                    } mb-1`}
+                  >
+                    <div
+                      className={`max-w-[75%] rounded-2xl p-3 shadow-sm ${
+                        message.role === "user"
+                          ? "bg-[#DCF8C6] dark:bg-[#056162] text-gray-900 dark:text-gray-100 rounded-tr-none"
+                          : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-none border border-gray-200 dark:border-gray-700"
+                      }`}
                     >
-                      <div
-                        className={`max-w-[85%] rounded-xl p-4 shadow-sm ${
-                          message.role === "user"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted border border-border/50"
-                        }`}
-                      >
                         {message.role === "user" ? (
                           <>
                             {message.images && message.images.length > 0 && (
@@ -527,40 +483,36 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, onReset, messa
                             </div>
                           </>
                         )}
-                        <p className="text-xs opacity-70 mt-2">
-                          {message.timestamp.toLocaleTimeString()}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
-                  {isLoading && (
-                    <div className="flex justify-start">
-                      <div className="bg-muted rounded-lg p-3 w-full max-w-md">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                          <span className="text-sm text-muted-foreground">
-                            {responseProgress > 0 ? `Réponse en cours... ${responseProgress}%` : "Réponse en cours..."}
-                          </span>
-                        </div>
-                        {responseProgress > 0 && (
-                          <div className="w-full bg-background rounded-full h-1.5">
-                            <div
-                              className="bg-primary h-1.5 rounded-full transition-all duration-300"
-                              style={{ width: `${responseProgress}%` }}
-                              role="progressbar"
-                              aria-valuenow={responseProgress}
-                              aria-valuemin={0}
-                              aria-valuemax={100}
-                              aria-label={`Progression de la réponse: ${responseProgress}%`}
-                            />
-                          </div>
-                        )}
                       </div>
                     </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
+                  ))
+                )}
+                {isLoading && (
+                  <div className="flex justify-start mb-1">
+                    <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        <span className="text-sm text-muted-foreground">
+                          {responseProgress > 0 ? `Réponse en cours... ${responseProgress}%` : "Réponse en cours..."}
+                        </span>
+                      </div>
+                      {responseProgress > 0 && (
+                        <div className="w-full bg-background rounded-full h-1.5 mt-2">
+                          <div
+                            className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                            style={{ width: `${responseProgress}%` }}
+                            role="progressbar"
+                            aria-valuenow={responseProgress}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label={`Progression de la réponse: ${responseProgress}%`}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
             </div>
 
             {/* Input Area */}
@@ -623,25 +575,30 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, onReset, messa
               )}
 
               {/* Zone de saisie */}
-              <div className="flex gap-2">
-                <div className="flex-1 flex flex-col gap-2">
-                  <Textarea
-                    ref={textareaRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                    onPaste={handlePasteImage}
-                    placeholder="Tapez votre message..."
-                    className="min-h-[60px] max-h-[120px] resize-none"
-                    disabled={isLoading || isProcessingFiles}
-                    aria-label="Zone de saisie du message"
-                    aria-describedby="textarea-help"
-                  />
+              {!selectedMainButton || (requiresSubButton(selectedMainButton) && !selectedSubButton) ? (
+                <div className="text-center py-4 text-sm text-muted-foreground">
+                  Sélectionnez un domaine métier pour commencer
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <div className="flex-1 flex flex-col gap-2">
+                    <Textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                      onPaste={handlePasteImage}
+                      placeholder="Tapez votre message... (Vous pouvez coller des images avec Ctrl+V / Cmd+V)"
+                      className="min-h-[60px] max-h-[120px] resize-none"
+                      disabled={isLoading || isProcessingFiles}
+                      aria-label="Zone de saisie du message"
+                      aria-describedby="textarea-help"
+                    />
                   <div className="flex items-center gap-2">
                     <input
                       ref={imageInputRef}
@@ -691,8 +648,8 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, onReset, messa
                   </div>
                 </div>
                 <Button
-                  onClick={handleSendMessage}
-                  disabled={(!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading}
+                  onClick={() => handleSendMessage()}
+                  disabled={(!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles}
                   size="icon"
                   className="shrink-0 h-[60px] w-[60px] sm:h-[60px] sm:w-[60px] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -703,11 +660,10 @@ export function AssistantDrawer({ isOpen, onClose, onSendMessage, onReset, messa
                   )}
                 </Button>
               </div>
+              )}
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+      </div>
+    </>
   );
 }
 
