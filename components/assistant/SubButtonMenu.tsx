@@ -48,63 +48,50 @@ export function SubButtonMenu({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {/* Bouton retour */}
       <Button
         variant="ghost"
         onClick={onBack}
-        className="w-full justify-start"
+        className="w-full justify-start h-auto py-2 px-3 text-xs"
         disabled={disabled}
       >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Retour au menu principal
+        <ArrowLeft className="h-3 w-3 mr-2" />
+        Retour
       </Button>
 
-      {/* Titre avec icône du bouton principal */}
-      <div className="text-center mb-4">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <span className="text-2xl">{mainButton.icon}</span>
-          <h3 className="text-lg font-semibold">{mainButton.label}</h3>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Sélectionnez une option
-        </p>
-      </div>
-
       {/* Liste des sous-boutons */}
-      <div className="grid grid-cols-1 gap-2">
+      <div className="flex flex-col gap-2">
         {subButtons.map((subButton, index) => (
           <motion.div
             key={subButton.id}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.2, delay: index * 0.05 }}
-            whileHover={{ scale: disabled ? 1 : 1.01 }}
-            whileTap={{ scale: disabled ? 1 : 0.99 }}
+            transition={{ duration: 0.2, delay: index * 0.03 }}
           >
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => !disabled && onSelect(subButton.id)}
               disabled={disabled}
               className={cn(
-                "w-full h-auto py-3 px-4 justify-start",
-                "transition-all duration-200",
+                "w-full justify-start gap-3 h-auto py-2.5 px-3",
+                "bg-white dark:bg-gray-800",
+                "border border-gray-200 dark:border-gray-700",
+                "rounded-xl",
                 "shadow-sm hover:shadow-md",
-                "border-2",
-                mainButton.borderColor,
-                mainButton.color,
-                "hover:bg-opacity-80",
+                "transition-all duration-200",
+                "hover:bg-gray-50 dark:hover:bg-gray-700",
                 disabled && "opacity-50 cursor-not-allowed"
               )}
             >
-              <div className="flex flex-col items-start gap-1 flex-1">
-                <span className="text-sm font-medium text-left">
+              <div className="flex-1 text-left">
+                <div className="font-medium text-sm text-gray-900 dark:text-gray-100">
                   {subButton.label}
-                </span>
+                </div>
                 {subButton.description && (
-                  <span className="text-xs text-muted-foreground text-left">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     {subButton.description}
-                  </span>
+                  </div>
                 )}
               </div>
             </Button>

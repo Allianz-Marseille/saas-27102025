@@ -6,6 +6,7 @@ import { Sparkles, MessageSquare, X, Minimize2, Maximize2, Image as ImageIcon, F
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { MarkdownRenderer } from "./MarkdownRenderer";
@@ -719,7 +720,7 @@ export function FloatingAssistant() {
               height: isMinimized ? "auto" : "600px"
             }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            className="fixed bottom-6 right-6 z-50 w-[400px] max-w-[calc(100vw-3rem)] bg-background border border-border rounded-lg shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-6 right-6 z-50 w-[400px] max-w-[calc(100vw-3rem)] bg-[#ECE5DD] dark:bg-[#0b141a] border border-gray-300 dark:border-gray-700 rounded-lg shadow-2xl flex flex-col overflow-hidden"
             style={{ maxHeight: "calc(100vh - 3rem)" }}
           >
             {/* Header */}
@@ -732,10 +733,10 @@ export function FloatingAssistant() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  <h3 className="font-semibold text-base text-white">
                     Assistant IA
                   </h3>
-                  <p className="text-xs text-muted-foreground">Comment puis-je vous aider ?</p>
+                  <p className="text-xs text-white/80">En ligne</p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
@@ -775,34 +776,12 @@ export function FloatingAssistant() {
 
             {/* Messages */}
             {!isMinimized && (
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-3 space-y-1" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}>
                 {messages.length === 0 ? (
-                  <div className="space-y-4">
-                    <div className="text-center text-muted-foreground py-4">
-                    <div className="relative mx-auto mb-4 w-16 h-16 flex items-center justify-center">
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-full opacity-20 blur-xl" />
-                      <div className="relative bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 p-3 rounded-full">
-                        <MessageSquare className="h-8 w-8 text-white" />
-                      </div>
-                      <motion.div
-                        className="absolute -top-1 -right-1"
-                        animate={{
-                          rotate: [0, 360],
-                          scale: [1, 1.2, 1],
-                        }}
-                        transition={{
-                          duration: 3,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      >
-                        <Sparkles className="h-5 w-5 text-amber-400" />
-                      </motion.div>
-                    </div>
-                    <p className="font-medium">Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
-                    </div>
-                    {/* Menu principal ou sous-menu */}
-                    <div className="mt-4 pb-4">
+                  <div className="flex justify-start">
+                    <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+                      <p className="text-sm text-gray-900 dark:text-gray-100 mb-3">Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
+                      {/* Menu principal ou sous-menu */}
                       {!selectedMainButton ? (
                         <MainButtonMenu
                           onSelect={handleMainButtonSelect}
@@ -824,14 +803,15 @@ export function FloatingAssistant() {
                       key={message.id}
                       className={`flex ${
                         message.role === "user" ? "justify-end" : "justify-start"
-                      }`}
+                      } mb-1`}
                     >
                       <div
-                        className={`max-w-[80%] rounded-lg p-3 ${
+                        className={cn(
+                          "max-w-[75%] rounded-2xl p-3 shadow-sm",
                           message.role === "user"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        }`}
+                            ? "bg-[#DCF8C6] dark:bg-[#056162] text-gray-900 dark:text-gray-100 rounded-tr-none"
+                            : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-none border border-gray-200 dark:border-gray-700"
+                        )}
                       >
                         {message.role === "user" ? (
                           <>
@@ -859,7 +839,7 @@ export function FloatingAssistant() {
                                 ))}
                               </div>
                             )}
-                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                            <p className="text-sm whitespace-pre-wrap text-gray-900 dark:text-gray-100">{message.content}</p>
                           </>
                         ) : (
                           <div className="relative group">
@@ -901,8 +881,8 @@ export function FloatingAssistant() {
                 )}
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className="bg-muted rounded-lg p-3">
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
                     </div>
                   </div>
                 )}
@@ -913,7 +893,7 @@ export function FloatingAssistant() {
             {/* Input */}
             {!isMinimized && (
               <div
-                className="p-4 border-t bg-muted/30"
+                className="p-3 border-t bg-white dark:bg-gray-800"
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}

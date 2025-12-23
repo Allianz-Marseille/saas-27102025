@@ -12,55 +12,43 @@ interface MainButtonMenuProps {
 
 export function MainButtonMenu({ onSelect, disabled = false }: MainButtonMenuProps) {
   return (
-    <div className="space-y-4">
-      <div className="text-center mb-4">
-        <p className="text-sm font-medium text-muted-foreground mb-1">
-          Comment puis-je vous aider ?
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Sélectionnez un domaine métier
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        {MAIN_BUTTONS.map((button, index) => (
-          <motion.div
-            key={button.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: index * 0.05 }}
-            whileHover={{ scale: disabled ? 1 : 1.02 }}
-            whileTap={{ scale: disabled ? 1 : 0.98 }}
+    <div className="flex flex-col gap-2">
+      {MAIN_BUTTONS.map((button, index) => (
+        <motion.div
+          key={button.id}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.2, delay: index * 0.03 }}
+        >
+          <Button
+            variant="ghost"
+            onClick={() => !disabled && onSelect(button.id)}
+            disabled={disabled}
+            className={cn(
+              "w-full justify-start gap-3 h-auto py-3 px-4",
+              "bg-white dark:bg-gray-800",
+              "border border-gray-200 dark:border-gray-700",
+              "rounded-2xl",
+              "shadow-sm hover:shadow-md",
+              "transition-all duration-200",
+              "hover:bg-gray-50 dark:hover:bg-gray-700",
+              disabled && "opacity-50 cursor-not-allowed"
+            )}
           >
-            <Button
-              variant="outline"
-              onClick={() => !disabled && onSelect(button.id)}
-              disabled={disabled}
-              className={cn(
-                "w-full h-auto py-4 px-4 flex flex-col items-center gap-2",
-                "transition-all duration-200",
-                "shadow-sm hover:shadow-md",
-                "border-2",
-                button.borderColor,
-                button.color,
-                "hover:bg-opacity-80",
-                disabled && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <span className="text-2xl">{button.icon}</span>
-              <span className="text-sm font-semibold text-center leading-tight">
+            <span className="text-2xl flex-shrink-0">{button.icon}</span>
+            <div className="flex-1 text-left">
+              <div className="font-medium text-sm text-gray-900 dark:text-gray-100">
                 {button.label}
-              </span>
+              </div>
               {button.description && (
-                <span className="text-xs text-muted-foreground text-center line-clamp-2">
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   {button.description}
-                </span>
+                </div>
               )}
-            </Button>
-          </motion.div>
-        ))}
-      </div>
+            </div>
+          </Button>
+        </motion.div>
+      ))}
     </div>
   );
 }
-

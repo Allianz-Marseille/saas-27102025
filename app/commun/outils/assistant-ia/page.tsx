@@ -29,6 +29,7 @@ import { QuickReplyButtons } from "@/components/assistant/QuickReplyButtons";
 import { MainButtonMenu } from "@/components/assistant/MainButtonMenu";
 import { SubButtonMenu } from "@/components/assistant/SubButtonMenu";
 import { requiresSubButton } from "@/lib/assistant/main-buttons";
+import { cn } from "@/lib/utils";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
 
@@ -918,25 +919,28 @@ export default function AssistantIAPage() {
             </CardHeader>
             <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
               {/* Zone de messages */}
-              {messages.length === 0 && !selectedMainButton ? (
-                <div className="flex-1 flex items-center justify-center px-6">
-                  <div className="text-center text-muted-foreground max-w-md">
-                    <Bot className="h-12 w-12 mx-auto mb-4 text-primary/50" />
-                    <p className="font-medium mb-2">Sélectionnez un domaine métier</p>
-                    <p className="text-sm">Choisissez un domaine métier ci-dessus pour commencer la conversation.</p>
+              <div className="flex-1 overflow-y-auto mb-4 space-y-1 px-4 py-4 min-h-0 bg-[#ECE5DD] dark:bg-[#0b141a]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}>
+                {messages.length === 0 ? (
+                  <div className="flex justify-start">
+                    <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+                      <p className="text-sm text-gray-900 dark:text-gray-100 mb-3">Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
+                      {/* Menu principal ou sous-menu */}
+                      {!selectedMainButton ? (
+                        <MainButtonMenu
+                          onSelect={handleMainButtonSelect}
+                          disabled={isLoading}
+                        />
+                      ) : requiresSubButton(selectedMainButton) && !selectedSubButton ? (
+                        <SubButtonMenu
+                          mainButtonId={selectedMainButton}
+                          onSelect={handleSubButtonSelect}
+                          onBack={handleBackToMainMenu}
+                          disabled={isLoading}
+                        />
+                      ) : null}
                     </div>
                   </div>
                 ) : (
-                <div className="flex-1 overflow-y-auto mb-4 space-y-4 px-6 py-4 min-h-0">
-                  {messages.length === 0 ? (
-                    <div className="flex-1 flex items-center justify-center min-h-[400px]">
-                      <div className="text-center text-muted-foreground max-w-md">
-                        <Bot className="h-12 w-12 mx-auto mb-4 text-primary/50" />
-                        <p className="font-medium mb-2">Prêt à converser</p>
-                        <p className="text-sm">Commencez à écrire votre message ci-dessous.</p>
-                      </div>
-                    </div>
-                  ) : (
                     messages.map((message, msgIndex) => {
                     // Calculer l'index de correspondance pour ce message
                     let matchIndexInMessage = -1;
@@ -951,16 +955,17 @@ export default function AssistantIAPage() {
                       <div
                         key={message.id}
                         id={`message-${message.id}`}
-                        className={`flex ${
+                        className={`flex mb-1 ${
                           message.role === "user" ? "justify-end" : "justify-start"
                         }`}
                       >
                         <div
-                          className={`max-w-[80%] rounded-lg p-4 ${
+                          className={cn(
+                            "max-w-[75%] rounded-2xl p-3 shadow-sm",
                             message.role === "user"
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted"
-                          }`}
+                              ? "bg-[#DCF8C6] dark:bg-[#056162] text-gray-900 dark:text-gray-100 rounded-tr-none"
+                              : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-none border border-gray-200 dark:border-gray-700"
+                          )}
                         >
                           {message.role === "user" ? (
                             <>
@@ -1029,9 +1034,6 @@ export default function AssistantIAPage() {
                               )}
                             </div>
                           )}
-                          <p className="text-xs opacity-70 mt-2">
-                            {message.timestamp.toLocaleTimeString()}
-                          </p>
                         </div>
                       </div>
                     );
@@ -1039,14 +1041,13 @@ export default function AssistantIAPage() {
                   )}
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className="bg-muted rounded-lg p-4">
-                      <Loader2 className="h-5 w-5 animate-spin" />
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+                      <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
                     </div>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
               </div>
-              )}
 
               {/* Prévisualisation des images */}
               {selectedImages.length > 0 && (
