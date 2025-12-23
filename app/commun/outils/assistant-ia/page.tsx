@@ -427,11 +427,23 @@ export default function AssistantIAPage() {
   const handleMainButtonSelect = (buttonId: string) => {
     setSelectedMainButton(buttonId);
     setSelectedSubButton(null);
+    // Si pas de sous-bouton nécessaire, envoyer automatiquement un message initial
+    const { requiresSubButton } = require("@/lib/assistant/main-buttons");
+    if (!requiresSubButton(buttonId)) {
+      setTimeout(() => {
+        handleSendMessage("Bonjour"); // Message initial pour déclencher le prompt système
+      }, 100);
+    }
   };
 
   // Gérer la sélection du sous-bouton
   const handleSubButtonSelect = (subButtonId: string) => {
     setSelectedSubButton(subButtonId);
+    // Envoyer automatiquement un message initial pour déclencher l'IA
+    // Utiliser un petit délai pour s'assurer que l'état est mis à jour
+    setTimeout(() => {
+      handleSendMessage("Bonjour"); // Message initial pour déclencher le prompt système
+    }, 100);
   };
 
   // Gérer le retour au menu principal
@@ -643,7 +655,7 @@ export default function AssistantIAPage() {
   };
 
   const handleSendMessage = async (customMessage?: string) => {
-    const messageToSend = customMessage || input;
+    const messageToSend = customMessage !== undefined ? customMessage : input;
     // Vérifier qu'un bouton principal est sélectionné (et sous-bouton si nécessaire)
     const canSend = selectedMainButton && (!requiresSubButton(selectedMainButton) || selectedSubButton);
     if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || !canSend) return;
