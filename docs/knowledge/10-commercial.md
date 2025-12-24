@@ -2,6 +2,38 @@
 
 **STABLE** - Dernière mise à jour : 2025-12-24
 
+## ⚠️ DÉFINITIONS IMPORTANTES (À CONNAÎTRE IMPÉRATIVEMENT)
+
+### Qu'est-ce que le M+3 ?
+**M+3** = "Mois + 3" = Relance systématique **3 mois après la souscription** d'un contrat.
+
+C'est une démarche commerciale INTERNE à l'agence Allianz Marseille, stratégique pour :
+- Vérifier la satisfaction du client avec son nouveau contrat
+- Compléter/corriger la fiche administrative (Lagon)
+- Identifier ce que le client a "ailleurs" (autres assureurs)
+- Proposer un bilan complet de ses garanties
+- Développer le portefeuille client
+
+### Qu'est-ce que le Préterme Auto ?
+**Préterme Auto** = Relance **45 jours AVANT l'échéance** d'un contrat auto.
+
+C'est une démarche de fidélisation pour :
+- Anticiper une hausse de prime ou un désalignement tarifaire
+- Être PROACTIF avant que le client ne compare ailleurs
+- Expliquer les évolutions tarifaires
+- Proposer des optimisations
+
+### Qu'est-ce que le Préterme IARD ?
+**Préterme IARD** = Relance **60 jours AVANT l'échéance** d'un contrat habitation/pro.
+
+C'est une démarche de fidélisation pour :
+- Actualiser les valeurs assurées (capital, biens)
+- Vérifier les changements de situation
+- Anticiper une résiliation
+- Revaloriser les garanties si nécessaire
+
+---
+
 ## 🎯 LES 3 PROCESSUS STRATÉGIQUES DE L'AGENCE
 
 Ces processus sont **PRIORITAIRES** et doivent être proposés systématiquement dans les interactions commerciales.
