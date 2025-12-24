@@ -9,7 +9,9 @@ import { useAuth } from "@/lib/firebase/use-auth";
 import { toast } from "sonner";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { MainButtonMenu } from "./MainButtonMenu";
+import { SubButtonMenu } from "./SubButtonMenu";
 import { QuickReplyButtons } from "./QuickReplyButtons";
+import { requiresSubButton } from "@/lib/assistant/main-buttons";
 import { convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
 import { cn } from "@/lib/utils";
@@ -32,6 +34,8 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
     setIsLoading,
     selectedRoleId,
     setSelectedRoleId,
+    selectedModeId,
+    setSelectedModeId,
     selectedImages,
     setSelectedImages,
     selectedFiles,
@@ -132,14 +136,41 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
   };
 
   /**
-   * Rôle sélectionné (état started -> modeActive directement)
+   * Rôle sélectionné (état started -> roleSelected si hasSubButtons, sinon modeActive)
    */
   const handleRoleSelect = async (roleId: string) => {
     setSelectedRoleId(roleId);
+    setSelectedModeId(null);
+
+    // Si le rôle nécessite un sous-bouton, passer en roleSelected
+    if (requiresSubButton(roleId)) {
+      setStateMachine("roleSelected");
+      // Pas d'appel API, on attend la sélection du mode
+    } else {
+      // Pas de sous-bouton nécessaire, passer directement en modeActive
+      setStateMachine("modeActive");
+      await sendMessageToAPI(" ", [], [], "selectRole", roleId);
+    }
+  };
+
+  /**
+   * Mode sélectionné (état roleSelected -> modeActive)
+   */
+  const handleModeSelect = async (modeId: string) => {
+    setSelectedModeId(modeId);
     setStateMachine("modeActive");
 
-    // Appeler l'API - l'IA posera les questions d'affinage dans le chat
-    await sendMessageToAPI(" ", [], [], "selectRole", roleId);
+    // Appeler l'API avec le mode sélectionné
+    await sendMessageToAPI(" ", [], [], "selectMode", selectedRoleId!, modeId);
+  };
+
+  /**
+   * Retour au menu principal
+   */
+  const handleBackToMainMenu = () => {
+    setSelectedRoleId(null);
+    setSelectedModeId(null);
+    setStateMachine("started");
   };
 
   /**
@@ -147,9 +178,10 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
    */
   const handleAutreChose = async () => {
     setSelectedRoleId(null);
+    setSelectedModeId(null);
     setStateMachine("freeChat");
     
-    // Appeler l'API en mode chat libre - l'IA demandera "Tu as besoin de savoir quoi ?"
+    // Appeler l'API en mode chat libre
     await sendMessageToAPI(" ", [], [], "selectFreeChat");
   };
 
@@ -164,8 +196,9 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
     messageText: string,
     imageBase64s: string[],
     filesToSend: { name: string; type: string; content?: string }[],
-    uiEvent?: "start" | "selectRole" | "selectFreeChat",
-    roleId?: string
+    uiEvent?: "start" | "selectRole" | "selectMode" | "selectFreeChat",
+    roleId?: string,
+    modeId?: string
   ) => {
     if (!user) return;
 
@@ -200,6 +233,7 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
           files: filesToSend.length > 0 ? filesToSend : undefined,
           history: conversationHistory,
           mainButton: roleId || selectedRoleId || undefined,
+          subButton: modeId || selectedModeId || undefined,
           uiEvent: uiEvent || undefined,
           stream: true,
         }),
@@ -529,6 +563,20 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
               >
                 💬 Autre chose (chat libre)
               </Button>
+            </div>
+          </div>
+        )}
+
+        {/* État ROLE_SELECTED : Menu des modes (sous-boutons) */}
+        {stateMachine === "roleSelected" && selectedRoleId && requiresSubButton(selectedRoleId) && (
+          <div className="flex justify-start">
+            <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+              <SubButtonMenu
+                mainButtonId={selectedRoleId}
+                onSelect={handleModeSelect}
+                onBack={handleBackToMainMenu}
+                disabled={isLoading}
+              />
             </div>
           </div>
         )}

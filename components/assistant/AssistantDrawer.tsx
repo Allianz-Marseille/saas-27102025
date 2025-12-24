@@ -96,48 +96,48 @@ export function AssistantDrawer({ isOpen, onClose }: AssistantDrawerProps) {
         aria-labelledby="assistant-drawer-title"
         aria-describedby="assistant-drawer-description"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border/50 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <div className="relative shrink-0">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg blur-sm opacity-50" />
-              <div className="relative bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 p-2 sm:p-2.5 rounded-lg">
-                <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-              </div>
-            </div>
-            <div className="min-w-0 flex-1">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border/50 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                <div className="relative shrink-0">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg blur-sm opacity-50" />
+                  <div className="relative bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 p-2 sm:p-2.5 rounded-lg">
+                    <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                  </div>
+                </div>
+                <div className="min-w-0 flex-1">
               <h2
                 id="assistant-drawer-title"
                 className="font-bold text-base sm:text-lg tracking-tight truncate bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
               >
-                Assistant IA
-              </h2>
+                    Assistant IA
+                  </h2>
               <p
                 id="assistant-drawer-description"
                 className="text-xs sm:text-sm text-muted-foreground mt-0.5 hidden sm:block"
               >
                 Comment puis-je vous aider ?
               </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
             {messages.length > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
+                  <Button
+                    variant="ghost"
+                    size="icon"
                 onClick={handleResetConversation}
-                aria-label="Réinitialiser la conversation"
-                className="hover:bg-muted/50"
-                title="Réinitialiser la conversation"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            )}
+                    aria-label="Réinitialiser la conversation"
+                    className="hover:bg-muted/50"
+                    title="Réinitialiser la conversation"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                )}
             <Button variant="ghost" size="icon" onClick={onClose} aria-label="Fermer" className="hover:bg-muted/50">
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
 
         {/* Core Assistant */}
         <AssistantCore variant="drawer" />

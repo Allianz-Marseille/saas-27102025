@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les paramètres depuis le body
     const body = await request.json();
-    const { message, images, files, history = [], model = "gpt-4o", mainButton, uiEvent } = body;
+    const { message, images, files, history = [], model = "gpt-4o", mainButton, subButton, uiEvent } = body;
 
     // Le message peut être vide si seulement des images ou fichiers sont envoyés
     if (!message && (!images || images.length === 0) && (!files || files.length === 0)) {
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
 
     // Charger la base de connaissances modulaire selon le contexte
     const { loadKnowledgeForContext } = await import("@/lib/assistant/knowledge-loader");
-    const knowledgeBase = loadKnowledgeForContext(mainButton);
+    const knowledgeBase = loadKnowledgeForContext(mainButton, subButton);
 
     // Construire le prompt système avec formatage adapté et connaissances métier
     const coreKnowledge = `Tu es l'assistant interne de l'agence Allianz Marseille (Nogaro & Boetti).
@@ -269,10 +269,10 @@ EXEMPLES DE FORMATAGE :
         buttonPromptSection = `\n\n--- COMPORTEMENT (CHAT LIBRE) ---\n\n${freeChatPrompt}\n\n---\n\n`;
       }
     }
-    // Cas 3 : mainButton fourni (rôle sélectionné)
+    // Cas 3 : mainButton fourni (rôle sélectionné, avec ou sans mode)
     else if (mainButton) {
       const { getSystemPromptForButton } = await import("@/lib/assistant/main-button-prompts");
-      const buttonPrompt = getSystemPromptForButton(mainButton);
+      const buttonPrompt = getSystemPromptForButton(mainButton, subButton);
       if (buttonPrompt) {
         buttonPromptSection = `\n\n--- CONFIGURATION MÉTIER ---\n\n${buttonPrompt}\n\n---\n\n`;
       }
