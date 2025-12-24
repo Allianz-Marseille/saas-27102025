@@ -6,7 +6,7 @@ import { isAdmin } from "@/lib/utils/roles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Image as ImageIcon, X, RotateCcw, Copy, Check, Plus, Save, XCircle, ClipboardCopy } from "lucide-react";
+import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Image as ImageIcon, X, RotateCcw, Copy, Check, Plus, Save, XCircle, ClipboardCopy, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1445,26 +1445,38 @@ export default function AssistantIAPage() {
 
         {/* Dialog de confirmation pour nouveau chat */}
         <AlertDialog open={showNewChatDialog} onOpenChange={setShowNewChatDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Conversation non sauvegardée</AlertDialogTitle>
-              <AlertDialogDescription>
-                Vous avez des modifications non sauvegardées. Que souhaitez-vous faire ?
+          <AlertDialogContent className="sm:max-w-[480px]">
+            <AlertDialogHeader className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/20">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+                </div>
+                <AlertDialogTitle className="text-xl">Conversation non sauvegardée</AlertDialogTitle>
+              </div>
+              <AlertDialogDescription className="text-base leading-relaxed pt-2">
+                Votre conversation contient des messages non sauvegardés. Souhaitez-vous les enregistrer avant de continuer ?
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-              <AlertDialogCancel onClick={() => setShowNewChatDialog(false)}>
+            <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-3 pt-4">
+              <AlertDialogCancel 
+                onClick={() => setShowNewChatDialog(false)}
+                className="sm:flex-1"
+              >
                 Annuler
               </AlertDialogCancel>
               <Button
                 variant="outline"
                 onClick={handleResetConversation}
-                className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                className="sm:flex-1 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 dark:border-red-900/50 dark:text-red-500 dark:hover:bg-red-950/50 dark:hover:text-red-400 dark:hover:border-red-900"
               >
                 <XCircle className="h-4 w-4 mr-2" />
                 Abandonner
               </Button>
-              <AlertDialogAction onClick={handleSaveAndNewChat} disabled={isSavingConversation}>
+              <AlertDialogAction 
+                onClick={handleSaveAndNewChat} 
+                disabled={isSavingConversation}
+                className="sm:flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md disabled:opacity-50"
+              >
                 {isSavingConversation ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1473,7 +1485,7 @@ export default function AssistantIAPage() {
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Sauvegarder et continuer
+                    Sauvegarder
                   </>
                 )}
               </AlertDialogAction>
