@@ -2,22 +2,47 @@
 
 **STABLE** - Dernière mise à jour : 2025-12-24
 
-## Process internes
+## 🎯 LES 3 PROCESSUS STRATÉGIQUES DE L'AGENCE
+
+Ces processus sont **PRIORITAIRES** et doivent être proposés systématiquement dans les interactions commerciales.
+
+### 1. M+3 (Relance 3 mois après souscription)
+**Pourquoi c'est stratégique** :
+- La compagnie pousse l'approche globale dès le départ
+- La réalité client impose souvent un contrat "urgent" au départ
+- Le M+3 est le BON MOMENT pour faire un vrai bilan complet
+- C'est l'occasion de développer le portefeuille client
+
+**Objectif** : Vérifier satisfaction + développer le portefeuille
+**Délai** : 3 mois après la souscription
+
+### 2. Préterme Auto
+**Pourquoi c'est stratégique** :
+- Un client qui paie trop cher finit toujours par comparer
+- Si on réagit APRÈS une offre concurrente, on a déjà perdu du crédit
+- Il est essentiel d'être proactif et d'anticiper les questions
+
+**Objectif** : Fidélisation + optimisation tarifaire
+**Délai** : 45 jours avant échéance
+**Signes d'alerte** : Date anniversaire proche, client non revu, ETP > 120, hausse > 20%
+
+### 3. Préterme IARD
+**Pourquoi c'est stratégique** :
+- Même logique que Préterme Auto appliquée aux contrats habitation/pro
+- Prévenir la résiliation en étant proactif
+- Vérifier l'actualisation des valeurs assurées (crucial)
+
+**Objectif** : Fidélisation + revalorisation garanties
+**Délai** : 60 jours avant échéance (Habitation/Professionnelle)
+**Points clés** : Capital assuré, franchises, exclusions, adéquation activité
+
+---
+
+## Process internes complémentaires
 
 ### Gestion des Leads
 - **Délai de réponse** : < 15 minutes
 - **Actions** : Qualification, attribution manuelle
-
-### M+3 (Relance 3 mois après souscription)
-**Objectif** : Vérifier satisfaction + développer le portefeuille
-
-### Préterme Auto
-**Délai** : 45 jours avant échéance
-**Objectif** : Fidélisation + optimisation
-
-### Préterme IARD
-**Délai** : 60 jours avant échéance (Habitation/Professionnelle)
-**Objectif** : Fidélisation + revalorisation garanties
 
 ---
 
