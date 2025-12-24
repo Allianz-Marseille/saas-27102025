@@ -38,7 +38,7 @@ export const MAIN_BUTTONS: MainButton[] = [
     icon: "🚨",
     color: "bg-red-50 dark:bg-red-950/20",
     borderColor: "border-red-500",
-    hasSubButtons: false,
+    hasSubButtons: true,
     description: "Gestion des sinistres, conventions IRSA/IRSI/IRCA",
   },
   {
@@ -65,7 +65,7 @@ export const MAIN_BUTTONS: MainButton[] = [
     icon: "📋",
     color: "bg-yellow-50 dark:bg-yellow-950/20",
     borderColor: "border-yellow-500",
-    hasSubButtons: false,
+    hasSubButtons: true,
     description: "Assistant administratif, organisation",
   },
   {
@@ -74,7 +74,7 @@ export const MAIN_BUTTONS: MainButton[] = [
     icon: "📱",
     color: "bg-orange-50 dark:bg-orange-950/20",
     borderColor: "border-orange-500",
-    hasSubButtons: false,
+    hasSubButtons: true,
     description: "Contenu réseaux sociaux, communication",
   },
   {
@@ -83,7 +83,7 @@ export const MAIN_BUTTONS: MainButton[] = [
     icon: "⚖️",
     color: "bg-indigo-50 dark:bg-indigo-950/20",
     borderColor: "border-indigo-500",
-    hasSubButtons: false,
+    hasSubButtons: true,
     description: "Conseil juridique, droit assurance",
   },
   {
@@ -92,7 +92,7 @@ export const MAIN_BUTTONS: MainButton[] = [
     icon: "📊",
     color: "bg-cyan-50 dark:bg-cyan-950/20",
     borderColor: "border-cyan-500",
-    hasSubButtons: false,
+    hasSubButtons: true,
     description: "Conseil comptable, fiscalité",
   },
 ];
@@ -144,6 +144,43 @@ export const SUB_BUTTONS: SubButton[] = [
     mainButtonId: "commercial",
     description: "Explication pédagogique des garanties",
   },
+  {
+    id: "bilan-complet",
+    label: "Bilan complet",
+    mainButtonId: "commercial",
+    description: "Analyse complète du portefeuille client",
+  },
+  // Sinistre
+  {
+    id: "analyser-constat",
+    label: "Analyser un constat",
+    mainButtonId: "sinistre",
+    description: "Analyse d'un constat amiable",
+  },
+  {
+    id: "appliquer-convention",
+    label: "Appliquer une convention",
+    mainButtonId: "sinistre",
+    description: "IRSA, IRCA, IRSI, CIDRE",
+  },
+  {
+    id: "droit-commun",
+    label: "Droit commun",
+    mainButtonId: "sinistre",
+    description: "Hors conventions, responsabilité civile",
+  },
+  {
+    id: "question-generale-sinistre",
+    label: "Question générale",
+    mainButtonId: "sinistre",
+    description: "Questions diverses sur les sinistres",
+  },
+  {
+    id: "points-vigilance",
+    label: "Points de vigilance",
+    mainButtonId: "sinistre",
+    description: "Précautions et erreurs à éviter",
+  },
   // Santé
   {
     id: "sante-individuel",
@@ -157,6 +194,18 @@ export const SUB_BUTTONS: SubButton[] = [
     mainButtonId: "sante",
     description: "Santé collective, obligations ANI",
   },
+  {
+    id: "analyse-devis-sante",
+    label: "Analyse devis santé",
+    mainButtonId: "sante",
+    description: "Analyse approfondie d'un devis santé",
+  },
+  {
+    id: "comparaison-devis-sante",
+    label: "Comparaison devis santé",
+    mainButtonId: "sante",
+    description: "Comparer plusieurs devis santé",
+  },
   // Prévoyance
   {
     id: "prevoyance-individuel",
@@ -169,6 +218,130 @@ export const SUB_BUTTONS: SubButton[] = [
     label: "Collectif",
     mainButtonId: "prevoyance",
     description: "Prévoyance collective, conventions collectives",
+  },
+  {
+    id: "analyse-besoins-prevoyance",
+    label: "Analyse des besoins",
+    mainButtonId: "prevoyance",
+    description: "Analyser les besoins en prévoyance",
+  },
+  {
+    id: "professions-medicales-unim",
+    label: "Professions médicales (UNIM)",
+    mainButtonId: "prevoyance",
+    description: "Spécificités médecins, dentistes, etc.",
+  },
+  {
+    id: "professions-chiffre-droit-uniced",
+    label: "Professions du chiffre/droit (UNICED)",
+    mainButtonId: "prevoyance",
+    description: "Spécificités comptables, avocats, etc.",
+  },
+  // Secrétariat
+  {
+    id: "rediger-mail",
+    label: "Rédiger un mail",
+    mainButtonId: "secretariat",
+    description: "Rédaction de mail professionnel",
+  },
+  {
+    id: "relance-client",
+    label: "Relance client",
+    mainButtonId: "secretariat",
+    description: "Mail ou courrier de relance",
+  },
+  {
+    id: "compte-rendu",
+    label: "Compte-rendu",
+    mainButtonId: "secretariat",
+    description: "Rédaction de compte-rendu de réunion",
+  },
+  {
+    id: "checklist-pieces",
+    label: "Checklist pièces",
+    mainButtonId: "secretariat",
+    description: "Liste des documents à réclamer",
+  },
+  {
+    id: "organisation",
+    label: "Organisation",
+    mainButtonId: "secretariat",
+    description: "Conseils d'organisation et méthodes",
+  },
+  // Community Manager
+  {
+    id: "post-unique",
+    label: "Post unique",
+    mainButtonId: "community-manager",
+    description: "Création d'un post pour les réseaux sociaux",
+  },
+  {
+    id: "campagne",
+    label: "Campagne",
+    mainButtonId: "community-manager",
+    description: "Plan de campagne sur plusieurs posts",
+  },
+  {
+    id: "reponse-avis",
+    label: "Réponse à un avis",
+    mainButtonId: "community-manager",
+    description: "Répondre à un avis client (positif/négatif)",
+  },
+  {
+    id: "idees-contenu",
+    label: "Idées de contenu",
+    mainButtonId: "community-manager",
+    description: "Inspiration et idées de publications",
+  },
+  // Avocat
+  {
+    id: "droit-assurances",
+    label: "Droit des assurances",
+    mainButtonId: "avocat",
+    description: "Conseil juridique en assurance",
+  },
+  {
+    id: "droit-affaires",
+    label: "Droit des affaires",
+    mainButtonId: "avocat",
+    description: "Droit commercial et sociétés",
+  },
+  {
+    id: "droit-social",
+    label: "Droit social",
+    mainButtonId: "avocat",
+    description: "Droit du travail et social",
+  },
+  {
+    id: "responsabilite",
+    label: "Responsabilité",
+    mainButtonId: "avocat",
+    description: "Questions de responsabilité civile/professionnelle",
+  },
+  // Expert-comptable
+  {
+    id: "lecture-document",
+    label: "Lecture de document",
+    mainButtonId: "expert-comptable",
+    description: "Analyse de bilan, compte de résultat",
+  },
+  {
+    id: "fiscalite",
+    label: "Fiscalité",
+    mainButtonId: "expert-comptable",
+    description: "Questions fiscales et optimisation",
+  },
+  {
+    id: "calcul-simulation",
+    label: "Calcul / Simulation",
+    mainButtonId: "expert-comptable",
+    description: "Calculs comptables et simulations",
+  },
+  {
+    id: "structuration",
+    label: "Structuration",
+    mainButtonId: "expert-comptable",
+    description: "Conseils de structuration d'entreprise",
   },
 ];
 

@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les paramètres depuis le body
     const body = await request.json();
-    const { message, images, files, history = [], model = "gpt-4o", mainButton, subButton } = body;
+    const { message, images, files, history = [], model = "gpt-4o", mainButton, subButton, uiEvent } = body;
 
     // Le message peut être vide si seulement des images ou fichiers sont envoyés
     if (!message && (!images || images.length === 0) && (!files || files.length === 0)) {
@@ -314,15 +314,26 @@ EXEMPLES DE FORMATAGE :
 - Pour des étapes : utilise une liste numérotée avec des émojis
 - Pour des points clés : utilise des listes à puces avec **gras**`;
 
-    // Intégrer le prompt basé sur le bouton principal/sous-bouton si fourni
+    // Intégrer le prompt basé sur uiEvent ou mainButton/subButton
     let buttonPromptSection = "";
-    if (mainButton) {
+    
+    // Cas 1 : uiEvent="start" (bouton "Bonjour" cliqué)
+    if (uiEvent === "start") {
+      const { getStartPrompt } = await import("@/lib/assistant/main-button-prompts");
+      const startPrompt = getStartPrompt();
+      if (startPrompt) {
+        buttonPromptSection = `\n\n--- COMPORTEMENT INITIAL (START) ---\n\n${startPrompt}\n\n---\n\n`;
+      }
+    }
+    // Cas 2 : uiEvent="selectRole" ou "selectMode" OU mainButton fourni
+    else if (mainButton || uiEvent === "selectRole" || uiEvent === "selectMode") {
       const { getSystemPromptForButton } = await import("@/lib/assistant/main-button-prompts");
       const buttonPrompt = getSystemPromptForButton(mainButton, subButton);
       if (buttonPrompt) {
         buttonPromptSection = `\n\n--- CONFIGURATION MÉTIER ---\n\n${buttonPrompt}\n\n---\n\n`;
       }
     }
+    
     const systemPrompt = `${coreKnowledge}${buttonPromptSection}${formattingRules}`;
 
     // Construire le contenu du message utilisateur

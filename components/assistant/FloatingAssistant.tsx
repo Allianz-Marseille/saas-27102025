@@ -1,49 +1,25 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, MessageSquare, X, Minimize2, Maximize2, Image as ImageIcon, FileText, RotateCcw, Copy, Check } from "lucide-react";
+import { Sparkles, MessageSquare, X, Minimize2, Maximize2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/firebase/use-auth";
-import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
-import { Loader2, Send } from "lucide-react";
+import { useAssistantStore } from "@/lib/assistant/assistant-store";
+import { AssistantCore } from "./AssistantCore";
 import { toast } from "sonner";
-import { MarkdownRenderer } from "./MarkdownRenderer";
-import { QuickReplyButtons } from "./QuickReplyButtons";
-import { MainButtonMenu } from "./MainButtonMenu";
-import { SubButtonMenu } from "./SubButtonMenu";
-import { requiresSubButton } from "@/lib/assistant/main-buttons";
-import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
-import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  images?: string[]; // Base64 data URLs
-  files?: { name: string; type: string; content?: string; error?: string }[];
-  timestamp: Date;
-}
 
 export function FloatingAssistant() {
   const { user } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
-  const [selectedFiles, setSelectedFiles] = useState<ProcessedFile[]>([]);
-  const [isProcessingFiles, setIsProcessingFiles] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
-  const [selectedMainButton, setSelectedMainButton] = useState<string | null>(null);
-  const [selectedSubButton, setSelectedSubButton] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Store Zustand
+  const {
+    isOpenFloating: isOpen,
+    setIsOpenFloating: setIsOpen,
+    resetConversation,
+    messages,
+  } = useAssistantStore();
 
   // Charger l'état depuis localStorage
   useEffect(() => {
@@ -51,7 +27,7 @@ export function FloatingAssistant() {
     if (savedState === "true") {
       setIsOpen(true);
     }
-  }, []);
+  }, [setIsOpen]);
 
   // Sauvegarder l'état dans localStorage
   useEffect(() => {
@@ -62,567 +38,9 @@ export function FloatingAssistant() {
     }
   }, [isOpen]);
 
-  // Scroll vers le bas quand de nouveaux messages arrivent
-  useEffect(() => {
-    if (isOpen && !isMinimized) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages, isOpen, isMinimized]);
-
-  // Focus automatique sur le textarea quand la réponse du bot est terminée
-  useEffect(() => {
-    if (!isLoading && messages.length > 0 && isOpen && !isMinimized) {
-      const timer = setTimeout(() => {
-        textareaRef.current?.focus();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading, messages.length, isOpen, isMinimized]);
-
-  // Auto-resize textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [input, selectedImages, selectedFiles]);
-
-  // Gérer le collage d'images depuis le presse-papier
-  useEffect(() => {
-    const handlePaste = async (e: ClipboardEvent) => {
-      if (!isOpen || isMinimized) return;
-      
-      const items = e.clipboardData?.items;
-      if (!items) return;
-
-      const imageFiles: File[] = [];
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.type.startsWith("image/")) {
-          const file = item.getAsFile();
-          if (file) {
-            imageFiles.push(file);
-          }
-        }
-      }
-
-      if (imageFiles.length > 0) {
-        e.preventDefault();
-        try {
-          const processedImages = await processImageFiles(imageFiles);
-          setSelectedImages((prev) => [...prev, ...processedImages]);
-          toast.success(`${processedImages.length} image(s) ajoutée(s)`);
-        } catch (error) {
-          console.error("Erreur lors du traitement des images:", error);
-          toast.error("Erreur lors du traitement des images");
-        }
-      }
-    };
-
-    if (isOpen && !isMinimized) {
-      window.addEventListener("paste", handlePaste);
-      return () => window.removeEventListener("paste", handlePaste);
-    }
-  }, [isOpen, isMinimized]);
-
-  // Gérer l'upload d'images
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    try {
-      const processedImages = await processImageFiles(Array.from(files));
-      if (processedImages.length > 0) {
-        setSelectedImages((prev) => [...prev, ...processedImages]);
-        toast.success(`${processedImages.length} image(s) ajoutée(s)`);
-      } else {
-        toast.error("Aucune image valide sélectionnée");
-      }
-    } catch (error) {
-      console.error("Erreur lors du traitement des images:", error);
-      toast.error("Erreur lors du traitement des images");
-    }
-
-    // Réinitialiser l'input
-    if (imageInputRef.current) {
-      imageInputRef.current.value = "";
-    }
-  };
-
-  // Gérer l'upload de fichiers
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    if (files.length > 0) {
-      if (selectedFiles.length + files.length > MAX_FILES_PER_MESSAGE) {
-        toast.error(`Vous ne pouvez ajouter que ${MAX_FILES_PER_MESSAGE} fichiers maximum.`);
-        return;
-      }
-      setIsProcessingFiles(true);
-      try {
-        const processedFiles: ProcessedFile[] = [];
-
-        // Traiter chaque fichier
-        for (const file of files) {
-          const fileName = file.name.toLowerCase();
-          const mimeType = file.type;
-
-          // Vérifier le type de fichier
-          const isPDF = mimeType === "application/pdf" || fileName.endsWith(".pdf");
-          const isText = mimeType === "text/plain" || mimeType === "text/csv" || fileName.endsWith(".txt") || fileName.endsWith(".csv");
-
-          if (isPDF || isText) {
-            // Extraire le texte côté serveur via l'API
-            try {
-              const token = await user?.getIdToken();
-              if (!token) {
-                throw new Error("Token d'authentification manquant");
-              }
-
-              const formData = new FormData();
-              formData.append("file", file);
-
-              const response = await fetch("/api/assistant/files/extract", {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-                body: formData,
-              });
-
-              if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || "Erreur lors de l'extraction du texte");
-              }
-
-              const data = await response.json();
-              if (data.success && data.text) {
-                processedFiles.push({
-                  id: `${Date.now()}-${Math.random()}`,
-                  name: file.name,
-                  type: file.type,
-                  size: file.size,
-                  content: data.text,
-                });
-              } else {
-                processedFiles.push({
-                  id: `${Date.now()}-${Math.random()}`,
-                  name: file.name,
-                  type: file.type,
-                  size: file.size,
-                  error: data.error || "Erreur lors de l'extraction du texte",
-                });
-              }
-            } catch (error) {
-              processedFiles.push({
-                id: `${Date.now()}-${Math.random()}`,
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                error: error instanceof Error ? error.message : "Erreur lors de l'extraction du texte",
-              });
-            }
-          } else {
-            // Pour les autres types de fichiers, utiliser processFiles (qui gère les erreurs)
-            const singleFileProcessed = await processFiles([file]);
-            processedFiles.push(...singleFileProcessed);
-          }
-        }
-
-        // Filtrer les fichiers avec erreurs et afficher les messages
-        const validFiles = processedFiles.filter((f) => !f.error);
-        const errorFiles = processedFiles.filter((f) => f.error);
-
-        if (validFiles.length > 0) {
-          setSelectedFiles((prev) => [...prev, ...validFiles]);
-          toast.success(`${validFiles.length} fichier(s) ajouté(s)`);
-        }
-
-        if (errorFiles.length > 0) {
-          errorFiles.forEach((f) => {
-            toast.error(`${f.name}: ${f.error}`);
-          });
-        }
-      } catch (error) {
-        console.error("Erreur lors du traitement des fichiers:", error);
-        toast.error("Erreur lors du traitement des fichiers");
-      } finally {
-        setIsProcessingFiles(false);
-      }
-    }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  // Gérer le drag & drop
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
-    const files = e.dataTransfer.files;
-    if (files.length === 0) return;
-
-    const imageFiles: File[] = [];
-    const otherFiles: File[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (file.type.startsWith("image/")) {
-        imageFiles.push(file);
-      } else {
-        otherFiles.push(file);
-      }
-    }
-
-    if (imageFiles.length > 0) {
-      try {
-        const processedImages = await processImageFiles(imageFiles);
-        if (processedImages.length > 0) {
-          setSelectedImages((prev) => [...prev, ...processedImages]);
-          toast.success(`${processedImages.length} image(s) ajoutée(s)`);
-        }
-      } catch (error) {
-        console.error("Erreur lors du traitement des images:", error);
-        toast.error("Erreur lors du traitement des images");
-      }
-    }
-
-    if (otherFiles.length > 0) {
-      if (selectedFiles.length + otherFiles.length > MAX_FILES_PER_MESSAGE) {
-        toast.error(`Vous ne pouvez ajouter que ${MAX_FILES_PER_MESSAGE} fichiers maximum.`);
-        return;
-      }
-      setIsProcessingFiles(true);
-      try {
-        const processedFiles: ProcessedFile[] = [];
-
-        // Traiter chaque fichier
-        for (const file of otherFiles) {
-          const fileName = file.name.toLowerCase();
-          const mimeType = file.type;
-
-          // Vérifier le type de fichier
-          const isPDF = mimeType === "application/pdf" || fileName.endsWith(".pdf");
-          const isText = mimeType === "text/plain" || mimeType === "text/csv" || fileName.endsWith(".txt") || fileName.endsWith(".csv");
-
-          if (isPDF || isText) {
-            // Extraire le texte côté serveur via l'API
-            try {
-              const token = await user?.getIdToken();
-              if (!token) {
-                throw new Error("Token d'authentification manquant");
-              }
-
-              const formData = new FormData();
-              formData.append("file", file);
-
-              const response = await fetch("/api/assistant/files/extract", {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-                body: formData,
-              });
-
-              if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || "Erreur lors de l'extraction du texte");
-              }
-
-              const data = await response.json();
-              if (data.success && data.text) {
-                processedFiles.push({
-                  id: `${Date.now()}-${Math.random()}`,
-                  name: file.name,
-                  type: file.type,
-                  size: file.size,
-                  content: data.text,
-                });
-              } else {
-                processedFiles.push({
-                  id: `${Date.now()}-${Math.random()}`,
-                  name: file.name,
-                  type: file.type,
-                  size: file.size,
-                  error: data.error || "Erreur lors de l'extraction du texte",
-                });
-              }
-            } catch (error) {
-              processedFiles.push({
-                id: `${Date.now()}-${Math.random()}`,
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                error: error instanceof Error ? error.message : "Erreur lors de l'extraction du texte",
-              });
-            }
-          } else {
-            // Pour les autres types de fichiers, utiliser processFiles (qui gère les erreurs)
-            const singleFileProcessed = await processFiles([file]);
-            processedFiles.push(...singleFileProcessed);
-          }
-        }
-
-        // Filtrer les fichiers avec erreurs et afficher les messages
-        const validFiles = processedFiles.filter((f) => !f.error);
-        const errorFiles = processedFiles.filter((f) => f.error);
-
-        if (validFiles.length > 0) {
-          setSelectedFiles((prev) => [...prev, ...validFiles]);
-          toast.success(`${validFiles.length} fichier(s) ajouté(s)`);
-        }
-
-        if (errorFiles.length > 0) {
-          errorFiles.forEach((f) => {
-            toast.error(`${f.name}: ${f.error}`);
-          });
-        }
-      } catch (error) {
-        console.error("Erreur lors du traitement des fichiers:", error);
-        toast.error("Erreur lors du traitement des fichiers");
-      } finally {
-        setIsProcessingFiles(false);
-      }
-    }
-  };
-
-  // Supprimer une image
-  const removeImage = (id: string) => {
-    setSelectedImages((prev) => prev.filter((img) => img.id !== id));
-  };
-
-  // Supprimer un fichier
-  const removeFile = (id: string) => {
-    setSelectedFiles((prev) => prev.filter((file) => file.id !== id));
-  };
-
   const handleResetConversation = () => {
-    setMessages([]);
-    setInput("");
-    setSelectedImages([]);
-    setSelectedFiles([]);
-    setSelectedMainButton(null);
-    setSelectedSubButton(null);
+    resetConversation();
     toast.success("Conversation réinitialisée");
-  };
-
-  const handleCopyMessage = async (messageId: string, content: string) => {
-    try {
-      await navigator.clipboard.writeText(content);
-      setCopiedMessageId(messageId);
-      toast.success("Message copié dans le presse-papier");
-      setTimeout(() => setCopiedMessageId(null), 2000);
-    } catch (error) {
-      console.error("Erreur lors de la copie:", error);
-      toast.error("Erreur lors de la copie");
-    }
-  };
-
-  // Gérer la sélection du bouton principal
-  const handleMainButtonSelect = (buttonId: string) => {
-    setSelectedMainButton(buttonId);
-    setSelectedSubButton(null);
-    
-    // Si le bouton nécessite un sous-bouton, on ne démarre pas encore la conversation
-    // Sinon, on peut commencer directement
-    if (!requiresSubButton(buttonId)) {
-      // Pas de sous-bouton nécessaire, on peut commencer la conversation
-      // Envoyer automatiquement un message initial pour déclencher l'IA
-      setTimeout(() => {
-        handleSendMessage("Bonjour"); // Message initial pour déclencher le prompt système
-      }, 100);
-    }
-  };
-
-  // Gérer la sélection du sous-bouton
-  const handleSubButtonSelect = (subButtonId: string) => {
-    setSelectedSubButton(subButtonId);
-    // Envoyer automatiquement un message initial pour déclencher l'IA
-    // Utiliser un petit délai pour s'assurer que l'état est mis à jour
-    setTimeout(() => {
-      handleSendMessage("Bonjour"); // Message initial pour déclencher le prompt système
-    }, 100);
-  };
-
-  // Gérer le retour au menu principal
-  const handleBackToMainMenu = () => {
-    setSelectedMainButton(null);
-    setSelectedSubButton(null);
-  };
-
-  const handleSendMessage = async (customMessage?: string) => {
-    const messageToSend = customMessage !== undefined ? customMessage : input;
-    // Permettre l'envoi même sans bouton sélectionné (chat libre)
-    if ((!messageToSend.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles || !user) return;
-
-    // Convertir les images en Base64
-    const imageBase64s = await convertImagesToBase64(selectedImages);
-    const filesToSend = selectedFiles;
-
-    // ⚠️ CORRECTION : Construire l'historique AVANT d'ajouter les nouveaux messages
-    // Utiliser messages actuel (état React) pour construire l'historique
-    const conversationHistory = messages.map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-      // Ne pas inclure les images et fichiers dans l'historique pour éviter la surcharge
-    }));
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: messageToSend.trim() || (imageBase64s.length > 0 ? "Analyse cette image" : "") || (filesToSend.length > 0 ? "Analyse ces fichiers" : ""),
-      images: imageBase64s.length > 0 ? imageBase64s : undefined,
-      files: filesToSend.length > 0 ? filesToSend.map(f => ({ name: f.name, type: f.type, content: f.content, error: f.error })) : undefined,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    const messageText = messageToSend.trim();
-    const imagesToSend = imageBase64s;
-    setInput("");
-    setSelectedImages([]);
-    setSelectedFiles([]);
-    setIsLoading(true);
-
-    // Créer le message assistant initial
-    const assistantMessageId = (Date.now() + 1).toString();
-    const assistantMessage: Message = {
-      id: assistantMessageId,
-      role: "assistant",
-      content: "",
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, assistantMessage]);
-
-    try {
-
-      const response = await fetch("/api/assistant/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${await user.getIdToken()}`,
-        },
-          body: JSON.stringify({
-            message: messageText || (imagesToSend.length > 0 ? "Analyse cette image" : "") || (filesToSend.length > 0 ? "Analyse ces fichiers" : ""),
-            images: imagesToSend.length > 0 ? imagesToSend : undefined,
-            files: filesToSend.length > 0 ? filesToSend.map(f => ({ name: f.name, type: f.type, content: f.content })) : undefined,
-            history: conversationHistory,
-            mainButton: selectedMainButton || undefined,
-            subButton: selectedSubButton || undefined,
-            stream: true,
-          }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Erreur lors de l'envoi du message");
-      }
-
-      // Vérifier si c'est un stream
-      const contentType = response.headers.get("content-type");
-      if (contentType?.includes("text/event-stream")) {
-        // Mode streaming
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let accumulatedContent = "";
-
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n\n");
-            buffer = lines.pop() || "";
-
-            for (const line of lines) {
-              if (line.startsWith("data: ")) {
-                const data = line.slice(6);
-                if (data === "[DONE]") {
-                  continue;
-                }
-
-                try {
-                  const parsed = JSON.parse(data);
-                  
-                  if (parsed.type === "content" && parsed.content) {
-                    accumulatedContent += parsed.content;
-                    setMessages((prev) =>
-                      prev.map((msg) =>
-                        msg.id === assistantMessageId
-                          ? { ...msg, content: accumulatedContent }
-                          : msg
-                      )
-                    );
-                  } else if (parsed.type === "error") {
-                    throw new Error(parsed.error);
-                  } else if (parsed.content) {
-                    // Format simple sans type
-                    accumulatedContent += parsed.content;
-                    setMessages((prev) =>
-                      prev.map((msg) =>
-                        msg.id === assistantMessageId
-                          ? { ...msg, content: accumulatedContent }
-                          : msg
-                      )
-                    );
-                  }
-                } catch (e) {
-                  console.error("Erreur parsing SSE:", e);
-                }
-              }
-            }
-          }
-        }
-      } else {
-        // Mode non-streaming (fallback)
-        const data = await response.json();
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMessageId
-              ? {
-                  ...msg,
-                  content: data.response || data.message || "Aucune réponse reçue",
-                }
-              : msg
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Erreur:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Erreur lors de l'envoi du message"
-      );
-      setMessages((prev) => prev.filter((msg) => msg.id !== assistantMessageId));
-    } finally {
-      setIsLoading(false);
-      setInput("");
-      setSelectedImages([]);
-      setSelectedFiles([]);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-    if (e.key === "Escape" && isOpen) {
-      setIsOpen(false);
-    }
   };
 
   if (!user) return null;
@@ -651,7 +69,7 @@ export function FloatingAssistant() {
                 ease: "easeInOut",
               }}
             />
-            
+
             {/* Badge IA */}
             <motion.div
               className="absolute -top-1 -right-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-lg z-10"
@@ -690,7 +108,7 @@ export function FloatingAssistant() {
                   ease: "linear",
                 }}
               />
-              
+
               {/* Icône principale */}
               <div className="relative z-10 flex items-center justify-center">
                 <MessageSquare className="h-7 w-7 absolute" />
@@ -719,11 +137,11 @@ export function FloatingAssistant() {
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            animate={{ 
-              opacity: 1, 
-              scale: 1, 
+            animate={{
+              opacity: 1,
+              scale: 1,
               y: 0,
-              height: isMinimized ? "auto" : "600px"
+              height: isMinimized ? "auto" : "600px",
             }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             className="fixed bottom-6 right-6 z-50 w-[400px] max-w-[calc(100vw-3rem)] bg-[#ECE5DD] dark:bg-[#0b141a] border border-gray-300 dark:border-gray-700 rounded-lg shadow-2xl flex flex-col overflow-hidden"
@@ -739,9 +157,7 @@ export function FloatingAssistant() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-base text-white">
-                    Assistant IA
-                  </h3>
+                  <h3 className="font-semibold text-base text-white">Assistant IA</h3>
                   <p className="text-xs text-white/80">En ligne</p>
                 </div>
               </div>
@@ -763,274 +179,19 @@ export function FloatingAssistant() {
                   onClick={() => setIsMinimized(!isMinimized)}
                   aria-label={isMinimized ? "Agrandir" : "Réduire"}
                 >
-                  {isMinimized ? (
-                    <Maximize2 className="h-4 w-4" />
-                  ) : (
-                    <Minimize2 className="h-4 w-4" />
-                  )}
+                  {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsOpen(false)}
-                  aria-label="Fermer"
-                >
+                <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)} aria-label="Fermer">
                   <X className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            {/* Messages */}
-            {!isMinimized && (
-              <div className="flex-1 overflow-y-auto mb-4 space-y-1 px-4 py-4 min-h-0 bg-[#ECE5DD] dark:bg-[#0b141a]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}>
-                {messages.length === 0 ? (
-                  <div className="flex justify-start">
-                    <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-                      <p className="text-sm text-gray-900 dark:text-gray-100 mb-3">Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
-                      {/* Menu principal ou sous-menu */}
-                      {!selectedMainButton ? (
-                        <MainButtonMenu
-                          onSelect={handleMainButtonSelect}
-                          disabled={isLoading}
-                        />
-                      ) : requiresSubButton(selectedMainButton) && !selectedSubButton ? (
-                        <SubButtonMenu
-                          mainButtonId={selectedMainButton}
-                          onSelect={handleSubButtonSelect}
-                          onBack={handleBackToMainMenu}
-                          disabled={isLoading}
-                        />
-                      ) : null}
-                    </div>
-                  </div>
-                ) : (
-                  messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${
-                        message.role === "user" ? "justify-end" : "justify-start"
-                      } mb-1`}
-                    >
-                      <div
-                        className={cn(
-                          "max-w-[75%] rounded-2xl p-3 shadow-sm",
-                          message.role === "user"
-                            ? "bg-[#DCF8C6] dark:bg-[#056162] text-gray-900 dark:text-gray-100 rounded-tr-none"
-                            : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-none border border-gray-200 dark:border-gray-700"
-                        )}
-                      >
-                        {message.role === "user" ? (
-                          <>
-                            {message.images && message.images.length > 0 && (
-                              <div className="mb-2 space-y-1">
-                                {message.images.map((img, idx) => (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img
-                                    key={idx}
-                                    src={img}
-                                    alt={`Image ${idx + 1}`}
-                                    className="max-w-full h-auto rounded max-h-32 object-contain"
-                                  />
-                                ))}
-                              </div>
-                            )}
-                            {message.files && message.files.length > 0 && (
-                              <div className="mb-2 space-y-1">
-                                {message.files.map((file, idx) => (
-                                  <div key={idx} className="flex items-center gap-2 p-2 bg-background/50 rounded-md">
-                                    <FileText className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-sm font-medium">{file.name}</span>
-                                    {file.error && <span className="text-xs text-destructive">({file.error})</span>}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            <p className="text-sm whitespace-pre-wrap text-gray-900 dark:text-gray-100">{message.content}</p>
-                          </>
-                        ) : (
-                          <div className="relative group">
-                            <MarkdownRenderer content={message.content} />
-                            {/* Boutons de réponse rapide pour les questions avec alternatives */}
-                            {message.role === "assistant" && (
-                              <QuickReplyButtons
-                                content={message.content}
-                                onSelect={(option) => {
-                                  handleSendMessage(option);
-                                }}
-                                disabled={isLoading}
-                              />
-                            )}
-                            {message.role === "assistant" && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => handleCopyMessage(message.id, message.content)}
-                                aria-label="Copier le message"
-                                title="Copier le message"
-                              >
-                                {copiedMessageId === message.id ? (
-                                  <Check className="h-3.5 w-3.5 text-green-600" />
-                                ) : (
-                                  <Copy className="h-3.5 w-3.5" />
-                                )}
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                        <p className="text-xs opacity-70 mt-1">
-                          {message.timestamp.toLocaleTimeString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                )}
-                {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-                      <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-
-            {/* Zone de saisie */}
-            {!isMinimized && (
-              <div className="px-6 pb-6 shrink-0">
-                <div
-                  className={`border-2 border-dashed rounded-lg p-2 transition-colors ${
-                    isDragging
-                      ? "border-primary bg-primary/10"
-                      : "border-transparent"
-                  }`}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={handleDrop}
-                >
-                  <div className="flex gap-2">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <Textarea
-                        ref={textareaRef}
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Tapez votre message... (Vous pouvez coller des images avec Ctrl+V / Cmd+V)"
-                        className="min-h-[60px]"
-                        disabled={isLoading || isProcessingFiles}
-                      />
-                      {(selectedImages.length > 0 || selectedFiles.length > 0) && (
-                        <div className="flex flex-wrap gap-2">
-                          {selectedImages.map((image) => (
-                            <div key={image.id} className="relative group">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={image.preview}
-                                alt="Preview"
-                                className="h-16 w-16 object-cover rounded border border-gray-200 dark:border-gray-700"
-                              />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 hover:bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => removeImage(image.id)}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))}
-                          {selectedFiles.map((file) => (
-                            <div
-                              key={file.id}
-                              className="flex items-center gap-2 p-2 bg-background border border-border rounded-md text-sm"
-                            >
-                              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">{file.name}</p>
-                                {file.error && (
-                                  <p className="text-xs text-destructive">{file.error}</p>
-                                )}
-                                {file.content && (
-                                  <p className="text-xs text-green-600">Texte extrait</p>
-                                )}
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 shrink-0"
-                                onClick={() => removeFile(file.id)}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <input
-                          ref={imageInputRef}
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={handleImageUpload}
-                          className="hidden"
-                          id="floating-assistant-image-upload"
-                        />
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
-                          multiple
-                          onChange={handleFileUpload}
-                          className="hidden"
-                          id="floating-assistant-file-upload"
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => imageInputRef.current?.click()}
-                          disabled={isLoading || isProcessingFiles}
-                          className="text-xs"
-                        >
-                          <ImageIcon className="h-4 w-4 mr-1" />
-                          Image
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={isLoading || isProcessingFiles || selectedFiles.length >= MAX_FILES_PER_MESSAGE}
-                          className="text-xs"
-                        >
-                          <FileText className="h-4 w-4 mr-1" />
-                          Fichier
-                        </Button>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={() => handleSendMessage()}
-                      disabled={(!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isLoading || isProcessingFiles}
-                      size="icon"
-                      className="shrink-0 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isLoading || isProcessingFiles ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Core Assistant (si pas minimisé) */}
+            {!isMinimized && <AssistantCore variant="floating" />}
           </motion.div>
         )}
       </AnimatePresence>
     </>
   );
 }
-
