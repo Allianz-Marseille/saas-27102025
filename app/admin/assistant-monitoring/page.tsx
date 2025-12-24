@@ -115,8 +115,8 @@ export default function AssistantMonitoringPage() {
         },
         body: JSON.stringify({
           monthlyBudget,
-          warningThreshold: monthlyBudget * (warningThreshold / 100),
-          criticalThreshold: monthlyBudget * (criticalThreshold / 100),
+          warningThreshold: warningThreshold / 100, // Convertir % en fraction (80 → 0.8)
+          criticalThreshold: criticalThreshold / 100, // Convertir % en fraction (95 → 0.95)
           blockAtLimit,
         }),
       });
