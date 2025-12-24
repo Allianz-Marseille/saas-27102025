@@ -32,9 +32,9 @@ export function loadCoreKnowledge(): string {
 }
 
 /**
- * Charge les packs spécifiques selon le rôle/mode
+ * Charge les packs spécifiques selon le rôle
  */
-export function loadRoleKnowledge(mainButton?: string, subButton?: string): string {
+export function loadRoleKnowledge(mainButton?: string): string {
   const packs: string[] = [];
 
   // Déterminer quels packs charger selon le rôle
@@ -83,12 +83,9 @@ export function loadRoleKnowledge(mainButton?: string, subButton?: string): stri
 /**
  * Charge la base de connaissances complète pour un contexte donné
  */
-export function loadKnowledgeForContext(
-  mainButton?: string,
-  subButton?: string
-): string {
+export function loadKnowledgeForContext(mainButton?: string): string {
   const core = loadCoreKnowledge();
-  const role = loadRoleKnowledge(mainButton, subButton);
+  const role = loadRoleKnowledge(mainButton);
 
   if (role) {
     return `${core}\n\n---\n\n${role}`;

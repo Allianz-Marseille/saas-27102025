@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
 
     // Charger la base de connaissances modulaire selon le contexte
     const { loadKnowledgeForContext } = await import("@/lib/assistant/knowledge-loader");
-    const knowledgeBase = loadKnowledgeForContext(mainButton, subButton);
+    const knowledgeBase = loadKnowledgeForContext(mainButton);
 
     // Construire le prompt système avec formatage adapté et connaissances métier
     const coreKnowledge = `Tu es l'assistant interne de l'agence Allianz Marseille (Nogaro & Boetti).
