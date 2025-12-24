@@ -39,6 +39,7 @@ service cloud.firestore {
     // Helper function to check if user is Gestionnaire Sinistre
     function isGestionnaireSinistre() {
       return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'GESTIONNAIRE_SINISTRE';
     }
     
