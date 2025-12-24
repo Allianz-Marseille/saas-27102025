@@ -247,8 +247,8 @@ EXEMPLES DE FORMATAGE :
         buttonPromptSection = `\n\n--- COMPORTEMENT (CHAT LIBRE) ---\n\n${freeChatPrompt}\n\n---\n\n`;
       }
     }
-    // Cas 3 : uiEvent="selectRole" OU mainButton fourni (rôle sélectionné)
-    else if (mainButton || uiEvent === "selectRole") {
+    // Cas 3 : mainButton fourni (rôle sélectionné)
+    else if (mainButton) {
       const { getSystemPromptForButton } = await import("@/lib/assistant/main-button-prompts");
       const buttonPrompt = getSystemPromptForButton(mainButton);
       if (buttonPrompt) {
