@@ -20,7 +20,7 @@ export const createHealthAct = async (act: Omit<HealthAct, 'id' | 'dateSaisie' |
   // Vérification de l'unicité du numéro de contrat - UNIQUEMENT pour les AFFAIRE_NOUVELLE
   const trimmedContractNumber = act.numeroContrat?.trim();
   if (act.kind === "AFFAIRE_NOUVELLE" && trimmedContractNumber) {
-    const alreadyExists = await healthContractNumberExists(trimmedContractNumber);
+    const alreadyExists = await healthContractNumberExists(trimmedContractNumber, act.userId);
     if (alreadyExists) {
       throw new Error('Ce numéro de contrat est déjà enregistré.');
     }
@@ -166,9 +166,11 @@ export const getHealthActById = async (actId: string): Promise<HealthAct | null>
 };
 
 /**
- * Vérifie si un numéro de contrat existe déjà
+ * Vérifie si un numéro de contrat existe déjà pour un utilisateur donné
+ * @param numeroContrat - Le numéro de contrat à vérifier
+ * @param userId - L'ID de l'utilisateur (obligatoire pour respecter les règles Firestore)
  */
-export const healthContractNumberExists = async (numeroContrat: string): Promise<boolean> => {
+export const healthContractNumberExists = async (numeroContrat: string, userId: string): Promise<boolean> => {
   if (!db) return false;
 
   const normalizedNumber = numeroContrat.trim().toLowerCase();
@@ -176,8 +178,12 @@ export const healthContractNumberExists = async (numeroContrat: string): Promise
     return false;
   }
 
-  // Récupérer tous les actes pour comparer en minuscules
-  const q = query(collection(db, "health_acts"));
+  // Filtrer par userId pour respecter les règles Firestore
+  // Les commerciaux santé individuelle ne peuvent accéder qu'à leurs propres actes
+  const q = query(
+    collection(db, "health_acts"),
+    where("userId", "==", userId)
+  );
   const snapshot = await getDocs(q);
   
   return snapshot.docs.some((doc) => {
