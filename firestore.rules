@@ -25,12 +25,14 @@ service cloud.firestore {
     // Helper function to check if user is Commercial Santé Individuel
     function isCommercialSante() {
       return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMERCIAL_SANTE_INDIVIDUEL';
     }
     
     // Helper function to check if user is Commercial Santé Collective
     function isCommercialSanteCollective() {
       return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMERCIAL_SANTE_COLLECTIVE';
     }
     
@@ -87,7 +89,7 @@ service cloud.firestore {
     // Protection de la confidentialité des données commerciales
     match /health_acts/{actId} {
       allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
-      allow create: if isCommercialSante();
+      allow create: if isCommercialSante() && request.resource.data.userId == request.auth.uid;
       allow update: if isAdmin() || (isCommercialSante() && resource.data.userId == request.auth.uid);
       allow delete: if isAdmin() || (isCommercialSante() && resource.data.userId == request.auth.uid);
     }
