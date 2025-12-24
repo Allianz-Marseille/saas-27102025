@@ -89,8 +89,9 @@ export default function AssistantMonitoringPage() {
         setDailyStats(data.daily);
         setBudgetStatus(data.budget);
         setMonthlyBudget(data.budget.budget);
-        setWarningThreshold(data.budget.budget * 0.8);
-        setCriticalThreshold(data.budget.budget * 0.95);
+        // Stocker les seuils en POURCENTAGES (80%, 95%)
+        setWarningThreshold(data.budget.warningThreshold ? data.budget.warningThreshold * 100 : 80);
+        setCriticalThreshold(data.budget.criticalThreshold ? data.budget.criticalThreshold * 100 : 95);
       }
     } catch (error) {
       console.error("Erreur:", error);
