@@ -91,11 +91,7 @@ service cloud.firestore {
     match /health_acts/{actId} {
       allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
       // Création : les commerciaux Santé Individuelle peuvent créer leurs propres actes
-      // Vérification que le document utilisateur existe et a le bon rôle
-      allow create: if isAuthenticated() 
-                    && request.resource.data.userId == request.auth.uid
-                    && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-                    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMERCIAL_SANTE_INDIVIDUEL';
+      allow create: if isCommercialSante() && request.resource.data.userId == request.auth.uid;
       allow update: if isAdmin() || (isCommercialSante() && resource.data.userId == request.auth.uid);
       allow delete: if isAdmin() || (isCommercialSante() && resource.data.userId == request.auth.uid);
     }
