@@ -54,7 +54,7 @@ export function FloatingAssistant() {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            className="fixed bottom-6 right-6 z-50"
+            className="fixed bottom-8 right-8 z-50"
           >
             {/* Animation de pulsation en arrière-plan */}
             <motion.div
@@ -144,8 +144,8 @@ export function FloatingAssistant() {
               height: isMinimized ? "auto" : "600px",
             }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            className="fixed bottom-6 right-6 z-50 w-[400px] max-w-[calc(100vw-3rem)] bg-[#ECE5DD] dark:bg-[#0b141a] border border-gray-300 dark:border-gray-700 rounded-lg shadow-2xl flex flex-col overflow-hidden"
-            style={{ maxHeight: "calc(100vh - 3rem)" }}
+            className="fixed bottom-8 right-8 z-50 w-[400px] max-w-[calc(100vw-4rem)] bg-[#ECE5DD] dark:bg-[#0b141a] border border-gray-300 dark:border-gray-700 rounded-lg shadow-2xl flex flex-col overflow-hidden"
+            style={{ maxHeight: "calc(100vh - 4rem)" }}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20">
