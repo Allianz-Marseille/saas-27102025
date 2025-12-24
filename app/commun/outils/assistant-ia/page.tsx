@@ -432,13 +432,13 @@ export default function AssistantIAPage() {
   };
 
   // Gérer la sélection du bouton principal (rôle)
-  const handleMainButtonSelect = (buttonId: string) => {
+  const handleMainButtonSelect = async (buttonId: string) => {
     setSelectedMainButton(buttonId);
     setSelectedSubButton(null);
     // Si le rôle nécessite un sous-bouton, ne pas appeler l'API tout de suite
     // Sinon, appeler l'API directement
     if (!requiresSubButton(buttonId)) {
-      handleSendMessageWithUIEvent(" ", "selectRole", buttonId);
+      await handleSendMessageWithUIEvent(" ", "selectRole", buttonId);
     }
   };
 
@@ -1097,7 +1097,7 @@ export default function AssistantIAPage() {
                 ) : messages.length === 0 && !selectedMainButton ? (
                   <div className="flex justify-start">
                     <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-                      <p className="text-sm text-gray-900 dark:text-gray-100 mb-3">Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
+                      <p className="text-sm text-gray-900 dark:text-gray-100 mb-3">Bonjour ! Comment puis-je vous aider aujourd&apos;hui ?</p>
                       <MainButtonMenu
                         onSelect={handleMainButtonSelect}
                         disabled={isLoading}
