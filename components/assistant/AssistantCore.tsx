@@ -204,11 +204,12 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
 
     setIsLoading(true);
 
-    // Construire l'historique (sans le dernier message user qui vient d'être ajouté)
-    const conversationHistory = messages.slice(0, -1).map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-    }));
+    // Construire l'historique
+    // Pour "start" (Bonjour), on a ajouté un message avant, donc on enlève le dernier
+    // Pour selectRole/selectMode/selectFreeChat, on n'a PAS ajouté de message, donc on garde tout
+    const conversationHistory = uiEvent === "start" 
+      ? messages.slice(0, -1).map((msg) => ({ role: msg.role, content: msg.content }))
+      : messages.map((msg) => ({ role: msg.role, content: msg.content }));
 
     // Créer le message assistant initial
     const assistantMessageId = (Date.now() + 1).toString();
