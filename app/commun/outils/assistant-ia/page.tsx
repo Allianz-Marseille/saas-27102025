@@ -1457,35 +1457,35 @@ export default function AssistantIAPage() {
                 Votre conversation contient des messages non sauvegardés. Souhaitez-vous les enregistrer avant de continuer ?
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-3 pt-4">
+            <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-3 pt-6">
               <AlertDialogCancel 
                 onClick={() => setShowNewChatDialog(false)}
-                className="sm:flex-1"
+                className="sm:flex-1 h-11 rounded-xl font-medium"
               >
                 Annuler
               </AlertDialogCancel>
               <Button
                 variant="outline"
                 onClick={handleResetConversation}
-                className="sm:flex-1 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 dark:border-red-900/50 dark:text-red-500 dark:hover:bg-red-950/50 dark:hover:text-red-400 dark:hover:border-red-900"
+                className="sm:flex-1 h-11 rounded-xl font-medium border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 dark:border-red-900/50 dark:text-red-500 dark:hover:bg-red-950/50 dark:hover:text-red-400 dark:hover:border-red-900 flex items-center justify-center"
               >
-                <XCircle className="h-4 w-4 mr-2" />
-                Abandonner
+                <XCircle className="h-4 w-4 mr-2 shrink-0" />
+                <span>Abandonner</span>
               </Button>
               <AlertDialogAction 
                 onClick={handleSaveAndNewChat} 
                 disabled={isSavingConversation}
-                className="sm:flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md disabled:opacity-50"
+                className="sm:flex-1 h-11 rounded-xl font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center"
               >
                 {isSavingConversation ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Sauvegarde...
+                    <Loader2 className="h-4 w-4 mr-2 shrink-0 animate-spin" />
+                    <span>Sauvegarde...</span>
                   </>
                 ) : (
                   <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Sauvegarder
+                    <Save className="h-4 w-4 mr-2 shrink-0" />
+                    <span>Sauvegarder</span>
                   </>
                 )}
               </AlertDialogAction>
