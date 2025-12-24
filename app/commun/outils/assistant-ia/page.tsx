@@ -27,6 +27,8 @@ import { SearchBar } from "@/components/assistant/SearchBar";
 import { HighlightedText } from "@/components/assistant/HighlightedText";
 import { QuickReplyButtons } from "@/components/assistant/QuickReplyButtons";
 import { MainButtonMenu } from "@/components/assistant/MainButtonMenu";
+import { SubButtonMenu } from "@/components/assistant/SubButtonMenu";
+import { requiresSubButton } from "@/lib/assistant/main-buttons";
 import { cn } from "@/lib/utils";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
@@ -61,6 +63,7 @@ export default function AssistantIAPage() {
   const [historySearchQuery, setHistorySearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
   const [selectedMainButton, setSelectedMainButton] = useState<string | null>(null);
+  const [selectedSubButton, setSelectedSubButton] = useState<string | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showNewChatDialog, setShowNewChatDialog] = useState(false);
@@ -429,15 +432,33 @@ export default function AssistantIAPage() {
   };
 
   // Gérer la sélection du bouton principal (rôle)
-  const handleMainButtonSelect = async (buttonId: string) => {
+  const handleMainButtonSelect = (buttonId: string) => {
     setSelectedMainButton(buttonId);
-    // Appeler l'API avec uiEvent="selectRole" - l'IA posera les questions d'affinage
-    await handleSendMessageWithUIEvent(" ", "selectRole", buttonId);
+    setSelectedSubButton(null);
+    // Si le rôle nécessite un sous-bouton, ne pas appeler l'API tout de suite
+    // Sinon, appeler l'API directement
+    if (!requiresSubButton(buttonId)) {
+      handleSendMessageWithUIEvent(" ", "selectRole", buttonId);
+    }
+  };
+
+  // Gérer la sélection du sous-bouton (mode)
+  const handleSubButtonSelect = async (subButtonId: string) => {
+    setSelectedSubButton(subButtonId);
+    // Appeler l'API avec le mode sélectionné
+    await handleSendMessageWithUIEvent(" ", "selectMode", selectedMainButton!, subButtonId);
+  };
+
+  // Retour au menu principal
+  const handleBackToMainMenu = () => {
+    setSelectedMainButton(null);
+    setSelectedSubButton(null);
   };
 
   // Gérer le clic sur "Autre chose" (chat libre)
   const handleAutreChose = async () => {
     setSelectedMainButton(null);
+    setSelectedSubButton(null);
     // Appeler l'API avec uiEvent="selectFreeChat"
     await handleSendMessageWithUIEvent(" ", "selectFreeChat");
   };
@@ -458,6 +479,7 @@ export default function AssistantIAPage() {
     setSelectedImages([]);
     setSelectedFiles([]);
     setSelectedMainButton(null);
+    setSelectedSubButton(null);
     setIsStarted(false);
     setHasUnsavedChanges(false);
     setLastSavedMessagesCount(0);
@@ -666,8 +688,9 @@ export default function AssistantIAPage() {
   // Fonction auxiliaire pour envoyer un message avec uiEvent
   const handleSendMessageWithUIEvent = async (
     messageText: string,
-    uiEvent?: "start" | "selectRole" | "selectFreeChat",
-    mainButton?: string
+    uiEvent?: "start" | "selectRole" | "selectMode" | "selectFreeChat",
+    mainButton?: string,
+    subButton?: string
   ) => {
     if (isLoading) return;
 
@@ -711,6 +734,7 @@ export default function AssistantIAPage() {
           message: messageText,
           history: conversationHistory,
           mainButton: mainButton || undefined,
+          subButton: subButton || undefined,
           uiEvent: uiEvent || undefined,
           stream: true,
         }),
@@ -846,6 +870,7 @@ export default function AssistantIAPage() {
           files: filesToSend.length > 0 ? filesToSend : undefined,
           history: conversationHistory,
           mainButton: selectedMainButton || undefined,
+          subButton: selectedSubButton || undefined,
           stream: true, // Activer le streaming
         }),
       });
@@ -1069,7 +1094,7 @@ export default function AssistantIAPage() {
                       </Button>
                     </div>
                   </div>
-                ) : messages.length === 0 ? (
+                ) : messages.length === 0 && !selectedMainButton ? (
                   <div className="flex justify-start">
                     <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
                       <p className="text-sm text-gray-900 dark:text-gray-100 mb-3">Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
@@ -1085,6 +1110,17 @@ export default function AssistantIAPage() {
                       >
                         💬 Autre chose (chat libre)
                       </Button>
+                    </div>
+                  </div>
+                ) : messages.length === 0 && selectedMainButton && requiresSubButton(selectedMainButton) && !selectedSubButton ? (
+                  <div className="flex justify-start">
+                    <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+                      <SubButtonMenu
+                        mainButtonId={selectedMainButton}
+                        onSelect={handleSubButtonSelect}
+                        onBack={handleBackToMainMenu}
+                        disabled={isLoading}
+                      />
                     </div>
                   </div>
                 ) : (
