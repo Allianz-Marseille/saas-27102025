@@ -752,4 +752,3 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
     </div>
   );
 }
-
