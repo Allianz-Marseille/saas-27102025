@@ -715,8 +715,8 @@ export default function AssistantIAPage() {
       content: msg.content,
     }));
 
-    // Ajouter le message utilisateur si pas vide
-    if (messageText.trim() && messageText !== " ") {
+    // Ajouter le message utilisateur UNIQUEMENT si c'est "Bonjour" (pas pour les clics de boutons)
+    if (messageText.trim() && messageText !== " " && uiEvent === "start") {
       const userMessage: Message = {
         id: Date.now().toString(),
         role: "user",
