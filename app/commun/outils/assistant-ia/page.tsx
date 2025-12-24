@@ -557,6 +557,25 @@ export default function AssistantIAPage() {
     }
   };
 
+  // Copier la dernière réponse du bot
+  const handleCopyLastBotResponse = async () => {
+    // Trouver le dernier message de l'assistant
+    const lastBotMessage = messages.filter(msg => msg.role === "assistant").pop();
+    
+    if (!lastBotMessage) {
+      toast.error("Aucune réponse du bot à copier");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(lastBotMessage.content);
+      toast.success("Dernière réponse copiée dans le presse-papier");
+    } catch (error) {
+      console.error("Erreur lors de la copie:", error);
+      toast.error("Erreur lors de la copie");
+    }
+  };
+
   // Copier toute la conversation
   const handleCopyAllMessages = async () => {
     if (messages.length === 0) {
@@ -977,6 +996,16 @@ export default function AssistantIAPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   {messages.length > 0 && (
                     <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCopyLastBotResponse}
+                        title="Copier la dernière réponse du bot"
+                        className="border-indigo-300 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-400 dark:border-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-950/30"
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copier réponse
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
