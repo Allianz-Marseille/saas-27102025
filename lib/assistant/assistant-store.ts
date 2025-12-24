@@ -1,6 +1,6 @@
 /**
  * Store Zustand pour l'état partagé de l'assistant IA
- * Utilisé par FloatingAssistant et AssistantDrawer pour partager exactement le même état
+ * Utilisé par AssistantDrawer et la page outils pour partager exactement le même état
  */
 
 import { create } from "zustand";
@@ -53,13 +53,9 @@ interface AssistantState {
   selectedFiles: ProcessedFile[];
   setSelectedFiles: (files: ProcessedFile[] | ((prev: ProcessedFile[]) => ProcessedFile[])) => void;
 
-  // UI State (optionnel - pour coordonner l'ouverture/fermeture)
-  isOpenFloating: boolean;
-  setIsOpenFloating: (open: boolean) => void;
+  // UI State (pour coordonner l'ouverture/fermeture du drawer)
   isOpenDrawer: boolean;
   setIsOpenDrawer: (open: boolean) => void;
-  isMinimized: boolean;
-  setIsMinimized: (minimized: boolean) => void;
 
   // Actions globales
   resetConversation: () => void;
@@ -105,12 +101,8 @@ export const useAssistantStore = create<AssistantState>((set) => ({
     })),
 
   // UI State
-  isOpenFloating: false,
-  setIsOpenFloating: (open) => set({ isOpenFloating: open }),
   isOpenDrawer: false,
   setIsOpenDrawer: (open) => set({ isOpenDrawer: open }),
-  isMinimized: false,
-  setIsMinimized: (minimized) => set({ isMinimized: minimized }),
 
   // Actions globales
   resetConversation: () =>

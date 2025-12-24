@@ -17,7 +17,7 @@ import { processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-proces
 import { cn } from "@/lib/utils";
 
 interface AssistantCoreProps {
-  variant: "floating" | "drawer";
+  variant: "drawer";
 }
 
 export function AssistantCore({ variant }: AssistantCoreProps) {

@@ -16,11 +16,10 @@
 
 ## Architecture générale
 
-Le système IA est composé de **trois interfaces utilisateur** qui partagent la même logique backend :
+Le système IA est composé de **deux interfaces utilisateur** qui partagent la même logique backend :
 
 1. **IA Outil** (`app/commun/outils/assistant-ia/page.tsx`) - Page dédiée avec historique et sauvegarde
-2. **IA Bulle** (`components/assistant/FloatingAssistant.tsx`) - Assistant flottant sur toutes les pages
-3. **IA Drawer** (`components/assistant/AssistantDrawer.tsx`) - Assistant dans la sidebar (menu "Outils")
+2. **IA Drawer** (`components/assistant/AssistantDrawer.tsx`) - Assistant dans la sidebar (menu "Outils")
 
 Toutes les trois utilisent la même **API route** (`app/api/assistant/chat/route.ts`) et le même système de prompts.
 
@@ -57,43 +56,14 @@ Toutes les trois utilisent la même **API route** (`app/api/assistant/chat/route
 - Filtrage par date dans l'historique
 - Recherche textuelle dans l'historique
 
-### 2. IA Bulle - Assistant flottant
-
-**Fichier** : `components/assistant/FloatingAssistant.tsx`
-
-**Caractéristiques** :
-- Bouton flottant en bas à droite de l'écran
-- Peut être minimisé/maximisé
-- Présent sur toutes les pages (sauf homepage et login)
-- État sauvegardé dans localStorage
-
-**États gérés** :
-```typescript
-- isOpen: boolean - Fenêtre ouverte/fermée
-- isMinimized: boolean - Fenêtre minimisée/maximisée
-- messages: Message[] - Historique de la conversation
-- input: string - Texte saisi
-- selectedMainButton: string | null
-- selectedSubButton: string | null
-- isLoading: boolean
-- selectedImages: ImageFile[]
-- selectedFiles: ProcessedFile[]
-```
-
-**Comportement** :
-- S'ouvre depuis un bouton flottant en bas à droite
-- Design WhatsApp-like (bulles de messages)
-- Menu de boutons affiché au démarrage si aucun message
-- Persistance de l'état ouvert/fermé dans localStorage
-
-### 3. IA Drawer - Assistant sidebar
+### 2. IA Drawer - Assistant sidebar
 
 **Fichier** : `components/assistant/AssistantDrawer.tsx`
 
 **Caractéristiques** :
 - Drawer (tiroir) qui s'ouvre depuis la sidebar (menu "Outils")
 - Géré par `AssistantWrapper.tsx` qui encapsule la logique de communication API
-- Même design que FloatingAssistant (bulles WhatsApp)
+- Design WhatsApp-like (bulles de messages)
 
 **Architecture** :
 - `AssistantWrapper.tsx` : Gère l'état des messages et la communication API
@@ -791,7 +761,6 @@ while (true) {
 ### Frontend
 
 - `app/commun/outils/assistant-ia/page.tsx` - Page dédiée IA
-- `components/assistant/FloatingAssistant.tsx` - Bulle flottante
 - `components/assistant/AssistantDrawer.tsx` - Drawer sidebar
 - `components/assistant/AssistantWrapper.tsx` - Wrapper logique drawer
 - `components/assistant/MainButtonMenu.tsx` - Menu boutons principaux
