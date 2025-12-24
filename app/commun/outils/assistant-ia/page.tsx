@@ -69,6 +69,8 @@ export default function AssistantIAPage() {
   const [showNewChatDialog, setShowNewChatDialog] = useState(false);
   const [lastSavedMessagesCount, setLastSavedMessagesCount] = useState(0);
   const [isStarted, setIsStarted] = useState(false);
+  const [showRoleMenu, setShowRoleMenu] = useState(false);
+  const [showSubButtonMenu, setShowSubButtonMenu] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<{ messageId: string; index: number }[]>([]);
@@ -428,6 +430,7 @@ export default function AssistantIAPage() {
   // Gérer le clic sur "Bonjour"
   const handleBonjourClick = async () => {
     setIsStarted(true);
+    setShowRoleMenu(true);
     await handleSendMessageWithUIEvent("Bonjour", "start");
   };
 
@@ -435,9 +438,14 @@ export default function AssistantIAPage() {
   const handleMainButtonSelect = async (buttonId: string) => {
     setSelectedMainButton(buttonId);
     setSelectedSubButton(null);
-    // Si le rôle nécessite un sous-bouton, ne pas appeler l'API tout de suite
-    // Sinon, appeler l'API directement
-    if (!requiresSubButton(buttonId)) {
+    setShowRoleMenu(false);
+    
+    // Si le rôle nécessite un sous-bouton, afficher le menu des sous-boutons
+    if (requiresSubButton(buttonId)) {
+      setShowSubButtonMenu(true);
+    } else {
+      // Sinon, appeler l'API directement
+      setShowSubButtonMenu(false);
       await handleSendMessageWithUIEvent(" ", "selectRole", buttonId);
     }
   };
@@ -445,6 +453,7 @@ export default function AssistantIAPage() {
   // Gérer la sélection du sous-bouton (mode)
   const handleSubButtonSelect = async (subButtonId: string) => {
     setSelectedSubButton(subButtonId);
+    setShowSubButtonMenu(false);
     // Appeler l'API avec le mode sélectionné
     await handleSendMessageWithUIEvent(" ", "selectMode", selectedMainButton!, subButtonId);
   };
@@ -453,12 +462,16 @@ export default function AssistantIAPage() {
   const handleBackToMainMenu = () => {
     setSelectedMainButton(null);
     setSelectedSubButton(null);
+    setShowSubButtonMenu(false);
+    setShowRoleMenu(true);
   };
 
   // Gérer le clic sur "Autre chose" (chat libre)
   const handleAutreChose = async () => {
     setSelectedMainButton(null);
     setSelectedSubButton(null);
+    setShowRoleMenu(false);
+    setShowSubButtonMenu(false);
     // Appeler l'API avec uiEvent="selectFreeChat"
     await handleSendMessageWithUIEvent(" ", "selectFreeChat");
   };
@@ -481,6 +494,8 @@ export default function AssistantIAPage() {
     setSelectedMainButton(null);
     setSelectedSubButton(null);
     setIsStarted(false);
+    setShowRoleMenu(false);
+    setShowSubButtonMenu(false);
     setHasUnsavedChanges(false);
     setLastSavedMessagesCount(0);
     setShowNewChatDialog(false);
@@ -1094,10 +1109,9 @@ export default function AssistantIAPage() {
                       </Button>
                     </div>
                   </div>
-                ) : messages.length === 0 && !selectedMainButton ? (
+                ) : showRoleMenu && messages.length > 0 ? (
                   <div className="flex justify-start">
                     <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-                      <p className="text-sm text-gray-900 dark:text-gray-100 mb-3">Bonjour ! Comment puis-je vous aider aujourd&apos;hui ?</p>
                       <MainButtonMenu
                         onSelect={handleMainButtonSelect}
                         disabled={isLoading}
@@ -1112,7 +1126,7 @@ export default function AssistantIAPage() {
                       </Button>
                     </div>
                   </div>
-                ) : messages.length === 0 && selectedMainButton && requiresSubButton(selectedMainButton) && !selectedSubButton ? (
+                ) : showSubButtonMenu && selectedMainButton ? (
                   <div className="flex justify-start">
                     <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
                       <SubButtonMenu
