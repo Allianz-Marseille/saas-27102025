@@ -27,8 +27,6 @@ import { SearchBar } from "@/components/assistant/SearchBar";
 import { HighlightedText } from "@/components/assistant/HighlightedText";
 import { QuickReplyButtons } from "@/components/assistant/QuickReplyButtons";
 import { MainButtonMenu } from "@/components/assistant/MainButtonMenu";
-import { SubButtonMenu } from "@/components/assistant/SubButtonMenu";
-import { requiresSubButton } from "@/lib/assistant/main-buttons";
 import { cn } from "@/lib/utils";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
@@ -63,11 +61,11 @@ export default function AssistantIAPage() {
   const [historySearchQuery, setHistorySearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
   const [selectedMainButton, setSelectedMainButton] = useState<string | null>(null);
-  const [selectedSubButton, setSelectedSubButton] = useState<string | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showNewChatDialog, setShowNewChatDialog] = useState(false);
   const [lastSavedMessagesCount, setLastSavedMessagesCount] = useState(0);
+  const [isStarted, setIsStarted] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<{ messageId: string; index: number }[]>([]);
@@ -382,6 +380,7 @@ export default function AssistantIAPage() {
         }));
 
         setMessages(loadedMessages);
+        setIsStarted(true); // Marquer la session comme démarrée
         toast.success("Conversation chargée avec succès");
       }
     } catch (error) {
@@ -423,35 +422,24 @@ export default function AssistantIAPage() {
     }
   };
 
-  // Gérer la sélection du bouton principal
-  const handleMainButtonSelect = (buttonId: string) => {
+  // Gérer le clic sur "Bonjour"
+  const handleBonjourClick = async () => {
+    setIsStarted(true);
+    await handleSendMessageWithUIEvent("Bonjour", "start");
+  };
+
+  // Gérer la sélection du bouton principal (rôle)
+  const handleMainButtonSelect = async (buttonId: string) => {
     setSelectedMainButton(buttonId);
-    setSelectedSubButton(null);
-    // Si le bouton nécessite un sous-bouton, on ne démarre pas encore la conversation
-    // Sinon, on peut commencer directement
-    if (!requiresSubButton(buttonId)) {
-      // Pas de sous-bouton nécessaire, on peut commencer la conversation
-      // Envoyer automatiquement un message initial pour déclencher l'IA
-      setTimeout(() => {
-        handleSendMessage("Bonjour"); // Message initial pour déclencher le prompt système
-      }, 100);
-    }
+    // Appeler l'API avec uiEvent="selectRole" - l'IA posera les questions d'affinage
+    await handleSendMessageWithUIEvent(" ", "selectRole", buttonId);
   };
 
-  // Gérer la sélection du sous-bouton
-  const handleSubButtonSelect = (subButtonId: string) => {
-    setSelectedSubButton(subButtonId);
-    // Envoyer automatiquement un message initial pour déclencher l'IA
-    // Utiliser un petit délai pour s'assurer que l'état est mis à jour
-    setTimeout(() => {
-      handleSendMessage("Bonjour"); // Message initial pour déclencher le prompt système
-    }, 100);
-  };
-
-  // Gérer le retour au menu principal
-  const handleBackToMainMenu = () => {
+  // Gérer le clic sur "Autre chose" (chat libre)
+  const handleAutreChose = async () => {
     setSelectedMainButton(null);
-    setSelectedSubButton(null);
+    // Appeler l'API avec uiEvent="selectFreeChat"
+    await handleSendMessageWithUIEvent(" ", "selectFreeChat");
   };
 
   // Clic sur "Nouveau chat" - vérifier si changements non sauvegardés
@@ -470,7 +458,7 @@ export default function AssistantIAPage() {
     setSelectedImages([]);
     setSelectedFiles([]);
     setSelectedMainButton(null);
-    setSelectedSubButton(null);
+    setIsStarted(false);
     setHasUnsavedChanges(false);
     setLastSavedMessagesCount(0);
     setShowNewChatDialog(false);
@@ -656,6 +644,131 @@ export default function AssistantIAPage() {
     }
   };
 
+  // Fonction auxiliaire pour envoyer un message avec uiEvent
+  const handleSendMessageWithUIEvent = async (
+    messageText: string,
+    uiEvent?: "start" | "selectRole" | "selectFreeChat",
+    mainButton?: string
+  ) => {
+    if (isLoading) return;
+
+    // Construire l'historique AVANT d'ajouter le nouveau message
+    const conversationHistory = messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
+    // Ajouter le message utilisateur si pas vide
+    if (messageText.trim() && messageText !== " ") {
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: "user",
+        content: messageText,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMessage]);
+    }
+
+    setIsLoading(true);
+
+    // Créer le message assistant initial
+    const assistantMessageId = (Date.now() + 1).toString();
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: "assistant",
+      content: "",
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, assistantMessage]);
+
+    try {
+      const response = await fetch("/api/assistant/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${await user?.getIdToken()}`,
+        },
+        body: JSON.stringify({
+          message: messageText,
+          history: conversationHistory,
+          mainButton: mainButton || undefined,
+          uiEvent: uiEvent || undefined,
+          stream: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erreur lors de l'envoi du message");
+      }
+
+      // Stream SSE
+      const contentType = response.headers.get("content-type");
+      if (contentType?.includes("text/event-stream")) {
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let accumulatedContent = "";
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const data = line.slice(6);
+                if (data === "[DONE]") continue;
+
+                try {
+                  const parsed = JSON.parse(data);
+                  if (parsed.type === "content" && parsed.content) {
+                    accumulatedContent += parsed.content;
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === assistantMessageId ? { ...msg, content: accumulatedContent } : msg
+                      )
+                    );
+                  } else if (parsed.type === "error") {
+                    throw new Error(parsed.error);
+                  } else if (parsed.content) {
+                    accumulatedContent += parsed.content;
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === assistantMessageId ? { ...msg, content: accumulatedContent } : msg
+                      )
+                    );
+                  }
+                } catch (e) {
+                  console.error("Erreur parsing SSE:", e);
+                }
+              }
+            }
+          }
+        }
+      } else {
+        const data = await response.json();
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessageId
+              ? { ...msg, content: data.response || data.message || "Aucune réponse reçue" }
+              : msg
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      toast.error(error instanceof Error ? error.message : "Erreur lors de l'envoi du message");
+      setMessages((prev) => prev.filter((msg) => msg.id !== assistantMessageId));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSendMessage = async (customMessage?: string) => {
     const messageToSend = customMessage !== undefined ? customMessage : input;
     // Permettre l'envoi même sans bouton sélectionné (chat libre)
@@ -714,7 +827,6 @@ export default function AssistantIAPage() {
           files: filesToSend.length > 0 ? filesToSend : undefined,
           history: conversationHistory,
           mainButton: selectedMainButton || undefined,
-          subButton: selectedSubButton || undefined,
           stream: true, // Activer le streaming
         }),
       });
@@ -911,46 +1023,39 @@ export default function AssistantIAPage() {
                   )}
                 </div>
               </div>
-              {/* Menu principal ou sous-menu */}
-              {messages.length === 0 && (
-                <div className="pt-4 border-t px-6">
-                  {!selectedMainButton ? (
-                    <MainButtonMenu
-                      onSelect={handleMainButtonSelect}
-                      disabled={isLoading}
-                    />
-                  ) : requiresSubButton(selectedMainButton) && !selectedSubButton ? (
-                    <SubButtonMenu
-                      mainButtonId={selectedMainButton}
-                      onSelect={handleSubButtonSelect}
-                      onBack={handleBackToMainMenu}
-                      disabled={isLoading}
-                    />
-                  ) : null}
-                </div>
-              )}
             </CardHeader>
             <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
               {/* Zone de messages */}
               <div className="flex-1 overflow-y-auto mb-4 space-y-1 px-4 py-4 min-h-0 bg-[#ECE5DD] dark:bg-[#0b141a]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}>
-                {messages.length === 0 ? (
+                {messages.length === 0 && !isStarted ? (
+                  <div className="flex justify-start">
+                    <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+                      <p className="text-sm text-gray-900 dark:text-gray-100 mb-3">Bienvenue ! Pour commencer, clique sur le bouton ci-dessous :</p>
+                      <Button
+                        onClick={handleBonjourClick}
+                        disabled={isLoading}
+                        className="w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white"
+                      >
+                        👋 Bonjour
+                      </Button>
+                    </div>
+                  </div>
+                ) : messages.length === 0 ? (
                   <div className="flex justify-start">
                     <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
                       <p className="text-sm text-gray-900 dark:text-gray-100 mb-3">Bonjour ! Comment puis-je vous aider aujourd'hui ?</p>
-                      {/* Menu principal ou sous-menu */}
-                      {!selectedMainButton ? (
-                        <MainButtonMenu
-                          onSelect={handleMainButtonSelect}
-                          disabled={isLoading}
-                        />
-                      ) : requiresSubButton(selectedMainButton) && !selectedSubButton ? (
-                        <SubButtonMenu
-                          mainButtonId={selectedMainButton}
-                          onSelect={handleSubButtonSelect}
-                          onBack={handleBackToMainMenu}
-                          disabled={isLoading}
-                        />
-                      ) : null}
+                      <MainButtonMenu
+                        onSelect={handleMainButtonSelect}
+                        disabled={isLoading}
+                      />
+                      <Button
+                        onClick={handleAutreChose}
+                        disabled={isLoading}
+                        variant="outline"
+                        className="w-full mt-2"
+                      >
+                        💬 Autre chose (chat libre)
+                      </Button>
                     </div>
                   </div>
                 ) : (
