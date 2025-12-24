@@ -95,6 +95,15 @@ export const MAIN_BUTTONS: MainButton[] = [
     hasSubButtons: false,
     description: "Conseil comptable, fiscalité",
   },
+  {
+    id: "fiscaliste",
+    label: "Fiscaliste",
+    icon: "🧾",
+    color: "bg-emerald-50 dark:bg-emerald-950/20",
+    borderColor: "border-emerald-500",
+    hasSubButtons: false,
+    description: "Optimisation fiscale, déclarations, conformité",
+  },
 ];
 
 /**

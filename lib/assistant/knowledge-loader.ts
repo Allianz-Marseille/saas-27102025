@@ -72,6 +72,10 @@ export function loadRoleKnowledge(mainButton?: string): string {
       // Pack comptable (à créer si besoin, pour l'instant vide)
       break;
 
+    case "fiscaliste":
+      // Pack fiscalité (à créer si besoin, pour l'instant vide)
+      break;
+
     default:
       // Chat libre : uniquement le core
       break;
