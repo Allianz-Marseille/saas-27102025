@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les paramètres depuis le body
     const body = await request.json();
-    const { message, images, files, history = [], model = "gpt-4o", mainButton, subButton, uiEvent } = body;
+    const { message, images, files, history = [], model = "gpt-4o", mainButton, uiEvent } = body;
 
     // Le message peut être vide si seulement des images ou fichiers sont envoyés
     if (!message && (!images || images.length === 0) && (!files || files.length === 0)) {
@@ -228,7 +228,7 @@ EXEMPLES DE FORMATAGE :
 - Pour des étapes : utilise une liste numérotée avec des émojis
 - Pour des points clés : utilise des listes à puces avec **gras**`;
 
-    // Intégrer le prompt basé sur uiEvent ou mainButton/subButton
+    // Intégrer le prompt basé sur uiEvent ou mainButton
     let buttonPromptSection = "";
     
     // Cas 1 : uiEvent="start" (bouton "Bonjour" cliqué)
@@ -239,10 +239,18 @@ EXEMPLES DE FORMATAGE :
         buttonPromptSection = `\n\n--- COMPORTEMENT INITIAL (START) ---\n\n${startPrompt}\n\n---\n\n`;
       }
     }
-    // Cas 2 : uiEvent="selectRole" ou "selectMode" OU mainButton fourni
-    else if (mainButton || uiEvent === "selectRole" || uiEvent === "selectMode") {
+    // Cas 2 : uiEvent="selectFreeChat" (bouton "Autre chose" cliqué)
+    else if (uiEvent === "selectFreeChat") {
+      const { getFreeChatPrompt } = await import("@/lib/assistant/main-button-prompts");
+      const freeChatPrompt = getFreeChatPrompt();
+      if (freeChatPrompt) {
+        buttonPromptSection = `\n\n--- COMPORTEMENT (CHAT LIBRE) ---\n\n${freeChatPrompt}\n\n---\n\n`;
+      }
+    }
+    // Cas 3 : uiEvent="selectRole" OU mainButton fourni (rôle sélectionné)
+    else if (mainButton || uiEvent === "selectRole") {
       const { getSystemPromptForButton } = await import("@/lib/assistant/main-button-prompts");
-      const buttonPrompt = getSystemPromptForButton(mainButton, subButton);
+      const buttonPrompt = getSystemPromptForButton(mainButton);
       if (buttonPrompt) {
         buttonPromptSection = `\n\n--- CONFIGURATION MÉTIER ---\n\n${buttonPrompt}\n\n---\n\n`;
       }

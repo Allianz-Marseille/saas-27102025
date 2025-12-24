@@ -13,8 +13,7 @@ import { ProcessedFile } from "./file-processing";
 export type StateMachine =
   | "idle" // Aucune session lancée - afficher bouton "👋 Bonjour"
   | "started" // Session lancée - afficher menu rôles
-  | "roleSelected" // Rôle sélectionné - afficher menu modes
-  | "modeActive" // Mode actif - chat guidé avec prompts spécialisés
+  | "modeActive" // Mode actif - chat guidé avec prompts spécialisés (IA pose questions d'affinage)
   | "freeChat"; // Chat libre - coreKnowledge uniquement
 
 export interface Message {
@@ -40,8 +39,6 @@ interface AssistantState {
   // Sélections
   selectedRoleId: string | null;
   setSelectedRoleId: (roleId: string | null) => void;
-  selectedModeId: string | null;
-  setSelectedModeId: (modeId: string | null) => void;
 
   // Loading
   isLoading: boolean;
@@ -85,8 +82,6 @@ export const useAssistantStore = create<AssistantState>((set) => ({
   // Sélections
   selectedRoleId: null,
   setSelectedRoleId: (roleId) => set({ selectedRoleId: roleId }),
-  selectedModeId: null,
-  setSelectedModeId: (modeId) => set({ selectedModeId: modeId }),
 
   // Loading
   isLoading: false,
@@ -118,7 +113,6 @@ export const useAssistantStore = create<AssistantState>((set) => ({
       stateMachine: "idle",
       messages: [],
       selectedRoleId: null,
-      selectedModeId: null,
       selectedImages: [],
       selectedFiles: [],
       isLoading: false,

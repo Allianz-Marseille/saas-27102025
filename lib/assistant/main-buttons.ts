@@ -29,7 +29,7 @@ export const MAIN_BUTTONS: MainButton[] = [
     icon: "💼",
     color: "bg-blue-50 dark:bg-blue-950/20",
     borderColor: "border-blue-500",
-    hasSubButtons: true,
+    hasSubButtons: false,
     description: "M+3, Préterme, Devis, Arguments commerciaux",
   },
   {
@@ -38,7 +38,7 @@ export const MAIN_BUTTONS: MainButton[] = [
     icon: "🚨",
     color: "bg-red-50 dark:bg-red-950/20",
     borderColor: "border-red-500",
-    hasSubButtons: true,
+    hasSubButtons: false,
     description: "Gestion des sinistres, conventions IRSA/IRSI/IRCA",
   },
   {
@@ -47,7 +47,7 @@ export const MAIN_BUTTONS: MainButton[] = [
     icon: "💚",
     color: "bg-green-50 dark:bg-green-950/20",
     borderColor: "border-green-500",
-    hasSubButtons: true,
+    hasSubButtons: false,
     description: "Santé individuelle et collective",
   },
   {
@@ -56,7 +56,7 @@ export const MAIN_BUTTONS: MainButton[] = [
     icon: "🟣",
     color: "bg-purple-50 dark:bg-purple-950/20",
     borderColor: "border-purple-500",
-    hasSubButtons: true,
+    hasSubButtons: false,
     description: "Prévoyance individuelle et collective",
   },
   {
@@ -65,7 +65,7 @@ export const MAIN_BUTTONS: MainButton[] = [
     icon: "📋",
     color: "bg-yellow-50 dark:bg-yellow-950/20",
     borderColor: "border-yellow-500",
-    hasSubButtons: true,
+    hasSubButtons: false,
     description: "Assistant administratif, organisation",
   },
   {
@@ -74,7 +74,7 @@ export const MAIN_BUTTONS: MainButton[] = [
     icon: "📱",
     color: "bg-orange-50 dark:bg-orange-950/20",
     borderColor: "border-orange-500",
-    hasSubButtons: true,
+    hasSubButtons: false,
     description: "Contenu réseaux sociaux, communication",
   },
   {
@@ -83,7 +83,7 @@ export const MAIN_BUTTONS: MainButton[] = [
     icon: "⚖️",
     color: "bg-indigo-50 dark:bg-indigo-950/20",
     borderColor: "border-indigo-500",
-    hasSubButtons: true,
+    hasSubButtons: false,
     description: "Conseil juridique, droit assurance",
   },
   {
@@ -92,7 +92,7 @@ export const MAIN_BUTTONS: MainButton[] = [
     icon: "📊",
     color: "bg-cyan-50 dark:bg-cyan-950/20",
     borderColor: "border-cyan-500",
-    hasSubButtons: true,
+    hasSubButtons: false,
     description: "Conseil comptable, fiscalité",
   },
 ];

@@ -9,9 +9,7 @@ import { useAuth } from "@/lib/firebase/use-auth";
 import { toast } from "sonner";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { MainButtonMenu } from "./MainButtonMenu";
-import { SubButtonMenu } from "./SubButtonMenu";
 import { QuickReplyButtons } from "./QuickReplyButtons";
-import { requiresSubButton, MAIN_BUTTONS } from "@/lib/assistant/main-buttons";
 import { convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
 import { cn } from "@/lib/utils";
@@ -34,8 +32,6 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
     setIsLoading,
     selectedRoleId,
     setSelectedRoleId,
-    selectedModeId,
-    setSelectedModeId,
     selectedImages,
     setSelectedImages,
     selectedFiles,
@@ -136,53 +132,25 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
   };
 
   /**
-   * Rôle sélectionné (état started -> roleSelected OU modeActive si pas de subButtons)
+   * Rôle sélectionné (état started -> modeActive directement)
    */
   const handleRoleSelect = async (roleId: string) => {
     setSelectedRoleId(roleId);
-    setSelectedModeId(null);
-
-    // Si le rôle nécessite un sous-bouton, on passe en roleSelected
-    if (requiresSubButton(roleId)) {
-      setStateMachine("roleSelected");
-      // Pas d'appel API ici, on attend la sélection du mode
-      // Mais on peut afficher un message de l'IA pour proposer les modes
-      await sendMessageToAPI(" ", [], [], "selectRole", roleId);
-    } else {
-      // Pas de sous-bouton nécessaire, on passe directement en modeActive
-      setStateMachine("modeActive");
-      await sendMessageToAPI(" ", [], [], "selectRole", roleId);
-    }
-  };
-
-  /**
-   * Mode sélectionné (état roleSelected -> modeActive)
-   */
-  const handleModeSelect = async (modeId: string) => {
-    setSelectedModeId(modeId);
     setStateMachine("modeActive");
 
-    // Appeler l'API avec uiEvent="selectMode"
-    await sendMessageToAPI(" ", [], [], "selectMode", selectedRoleId!, modeId);
-  };
-
-  /**
-   * Retour au menu principal (reset)
-   */
-  const handleBackToMainMenu = () => {
-    setSelectedRoleId(null);
-    setSelectedModeId(null);
-    setStateMachine("started");
+    // Appeler l'API - l'IA posera les questions d'affinage dans le chat
+    await sendMessageToAPI(" ", [], [], "selectRole", roleId);
   };
 
   /**
    * "Autre chose" cliqué (chat libre)
    */
-  const handleAutreChose = () => {
+  const handleAutreChose = async () => {
     setSelectedRoleId(null);
-    setSelectedModeId(null);
     setStateMachine("freeChat");
-    toast.info("Mode chat libre activé");
+    
+    // Appeler l'API en mode chat libre - l'IA demandera "Tu as besoin de savoir quoi ?"
+    await sendMessageToAPI(" ", [], [], "selectFreeChat");
   };
 
   // ============================================================================
@@ -196,9 +164,8 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
     messageText: string,
     imageBase64s: string[],
     filesToSend: { name: string; type: string; content?: string }[],
-    uiEvent?: "start" | "selectRole" | "selectMode",
-    roleId?: string,
-    modeId?: string
+    uiEvent?: "start" | "selectRole" | "selectFreeChat",
+    roleId?: string
   ) => {
     if (!user) return;
 
@@ -233,7 +200,6 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
           files: filesToSend.length > 0 ? filesToSend : undefined,
           history: conversationHistory,
           mainButton: roleId || selectedRoleId || undefined,
-          subButton: modeId || selectedModeId || undefined,
           uiEvent: uiEvent || undefined,
           stream: true,
         }),
@@ -550,15 +516,10 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
           </div>
         )}
 
-        {/* État STARTED : Menu des rôles */}
-        {stateMachine === "started" && (
+        {/* État STARTED : Menu des rôles (affiché après message IA) */}
+        {stateMachine === "started" && messages.length > 0 && (
           <div className="flex justify-start">
             <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-              {messages.length > 0 && messages[messages.length - 1].role === "assistant" && (
-                <div className="mb-3">
-                  <MarkdownRenderer content={messages[messages.length - 1].content} />
-                </div>
-              )}
               <MainButtonMenu onSelect={handleRoleSelect} disabled={isLoading} />
               <Button
                 onClick={handleAutreChose}
@@ -568,25 +529,6 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
               >
                 💬 Autre chose (chat libre)
               </Button>
-            </div>
-          </div>
-        )}
-
-        {/* État ROLE_SELECTED : Menu des modes */}
-        {stateMachine === "roleSelected" && selectedRoleId && requiresSubButton(selectedRoleId) && (
-          <div className="flex justify-start">
-            <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-              {messages.length > 0 && messages[messages.length - 1].role === "assistant" && (
-                <div className="mb-3">
-                  <MarkdownRenderer content={messages[messages.length - 1].content} />
-                </div>
-              )}
-              <SubButtonMenu
-                mainButtonId={selectedRoleId}
-                onSelect={handleModeSelect}
-                onBack={handleBackToMainMenu}
-                disabled={isLoading}
-              />
             </div>
           </div>
         )}
