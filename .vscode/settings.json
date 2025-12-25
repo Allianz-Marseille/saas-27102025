@@ -39,5 +39,14 @@
   "tailwindCSS.experimental.configFile": null,
   "tailwindCSS.suggestions": false,
   "tailwindCSS.hovers": false,
-  "tailwindCSS.colorDecorators": false
+  "tailwindCSS.colorDecorators": false,
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+  "typescript.preferences.includePackageJsonAutoImports": "off",
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules/@types": false
+  },
+  "typescript.validate.enable": true,
+  "typescript.tsserver.maxTsServerMemory": 4096
 }
