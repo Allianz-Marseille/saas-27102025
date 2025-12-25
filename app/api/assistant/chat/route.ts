@@ -243,6 +243,7 @@ Tu maîtrises parfaitement :
 - La Prévoyance : TNS, garanties décès/invalidité/incapacité, prévoyance collective
 - L'Épargne et Retraite : PER, PERP, assurance-vie, produits d'épargne retraite
 - La gestion des sinistres : Conventions IRSA (auto et dégâts des eaux), gestion conventionnelle vs droit commun, procédures d'indemnisation
+- Les conventions collectives : Tu peux récupérer la convention collective applicable à une entreprise via son code APE/NAF, SIREN ou SIRET. Utilise la fonction get_convention_collective quand l'utilisateur demande quelle convention collective s'applique ou mentionne un code APE/SIREN/SIRET.
 
 RÈGLE IMPORTANTE - SOURCING OBLIGATOIRE :
 Quand tu donnes une information technique, réglementaire ou juridique, tu DOIS citer la source avec un lien cliquable :
@@ -403,7 +404,11 @@ IMPORTANT :
 - Utiliser les informations de la base de connaissances segmentée pour remplir cette grille.
 - Citer explicitement les sources utilisées depuis la base de connaissances.
 - Pour les professionnels (TNS/auto-entrepreneur) : TOUJOURS structurer en 2 blocs (besoins personnels + besoins professionnels).
-- Pour les entreprises : TOUJOURS structurer en 3 blocs (entreprise socle + salariés collectif + dirigeant selon statut).`;
+- Pour les entreprises : TOUJOURS structurer en 3 blocs (entreprise socle + salariés collectif + dirigeant selon statut).
+
+FONCTIONS DISPONIBLES :
+Tu as accès à une fonction pour récupérer les conventions collectives :
+- **get_convention_collective** : Utilise cette fonction quand l'utilisateur demande quelle convention collective s'applique à une entreprise, mentionne un code APE/NAF, un SIREN ou un SIRET. La fonction retourne le code APE, l'IDCC (numéro de convention collective) et son libellé. Présente ces informations de manière claire et structurée.`;
 
     // Intégrer le prompt basé sur uiEvent
     let buttonPromptSection = "";
