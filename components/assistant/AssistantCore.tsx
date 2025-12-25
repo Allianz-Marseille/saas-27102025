@@ -8,10 +8,7 @@ import { useAssistantStore } from "@/lib/assistant/assistant-store";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { toast } from "sonner";
 import { MarkdownRenderer } from "./MarkdownRenderer";
-import { MainButtonMenu } from "./MainButtonMenu";
-import { SubButtonMenu } from "./SubButtonMenu";
 import { QuickReplyButtons } from "./QuickReplyButtons";
-import { requiresSubButton } from "@/lib/assistant/main-buttons";
 import { convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
 import { cn } from "@/lib/utils";
@@ -116,7 +113,7 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
   // ============================================================================
 
   /**
-   * Bouton "👋 Bonjour" cliqué (état idle -> started)
+   * Bouton "👋 Bonjour" cliqué (état idle -> modeActive pour conversation directe)
    */
   const handleBonjourClick = async () => {
     // Ajouter le message "Bonjour" visible dans le chat
@@ -128,62 +125,13 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
     };
     addMessage(userMessage);
 
-    // Passer en état "started"
-    setStateMachine("started");
+    // Passer directement en mode conversation
+    setStateMachine("modeActive");
 
     // Appeler l'API avec uiEvent="start"
     await sendMessageToAPI("Bonjour", [], [], "start");
   };
 
-  /**
-   * Rôle sélectionné (état started -> roleSelected si hasSubButtons, sinon modeActive)
-   */
-  const handleRoleSelect = async (roleId: string) => {
-    setSelectedRoleId(roleId);
-    setSelectedModeId(null);
-
-    // Si le rôle nécessite un sous-bouton, passer en roleSelected
-    if (requiresSubButton(roleId)) {
-      setStateMachine("roleSelected");
-      // Pas d'appel API, on attend la sélection du mode
-    } else {
-      // Pas de sous-bouton nécessaire, passer directement en modeActive
-      setStateMachine("modeActive");
-      await sendMessageToAPI(" ", [], [], "selectRole", roleId);
-    }
-  };
-
-  /**
-   * Mode sélectionné (état roleSelected -> modeActive)
-   */
-  const handleModeSelect = async (modeId: string) => {
-    setSelectedModeId(modeId);
-    setStateMachine("modeActive");
-
-    // Appeler l'API avec le mode sélectionné
-    await sendMessageToAPI(" ", [], [], "selectMode", selectedRoleId!, modeId);
-  };
-
-  /**
-   * Retour au menu principal
-   */
-  const handleBackToMainMenu = () => {
-    setSelectedRoleId(null);
-    setSelectedModeId(null);
-    setStateMachine("started");
-  };
-
-  /**
-   * "Autre chose" cliqué (chat libre)
-   */
-  const handleAutreChose = async () => {
-    setSelectedRoleId(null);
-    setSelectedModeId(null);
-    setStateMachine("freeChat");
-    
-    // Appeler l'API en mode chat libre
-    await sendMessageToAPI(" ", [], [], "selectFreeChat");
-  };
 
   // ============================================================================
   // ENVOI DE MESSAGES
@@ -196,9 +144,7 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
     messageText: string,
     imageBase64s: string[],
     filesToSend: { name: string; type: string; content?: string }[],
-    uiEvent?: "start" | "selectRole" | "selectMode" | "selectFreeChat",
-    roleId?: string,
-    modeId?: string
+    uiEvent?: "start"
   ) => {
     if (!user) return;
 
@@ -206,7 +152,6 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
 
     // Construire l'historique
     // Pour "start" (Bonjour), on a ajouté un message avant, donc on enlève le dernier
-    // Pour selectRole/selectMode/selectFreeChat, on n'a PAS ajouté de message, donc on garde tout
     const conversationHistory = uiEvent === "start" 
       ? messages.slice(0, -1).map((msg) => ({ role: msg.role, content: msg.content }))
       : messages.map((msg) => ({ role: msg.role, content: msg.content }));
@@ -233,8 +178,6 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
           images: imageBase64s.length > 0 ? imageBase64s : undefined,
           files: filesToSend.length > 0 ? filesToSend : undefined,
           history: conversationHistory,
-          mainButton: roleId || selectedRoleId || undefined,
-          subButton: modeId || selectedModeId || undefined,
           uiEvent: uiEvent || undefined,
           stream: true,
         }),
@@ -551,39 +494,8 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
           </div>
         )}
 
-        {/* État STARTED : Menu des rôles (affiché après message IA) */}
-        {stateMachine === "started" && messages.length > 0 && (
-          <div className="flex justify-start">
-            <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-              <MainButtonMenu onSelect={handleRoleSelect} disabled={isLoading} />
-              <Button
-                onClick={handleAutreChose}
-                disabled={isLoading}
-                variant="outline"
-                className="w-full mt-2"
-              >
-                💬 Autre chose (chat libre)
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* État ROLE_SELECTED : Menu des modes (sous-boutons) */}
-        {stateMachine === "roleSelected" && selectedRoleId && requiresSubButton(selectedRoleId) && (
-          <div className="flex justify-start">
-            <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-              <SubButtonMenu
-                mainButtonId={selectedRoleId}
-                onSelect={handleModeSelect}
-                onBack={handleBackToMainMenu}
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* État MODE_ACTIVE ou FREE_CHAT : Messages normaux */}
-        {(stateMachine === "modeActive" || stateMachine === "freeChat") &&
+        {/* Messages normaux (après le clic Bonjour, on passe directement en conversation) */}
+        {messages.length > 0 &&
           messages.map((message) => (
             <div
               key={message.id}
@@ -672,8 +584,8 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Zone de saisie (affichée uniquement si pas en état idle ou started/roleSelected sans messages) */}
-      {(stateMachine === "modeActive" || stateMachine === "freeChat" || messages.length > 0) && (
+      {/* Zone de saisie (affichée dès qu'il y a des messages, après le clic Bonjour) */}
+      {messages.length > 0 && (
         <div className="px-6 pb-6 shrink-0">
           <div
             className={`border-2 border-dashed rounded-lg p-2 transition-colors ${

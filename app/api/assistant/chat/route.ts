@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les paramètres depuis le body
     const body = await request.json();
-    const { message, images, files, history = [], model = "gpt-4o", mainButton, subButton, uiEvent } = body;
+    const { message, images, files, history = [], model = "gpt-4o", uiEvent } = body;
 
     // Le message peut être vide si seulement des images ou fichiers sont envoyés
     if (!message && (!images || images.length === 0) && (!files || files.length === 0)) {
@@ -159,16 +159,21 @@ export async function POST(request: NextRequest) {
       messageContent.includes("courrier") ||
       messageContent.includes("rédige") && (messageContent.includes("formel") || messageContent.includes("professionnel"));
 
-    // Détecter si c'est une requête OCR Lagon
+    // Détecter si c'est une requête OCR Lagon (automatique sur upload d'image)
     // Note: hasImages est déjà défini ligne 58, on le réutilise
+    // OCR activé automatiquement si : image présente ET (message vide OU message mentionne client/lagon/fiche)
     const isOCRRequest = 
-      messageContent.includes("ocr_lagon") || 
-      messageContent.includes("capture lagon") ||
-      messageContent.includes("ocr") && (messageContent.includes("client") || messageContent.includes("lagon"));
+      hasImages && (
+        !message || 
+        messageContent.includes("client") || 
+        messageContent.includes("lagon") ||
+        messageContent.includes("fiche")
+      );
 
     // Charger la base de connaissances modulaire selon le contexte
+    // Le contexte est détecté automatiquement depuis le contenu de la conversation
     const { loadKnowledgeForContext } = await import("@/lib/assistant/knowledge-loader");
-    const knowledgeBase = loadKnowledgeForContext(mainButton, subButton);
+    const knowledgeBase = loadKnowledgeForContext(undefined, undefined);
 
     // Construire le prompt système avec formatage adapté et connaissances métier
     const coreKnowledge = `Tu es l'assistant interne de l'agence Allianz Marseille (Nogaro & Boetti).
@@ -257,53 +262,15 @@ EXEMPLES DE FORMATAGE :
 - Pour des points clés : utilise des listes à puces avec **gras**
 - Pour des sources : utilise le format [Nom](URL) systématiquement`;
 
-    // Intégrer le prompt basé sur uiEvent ou mainButton
+    // Intégrer le prompt basé sur uiEvent
     let buttonPromptSection = "";
     
-    // Cas 1 : uiEvent="start" (bouton "Bonjour" cliqué)
+    // Cas unique : uiEvent="start" (bouton "Bonjour" cliqué)
     if (uiEvent === "start") {
       const { getStartPrompt } = await import("@/lib/assistant/main-button-prompts");
       const startPrompt = getStartPrompt();
       if (startPrompt) {
         buttonPromptSection = `\n\n--- COMPORTEMENT INITIAL (START) ---\n\n${startPrompt}\n\n---\n\n`;
-      }
-    }
-    // Cas 2 : uiEvent="selectFreeChat" (bouton "Autre chose" cliqué)
-    else if (uiEvent === "selectFreeChat") {
-      const { getFreeChatPrompt } = await import("@/lib/assistant/main-button-prompts");
-      const freeChatPrompt = getFreeChatPrompt();
-      if (freeChatPrompt) {
-        buttonPromptSection = `\n\n--- COMPORTEMENT (CHAT LIBRE) ---\n\n${freeChatPrompt}\n\n---\n\n`;
-      }
-    }
-    // Cas 3 : uiEvent="selectRole" (rôle sélectionné, optionnel - pas de réponse obligatoire)
-    else if (uiEvent === "selectRole") {
-      // Optionnel : on peut charger le contexte métier mais ne pas forcer de réponse
-      // Pour simplifier, on ne fait rien ici et on attend la sélection du sous-bouton
-      if (mainButton) {
-        const { getSystemPromptForButton } = await import("@/lib/assistant/main-button-prompts");
-        const buttonPrompt = getSystemPromptForButton(mainButton);
-        if (buttonPrompt) {
-          buttonPromptSection = `\n\n--- CONFIGURATION MÉTIER ---\n\n${buttonPrompt}\n\n---\n\n`;
-        }
-      }
-    }
-    // Cas 4 : uiEvent="selectMode" (sous-rôle/mode sélectionné) - IMPORTANT
-    else if (uiEvent === "selectMode") {
-      if (mainButton && subButton) {
-        const { getSystemPromptForButton } = await import("@/lib/assistant/main-button-prompts");
-        const buttonPrompt = getSystemPromptForButton(mainButton, subButton);
-        if (buttonPrompt) {
-          buttonPromptSection = `\n\n--- CONFIGURATION MÉTIER ---\n\n${buttonPrompt}\n\n--- COMPORTEMENT INITIAL MODE ---\n\nTu viens d'être configuré en mode "${mainButton} > ${subButton}". Rappelle brièvement (max 3 lignes) le cadre de ton rôle, puis pose UNE SEULE question : "Ça concerne une question générale ou un client/dossier ?".\n\n---\n\n`;
-        }
-      }
-    }
-    // Cas 5 : mainButton fourni (rôle sélectionné, avec ou sans mode) - fallback
-    else if (mainButton) {
-      const { getSystemPromptForButton } = await import("@/lib/assistant/main-button-prompts");
-      const buttonPrompt = getSystemPromptForButton(mainButton, subButton);
-      if (buttonPrompt) {
-        buttonPromptSection = `\n\n--- CONFIGURATION MÉTIER ---\n\n${buttonPrompt}\n\n---\n\n`;
       }
     }
     

@@ -26,12 +26,6 @@ import { MarkdownRenderer } from "@/components/assistant/MarkdownRenderer";
 import { SearchBar } from "@/components/assistant/SearchBar";
 import { HighlightedText } from "@/components/assistant/HighlightedText";
 import { QuickReplyButtons } from "@/components/assistant/QuickReplyButtons";
-import { MainButtonMenu } from "@/components/assistant/MainButtonMenu";
-import { SubButtonMenu } from "@/components/assistant/SubButtonMenu";
-import { CaseTypeMenu } from "@/components/assistant/CaseTypeMenu";
-import { ClientIdentifyMenu } from "@/components/assistant/ClientIdentifyMenu";
-import { OCRConfirmMenu } from "@/components/assistant/OCRConfirmMenu";
-import { requiresSubButton } from "@/lib/assistant/main-buttons";
 import { cn } from "@/lib/utils";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
@@ -66,21 +60,12 @@ export default function AssistantIAPage() {
   const [isSavingConversation, setIsSavingConversation] = useState(false);
   const [historySearchQuery, setHistorySearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
-  const [selectedMainButton, setSelectedMainButton] = useState<string | null>(null);
-  const [selectedSubButton, setSelectedSubButton] = useState<string | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showNewChatDialog, setShowNewChatDialog] = useState(false);
   const [lastSavedMessagesCount, setLastSavedMessagesCount] = useState(0);
   const [isStarted, setIsStarted] = useState(false);
-  const [showRoleMenu, setShowRoleMenu] = useState(false);
-  const [showSubButtonMenu, setShowSubButtonMenu] = useState(false);
-  const [caseType, setCaseType] = useState<"general" | "client" | null>(null);
-  const [clientIdentifyMethod, setClientIdentifyMethod] = useState<"manual" | "lagon_ocr" | null>(null);
   const [clientProfile, setClientProfile] = useState<object | null>(null);
-  const [showCaseTypeMenu, setShowCaseTypeMenu] = useState(false);
-  const [showClientIdentifyMenu, setShowClientIdentifyMenu] = useState(false);
-  const [showOCRConfirm, setShowOCRConfirm] = useState(false);
   const [ocrExtractedData, setOcrExtractedData] = useState<any>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -120,26 +105,6 @@ export default function AssistantIAPage() {
       setHasUnsavedChanges(false);
     }
   }, [messages, lastSavedMessagesCount]);
-
-  // Détecter quand l'IA pose la question "Général ou Client ?" et afficher le menu
-  useEffect(() => {
-    if (!isLoading && selectedSubButton && !showCaseTypeMenu && !showClientIdentifyMenu) {
-      const lastAssistantMessage = messages
-        .filter((msg) => msg.role === "assistant")
-        .pop();
-      
-      if (lastAssistantMessage?.content) {
-        const content = lastAssistantMessage.content.toLowerCase();
-        const hasGeneralClientQuestion = 
-          (content.includes("général") || content.includes("general")) &&
-          (content.includes("client") || content.includes("dossier"));
-        
-        if (hasGeneralClientQuestion && !caseType) {
-          setShowCaseTypeMenu(true);
-        }
-      }
-    }
-  }, [isLoading, messages, selectedSubButton, showCaseTypeMenu, showClientIdentifyMenu, caseType]);
 
   // Charger les conversations sauvegardées
   useEffect(() => {
@@ -461,93 +426,7 @@ export default function AssistantIAPage() {
   // Gérer le clic sur "Bonjour"
   const handleBonjourClick = async () => {
     setIsStarted(true);
-    setShowRoleMenu(true);
     await handleSendMessageWithUIEvent("Bonjour", "start");
-  };
-
-  // Gérer la sélection du bouton principal (rôle)
-  const handleMainButtonSelect = async (buttonId: string) => {
-    setSelectedMainButton(buttonId);
-    setSelectedSubButton(null);
-    setShowRoleMenu(false);
-    
-    // Si le rôle nécessite un sous-bouton, afficher le menu des sous-boutons
-    if (requiresSubButton(buttonId)) {
-      setShowSubButtonMenu(true);
-    } else {
-      // Sinon, appeler l'API directement
-      setShowSubButtonMenu(false);
-      await handleSendMessageWithUIEvent(" ", "selectRole", buttonId);
-    }
-  };
-
-  // Gérer la sélection du sous-bouton (mode)
-  const handleSubButtonSelect = async (subButtonId: string) => {
-    setSelectedSubButton(subButtonId);
-    setShowSubButtonMenu(false);
-    // Appeler l'API avec le mode sélectionné
-    await handleSendMessageWithUIEvent(" ", "selectMode", selectedMainButton!, subButtonId);
-  };
-
-  // Retour au menu principal
-  const handleBackToMainMenu = () => {
-    setSelectedMainButton(null);
-    setSelectedSubButton(null);
-    setShowSubButtonMenu(false);
-    setShowRoleMenu(true);
-  };
-
-  // Gérer le clic sur "Autre chose" (chat libre)
-  const handleAutreChose = async () => {
-    setSelectedMainButton(null);
-    setSelectedSubButton(null);
-    setShowRoleMenu(false);
-    setShowSubButtonMenu(false);
-    // Appeler l'API avec uiEvent="selectFreeChat"
-    await handleSendMessageWithUIEvent(" ", "selectFreeChat");
-  };
-
-  // Gérer la sélection du type de cas (Général ou Client)
-  const handleCaseTypeSelect = async (type: "general" | "client") => {
-    setCaseType(type);
-    setShowCaseTypeMenu(false);
-    
-    if (type === "general") {
-      // Envoyer message "Général" pour que l'IA pose sa question de cadrage
-      await handleSendMessage("Général");
-    } else {
-      // Afficher le menu pour identifier le client
-      setShowClientIdentifyMenu(true);
-    }
-  };
-
-  // Gérer la méthode d'identification du client
-  const handleClientIdentifyMethodSelect = async (method: "manual" | "lagon_ocr") => {
-    setClientIdentifyMethod(method);
-    setShowClientIdentifyMenu(false);
-    
-    if (method === "manual") {
-      // Envoyer message demandant la saisie manuelle
-      await handleSendMessage("Je vais saisir les informations du client manuellement");
-    } else {
-      // Mode OCR : envoyer message à l'IA pour demander l'upload
-      await handleSendMessage("Je vais utiliser l'OCR Lagon. Je vais uploader une capture d'écran de la fiche client.");
-    }
-  };
-
-  // Gérer la confirmation des données OCR
-  const handleOCRConfirm = async () => {
-    setClientProfile(ocrExtractedData);
-    setShowOCRConfirm(false);
-    // Envoyer message de confirmation à l'IA
-    await handleSendMessage("Les informations sont correctes, je confirme");
-  };
-
-  // Gérer la correction des données OCR
-  const handleOCRCorrect = () => {
-    setShowOCRConfirm(false);
-    // L'utilisateur pourra corriger via le textarea normal
-    setInput("Voici les corrections : ");
   };
 
   // Clic sur "Nouveau chat" - vérifier si changements non sauvegardés
@@ -565,17 +444,8 @@ export default function AssistantIAPage() {
     setInput("");
     setSelectedImages([]);
     setSelectedFiles([]);
-    setSelectedMainButton(null);
-    setSelectedSubButton(null);
     setIsStarted(false);
-    setShowRoleMenu(false);
-    setShowSubButtonMenu(false);
-    setCaseType(null);
-    setClientIdentifyMethod(null);
     setClientProfile(null);
-    setShowCaseTypeMenu(false);
-    setShowClientIdentifyMenu(false);
-    setShowOCRConfirm(false);
     setOcrExtractedData(null);
     setHasUnsavedChanges(false);
     setLastSavedMessagesCount(0);
@@ -784,9 +654,7 @@ export default function AssistantIAPage() {
   // Fonction auxiliaire pour envoyer un message avec uiEvent
   const handleSendMessageWithUIEvent = async (
     messageText: string,
-    uiEvent?: "start" | "selectRole" | "selectMode" | "selectFreeChat",
-    mainButton?: string,
-    subButton?: string
+    uiEvent?: "start"
   ) => {
     if (isLoading) return;
 
@@ -796,8 +664,8 @@ export default function AssistantIAPage() {
       content: msg.content,
     }));
 
-    // Ajouter le message utilisateur UNIQUEMENT si c'est "Bonjour" (pas pour les clics de boutons)
-    if (messageText.trim() && messageText !== " " && uiEvent === "start") {
+    // Ajouter le message utilisateur si c'est "Bonjour"
+    if (messageText.trim() && uiEvent === "start") {
       const userMessage: Message = {
         id: Date.now().toString(),
         role: "user",
@@ -829,8 +697,6 @@ export default function AssistantIAPage() {
         body: JSON.stringify({
           message: messageText,
           history: conversationHistory,
-          mainButton: mainButton || undefined,
-          subButton: subButton || undefined,
           uiEvent: uiEvent || undefined,
           stream: true,
         }),
@@ -890,12 +756,12 @@ export default function AssistantIAPage() {
           }
         }
         
-        // Après la fin du streaming, vérifier si c'est une réponse OCR
-        if (clientIdentifyMethod === "lagon_ocr" && accumulatedContent) {
+        // Après la fin du streaming, vérifier si c'est une réponse OCR (automatique)
+        if (accumulatedContent) {
           const extractedData = extractLagonOCRData(accumulatedContent);
           if (extractedData) {
             setOcrExtractedData(extractedData);
-            setShowOCRConfirm(true);
+            setClientProfile(extractedData);
           }
         }
       } else {
@@ -909,12 +775,12 @@ export default function AssistantIAPage() {
           )
         );
         
-        // Vérifier si c'est une réponse OCR (mode non-streaming)
-        if (clientIdentifyMethod === "lagon_ocr" && responseContent) {
+        // Vérifier si c'est une réponse OCR (mode non-streaming, automatique)
+        if (responseContent) {
           const extractedData = extractLagonOCRData(responseContent);
           if (extractedData) {
             setOcrExtractedData(extractedData);
-            setShowOCRConfirm(true);
+            setClientProfile(extractedData);
           }
         }
       }
@@ -943,10 +809,12 @@ export default function AssistantIAPage() {
       // Ne pas inclure les images et fichiers dans l'historique pour éviter la surcharge
     }));
 
-    // Si c'est une requête OCR Lagon, modifier le message
+    // Si une image est uploadée, l'IA fera automatiquement l'OCR si c'est une fiche Lagon
+    // On peut laisser le message tel quel ou vide, l'IA détectera automatiquement
     let finalMessageText = messageToSend;
-    if (clientIdentifyMethod === "lagon_ocr" && imageBase64s.length > 0) {
-      finalMessageText = "OCR_LAGON: extrais l'identité et infos clés du client depuis cette capture.";
+    if (imageBase64s.length > 0 && !messageToSend.trim()) {
+      // Si pas de message mais une image, laisser vide pour que l'IA détecte automatiquement
+      finalMessageText = "";
     }
 
     const userMessage: Message = {
@@ -986,12 +854,10 @@ export default function AssistantIAPage() {
           Authorization: `Bearer ${await user?.getIdToken()}`,
         },
         body: JSON.stringify({
-          message: messageText || (imagesToSend.length > 0 ? "Analyse cette image" : "") || (filesToSend.length > 0 ? "Analyse ce(s) fichier(s)" : ""),
+          message: messageText || (imagesToSend.length > 0 ? "" : "") || (filesToSend.length > 0 ? "Analyse ce(s) fichier(s)" : ""),
           images: imagesToSend.length > 0 ? imagesToSend : undefined,
           files: filesToSend.length > 0 ? filesToSend : undefined,
           history: conversationHistory,
-          mainButton: selectedMainButton || undefined,
-          subButton: selectedSubButton || undefined,
           stream: true, // Activer le streaming
         }),
       });
@@ -1059,12 +925,12 @@ export default function AssistantIAPage() {
           }
         }
         
-        // Après la fin du streaming, vérifier si c'est une réponse OCR
-        if (clientIdentifyMethod === "lagon_ocr" && accumulatedContent) {
+        // Après la fin du streaming, vérifier si c'est une réponse OCR (automatique)
+        if (accumulatedContent) {
           const extractedData = extractLagonOCRData(accumulatedContent);
           if (extractedData) {
             setOcrExtractedData(extractedData);
-            setShowOCRConfirm(true);
+            setClientProfile(extractedData);
           }
         }
       } else {
@@ -1083,12 +949,12 @@ export default function AssistantIAPage() {
           )
         );
         
-        // Vérifier si c'est une réponse OCR (mode non-streaming)
-        if (clientIdentifyMethod === "lagon_ocr" && responseContent) {
+        // Vérifier si c'est une réponse OCR (mode non-streaming, automatique)
+        if (responseContent) {
           const extractedData = extractLagonOCRData(responseContent);
           if (extractedData) {
             setOcrExtractedData(extractedData);
-            setShowOCRConfirm(true);
+            setClientProfile(extractedData);
           }
         }
       }
@@ -1232,67 +1098,6 @@ export default function AssistantIAPage() {
                       >
                         👋 Bonjour
                       </Button>
-                    </div>
-                  </div>
-                ) : showRoleMenu && messages.length > 0 ? (
-                  <div className="flex justify-start">
-                    <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-                      <MainButtonMenu
-                        onSelect={handleMainButtonSelect}
-                        disabled={isLoading}
-                      />
-                      <Button
-                        onClick={handleAutreChose}
-                        disabled={isLoading}
-                        variant="outline"
-                        className="w-full mt-2"
-                      >
-                        💬 Autre chose (chat libre)
-                      </Button>
-                    </div>
-                  </div>
-                ) : showSubButtonMenu && selectedMainButton ? (
-                  <div className="flex justify-start">
-                    <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-                      <SubButtonMenu
-                        mainButtonId={selectedMainButton}
-                        onSelect={handleSubButtonSelect}
-                        onBack={handleBackToMainMenu}
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-                ) : showCaseTypeMenu ? (
-                  <div className="flex justify-start">
-                    <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-                      <CaseTypeMenu
-                        onSelect={handleCaseTypeSelect}
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-                ) : showClientIdentifyMenu ? (
-                  <div className="flex justify-start">
-                    <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-                      <ClientIdentifyMenu
-                        onSelect={handleClientIdentifyMethodSelect}
-                        onBack={() => {
-                          setShowClientIdentifyMenu(false);
-                          setShowCaseTypeMenu(true);
-                        }}
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-                ) : showOCRConfirm ? (
-                  <div className="flex justify-start">
-                    <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-                      <OCRConfirmMenu
-                        extractedData={ocrExtractedData}
-                        onConfirm={handleOCRConfirm}
-                        onCorrect={handleOCRCorrect}
-                        disabled={isLoading}
-                      />
                     </div>
                   </div>
                 ) : (
