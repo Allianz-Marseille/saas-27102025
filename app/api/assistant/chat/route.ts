@@ -643,70 +643,95 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
               );
 
               let functionCallName: string | null = null;
-              let functionCallArgs: any = null;
+              let functionCallArgsText: string = "";
+              let functionCallId: string | null = null;
               let hasFunctionCall = false;
               let streamedContent = "";
 
               for await (const chunk of openaiStream) {
                 const delta = chunk.choices[0]?.delta;
                 
+                // Capturer les tokens si disponibles
+                if (chunk.usage) {
+                  tokensInput = chunk.usage.prompt_tokens || tokensInput;
+                  tokensOutput = chunk.usage.completion_tokens || tokensOutput;
+                }
+                
                 // Vérifier si c'est un function call
                 if (delta?.tool_calls) {
                   hasFunctionCall = true;
                   const toolCall = delta.tool_calls[0];
+                  if (toolCall?.id) {
+                    functionCallId = toolCall.id;
+                  }
                   if (toolCall?.function?.name) {
                     functionCallName = toolCall.function.name;
                   }
                   if (toolCall?.function?.arguments) {
-                    try {
-                      const argsText = toolCall.function.arguments;
-                      functionCallArgs = functionCallArgs ? { ...functionCallArgs, ...JSON.parse(argsText) } : JSON.parse(argsText);
-                    } catch (e) {
-                      // Arguments partiels, continuer à accumuler
-                    }
+                    // Accumuler les arguments (peuvent arriver en plusieurs chunks)
+                    functionCallArgsText += toolCall.function.arguments;
                   }
                 } else if (delta?.content) {
                   // Contenu normal à streamer
                   streamedContent += delta.content;
+                  tokensOutput += Math.ceil(delta.content.length / 4);
                   const data = `data: ${JSON.stringify({ content: delta.content })}\n\n`;
                   controller.enqueue(encoder.encode(data));
                 }
               }
 
               // Si function call détecté, l'exécuter et continuer
-              if (hasFunctionCall && functionCallName && functionCallArgs) {
-                const functionResult = await executeFunctionCall(functionCallName, functionCallArgs);
-                
-                // Ajouter les messages de function call et résultat
-                currentMessages.push({
-                  role: "assistant",
-                  content: null,
-                  tool_calls: [{
-                    id: `call_${Date.now()}`,
-                    type: "function",
-                    function: {
-                      name: functionCallName,
-                      arguments: JSON.stringify(functionCallArgs),
-                    },
-                  }],
-                });
-                currentMessages.push({
-                  role: "tool",
-                  tool_call_id: `call_${Date.now()}`,
-                  content: functionResult,
-                });
-                
-                iteration++;
-                continue; // Relancer une nouvelle requête avec le résultat
+              if (hasFunctionCall && functionCallName && functionCallArgsText) {
+                try {
+                  const functionArgs = JSON.parse(functionCallArgsText);
+                  const functionResult = await executeFunctionCall(functionCallName, functionArgs);
+                  
+                  // Ajouter les messages de function call et résultat
+                  const toolCallId = functionCallId || `call_${Date.now()}`;
+                  currentMessages.push({
+                    role: "assistant",
+                    content: null,
+                    tool_calls: [{
+                      id: toolCallId,
+                      type: "function",
+                      function: {
+                        name: functionCallName,
+                        arguments: functionCallArgsText,
+                      },
+                    }],
+                  });
+                  currentMessages.push({
+                    role: "tool",
+                    tool_call_id: toolCallId,
+                    content: functionResult,
+                  });
+                  
+                  iteration++;
+                  continue; // Relancer une nouvelle requête avec le résultat
+                } catch (parseError) {
+                  console.error("Erreur parsing function args:", parseError);
+                  // En cas d'erreur, continuer avec le contenu streamé si disponible
+                  if (!streamedContent) {
+                    // Pas de contenu, on continue quand même
+                    iteration++;
+                    continue;
+                  }
+                }
               }
 
-              // Pas de function call, fin du streaming
+              // Pas de function call ou erreur, fin du streaming
               break;
             }
 
-            // Estimer les tokens d'entrée (approximation)
-            const messageText = JSON.stringify(currentMessages);
-            tokensInput = Math.ceil(messageText.length / 4); // Approximation: ~4 chars par token
+            // Fermer le stream proprement
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+
+            // Estimer les tokens d'entrée (approximation si pas déjà calculé)
+            if (tokensInput === 0) {
+              const messageText = JSON.stringify(currentMessages);
+              tokensInput = Math.ceil(messageText.length / 4);
+            }
 
             // Logger l'utilisation (en arrière-plan, ne pas bloquer)
             const duration = Date.now() - startTime;
