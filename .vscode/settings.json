@@ -49,15 +49,12 @@
   },
   "typescript.disableAutomaticTypeAcquisition": false,
   "typescript.suggest.autoImports": true,
-  "files.exclude": {
-    "**/.git": true,
-    "**/.DS_Store": true
-  },
   "search.exclude": {
     "**/node_modules": true
   },
   "files.watcherExclude": {
     "**/node_modules/**": true
   },
-  "problems.decorations.enabled": true
+  "problems.decorations.enabled": true,
+  "typescript.preferences.excludePackageJson": true
 }
