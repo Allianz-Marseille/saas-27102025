@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
 import { extractLagonOCRData } from "@/lib/assistant/ocr-parser";
+import { convertOCRToContext, extractAgeFromText, extractCAFromText, extractEffectifFromText } from "@/lib/assistant/context-converter";
 
 interface Message {
   id: string;
@@ -772,6 +773,15 @@ export default function AssistantIAPage() {
           if (extractedData) {
             setOcrExtractedData(extractedData);
             setClientProfile(extractedData);
+            
+            // Convertir les données OCR en contexte de segmentation
+            const age = extractAgeFromText(accumulatedContent);
+            const ca = extractCAFromText(accumulatedContent);
+            const effectif = extractEffectifFromText(accumulatedContent);
+            const context = convertOCRToContext(extractedData, age, ca, effectif);
+            if (context) {
+              setClientContext(context);
+            }
           }
         }
       } else {
@@ -791,6 +801,15 @@ export default function AssistantIAPage() {
           if (extractedData) {
             setOcrExtractedData(extractedData);
             setClientProfile(extractedData);
+            
+            // Convertir les données OCR en contexte de segmentation
+            const age = extractAgeFromText(responseContent);
+            const ca = extractCAFromText(responseContent);
+            const effectif = extractEffectifFromText(responseContent);
+            const context = convertOCRToContext(extractedData, age, ca, effectif);
+            if (context) {
+              setClientContext(context);
+            }
           }
         }
       }
@@ -942,6 +961,15 @@ export default function AssistantIAPage() {
           if (extractedData) {
             setOcrExtractedData(extractedData);
             setClientProfile(extractedData);
+            
+            // Convertir les données OCR en contexte de segmentation
+            const age = extractAgeFromText(accumulatedContent);
+            const ca = extractCAFromText(accumulatedContent);
+            const effectif = extractEffectifFromText(accumulatedContent);
+            const context = convertOCRToContext(extractedData, age, ca, effectif);
+            if (context) {
+              setClientContext(context);
+            }
           }
         }
       } else {
@@ -966,6 +994,15 @@ export default function AssistantIAPage() {
           if (extractedData) {
             setOcrExtractedData(extractedData);
             setClientProfile(extractedData);
+            
+            // Convertir les données OCR en contexte de segmentation
+            const age = extractAgeFromText(responseContent);
+            const ca = extractCAFromText(responseContent);
+            const effectif = extractEffectifFromText(responseContent);
+            const context = convertOCRToContext(extractedData, age, ca, effectif);
+            if (context) {
+              setClientContext(context);
+            }
           }
         }
       }
