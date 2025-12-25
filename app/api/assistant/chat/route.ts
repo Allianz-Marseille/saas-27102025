@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
       messageContent.includes("rédige") && (messageContent.includes("formel") || messageContent.includes("professionnel"));
 
     // Détecter si c'est une requête OCR Lagon
-    const hasImages = images && Array.isArray(images) && images.length > 0;
+    // Note: hasImages est déjà défini ligne 58, on le réutilise
     const isOCRRequest = 
       messageContent.includes("ocr_lagon") || 
       messageContent.includes("capture lagon") ||
