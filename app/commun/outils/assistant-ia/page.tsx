@@ -67,6 +67,14 @@ export default function AssistantIAPage() {
   const [isStarted, setIsStarted] = useState(false);
   const [clientProfile, setClientProfile] = useState<object | null>(null);
   const [ocrExtractedData, setOcrExtractedData] = useState<any>(null);
+  const [clientContext, setClientContext] = useState<{
+    caseType: "general" | "client" | null;
+    clientType: "particulier" | "tns" | "entreprise" | null;
+    csp: string | null;
+    ageBand: string | null;
+    companyBand: { effectifBand: string | null; caBand: string | null } | null;
+    dirigeantStatut: "tns" | "assimile_salarie" | null;
+  } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<{ messageId: string; index: number }[]>([]);
@@ -447,6 +455,7 @@ export default function AssistantIAPage() {
     setIsStarted(false);
     setClientProfile(null);
     setOcrExtractedData(null);
+    setClientContext(null);
     setHasUnsavedChanges(false);
     setLastSavedMessagesCount(0);
     setShowNewChatDialog(false);
@@ -698,6 +707,7 @@ export default function AssistantIAPage() {
           message: messageText,
           history: conversationHistory,
           uiEvent: uiEvent || undefined,
+          context: clientContext || undefined,
           stream: true,
         }),
       });
@@ -858,6 +868,7 @@ export default function AssistantIAPage() {
           images: imagesToSend.length > 0 ? imagesToSend : undefined,
           files: filesToSend.length > 0 ? filesToSend : undefined,
           history: conversationHistory,
+          context: clientContext || undefined,
           stream: true, // Activer le streaming
         }),
       });

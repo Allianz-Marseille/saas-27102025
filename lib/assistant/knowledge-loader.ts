@@ -97,3 +97,119 @@ export function loadKnowledgeForContext(mainButton?: string, subButton?: string)
 
   return core;
 }
+
+/**
+ * Interface pour le contexte de segmentation
+ */
+export interface SegmentationContext {
+  caseType?: "general" | "client" | null;
+  clientType?: "particulier" | "tns" | "entreprise" | null;
+  csp?: string | null;
+  ageBand?: string | null;
+  companyBand?: { effectifBand: string | null; caBand: string | null } | null;
+  dirigeantStatut?: "tns" | "assimile_salarie" | null;
+}
+
+/**
+ * Charge un fichier de connaissance depuis un sous-dossier de segmentation
+ */
+function loadSegmentationFile(subfolder: string, filename: string): string {
+  try {
+    const filePath = path.join(process.cwd(), "docs", "knowledge", "segmentation", subfolder, filename);
+    return fs.readFileSync(filePath, "utf-8");
+  } catch (error) {
+    console.error(`Erreur chargement segmentation/${subfolder}/${filename}:`, error);
+    return "";
+  }
+}
+
+/**
+ * Charge un fichier de connaissance depuis le dossier sources
+ */
+function loadSourceFile(filename: string): string {
+  try {
+    const filePath = path.join(process.cwd(), "docs", "knowledge", "sources", filename);
+    return fs.readFileSync(filePath, "utf-8");
+  } catch (error) {
+    console.error(`Erreur chargement sources/${filename}:`, error);
+    return "";
+  }
+}
+
+/**
+ * Charge la base de connaissances selon le contexte de segmentation
+ */
+export function loadSegmentationKnowledge(context: SegmentationContext): string {
+  const core = loadCoreKnowledge();
+  const knowledgeParts: string[] = [];
+
+  // Si pas de contexte ou caseType = "general", retourner uniquement le core
+  if (!context || context.caseType === "general" || !context.clientType) {
+    return core;
+  }
+
+  // Charger les connaissances selon le type de client
+  if (context.clientType === "particulier" || context.clientType === "tns") {
+    // Charger le fichier segment selon CSP
+    if (context.csp) {
+      const segmentFile = `${context.csp}.md`;
+      const segmentContent = loadSegmentationFile("particuliers", segmentFile);
+      if (segmentContent) {
+        knowledgeParts.push(segmentContent);
+      }
+    }
+
+    // Charger age-bands.md si ageBand est fourni
+    if (context.ageBand) {
+      const ageBandsContent = loadSegmentationFile("particuliers", "age-bands.md");
+      if (ageBandsContent) {
+        knowledgeParts.push(ageBandsContent);
+      }
+    }
+  } else if (context.clientType === "entreprise") {
+    // Charger les fichiers entreprise
+    const entrepriseSocle = loadSegmentationFile("entreprises", "entreprise-socle.md");
+    if (entrepriseSocle) {
+      knowledgeParts.push(entrepriseSocle);
+    }
+
+    const entrepriseSalaries = loadSegmentationFile("entreprises", "entreprise-salaries.md");
+    if (entrepriseSalaries) {
+      knowledgeParts.push(entrepriseSalaries);
+    }
+
+    // Charger size-bands.md si companyBand est fourni
+    if (context.companyBand) {
+      const sizeBandsContent = loadSegmentationFile("entreprises", "size-bands.md");
+      if (sizeBandsContent) {
+        knowledgeParts.push(sizeBandsContent);
+      }
+    }
+
+    // Charger le fichier dirigeant selon statut
+    if (context.dirigeantStatut === "tns") {
+      const dirigeantTns = loadSegmentationFile("entreprises", "entreprise-dirigeant-tns.md");
+      if (dirigeantTns) {
+        knowledgeParts.push(dirigeantTns);
+      }
+    } else if (context.dirigeantStatut === "assimile_salarie") {
+      const dirigeantAssimile = loadSegmentationFile("entreprises", "entreprise-dirigeant-assimile-salarie.md");
+      if (dirigeantAssimile) {
+        knowledgeParts.push(dirigeantAssimile);
+      }
+    }
+  }
+
+  // Toujours charger references-officielles.md en fin
+  const referencesOfficielles = loadSourceFile("references-officielles.md");
+  if (referencesOfficielles) {
+    knowledgeParts.push(referencesOfficielles);
+  }
+
+  // Combiner toutes les connaissances
+  if (knowledgeParts.length > 0) {
+    return `${core}\n\n---\n\n${knowledgeParts.join("\n\n---\n\n")}`;
+  }
+
+  return core;
+}

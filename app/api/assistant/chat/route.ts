@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les paramètres depuis le body
     const body = await request.json();
-    const { message, images, files, history = [], model = "gpt-4o", uiEvent } = body;
+    const { message, images, files, history = [], model = "gpt-4o", uiEvent, context } = body;
 
     // Le message peut être vide si seulement des images ou fichiers sont envoyés
     if (!message && (!images || images.length === 0) && (!files || files.length === 0)) {
@@ -170,9 +170,24 @@ export async function POST(request: NextRequest) {
         messageContent.includes("fiche")
       );
 
-    // Charger la base de connaissances de base (toujours)
-    const { loadKnowledgeForContext } = await import("@/lib/assistant/knowledge-loader");
-    const baseKnowledge = loadKnowledgeForContext(undefined, undefined);
+    // Charger la base de connaissances selon le contexte
+    const { loadKnowledgeForContext, loadSegmentationKnowledge } = await import("@/lib/assistant/knowledge-loader");
+    
+    let baseKnowledge: string;
+    if (context && (context.caseType === "client" || context.clientType)) {
+      // Utiliser la segmentation si contexte fourni
+      baseKnowledge = loadSegmentationKnowledge(context as {
+        caseType?: "general" | "client" | null;
+        clientType?: "particulier" | "tns" | "entreprise" | null;
+        csp?: string | null;
+        ageBand?: string | null;
+        companyBand?: { effectifBand: string | null; caBand: string | null } | null;
+        dirigeantStatut?: "tns" | "assimile_salarie" | null;
+      });
+    } else {
+      // Sinon, utiliser le chargement classique
+      baseKnowledge = loadKnowledgeForContext(undefined, undefined);
+    }
 
     // Construire le contexte complet pour la détection (message actuel + historique récent)
     const conversationContext = [
@@ -282,7 +297,52 @@ EXEMPLES DE FORMATAGE :
 - Pour une explication : commence par un titre ## et utilise des paragraphes aérés
 - Pour des étapes : utilise une liste numérotée avec des émojis
 - Pour des points clés : utilise des listes à puces avec **gras**
-- Pour des sources : utilise le format [Nom](URL) systématiquement`;
+- Pour des sources : utilise le format [Nom](URL) systématiquement
+
+DÉTECTION DE SEGMENT (si contexte client fourni) :
+Si le contexte client est fourni, utilise-le directement. Sinon, détecte le segment selon ces règles simples :
+
+- Si "étudiant" => segment etudiant
+- Si "salarié" + "cadre" => segment salarie-cadre
+- Si "salarié" + non-cadre => segment salarie-non-cadre
+- Si "fonctionnaire" => segment fonctionnaire
+- Si "auto-entrepreneur" ou "micro-entreprise" => segment auto-entrepreneur
+- Si "TNS" => demander : artisan/commerçant/prof lib + ensuite segment correspondant
+- Si "entreprise" => demander CA + effectif + statut dirigeant (TNS/assimile salarié)
+
+CAS SPÉCIAUX :
+- Professionnels (TNS + auto-entrepreneur) : Double bloc obligatoire (besoins personnels + besoins professionnels)
+- Auto-entrepreneur : Version simplifiée (pas de RC pro si activité non réglementée, mais PJ/Cyber si activité digitale)
+- Entreprises : Triple bloc obligatoire (entreprise socle + salariés collectif + dirigeant selon statut)
+
+GRILLE D'ANALYSE STANDARD (si contexte client fourni) :
+Quand tu analyses un besoin client (caseType="client"), tu DOIS structurer ta réponse selon cette grille :
+
+## Analyse
+- Segment détecté : ...
+- Hypothèses : ...
+- Manques critiques : (max 5)
+- Questions suivantes (max 7) : ...
+
+## Recommandations (TOP 3)
+1) ...
+2) ...
+3) ...
+
+## Points de vigilance
+- ...
+
+## Prochaine action
+- Checklist 3 à 6 étapes
+
+## Sources
+- [Label](url)
+- [Label](url)
+
+IMPORTANT :
+- Si info manquante => ne pas conclure. L'IA doit demander.
+- Toujours 1 question principale par message quand on est en phase de cadrage.
+- Utiliser les informations de la base de connaissances segmentée pour remplir cette grille.`;
 
     // Intégrer le prompt basé sur uiEvent
     let buttonPromptSection = "";
