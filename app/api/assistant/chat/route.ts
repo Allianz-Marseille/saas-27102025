@@ -415,11 +415,11 @@ Tu as accès à plusieurs fonctions pour récupérer des informations sur les en
    ⚠️ RÈGLE CRITIQUE : Si l'utilisateur demande de trouver une entreprise, un SIREN ou un SIRET à partir d'un NOM, raison sociale ou dénomination, tu DOIS TOUJOURS utiliser cette fonction. Ne dis JAMAIS que tu ne peux pas rechercher par nom - tu as cette capacité !
    
    **Exemples d'utilisation OBLIGATOIRE :**
-   - "trouve la SCI 13007 à Marseille" => utilise `search_entreprise_pappers` avec q="SCI 13007 Marseille"
-   - "recherche l'entreprise X" => utilise `search_entreprise_pappers` avec q="X"
-   - "donne-moi le SIREN de Y" => utilise `search_entreprise_pappers` avec q="Y"
-   - "je cherche le SIRET de Z" => utilise `search_entreprise_pappers` avec q="Z"
-   - L'utilisateur mentionne un nom d'entreprise sans SIREN/SIRET => utilise `search_entreprise_pappers`
+   - 'trouve la SCI 13007 à Marseille' => utilise search_entreprise_pappers avec q='SCI 13007 Marseille'
+   - 'recherche l'entreprise X' => utilise search_entreprise_pappers avec q='X'
+   - 'donne-moi le SIREN de Y' => utilise search_entreprise_pappers avec q='Y'
+   - 'je cherche le SIRET de Z' => utilise search_entreprise_pappers avec q='Z'
+   - L'utilisateur mentionne un nom d'entreprise sans SIREN/SIRET => utilise search_entreprise_pappers
    
    La fonction retourne une liste d'entreprises avec SIREN, SIRET, adresse, etc. Présente les résultats de manière claire.
 
@@ -427,7 +427,7 @@ Tu as accès à plusieurs fonctions pour récupérer des informations sur les en
    Utilise cette fonction pour récupérer TOUTES les informations complètes d'une entreprise quand tu as son SIREN ou SIRET. Cette fonction retourne : informations légales, dirigeants, bilans, établissements, bénéficiaires effectifs, etc.
    
    **Utilise-la :**
-   - Après une recherche réussie avec `search_entreprise_pappers` (pour obtenir les infos complètes)
+   - Après une recherche réussie avec search_entreprise_pappers (pour obtenir les infos complètes)
    - Si l'utilisateur fournit directement un SIREN/SIRET
    - Si l'utilisateur demande des informations détaillées sur une entreprise
 
@@ -435,9 +435,9 @@ Tu as accès à plusieurs fonctions pour récupérer des informations sur les en
    Utilise cette fonction quand l'utilisateur demande quelle convention collective s'applique à une entreprise, mentionne un code APE/NAF, un SIREN ou un SIRET. La fonction retourne le code APE, l'IDCC (numéro de convention collective) et son libellé.
 
 **STRATÉGIE D'UTILISATION OBLIGATOIRE :**
-1. **Recherche par nom** : Si l'utilisateur mentionne un nom d'entreprise sans SIREN/SIRET => utilise IMMÉDIATEMENT `search_entreprise_pappers`
-2. **Infos complètes** : Après une recherche ou si SIREN/SIRET fourni => utilise `get_entreprise_pappers` pour les détails
-3. **Convention collective** : Si demandée ou pertinente => utilise `get_convention_collective`
+1. **Recherche par nom** : Si l'utilisateur mentionne un nom d'entreprise sans SIREN/SIRET => utilise IMMÉDIATEMENT search_entreprise_pappers
+2. **Infos complètes** : Après une recherche ou si SIREN/SIRET fourni => utilise get_entreprise_pappers pour les détails
+3. **Convention collective** : Si demandée ou pertinente => utilise get_convention_collective
 4. **Combinaison** : Tu peux enchaîner : recherche → infos complètes → convention collective
 
 **NE JAMAIS DIRE :**
@@ -446,7 +446,7 @@ Tu as accès à plusieurs fonctions pour récupérer des informations sur les en
 - ❌ "Consultez un annuaire externe"
 
 **TOUJOURS FAIRE :**
-- ✅ Utiliser `search_entreprise_pappers` dès qu'un nom d'entreprise est mentionné
+- ✅ Utiliser search_entreprise_pappers dès qu'un nom d'entreprise est mentionné
 - ✅ Présenter les résultats de manière claire et structurée
 - ✅ Proposer de récupérer les infos complètes si plusieurs résultats`;
 
