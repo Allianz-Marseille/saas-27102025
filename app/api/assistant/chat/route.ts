@@ -407,8 +407,19 @@ IMPORTANT :
 - Pour les entreprises : TOUJOURS structurer en 3 blocs (entreprise socle + salariés collectif + dirigeant selon statut).
 
 FONCTIONS DISPONIBLES :
-Tu as accès à une fonction pour récupérer les conventions collectives :
-- **get_convention_collective** : Utilise cette fonction quand l'utilisateur demande quelle convention collective s'applique à une entreprise, mentionne un code APE/NAF, un SIREN ou un SIRET. La fonction retourne le code APE, l'IDCC (numéro de convention collective) et son libellé. Présente ces informations de manière claire et structurée.`;
+Tu as accès à plusieurs fonctions pour récupérer des informations sur les entreprises :
+
+1. **get_convention_collective** (Societe.com) : Utilise cette fonction quand l'utilisateur demande quelle convention collective s'applique à une entreprise, mentionne un code APE/NAF, un SIREN ou un SIRET. La fonction retourne le code APE, l'IDCC (numéro de convention collective) et son libellé. Présente ces informations de manière claire et structurée.
+
+2. **search_entreprise_pappers** (Pappers) : Utilise cette fonction pour rechercher une entreprise par son nom, raison sociale ou dénomination. Par exemple, si l'utilisateur demande "trouve la SCI 13007 à Marseille" ou "recherche l'entreprise X", utilise cette fonction. Elle retourne une liste d'entreprises correspondantes avec leur SIREN, SIRET, adresse, etc.
+
+3. **get_entreprise_pappers** (Pappers) : Utilise cette fonction pour récupérer TOUTES les informations complètes d'une entreprise quand tu as son SIREN ou SIRET. Cette fonction retourne : informations légales, dirigeants, bilans, établissements, bénéficiaires effectifs, etc. Utilise-la après une recherche ou si l'utilisateur fournit directement un SIREN/SIRET.
+
+**Stratégie d'utilisation :**
+- Si l'utilisateur demande "trouve le SIRET de X" ou "recherche Y" => utilise d'abord `search_entreprise_pappers`
+- Si l'utilisateur fournit un SIREN/SIRET ou demande des infos complètes => utilise `get_entreprise_pappers`
+- Si l'utilisateur demande la convention collective => utilise `get_convention_collective`
+- Tu peux combiner ces fonctions : recherche d'abord, puis récupère les infos complètes, puis la convention collective si nécessaire.`;
 
     // Intégrer le prompt basé sur uiEvent
     let buttonPromptSection = "";
@@ -572,20 +583,66 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
           },
         },
       },
+      {
+        type: "function" as const,
+        function: {
+          name: "search_entreprise_pappers",
+          description: "Recherche une entreprise par son nom, raison sociale ou dénomination via l'API Pappers. Utilise cette fonction quand l'utilisateur demande de trouver une entreprise, recherche un SIREN/SIRET, ou mentionne un nom d'entreprise sans SIREN/SIRET.",
+          parameters: {
+            type: "object",
+            properties: {
+              q: {
+                type: "string",
+                description: "Terme de recherche : nom de l'entreprise, raison sociale, dénomination. Peut inclure la ville pour affiner (ex: 'SCI 13007 Marseille').",
+              },
+              par_page: {
+                type: "number",
+                description: "Nombre de résultats par page (défaut: 20, max: 100).",
+              },
+              page: {
+                type: "number",
+                description: "Numéro de page (défaut: 1).",
+              },
+            },
+            required: ["q"],
+          },
+        },
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "get_entreprise_pappers",
+          description: "Récupère TOUTES les informations complètes d'une entreprise via l'API Pappers : informations légales, dirigeants, bilans, établissements, bénéficiaires effectifs, etc. Utilise cette fonction quand tu as un SIREN ou SIRET et que l'utilisateur demande des informations détaillées sur l'entreprise.",
+          parameters: {
+            type: "object",
+            properties: {
+              siren: {
+                type: "string",
+                description: "SIREN de l'entreprise (9 chiffres). Prioritaire si fourni.",
+              },
+              siret: {
+                type: "string",
+                description: "SIRET de l'entreprise (14 chiffres). Utilisé si SIREN non fourni (le SIREN sera extrait automatiquement).",
+              },
+            },
+            required: [],
+          },
+        },
+      },
     ];
 
     // Fonction pour exécuter les appels de fonction
     const executeFunctionCall = async (functionName: string, args: any) => {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (request.headers.get("host") ? `https://${request.headers.get("host")}` : "http://localhost:3000");
+      const authHeader = request.headers.get("Authorization") || "";
+
       if (functionName === "get_convention_collective") {
         try {
-          // Utiliser l'URL interne pour éviter les problèmes de token
-          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (request.headers.get("host") ? `https://${request.headers.get("host")}` : "http://localhost:3000");
           const response = await fetch(`${baseUrl}/api/conventions-collectives`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              // Utiliser le même header Authorization que la requête originale
-              Authorization: request.headers.get("Authorization") || "",
+              Authorization: authHeader,
             },
             body: JSON.stringify({
               codeApe: args.codeApe,
@@ -605,6 +662,60 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
           return JSON.stringify({ error: "Erreur lors de l'appel API", details: error instanceof Error ? error.message : "Erreur inconnue" });
         }
       }
+
+      if (functionName === "search_entreprise_pappers") {
+        try {
+          const response = await fetch(`${baseUrl}/api/pappers/recherche`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: authHeader,
+            },
+            body: JSON.stringify({
+              q: args.q,
+              par_page: args.par_page || 20,
+              page: args.page || 1,
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            return JSON.stringify({ error: error.error || "Erreur lors de la recherche d'entreprise", details: error.details });
+          }
+
+          const data = await response.json();
+          return JSON.stringify(data);
+        } catch (error) {
+          return JSON.stringify({ error: "Erreur lors de l'appel API Pappers", details: error instanceof Error ? error.message : "Erreur inconnue" });
+        }
+      }
+
+      if (functionName === "get_entreprise_pappers") {
+        try {
+          const response = await fetch(`${baseUrl}/api/pappers/entreprise`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: authHeader,
+            },
+            body: JSON.stringify({
+              siren: args.siren,
+              siret: args.siret,
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            return JSON.stringify({ error: error.error || "Erreur lors de la récupération des informations de l'entreprise", details: error.details });
+          }
+
+          const data = await response.json();
+          return JSON.stringify(data);
+        } catch (error) {
+          return JSON.stringify({ error: "Erreur lors de l'appel API Pappers", details: error instanceof Error ? error.message : "Erreur inconnue" });
+        }
+      }
+
       return JSON.stringify({ error: "Fonction inconnue" });
     };
 
