@@ -28,10 +28,14 @@ import { HighlightedText } from "@/components/assistant/HighlightedText";
 import { QuickReplyButtons } from "@/components/assistant/QuickReplyButtons";
 import { MainButtonMenu } from "@/components/assistant/MainButtonMenu";
 import { SubButtonMenu } from "@/components/assistant/SubButtonMenu";
+import { CaseTypeMenu } from "@/components/assistant/CaseTypeMenu";
+import { ClientIdentifyMenu } from "@/components/assistant/ClientIdentifyMenu";
+import { OCRConfirmMenu } from "@/components/assistant/OCRConfirmMenu";
 import { requiresSubButton } from "@/lib/assistant/main-buttons";
 import { cn } from "@/lib/utils";
 import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
+import { extractLagonOCRData } from "@/lib/assistant/ocr-parser";
 
 interface Message {
   id: string;
@@ -71,6 +75,13 @@ export default function AssistantIAPage() {
   const [isStarted, setIsStarted] = useState(false);
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showSubButtonMenu, setShowSubButtonMenu] = useState(false);
+  const [caseType, setCaseType] = useState<"general" | "client" | null>(null);
+  const [clientIdentifyMethod, setClientIdentifyMethod] = useState<"manual" | "lagon_ocr" | null>(null);
+  const [clientProfile, setClientProfile] = useState<object | null>(null);
+  const [showCaseTypeMenu, setShowCaseTypeMenu] = useState(false);
+  const [showClientIdentifyMenu, setShowClientIdentifyMenu] = useState(false);
+  const [showOCRConfirm, setShowOCRConfirm] = useState(false);
+  const [ocrExtractedData, setOcrExtractedData] = useState<any>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<{ messageId: string; index: number }[]>([]);
@@ -109,6 +120,26 @@ export default function AssistantIAPage() {
       setHasUnsavedChanges(false);
     }
   }, [messages, lastSavedMessagesCount]);
+
+  // Détecter quand l'IA pose la question "Général ou Client ?" et afficher le menu
+  useEffect(() => {
+    if (!isLoading && selectedSubButton && !showCaseTypeMenu && !showClientIdentifyMenu) {
+      const lastAssistantMessage = messages
+        .filter((msg) => msg.role === "assistant")
+        .pop();
+      
+      if (lastAssistantMessage?.content) {
+        const content = lastAssistantMessage.content.toLowerCase();
+        const hasGeneralClientQuestion = 
+          (content.includes("général") || content.includes("general")) &&
+          (content.includes("client") || content.includes("dossier"));
+        
+        if (hasGeneralClientQuestion && !caseType) {
+          setShowCaseTypeMenu(true);
+        }
+      }
+    }
+  }, [isLoading, messages, selectedSubButton, showCaseTypeMenu, showClientIdentifyMenu, caseType]);
 
   // Charger les conversations sauvegardées
   useEffect(() => {
@@ -476,6 +507,49 @@ export default function AssistantIAPage() {
     await handleSendMessageWithUIEvent(" ", "selectFreeChat");
   };
 
+  // Gérer la sélection du type de cas (Général ou Client)
+  const handleCaseTypeSelect = async (type: "general" | "client") => {
+    setCaseType(type);
+    setShowCaseTypeMenu(false);
+    
+    if (type === "general") {
+      // Envoyer message "Général" pour que l'IA pose sa question de cadrage
+      await handleSendMessage("Général");
+    } else {
+      // Afficher le menu pour identifier le client
+      setShowClientIdentifyMenu(true);
+    }
+  };
+
+  // Gérer la méthode d'identification du client
+  const handleClientIdentifyMethodSelect = async (method: "manual" | "lagon_ocr") => {
+    setClientIdentifyMethod(method);
+    setShowClientIdentifyMenu(false);
+    
+    if (method === "manual") {
+      // Envoyer message demandant la saisie manuelle
+      await handleSendMessage("Je vais saisir les informations du client manuellement");
+    } else {
+      // Mode OCR : envoyer message à l'IA pour demander l'upload
+      await handleSendMessage("Je vais utiliser l'OCR Lagon. Je vais uploader une capture d'écran de la fiche client.");
+    }
+  };
+
+  // Gérer la confirmation des données OCR
+  const handleOCRConfirm = async () => {
+    setClientProfile(ocrExtractedData);
+    setShowOCRConfirm(false);
+    // Envoyer message de confirmation à l'IA
+    await handleSendMessage("Les informations sont correctes, je confirme");
+  };
+
+  // Gérer la correction des données OCR
+  const handleOCRCorrect = () => {
+    setShowOCRConfirm(false);
+    // L'utilisateur pourra corriger via le textarea normal
+    setInput("Voici les corrections : ");
+  };
+
   // Clic sur "Nouveau chat" - vérifier si changements non sauvegardés
   const handleNewChatClick = () => {
     if (hasUnsavedChanges && messages.length > 0) {
@@ -496,6 +570,13 @@ export default function AssistantIAPage() {
     setIsStarted(false);
     setShowRoleMenu(false);
     setShowSubButtonMenu(false);
+    setCaseType(null);
+    setClientIdentifyMethod(null);
+    setClientProfile(null);
+    setShowCaseTypeMenu(false);
+    setShowClientIdentifyMenu(false);
+    setShowOCRConfirm(false);
+    setOcrExtractedData(null);
     setHasUnsavedChanges(false);
     setLastSavedMessagesCount(0);
     setShowNewChatDialog(false);
@@ -808,15 +889,34 @@ export default function AssistantIAPage() {
             }
           }
         }
+        
+        // Après la fin du streaming, vérifier si c'est une réponse OCR
+        if (clientIdentifyMethod === "lagon_ocr" && accumulatedContent) {
+          const extractedData = extractLagonOCRData(accumulatedContent);
+          if (extractedData) {
+            setOcrExtractedData(extractedData);
+            setShowOCRConfirm(true);
+          }
+        }
       } else {
         const data = await response.json();
+        const responseContent = data.response || data.message || "Aucune réponse reçue";
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === assistantMessageId
-              ? { ...msg, content: data.response || data.message || "Aucune réponse reçue" }
+              ? { ...msg, content: responseContent }
               : msg
           )
         );
+        
+        // Vérifier si c'est une réponse OCR (mode non-streaming)
+        if (clientIdentifyMethod === "lagon_ocr" && responseContent) {
+          const extractedData = extractLagonOCRData(responseContent);
+          if (extractedData) {
+            setOcrExtractedData(extractedData);
+            setShowOCRConfirm(true);
+          }
+        }
       }
     } catch (error) {
       console.error("Erreur:", error);
@@ -843,16 +943,22 @@ export default function AssistantIAPage() {
       // Ne pas inclure les images et fichiers dans l'historique pour éviter la surcharge
     }));
 
+    // Si c'est une requête OCR Lagon, modifier le message
+    let finalMessageText = messageToSend;
+    if (clientIdentifyMethod === "lagon_ocr" && imageBase64s.length > 0) {
+      finalMessageText = "OCR_LAGON: extrais l'identité et infos clés du client depuis cette capture.";
+    }
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: messageToSend,
+      content: finalMessageText,
       images: imageBase64s.length > 0 ? imageBase64s : undefined,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    const messageText = messageToSend;
+    const messageText = finalMessageText;
     const imagesToSend = imageBase64s;
     const filesToSend = selectedFiles;
     setInput("");
@@ -952,20 +1058,39 @@ export default function AssistantIAPage() {
             }
           }
         }
+        
+        // Après la fin du streaming, vérifier si c'est une réponse OCR
+        if (clientIdentifyMethod === "lagon_ocr" && accumulatedContent) {
+          const extractedData = extractLagonOCRData(accumulatedContent);
+          if (extractedData) {
+            setOcrExtractedData(extractedData);
+            setShowOCRConfirm(true);
+          }
+        }
       } else {
         // Mode non-streaming (fallback)
         const data = await response.json();
+        const responseContent = data.response || data.message || "Aucune réponse reçue";
 
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === assistantMessageId
               ? {
                   ...msg,
-                  content: data.response || data.message || "Aucune réponse reçue",
+                  content: responseContent,
                 }
               : msg
           )
         );
+        
+        // Vérifier si c'est une réponse OCR (mode non-streaming)
+        if (clientIdentifyMethod === "lagon_ocr" && responseContent) {
+          const extractedData = extractLagonOCRData(responseContent);
+          if (extractedData) {
+            setOcrExtractedData(extractedData);
+            setShowOCRConfirm(true);
+          }
+        }
       }
     } catch (error) {
       console.error("Erreur:", error);
@@ -1133,6 +1258,39 @@ export default function AssistantIAPage() {
                         mainButtonId={selectedMainButton}
                         onSelect={handleSubButtonSelect}
                         onBack={handleBackToMainMenu}
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+                ) : showCaseTypeMenu ? (
+                  <div className="flex justify-start">
+                    <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+                      <CaseTypeMenu
+                        onSelect={handleCaseTypeSelect}
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+                ) : showClientIdentifyMenu ? (
+                  <div className="flex justify-start">
+                    <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+                      <ClientIdentifyMenu
+                        onSelect={handleClientIdentifyMethodSelect}
+                        onBack={() => {
+                          setShowClientIdentifyMenu(false);
+                          setShowCaseTypeMenu(true);
+                        }}
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+                ) : showOCRConfirm ? (
+                  <div className="flex justify-start">
+                    <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+                      <OCRConfirmMenu
+                        extractedData={ocrExtractedData}
+                        onConfirm={handleOCRConfirm}
+                        onCorrect={handleOCRCorrect}
                         disabled={isLoading}
                       />
                     </div>

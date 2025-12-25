@@ -159,6 +159,13 @@ export async function POST(request: NextRequest) {
       messageContent.includes("courrier") ||
       messageContent.includes("rédige") && (messageContent.includes("formel") || messageContent.includes("professionnel"));
 
+    // Détecter si c'est une requête OCR Lagon
+    const hasImages = images && Array.isArray(images) && images.length > 0;
+    const isOCRRequest = 
+      messageContent.includes("ocr_lagon") || 
+      messageContent.includes("capture lagon") ||
+      messageContent.includes("ocr") && (messageContent.includes("client") || messageContent.includes("lagon"));
+
     // Charger la base de connaissances modulaire selon le contexte
     const { loadKnowledgeForContext } = await import("@/lib/assistant/knowledge-loader");
     const knowledgeBase = loadKnowledgeForContext(mainButton, subButton);
@@ -269,7 +276,29 @@ EXEMPLES DE FORMATAGE :
         buttonPromptSection = `\n\n--- COMPORTEMENT (CHAT LIBRE) ---\n\n${freeChatPrompt}\n\n---\n\n`;
       }
     }
-    // Cas 3 : mainButton fourni (rôle sélectionné, avec ou sans mode)
+    // Cas 3 : uiEvent="selectRole" (rôle sélectionné, optionnel - pas de réponse obligatoire)
+    else if (uiEvent === "selectRole") {
+      // Optionnel : on peut charger le contexte métier mais ne pas forcer de réponse
+      // Pour simplifier, on ne fait rien ici et on attend la sélection du sous-bouton
+      if (mainButton) {
+        const { getSystemPromptForButton } = await import("@/lib/assistant/main-button-prompts");
+        const buttonPrompt = getSystemPromptForButton(mainButton);
+        if (buttonPrompt) {
+          buttonPromptSection = `\n\n--- CONFIGURATION MÉTIER ---\n\n${buttonPrompt}\n\n---\n\n`;
+        }
+      }
+    }
+    // Cas 4 : uiEvent="selectMode" (sous-rôle/mode sélectionné) - IMPORTANT
+    else if (uiEvent === "selectMode") {
+      if (mainButton && subButton) {
+        const { getSystemPromptForButton } = await import("@/lib/assistant/main-button-prompts");
+        const buttonPrompt = getSystemPromptForButton(mainButton, subButton);
+        if (buttonPrompt) {
+          buttonPromptSection = `\n\n--- CONFIGURATION MÉTIER ---\n\n${buttonPrompt}\n\n--- COMPORTEMENT INITIAL MODE ---\n\nTu viens d'être configuré en mode "${mainButton} > ${subButton}". Rappelle brièvement (max 3 lignes) le cadre de ton rôle, puis pose UNE SEULE question : "Ça concerne une question générale ou un client/dossier ?".\n\n---\n\n`;
+        }
+      }
+    }
+    // Cas 5 : mainButton fourni (rôle sélectionné, avec ou sans mode) - fallback
     else if (mainButton) {
       const { getSystemPromptForButton } = await import("@/lib/assistant/main-button-prompts");
       const buttonPrompt = getSystemPromptForButton(mainButton, subButton);
@@ -278,7 +307,51 @@ EXEMPLES DE FORMATAGE :
       }
     }
     
-    const systemPrompt = `${coreKnowledge}${buttonPromptSection}${formattingRules}`;
+    // Ajouter le prompt OCR si c'est une requête OCR Lagon avec images
+    let ocrPromptSection = "";
+    if (isOCRRequest && hasImages) {
+      ocrPromptSection = `\n\n--- MODE OCR LAGON ACTIVÉ ---\n\n⚠️⚠️⚠️ INSTRUCTION IMPÉRATIVE ⚠️⚠️⚠️
+
+L'utilisateur t'a envoyé une capture d'écran de la fiche client Lagon.
+Tu DOIS extraire les informations suivantes et les retourner dans un bloc JSON strict.
+
+INSTRUCTIONS IMPÉRATIVES :
+1. Analyse l'image avec précision
+2. Extrais TOUTES les informations visibles
+3. Retourne un JSON dans ce format EXACT, entre balises <LAGON_OCR_JSON> et </LAGON_OCR_JSON>
+
+STRUCTURE ATTENDUE :
+<LAGON_OCR_JSON>
+{
+  "typeClient": "particulier" | "tns" | "entreprise",
+  "nom": "string ou null",
+  "prenom": "string ou null",
+  "raisonSociale": "string ou null (si entreprise)",
+  "adresse": "string ou null",
+  "codePostal": "string ou null",
+  "ville": "string ou null",
+  "telephone": "string ou null",
+  "mobile": "string ou null",
+  "email": "string ou null",
+  "situationPro": "string ou null",
+  "siret": "string ou null",
+  "siren": "string ou null",
+  "apeNaf": "string ou null",
+  "contactDirigeant": "string ou null",
+  "personneAContacter": "string ou null",
+  "pointDeVente": "string ou null",
+  "chargeDeClientele": "string ou null"
+}
+</LAGON_OCR_JSON>
+
+APRÈS LE JSON :
+Affiche un résumé court et lisible des données extraites (3-4 lignes max).
+Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corriger"
+
+---\n\n`;
+    }
+    
+    const systemPrompt = `${coreKnowledge}${buttonPromptSection}${ocrPromptSection}${formattingRules}`;
 
     // Construire le contenu du message utilisateur
     let userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];
