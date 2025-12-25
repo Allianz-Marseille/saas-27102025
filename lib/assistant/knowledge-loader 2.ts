@@ -414,38 +414,64 @@ export async function loadKnowledgeFiles(filePaths: string[]): Promise<string[]>
 /**
  * Détecte les fichiers de connaissances pertinents selon le contenu du message
  * 
+ * Amélioration : Détection plus agressive avec recherche de mots-clés partiels
+ * et priorisation des fichiers les plus pertinents.
+ * 
  * @param message Le message de l'utilisateur
- * @returns Tableau de chemins de fichiers à charger
+ * @returns Tableau de chemins de fichiers à charger (dédupliqués)
  */
 export function selectRelevantContext(message: string): string[] {
   const messageLower = message.toLowerCase();
   const relevantFiles = new Set<string>();
+  const fileScores = new Map<string, number>();
 
-  // Parcourir le mapping des mots-clés
+  // Parcourir le mapping des mots-clés avec scoring
   for (const [keyword, files] of Object.entries(KEYWORD_TO_FILE_MAP)) {
+    // Recherche exacte du mot-clé
     if (messageLower.includes(keyword)) {
-      files.forEach((file) => relevantFiles.add(file));
+      files.forEach((file) => {
+        relevantFiles.add(file);
+        // Augmenter le score pour les fichiers détectés plusieurs fois
+        fileScores.set(file, (fileScores.get(file) || 0) + 1);
+      });
     }
   }
 
-  // Toujours inclure les connaissances core (identité et réglementation)
-  // Ces fichiers sont déjà dans le system prompt, mais peuvent être chargés aussi pour injection dynamique
-  // relevantFiles.add("core/identite-agence.md");
-  // relevantFiles.add("core/reglementation.md");
+  // Recherche de mots-clés partiels pour améliorer la détection
+  // (ex: "mutuelle" détecte aussi "mutuelles", "mutuel", etc.)
+  const words = messageLower.split(/\s+/);
+  for (const word of words) {
+    // Chercher des mots-clés qui commencent ou finissent par ce mot
+    for (const [keyword, files] of Object.entries(KEYWORD_TO_FILE_MAP)) {
+      if (keyword.includes(word) || word.includes(keyword)) {
+        files.forEach((file) => {
+          relevantFiles.add(file);
+          fileScores.set(file, (fileScores.get(file) || 0) + 0.5); // Score plus faible pour détection partielle
+        });
+      }
+    }
+  }
 
-  return Array.from(relevantFiles);
+  // Trier les fichiers par score (les plus pertinents en premier)
+  const sortedFiles = Array.from(relevantFiles).sort((a, b) => {
+    const scoreA = fileScores.get(a) || 0;
+    const scoreB = fileScores.get(b) || 0;
+    return scoreB - scoreA;
+  });
+
+  return sortedFiles;
 }
 
 /**
  * Charge les connaissances pertinentes selon le message et les formate pour injection
  * 
  * @param message Le message de l'utilisateur
- * @param maxFiles Nombre maximum de fichiers à charger (par défaut 2 pour éviter la surcharge)
+ * @param maxFiles Nombre maximum de fichiers à charger (par défaut 5 pour une meilleure couverture)
  * @returns Le contenu formaté des connaissances, ou null si aucune connaissance pertinente
  */
 export async function loadRelevantKnowledge(
   message: string,
-  maxFiles: number = 2
+  maxFiles: number = 5
 ): Promise<string | null> {
   const relevantFiles = selectRelevantContext(message);
   
@@ -453,16 +479,21 @@ export async function loadRelevantKnowledge(
     return null;
   }
 
+  // Dédupliquer les fichiers (un même fichier peut être détecté par plusieurs mots-clés)
+  const uniqueFiles = Array.from(new Set(relevantFiles));
+  
   // Limiter le nombre de fichiers pour éviter de dépasser les limites de tokens
-  const filesToLoad = relevantFiles.slice(0, maxFiles);
+  // Prioriser les fichiers les plus pertinents (ceux détectés en premier)
+  const filesToLoad = uniqueFiles.slice(0, maxFiles);
   const contents = await loadKnowledgeFiles(filesToLoad);
 
   if (contents.length === 0) {
     return null;
   }
 
-  // Formater pour injection dans le prompt
-  return `\n\n--- Connaissances métier pertinentes ---\n\n${contents.join("\n\n---\n\n")}`;
+  // Formater pour injection dans le prompt avec indication des sources
+  const fileNames = filesToLoad.map(f => f.replace(/\.md$/, '').split('/').pop()).join(', ');
+  return `\n\n--- 📚 Connaissances métier pertinentes (${contents.length} fichier${contents.length > 1 ? 's' : ''} : ${fileNames}) ---\n\n${contents.join("\n\n---\n\n")}\n\n⚠️ IMPORTANT : Utilise ces informations en priorité et cite-les dans ta réponse.`;
 }
 
 /**

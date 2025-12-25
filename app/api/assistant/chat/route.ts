@@ -197,8 +197,9 @@ export async function POST(request: NextRequest) {
 
     // Charger les connaissances pertinentes selon le contexte (détection automatique)
     // Cela inclut les fichiers de processus comme m-plus-3.md, preterme-auto.md, etc.
+    // Augmenté à 5 fichiers pour une meilleure couverture des connaissances
     const { loadRelevantKnowledge } = await import("@/lib/assistant/knowledge-loader 2");
-    const relevantKnowledge = await loadRelevantKnowledge(conversationContext, 3); // Charger jusqu'à 3 fichiers pertinents
+    const relevantKnowledge = await loadRelevantKnowledge(conversationContext, 5); // Charger jusqu'à 5 fichiers pertinents
 
     // Construire le prompt système avec formatage adapté et connaissances métier
     const coreKnowledge = `Tu es l'assistant interne de l'agence Allianz Marseille (Nogaro & Boetti).
@@ -209,13 +210,19 @@ ${baseKnowledge}${relevantKnowledge || ""}
 
 TU DOIS ABSOLUMENT utiliser les informations de la base de connaissances ci-dessus pour répondre aux questions de l'utilisateur.
 
-RÈGLES STRICTES :
-1. **PRIORITÉ ABSOLUE** : Si une information existe dans la base de connaissances ci-dessus, tu DOIS l'utiliser en priorité
-2. **NE PAS INVENTER** : Ne donne jamais une réponse générique si l'information précise existe dans la base de connaissances
-3. **CITER LA SOURCE** : Quand tu utilises une information de la base de connaissances, mentionne-le clairement (ex: "Selon notre processus M+3...", "D'après notre documentation...")
-4. **EXEMPLE** : Si l'utilisateur demande "qu'est-ce que M+3 ?", tu DOIS utiliser la définition exacte de la base de connaissances, pas une réponse générique
+RÈGLES STRICTES ET OBLIGATOIRES :
+1. **PRIORITÉ ABSOLUE** : Si une information existe dans la base de connaissances ci-dessus, tu DOIS l'utiliser en priorité. Ne jamais donner une réponse générique si l'information précise existe dans la base.
+2. **RÉFÉRENCER SYSTÉMATIQUEMENT** : Dans CHAQUE réponse, fais référence à la base de connaissances quand c'est pertinent. Utilise des phrases comme :
+   - "Selon notre base de connaissances..."
+   - "D'après notre documentation..."
+   - "Selon notre processus [nom]..."
+   - "Conformément à nos procédures..."
+3. **CITER LA SOURCE** : Quand tu utilises une information de la base de connaissances, mentionne-le clairement avec le nom du processus, du produit ou de la procédure concernée.
+4. **NE PAS INVENTER** : Ne donne jamais une réponse générique si l'information précise existe dans la base de connaissances. Si tu n'es pas sûr, dis-le clairement.
+5. **EXEMPLE CONCRET** : Si l'utilisateur demande "qu'est-ce que M+3 ?", tu DOIS utiliser la définition exacte de la base de connaissances (process/m-plus-3.md), pas une réponse générique. Commence par "Selon notre processus M+3..." ou "D'après notre documentation M+3..."
+6. **STRUCTURER AVEC LA BASE** : Utilise la structure et les informations de la base de connaissances pour organiser tes réponses. Si la base mentionne des étapes, des procédures, des arguments de vente, utilise-les tels quels.
 
-Si tu ne trouves pas l'information dans la base de connaissances, alors seulement tu peux donner une réponse générale, mais en précisant que ce n'est pas spécifique à l'agence.
+Si tu ne trouves pas l'information dans la base de connaissances, alors seulement tu peux donner une réponse générale, mais en précisant clairement : "Cette information n'est pas spécifique à notre agence. Voici une réponse générale..."
 
 UTILISATEUR CONNECTÉ :
 ${currentUserInfo 
