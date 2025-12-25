@@ -233,18 +233,26 @@ const KEYWORD_TO_FILE_MAP: Record<string, string[]> = {
   opposition: ["core/numeros-assistance.md"],
 
   // Devis et formulaires
-  devis: ["core/liens-devis.md"],
-  "demande de devis": ["core/liens-devis.md"],
-  demande_devis: ["core/liens-devis.md"],
-  formulaire: ["core/liens-devis.md"],
-  formulaires: ["core/liens-devis.md"],
-  lien: ["core/liens-devis.md"],
-  liens: ["core/liens-devis.md"],
-  code_agence: ["core/liens-devis.md"],
-  "code agence": ["core/liens-devis.md"],
-  h91358: ["core/liens-devis.md"],
-  rendez_vous: ["core/liens-devis.md"],
-  "rendez-vous": ["core/liens-devis.md"],
+  devis: ["core/liens-devis.md", "core/outils-tarification.md"],
+  "demande de devis": ["core/liens-devis.md", "core/outils-tarification.md"],
+  demande_devis: ["core/liens-devis.md", "core/outils-tarification.md"],
+  formulaire: ["core/liens-devis.md", "core/outils-tarification.md"],
+  formulaires: ["core/liens-devis.md", "core/outils-tarification.md"],
+  lien: ["core/liens-devis.md", "core/outils-tarification.md"],
+  liens: ["core/liens-devis.md", "core/outils-tarification.md"],
+  code_agence: ["core/liens-devis.md", "core/outils-tarification.md"],
+  "code agence": ["core/liens-devis.md", "core/outils-tarification.md"],
+  h91358: ["core/liens-devis.md", "core/outils-tarification.md"],
+  rendez_vous: ["core/liens-devis.md", "core/outils-tarification.md"],
+  "rendez-vous": ["core/liens-devis.md", "core/outils-tarification.md"],
+  tarification: ["core/outils-tarification.md"],
+  "outil tarification": ["core/outils-tarification.md"],
+  "outils tarification": ["core/outils-tarification.md"],
+  outil_tarification: ["core/outils-tarification.md"],
+  calculateur: ["core/outils-tarification.md"],
+  simulateur: ["core/outils-tarification.md"],
+  "calcul de prime": ["core/outils-tarification.md"],
+  estimation: ["core/outils-tarification.md"],
 
   // Réglementation et légal
   réglementation: ["core/reglementation.md"],
@@ -481,7 +489,7 @@ export async function loadRelevantKnowledge(
 
   // Dédupliquer les fichiers (un même fichier peut être détecté par plusieurs mots-clés)
   const uniqueFiles = Array.from(new Set(relevantFiles));
-  
+
   // Limiter le nombre de fichiers pour éviter de dépasser les limites de tokens
   // Prioriser les fichiers les plus pertinents (ceux détectés en premier)
   const filesToLoad = uniqueFiles.slice(0, maxFiles);
