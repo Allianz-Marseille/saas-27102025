@@ -7,12 +7,12 @@ Cette base de connaissances contient toute la logique métier et les spécificit
 ```
 docs/knowledge/
 ├── core/                    # Connaissances fondamentales (toujours chargées)
+│   ├── identite-agence.md   # Identité, valeurs, posture
 │   ├── agences.md           # Coordonnées et informations des agences
 │   ├── effectif-agence.md   # Équipe et contacts
-│   ├── identite-agence.md   # Identité, valeurs, posture
-│   ├── liens-devis.md       # Liens vers formulaires de devis
+│   ├── reglementation.md    # Réglementation, conformité, ORIAS, compliance
 │   ├── numeros-assistance.md # Numéros d'assistance et urgences
-│   ├── reglementation.md    # Réglementation, conformité, ORIAS
+│   ├── liens-devis.md       # Liens vers formulaires de devis
 │   └── specification-comportement-ia.md # Comportement attendu de l'IA
 │
 ├── produits/                # Fiches produits par domaine

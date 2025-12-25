@@ -21,11 +21,16 @@ function loadKnowledgeFile(filename: string): string {
 
 /**
  * Charge les packs de base (toujours inclus)
+ * Utilise les fichiers détaillés de core/ au lieu des fichiers consolidés
  */
 export function loadCoreKnowledge(): string {
   return [
-    loadKnowledgeFile("00-agence.md"),
-    loadKnowledgeFile("90-compliance.md"),
+    loadKnowledgeFile("core/identite-agence.md"),
+    loadKnowledgeFile("core/agences.md"),
+    loadKnowledgeFile("core/effectif-agence.md"),
+    loadKnowledgeFile("core/reglementation.md"),
+    loadKnowledgeFile("core/numeros-assistance.md"),
+    loadKnowledgeFile("core/liens-devis.md"),
   ]
     .filter((content) => content.length > 0)
     .join("\n\n---\n\n");
@@ -33,6 +38,7 @@ export function loadCoreKnowledge(): string {
 
 /**
  * Charge les packs spécifiques selon le rôle/mode
+ * Utilise les fichiers détaillés de process/ et produits/ au lieu des fichiers consolidés
  */
 export function loadRoleKnowledge(mainButton?: string, subButton?: string): string {
   const packs: string[] = [];
@@ -40,20 +46,28 @@ export function loadRoleKnowledge(mainButton?: string, subButton?: string): stri
   // Déterminer quels packs charger selon le rôle
   switch (mainButton) {
     case "commercial":
-      packs.push(loadKnowledgeFile("10-commercial.md"));
+      // Processus commerciaux : leads, M+3, préterme
+      packs.push(loadKnowledgeFile("process/leads.md"));
+      packs.push(loadKnowledgeFile("process/m-plus-3.md"));
+      packs.push(loadKnowledgeFile("process/preterme-auto.md"));
+      packs.push(loadKnowledgeFile("process/preterme-ird.md"));
       break;
 
     case "sinistre":
-      packs.push(loadKnowledgeFile("20-sinistres.md"));
+      // Gestion des sinistres
+      packs.push(loadKnowledgeFile("process/sinistres.md"));
       break;
 
     case "sante":
-      packs.push(loadKnowledgeFile("30-sante.md"));
+      // Assurance santé : produits + sources
+      packs.push(loadKnowledgeFile("produits/assurance-sante.md"));
+      packs.push(loadKnowledgeFile("sources/sante-regles-remboursement.md"));
+      packs.push(loadKnowledgeFile("sources/complementaire-sante-collective.md"));
       break;
 
     case "prevoyance":
-      // Pour l'instant, réutiliser le pack santé (à créer si besoin)
-      packs.push(loadKnowledgeFile("30-sante.md"));
+      // Prévoyance : produits
+      packs.push(loadKnowledgeFile("produits/prevoyance.md"));
       break;
 
     case "secretariat":
