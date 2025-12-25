@@ -42,11 +42,16 @@
   "tailwindCSS.colorDecorators": false,
   "typescript.tsserver.experimental.enableProjectDiagnostics": false,
   "typescript.preferences.includePackageJsonAutoImports": "off",
+  "typescript.validate.enable": true,
+  "typescript.tsserver.maxTsServerMemory": 4096,
+  "typescript.tsserver.watchOptions": {
+    "excludeDirectories": ["**/node_modules"]
+  },
   "files.exclude": {
     "**/.git": true,
-    "**/.DS_Store": true,
-    "**/node_modules/@types": false
+    "**/.DS_Store": true
   },
-  "typescript.validate.enable": true,
-  "typescript.tsserver.maxTsServerMemory": 4096
+  "search.exclude": {
+    "**/node_modules": true
+  }
 }
