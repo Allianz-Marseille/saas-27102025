@@ -97,8 +97,12 @@ const KEYWORD_TO_FILE_MAP: Record<string, string[]> = {
   // Process - M+3
   "m+3": ["process/m-plus-3.md"],
   "m plus 3": ["process/m-plus-3.md"],
+  "trois mois": ["process/m-plus-3.md"],
+  "3 mois": ["process/m-plus-3.md"],
+  "3mois": ["process/m-plus-3.md"],
   satisfaction: ["process/m-plus-3.md"],
   relance_satisfaction: ["process/m-plus-3.md"],
+  relance: ["process/m-plus-3.md"],
 
   // Process - Préterme
   préterme: ["process/preterme-auto.md", "process/preterme-ird.md"],

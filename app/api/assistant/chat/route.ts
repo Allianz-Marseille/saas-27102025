@@ -170,15 +170,37 @@ export async function POST(request: NextRequest) {
         messageContent.includes("fiche")
       );
 
-    // Charger la base de connaissances modulaire selon le contexte
-    // Le contexte est détecté automatiquement depuis le contenu de la conversation
+    // Charger la base de connaissances de base (toujours)
     const { loadKnowledgeForContext } = await import("@/lib/assistant/knowledge-loader");
-    const knowledgeBase = loadKnowledgeForContext(undefined, undefined);
+    const baseKnowledge = loadKnowledgeForContext(undefined, undefined);
+
+    // Construire le contexte complet pour la détection (message actuel + historique récent)
+    const conversationContext = [
+      messageContent,
+      ...history.slice(-3).map((msg: { role: string; content?: string }) => msg.content || "").filter(Boolean)
+    ].join(" ");
+
+    // Charger les connaissances pertinentes selon le contexte (détection automatique)
+    // Cela inclut les fichiers de processus comme m-plus-3.md, preterme-auto.md, etc.
+    const { loadRelevantKnowledge } = await import("@/lib/assistant/knowledge-loader 2");
+    const relevantKnowledge = await loadRelevantKnowledge(conversationContext, 3); // Charger jusqu'à 3 fichiers pertinents
 
     // Construire le prompt système avec formatage adapté et connaissances métier
     const coreKnowledge = `Tu es l'assistant interne de l'agence Allianz Marseille (Nogaro & Boetti).
 
-${knowledgeBase}
+${baseKnowledge}${relevantKnowledge || ""}
+
+⚠️⚠️⚠️ INSTRUCTION CRITIQUE - UTILISATION DE LA BASE DE CONNAISSANCES ⚠️⚠️⚠️
+
+TU DOIS ABSOLUMENT utiliser les informations de la base de connaissances ci-dessus pour répondre aux questions de l'utilisateur.
+
+RÈGLES STRICTES :
+1. **PRIORITÉ ABSOLUE** : Si une information existe dans la base de connaissances ci-dessus, tu DOIS l'utiliser en priorité
+2. **NE PAS INVENTER** : Ne donne jamais une réponse générique si l'information précise existe dans la base de connaissances
+3. **CITER LA SOURCE** : Quand tu utilises une information de la base de connaissances, mentionne-le clairement (ex: "Selon notre processus M+3...", "D'après notre documentation...")
+4. **EXEMPLE** : Si l'utilisateur demande "qu'est-ce que M+3 ?", tu DOIS utiliser la définition exacte de la base de connaissances, pas une réponse générique
+
+Si tu ne trouves pas l'information dans la base de connaissances, alors seulement tu peux donner une réponse générale, mais en précisant que ce n'est pas spécifique à l'agence.
 
 UTILISATEUR CONNECTÉ :
 ${currentUserInfo 
