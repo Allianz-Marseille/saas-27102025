@@ -540,6 +540,69 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
     // Récupérer le paramètre stream depuis le body
     const { stream: useStream = false } = body;
 
+    // Définir les fonctions disponibles pour le bot
+    const tools = [
+      {
+        type: "function" as const,
+        function: {
+          name: "get_convention_collective",
+          description: "Récupère la convention collective applicable à une entreprise selon son code APE/NAF, SIREN ou SIRET. Utilise cette fonction quand l'utilisateur demande quelle convention collective s'applique à une entreprise ou mentionne un code APE, SIREN ou SIRET.",
+          parameters: {
+            type: "object",
+            properties: {
+              codeApe: {
+                type: "string",
+                description: "Code APE/NAF de l'entreprise (ex: '6201Z', '4711D'). Optionnel si SIREN/SIRET fourni.",
+              },
+              siren: {
+                type: "string",
+                description: "SIREN de l'entreprise (9 chiffres). Optionnel si code APE fourni.",
+              },
+              siret: {
+                type: "string",
+                description: "SIRET de l'entreprise (14 chiffres). Optionnel si SIREN ou code APE fourni.",
+              },
+            },
+            required: [],
+          },
+        },
+      },
+    ];
+
+    // Fonction pour exécuter les appels de fonction
+    const executeFunctionCall = async (functionName: string, args: any) => {
+      if (functionName === "get_convention_collective") {
+        try {
+          // Utiliser l'URL interne pour éviter les problèmes de token
+          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (request.headers.get("host") ? `https://${request.headers.get("host")}` : "http://localhost:3000");
+          const response = await fetch(`${baseUrl}/api/conventions-collectives`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              // Utiliser le même header Authorization que la requête originale
+              Authorization: request.headers.get("Authorization") || "",
+            },
+            body: JSON.stringify({
+              codeApe: args.codeApe,
+              siren: args.siren,
+              siret: args.siret,
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            return JSON.stringify({ error: error.error || "Erreur lors de la récupération de la convention collective", details: error.details });
+          }
+
+          const data = await response.json();
+          return JSON.stringify(data);
+        } catch (error) {
+          return JSON.stringify({ error: "Erreur lors de l'appel API", details: error instanceof Error ? error.message : "Erreur inconnue" });
+        }
+      }
+      return JSON.stringify({ error: "Fonction inconnue" });
+    };
+
     // Si streaming demandé, utiliser Server-Sent Events
     if (useStream) {
       const encoder = new TextEncoder();
@@ -555,40 +618,90 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
             // Utiliser gpt-4o si des images sont présentes (support vision)
             const modelToUse = images && images.length > 0 ? "gpt-4o" : model;
             
-            const openaiStream = await openaiWithRetry(
-              () =>
-                openai.chat.completions.create({
-                  model: modelToUse,
-                  messages: enrichedMessages,
-                  temperature: 0.7,
-                  max_tokens: 2000,
-                  stream: true,
-                }),
-              { maxRetries: 3, initialDelay: 1000 }
-            );
+            // Gérer les function calls en boucle
+            let currentMessages = [...enrichedMessages];
+            let maxIterations = 5; // Limiter les itérations pour éviter les boucles infinies
+            let iteration = 0;
 
-            // Estimer les tokens d'entrée (approximation)
-            const messageText = JSON.stringify(messages);
-            tokensInput = Math.ceil(messageText.length / 4); // Approximation: ~4 chars par token
+            while (iteration < maxIterations) {
+              const openaiStream = await openaiWithRetry(
+                () =>
+                  openai.chat.completions.create({
+                    model: modelToUse,
+                    messages: currentMessages,
+                    temperature: 0.7,
+                    max_tokens: 2000,
+                    tools: tools.length > 0 ? tools : undefined,
+                    stream: true,
+                  }),
+                { maxRetries: 3, initialDelay: 1000 }
+              );
 
-            for await (const chunk of openaiStream) {
-              const content = chunk.choices[0]?.delta?.content || "";
-              if (content) {
-                tokensOutput += Math.ceil(content.length / 4); // Approximation
-                const data = `data: ${JSON.stringify({ content })}\n\n`;
-                controller.enqueue(encoder.encode(data));
+              let functionCallName: string | null = null;
+              let functionCallArgs: any = null;
+              let hasFunctionCall = false;
+              let streamedContent = "";
+
+              for await (const chunk of openaiStream) {
+                const delta = chunk.choices[0]?.delta;
+                
+                // Vérifier si c'est un function call
+                if (delta?.tool_calls) {
+                  hasFunctionCall = true;
+                  const toolCall = delta.tool_calls[0];
+                  if (toolCall?.function?.name) {
+                    functionCallName = toolCall.function.name;
+                  }
+                  if (toolCall?.function?.arguments) {
+                    try {
+                      const argsText = toolCall.function.arguments;
+                      functionCallArgs = functionCallArgs ? { ...functionCallArgs, ...JSON.parse(argsText) } : JSON.parse(argsText);
+                    } catch (e) {
+                      // Arguments partiels, continuer à accumuler
+                    }
+                  }
+                } else if (delta?.content) {
+                  // Contenu normal à streamer
+                  streamedContent += delta.content;
+                  const data = `data: ${JSON.stringify({ content: delta.content })}\n\n`;
+                  controller.enqueue(encoder.encode(data));
+                }
               }
-              
-              // Capturer les tokens si disponibles
-              if (chunk.usage) {
-                tokensInput = chunk.usage.prompt_tokens || tokensInput;
-                tokensOutput = chunk.usage.completion_tokens || tokensOutput;
+
+              // Si function call détecté, l'exécuter et continuer
+              if (hasFunctionCall && functionCallName && functionCallArgs) {
+                const functionResult = await executeFunctionCall(functionCallName, functionCallArgs);
+                
+                // Ajouter les messages de function call et résultat
+                currentMessages.push({
+                  role: "assistant",
+                  content: null,
+                  tool_calls: [{
+                    id: `call_${Date.now()}`,
+                    type: "function",
+                    function: {
+                      name: functionCallName,
+                      arguments: JSON.stringify(functionCallArgs),
+                    },
+                  }],
+                });
+                currentMessages.push({
+                  role: "tool",
+                  tool_call_id: `call_${Date.now()}`,
+                  content: functionResult,
+                });
+                
+                iteration++;
+                continue; // Relancer une nouvelle requête avec le résultat
               }
+
+              // Pas de function call, fin du streaming
+              break;
             }
 
-            // Signal de fin
-            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-            controller.close();
+            // Estimer les tokens d'entrée (approximation)
+            const messageText = JSON.stringify(currentMessages);
+            tokensInput = Math.ceil(messageText.length / 4); // Approximation: ~4 chars par token
 
             // Logger l'utilisation (en arrière-plan, ne pas bloquer)
             const duration = Date.now() - startTime;
@@ -657,22 +770,73 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
       // Utiliser gpt-4o si des images sont présentes (support vision)
       const modelToUse = images && images.length > 0 ? "gpt-4o" : model;
       
-      completion = await openaiWithRetry(
-        () =>
-          openai.chat.completions.create(
-            {
-              model: modelToUse,
-              messages: enrichedMessages,
-              temperature: 0.7,
-              max_tokens: 2000,
-            },
-            {
-              signal: controller.signal,
-            }
-          ),
-        { maxRetries: 3, initialDelay: 1000 }
-      );
-      clearTimeout(timeoutId);
+      // Gérer les function calls en boucle (mode non-streaming)
+      let currentMessages = [...enrichedMessages];
+      let maxIterations = 5;
+      let iteration = 0;
+
+      while (iteration < maxIterations) {
+        completion = await openaiWithRetry(
+          () =>
+            openai.chat.completions.create(
+              {
+                model: modelToUse,
+                messages: currentMessages,
+                temperature: 0.7,
+                max_tokens: 2000,
+                tools: tools.length > 0 ? tools : undefined,
+              },
+              {
+                signal: controller.signal,
+              }
+            ),
+          { maxRetries: 3, initialDelay: 1000 }
+        );
+        clearTimeout(timeoutId);
+
+        const message = completion.choices[0]?.message;
+        
+        // Vérifier si c'est un function call
+        if (message?.tool_calls && message.tool_calls.length > 0) {
+          const toolCall = message.tool_calls[0];
+          
+          // Vérifier que c'est bien un function call (pas un custom tool call)
+          if (toolCall.type === "function" && "function" in toolCall) {
+            const functionName = toolCall.function.name;
+            const functionArgs = JSON.parse(toolCall.function.arguments || "{}");
+            
+            // Ajouter le message assistant avec tool call
+            currentMessages.push({
+              role: "assistant",
+              content: null,
+              tool_calls: message.tool_calls.map((tc: any) => ({
+                id: tc.id,
+                type: tc.type,
+                function: {
+                  name: tc.function.name,
+                  arguments: tc.function.arguments,
+                },
+              })),
+            });
+
+            // Exécuter la fonction
+            const functionResult = await executeFunctionCall(functionName, functionArgs);
+            
+            // Ajouter le résultat
+            currentMessages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content: functionResult,
+            });
+            
+            iteration++;
+            continue; // Relancer une nouvelle requête
+          }
+        }
+
+        // Pas de function call, on a la réponse finale
+        break;
+      }
     } catch (error: any) {
       clearTimeout(timeoutId);
       
@@ -702,6 +866,16 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
         );
       }
       throw error;
+    }
+
+    if (!completion) {
+      return NextResponse.json(
+        {
+          error: "Erreur lors de la génération de la réponse",
+          details: "Aucune réponse générée",
+        },
+        { status: 500 }
+      );
     }
 
     const response = completion.choices[0]?.message?.content || "";
