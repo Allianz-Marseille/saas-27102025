@@ -244,6 +244,7 @@ Tu maîtrises parfaitement :
 - L'Épargne et Retraite : PER, PERP, assurance-vie, produits d'épargne retraite
 - La gestion des sinistres : Conventions IRSA (auto et dégâts des eaux), gestion conventionnelle vs droit commun, procédures d'indemnisation
 - Les conventions collectives : Tu peux récupérer la convention collective applicable à une entreprise via son code APE/NAF, SIREN ou SIRET. Utilise la fonction get_convention_collective quand l'utilisateur demande quelle convention collective s'applique ou mentionne un code APE/SIREN/SIRET.
+- La recherche d'entreprises : Tu PEUX et DOIS rechercher des entreprises par leur nom, raison sociale ou dénomination. Utilise TOUJOURS la fonction search_entreprise_pappers quand l'utilisateur demande de trouver une entreprise, un SIREN ou un SIRET à partir d'un nom. Ne dis JAMAIS que tu ne peux pas rechercher par nom - tu as cette capacité via Pappers.
 
 RÈGLE IMPORTANTE - SOURCING OBLIGATOIRE :
 Quand tu donnes une information technique, réglementaire ou juridique, tu DOIS citer la source avec un lien cliquable :
@@ -406,20 +407,48 @@ IMPORTANT :
 - Pour les professionnels (TNS/auto-entrepreneur) : TOUJOURS structurer en 2 blocs (besoins personnels + besoins professionnels).
 - Pour les entreprises : TOUJOURS structurer en 3 blocs (entreprise socle + salariés collectif + dirigeant selon statut).
 
-FONCTIONS DISPONIBLES :
-Tu as accès à plusieurs fonctions pour récupérer des informations sur les entreprises :
+⚠️⚠️⚠️ FONCTIONS DISPONIBLES - UTILISATION OBLIGATOIRE ⚠️⚠️⚠️
 
-1. **get_convention_collective** (Societe.com) : Utilise cette fonction quand l'utilisateur demande quelle convention collective s'applique à une entreprise, mentionne un code APE/NAF, un SIREN ou un SIRET. La fonction retourne le code APE, l'IDCC (numéro de convention collective) et son libellé. Présente ces informations de manière claire et structurée.
+Tu as accès à plusieurs fonctions pour récupérer des informations sur les entreprises. Tu DOIS les utiliser systématiquement quand c'est pertinent.
 
-2. **search_entreprise_pappers** (Pappers) : Utilise cette fonction pour rechercher une entreprise par son nom, raison sociale ou dénomination. Par exemple, si l'utilisateur demande "trouve la SCI 13007 à Marseille" ou "recherche l'entreprise X", utilise cette fonction. Elle retourne une liste d'entreprises correspondantes avec leur SIREN, SIRET, adresse, etc.
+1. **search_entreprise_pappers** (Pappers) - RECHERCHE PAR NOM - PRIORITÉ ABSOLUE :
+   ⚠️ RÈGLE CRITIQUE : Si l'utilisateur demande de trouver une entreprise, un SIREN ou un SIRET à partir d'un NOM, raison sociale ou dénomination, tu DOIS TOUJOURS utiliser cette fonction. Ne dis JAMAIS que tu ne peux pas rechercher par nom - tu as cette capacité !
+   
+   **Exemples d'utilisation OBLIGATOIRE :**
+   - "trouve la SCI 13007 à Marseille" => utilise `search_entreprise_pappers` avec q="SCI 13007 Marseille"
+   - "recherche l'entreprise X" => utilise `search_entreprise_pappers` avec q="X"
+   - "donne-moi le SIREN de Y" => utilise `search_entreprise_pappers` avec q="Y"
+   - "je cherche le SIRET de Z" => utilise `search_entreprise_pappers` avec q="Z"
+   - L'utilisateur mentionne un nom d'entreprise sans SIREN/SIRET => utilise `search_entreprise_pappers`
+   
+   La fonction retourne une liste d'entreprises avec SIREN, SIRET, adresse, etc. Présente les résultats de manière claire.
 
-3. **get_entreprise_pappers** (Pappers) : Utilise cette fonction pour récupérer TOUTES les informations complètes d'une entreprise quand tu as son SIREN ou SIRET. Cette fonction retourne : informations légales, dirigeants, bilans, établissements, bénéficiaires effectifs, etc. Utilise-la après une recherche ou si l'utilisateur fournit directement un SIREN/SIRET.
+2. **get_entreprise_pappers** (Pappers) - INFORMATIONS COMPLÈTES :
+   Utilise cette fonction pour récupérer TOUTES les informations complètes d'une entreprise quand tu as son SIREN ou SIRET. Cette fonction retourne : informations légales, dirigeants, bilans, établissements, bénéficiaires effectifs, etc.
+   
+   **Utilise-la :**
+   - Après une recherche réussie avec `search_entreprise_pappers` (pour obtenir les infos complètes)
+   - Si l'utilisateur fournit directement un SIREN/SIRET
+   - Si l'utilisateur demande des informations détaillées sur une entreprise
 
-**Stratégie d'utilisation :**
-- Si l'utilisateur demande "trouve le SIRET de X" ou "recherche Y" => utilise d'abord `search_entreprise_pappers`
-- Si l'utilisateur fournit un SIREN/SIRET ou demande des infos complètes => utilise `get_entreprise_pappers`
-- Si l'utilisateur demande la convention collective => utilise `get_convention_collective`
-- Tu peux combiner ces fonctions : recherche d'abord, puis récupère les infos complètes, puis la convention collective si nécessaire.`;
+3. **get_convention_collective** (Societe.com) - CONVENTION COLLECTIVE :
+   Utilise cette fonction quand l'utilisateur demande quelle convention collective s'applique à une entreprise, mentionne un code APE/NAF, un SIREN ou un SIRET. La fonction retourne le code APE, l'IDCC (numéro de convention collective) et son libellé.
+
+**STRATÉGIE D'UTILISATION OBLIGATOIRE :**
+1. **Recherche par nom** : Si l'utilisateur mentionne un nom d'entreprise sans SIREN/SIRET => utilise IMMÉDIATEMENT `search_entreprise_pappers`
+2. **Infos complètes** : Après une recherche ou si SIREN/SIRET fourni => utilise `get_entreprise_pappers` pour les détails
+3. **Convention collective** : Si demandée ou pertinente => utilise `get_convention_collective`
+4. **Combinaison** : Tu peux enchaîner : recherche → infos complètes → convention collective
+
+**NE JAMAIS DIRE :**
+- ❌ "Je ne peux pas rechercher par nom"
+- ❌ "Je n'ai pas accès à cette information"
+- ❌ "Consultez un annuaire externe"
+
+**TOUJOURS FAIRE :**
+- ✅ Utiliser `search_entreprise_pappers` dès qu'un nom d'entreprise est mentionné
+- ✅ Présenter les résultats de manière claire et structurée
+- ✅ Proposer de récupérer les infos complètes si plusieurs résultats`;
 
     // Intégrer le prompt basé sur uiEvent
     let buttonPromptSection = "";
@@ -587,13 +616,13 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
         type: "function" as const,
         function: {
           name: "search_entreprise_pappers",
-          description: "Recherche une entreprise par son nom, raison sociale ou dénomination via l'API Pappers. Utilise cette fonction quand l'utilisateur demande de trouver une entreprise, recherche un SIREN/SIRET, ou mentionne un nom d'entreprise sans SIREN/SIRET.",
+          description: "⚠️ FONCTION PRIORITAIRE : Recherche une entreprise par son nom, raison sociale ou dénomination via l'API Pappers. UTILISE CETTE FONCTION OBLIGATOIREMENT quand l'utilisateur : demande de trouver une entreprise, recherche un SIREN/SIRET à partir d'un nom, mentionne un nom d'entreprise sans SIREN/SIRET, ou dit 'trouve', 'recherche', 'donne-moi le SIREN/SIRET de'. Ne dis JAMAIS que tu ne peux pas rechercher par nom - cette fonction le permet !",
           parameters: {
             type: "object",
             properties: {
               q: {
                 type: "string",
-                description: "Terme de recherche : nom de l'entreprise, raison sociale, dénomination. Peut inclure la ville pour affiner (ex: 'SCI 13007 Marseille').",
+                description: "Terme de recherche : nom de l'entreprise, raison sociale, dénomination. Peut inclure la ville pour affiner (ex: 'SCI 13007 Marseille'). Extrais le nom de l'entreprise de la demande de l'utilisateur.",
               },
               par_page: {
                 type: "number",
