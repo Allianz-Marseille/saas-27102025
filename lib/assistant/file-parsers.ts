@@ -60,21 +60,23 @@ export async function parseExcelFile(file: File | Buffer): Promise<string> {
       
       // Parcourir les lignes
       worksheet.eachRow((row, rowNumber) => {
-        const values: (string | number | boolean | null)[] = [];
+        const values: (string | number | boolean | null | undefined)[] = [];
         row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-          let value: string | number | boolean | null = cell.value;
+          // cell.value peut être undefined, null, ou un objet complexe
+          const cellValue = cell.value;
           
           // Formater les valeurs
-          if (value === null || value === undefined) {
+          if (cellValue === null || cellValue === undefined) {
             values.push("");
-          } else if (typeof value === 'object' && 'text' in value) {
+          } else if (typeof cellValue === 'object' && 'text' in cellValue) {
             // Cellule avec formatage
-            values.push(String(value.text));
-          } else if (typeof value === 'object' && 'result' in value) {
+            values.push(String(cellValue.text));
+          } else if (typeof cellValue === 'object' && 'result' in cellValue) {
             // Formule calculée
-            values.push(String(value.result));
+            values.push(String(cellValue.result));
           } else {
-            values.push(String(value));
+            // Valeur simple (string, number, boolean)
+            values.push(String(cellValue));
           }
         });
         
