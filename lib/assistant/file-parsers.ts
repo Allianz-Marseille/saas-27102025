@@ -9,6 +9,23 @@
  */
 
 /**
+ * Convertit un File ou Buffer en Buffer Node.js standard
+ * Garantit le bon type pour exceljs et pdf-parse
+ */
+async function toNodeBuffer(file: File | Buffer): Promise<Buffer> {
+  if (file instanceof File) {
+    const arrayBuffer = await file.arrayBuffer();
+    // Conversion explicite pour garantir le type Buffer standard
+    // Utilisation de Buffer.from avec ArrayBuffer directement
+    const buffer = Buffer.from(arrayBuffer);
+    // Assertion de type explicite pour garantir la compatibilité
+    return buffer as Buffer;
+  }
+  // Si c'est déjà un Buffer, le retourner tel quel
+  return file as Buffer;
+}
+
+/**
  * Parse un fichier Excel (XLS, XLSX)
  * Retourne le contenu sous forme de texte structuré
  */
@@ -18,18 +35,11 @@ export async function parseExcelFile(file: File | Buffer): Promise<string> {
     const ExcelJS = (await import('exceljs')).default;
     const workbook = new ExcelJS.Workbook();
     
-    // Convertir File en Buffer si nécessaire
-    let buffer: Buffer;
-    if (file instanceof File) {
-      const arrayBuffer = await file.arrayBuffer();
-      // Créer un Buffer Node.js à partir de l'ArrayBuffer
-      buffer = Buffer.from(new Uint8Array(arrayBuffer));
-    } else {
-      buffer = file;
-    }
+    // Convertir File en Buffer Node.js standard
+    const buffer = await toNodeBuffer(file);
     
     // ExcelJS attend un Buffer Node.js standard
-    await workbook.xlsx.load(buffer as Buffer);
+    await workbook.xlsx.load(buffer);
     
     let result = "";
     
@@ -80,17 +90,11 @@ export async function parsePDFFile(file: File | Buffer): Promise<string> {
     // Import dynamique pour éviter le bundling côté client
     const pdfParse = (await import('pdf-parse')).default;
     
-    let buffer: Buffer;
-    if (file instanceof File) {
-      const arrayBuffer = await file.arrayBuffer();
-      // Créer un Buffer Node.js à partir de l'ArrayBuffer
-      buffer = Buffer.from(new Uint8Array(arrayBuffer));
-    } else {
-      buffer = file;
-    }
+    // Convertir File en Buffer Node.js standard
+    const buffer = await toNodeBuffer(file);
     
     // pdf-parse attend un Buffer Node.js standard
-    const data = await pdfParse(buffer as Buffer);
+    const data = await pdfParse(buffer);
     return data.text || "Aucun texte extrait du PDF";
   } catch (error) {
     console.error("Erreur lors du parsing PDF:", error);
