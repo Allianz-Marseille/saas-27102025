@@ -102,7 +102,10 @@ export async function parseExcelFile(file: File | Buffer): Promise<string> {
 export async function parsePDFFile(file: File | Buffer): Promise<string> {
   try {
     // Import dynamique pour éviter le bundling côté client
-    const pdfParse = (await import('pdf-parse')).default;
+    // pdf-parse est un module CommonJS, donc pas de .default
+    const pdfParseModule = await import('pdf-parse');
+    // Gérer les deux cas : ES module (avec default) ou CommonJS (sans default)
+    const pdfParse = (pdfParseModule as any).default || pdfParseModule;
     
     // Convertir File en Buffer Node.js standard
     const buffer = await toNodeBuffer(file);
