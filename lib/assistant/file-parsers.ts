@@ -9,20 +9,29 @@
  */
 
 /**
+ * Convertit un File ou Buffer en ArrayBuffer
+ * ExcelJS accepte directement ArrayBuffer, ce qui évite les problèmes de type Buffer
+ */
+async function toArrayBuffer(file: File | Buffer): Promise<ArrayBuffer> {
+  if (file instanceof File) {
+    return await file.arrayBuffer();
+  }
+  // Si c'est un Buffer, le convertir en ArrayBuffer
+  return file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
+}
+
+/**
  * Convertit un File ou Buffer en Buffer Node.js standard
- * Garantit le bon type pour exceljs et pdf-parse
+ * Pour pdf-parse qui nécessite un Buffer
  */
 async function toNodeBuffer(file: File | Buffer): Promise<Buffer> {
   if (file instanceof File) {
     const arrayBuffer = await file.arrayBuffer();
-    // Conversion explicite pour garantir le type Buffer standard
-    // Utilisation de Buffer.from avec ArrayBuffer directement
-    const buffer = Buffer.from(arrayBuffer);
-    // Assertion de type explicite pour garantir la compatibilité
-    return buffer as Buffer;
+    // Créer un Buffer en copiant les données pour garantir le type correct
+    return Buffer.from(new Uint8Array(arrayBuffer));
   }
   // Si c'est déjà un Buffer, le retourner tel quel
-  return file as Buffer;
+  return file;
 }
 
 /**
@@ -35,11 +44,9 @@ export async function parseExcelFile(file: File | Buffer): Promise<string> {
     const ExcelJS = (await import('exceljs')).default;
     const workbook = new ExcelJS.Workbook();
     
-    // Convertir File en Buffer Node.js standard
-    const buffer = await toNodeBuffer(file);
-    
-    // ExcelJS attend un Buffer Node.js standard
-    await workbook.xlsx.load(buffer);
+    // ExcelJS accepte directement ArrayBuffer (évite les problèmes de type Buffer)
+    const arrayBuffer = await toArrayBuffer(file);
+    await workbook.xlsx.load(arrayBuffer);
     
     let result = "";
     
