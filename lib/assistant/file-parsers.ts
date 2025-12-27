@@ -8,11 +8,6 @@
  * @server-only
  */
 
-// Vérification que nous sommes bien côté serveur
-if (typeof window !== 'undefined') {
-  throw new Error('file-parsers.ts ne peut être utilisé que côté serveur');
-}
-
 /**
  * Parse un fichier Excel (XLS, XLSX)
  * Retourne le contenu sous forme de texte structuré
@@ -27,12 +22,14 @@ export async function parseExcelFile(file: File | Buffer): Promise<string> {
     let buffer: Buffer;
     if (file instanceof File) {
       const arrayBuffer = await file.arrayBuffer();
-      buffer = Buffer.from(arrayBuffer);
+      // Créer un Buffer Node.js à partir de l'ArrayBuffer
+      buffer = Buffer.from(new Uint8Array(arrayBuffer));
     } else {
       buffer = file;
     }
     
-    await workbook.xlsx.load(buffer);
+    // ExcelJS attend un Buffer Node.js standard
+    await workbook.xlsx.load(buffer as Buffer);
     
     let result = "";
     
@@ -86,12 +83,14 @@ export async function parsePDFFile(file: File | Buffer): Promise<string> {
     let buffer: Buffer;
     if (file instanceof File) {
       const arrayBuffer = await file.arrayBuffer();
-      buffer = Buffer.from(arrayBuffer);
+      // Créer un Buffer Node.js à partir de l'ArrayBuffer
+      buffer = Buffer.from(new Uint8Array(arrayBuffer));
     } else {
       buffer = file;
     }
     
-    const data = await pdfParse(buffer);
+    // pdf-parse attend un Buffer Node.js standard
+    const data = await pdfParse(buffer as Buffer);
     return data.text || "Aucun texte extrait du PDF";
   } catch (error) {
     console.error("Erreur lors du parsing PDF:", error);
