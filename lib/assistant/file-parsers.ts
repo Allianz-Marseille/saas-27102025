@@ -1,10 +1,17 @@
 /**
  * Fonctions de parsing pour les fichiers uploadés
  * Supporte Excel, PDF, CSV
+ * 
+ * NOTE: Ce fichier est uniquement utilisé côté serveur (API routes)
+ * Les imports sont dynamiques pour éviter le bundling côté client
+ * 
+ * @server-only
  */
 
-import ExcelJS from 'exceljs';
-import pdfParse from 'pdf-parse';
+// Vérification que nous sommes bien côté serveur
+if (typeof window !== 'undefined') {
+  throw new Error('file-parsers.ts ne peut être utilisé que côté serveur');
+}
 
 /**
  * Parse un fichier Excel (XLS, XLSX)
@@ -12,6 +19,8 @@ import pdfParse from 'pdf-parse';
  */
 export async function parseExcelFile(file: File | Buffer): Promise<string> {
   try {
+    // Import dynamique pour éviter le bundling côté client
+    const ExcelJS = (await import('exceljs')).default;
     const workbook = new ExcelJS.Workbook();
     
     // Convertir File en Buffer si nécessaire
@@ -71,6 +80,9 @@ export async function parseExcelFile(file: File | Buffer): Promise<string> {
  */
 export async function parsePDFFile(file: File | Buffer): Promise<string> {
   try {
+    // Import dynamique pour éviter le bundling côté client
+    const pdfParse = (await import('pdf-parse')).default;
+    
     let buffer: Buffer;
     if (file instanceof File) {
       const arrayBuffer = await file.arrayBuffer();
