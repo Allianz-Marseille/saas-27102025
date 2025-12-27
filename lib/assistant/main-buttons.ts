@@ -20,7 +20,7 @@ export interface SubButton {
 }
 
 /**
- * Boutons principaux (8 catégories métier)
+ * Boutons principaux (9 catégories métier + Chat libre)
  */
 export const MAIN_BUTTONS: MainButton[] = [
   {
@@ -94,6 +94,15 @@ export const MAIN_BUTTONS: MainButton[] = [
     borderColor: "border-cyan-500",
     hasSubButtons: true,
     description: "Conseil comptable, fiscalité",
+  },
+  {
+    id: "analyste-performance",
+    label: "Analyste de Performance",
+    icon: "📊",
+    color: "bg-teal-50 dark:bg-teal-950/20",
+    borderColor: "border-teal-500",
+    hasSubButtons: false,
+    description: "Classements agence, analyse Excel/PDF, benchmarking",
   },
   {
     id: "fiscaliste",

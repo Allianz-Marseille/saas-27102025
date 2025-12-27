@@ -8,6 +8,7 @@ export interface ProcessedFile {
   type: string;
   size: number;
   content?: string; // Texte extrait
+  data?: string; // Données brutes en base64 (pour parsing côté serveur si parsing client échoue)
   error?: string;
 }
 
@@ -402,12 +403,41 @@ export async function processFiles(files: File[]): Promise<ProcessedFile[]> {
         content,
       });
     } catch (error) {
+      // Si le parsing échoue côté client (Excel/PDF nécessitent Node.js),
+      // convertir le fichier en base64 pour que le backend puisse le parser
+      let base64Data: string | undefined;
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors de l'extraction du texte";
+      
+      // Pour Excel et PDF, on envoie les données brutes pour parsing côté serveur
+      const isExcelOrPDF = 
+        file.type === 'application/vnd.ms-excel' ||
+        file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        file.type === 'application/pdf' ||
+        file.name.toLowerCase().endsWith('.xls') ||
+        file.name.toLowerCase().endsWith('.xlsx') ||
+        file.name.toLowerCase().endsWith('.pdf');
+      
+      if (isExcelOrPDF) {
+        try {
+          // Convertir le fichier en base64
+          const arrayBuffer = await file.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+          const binaryString = Array.from(uint8Array, byte => String.fromCharCode(byte)).join('');
+          base64Data = btoa(binaryString);
+          // Ajouter le préfixe MIME type pour faciliter le parsing côté serveur
+          base64Data = `data:${file.type || 'application/octet-stream'};base64,${base64Data}`;
+        } catch (base64Error) {
+          console.error("Erreur lors de la conversion en base64:", base64Error);
+        }
+      }
+      
       processedFiles.push({
         id: `${Date.now()}-${Math.random()}`,
         name: file.name,
         type: file.type,
         size: file.size,
-        error: error instanceof Error ? error.message : "Erreur lors de l'extraction du texte",
+        error: errorMessage,
+        data: base64Data, // Données brutes pour parsing côté serveur
       });
     }
   }

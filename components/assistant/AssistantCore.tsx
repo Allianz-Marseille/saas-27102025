@@ -143,7 +143,7 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
   const sendMessageToAPI = async (
     messageText: string,
     imageBase64s: string[],
-    filesToSend: { name: string; type: string; content?: string }[],
+    filesToSend: { name: string; type: string; content?: string; data?: string }[],
     uiEvent?: "start"
   ) => {
     if (!user) return;
@@ -279,7 +279,7 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
       images: imageBase64s.length > 0 ? imageBase64s : undefined,
       files:
         filesToSend.length > 0
-          ? filesToSend.map((f) => ({ name: f.name, type: f.type, content: f.content, error: f.error }))
+          ? filesToSend.map((f) => ({ name: f.name, type: f.type, content: f.content, data: f.data, error: f.error }))
           : undefined,
       timestamp: new Date(),
     };
@@ -294,7 +294,7 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
     await sendMessageToAPI(
       messageText || (imageBase64s.length > 0 ? "Analyse cette image" : "") || (filesToSend.length > 0 ? "Analyse ces fichiers" : ""),
       imageBase64s,
-      filesToSend.map((f) => ({ name: f.name, type: f.type, content: f.content }))
+      filesToSend.map((f) => ({ name: f.name, type: f.type, content: f.content, data: f.data }))
     );
   };
 
@@ -335,15 +335,23 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
       try {
         const processedFilesResult = await processFiles(files);
         const validFiles = processedFilesResult.filter((f) => !f.error);
-        const errorFiles = processedFilesResult.filter((f) => f.error);
+        const errorFilesWithData = processedFilesResult.filter((f) => f.error && f.data); // Fichiers avec erreur mais données brutes (pour parsing serveur)
+        const errorFilesWithoutData = processedFilesResult.filter((f) => f.error && !f.data); // Fichiers avec erreur et sans données
 
-        if (validFiles.length > 0) {
-          setSelectedFiles((prev) => [...prev, ...validFiles]);
-          toast.success(`${validFiles.length} fichier(s) ajouté(s)`);
+        // Ajouter les fichiers valides ET les fichiers avec erreur mais données brutes (Excel/PDF)
+        const filesToAdd = [...validFiles, ...errorFilesWithData];
+        
+        if (filesToAdd.length > 0) {
+          setSelectedFiles((prev) => [...prev, ...filesToAdd]);
+          if (errorFilesWithData.length > 0) {
+            toast.success(`${validFiles.length} fichier(s) ajouté(s). ${errorFilesWithData.length} fichier(s) sera analysé côté serveur.`);
+          } else {
+            toast.success(`${validFiles.length} fichier(s) ajouté(s)`);
+          }
         }
 
-        if (errorFiles.length > 0) {
-          errorFiles.forEach((f) => {
+        if (errorFilesWithoutData.length > 0) {
+          errorFilesWithoutData.forEach((f) => {
             toast.error(`${f.name}: ${f.error}`);
           });
         }
@@ -412,15 +420,23 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
       try {
         const processedFilesResult = await processFiles(otherFiles);
         const validFiles = processedFilesResult.filter((f) => !f.error);
-        const errorFiles = processedFilesResult.filter((f) => f.error);
+        const errorFilesWithData = processedFilesResult.filter((f) => f.error && f.data); // Fichiers avec erreur mais données brutes (pour parsing serveur)
+        const errorFilesWithoutData = processedFilesResult.filter((f) => f.error && !f.data); // Fichiers avec erreur et sans données
 
-        if (validFiles.length > 0) {
-          setSelectedFiles((prev) => [...prev, ...validFiles]);
-          toast.success(`${validFiles.length} fichier(s) ajouté(s)`);
+        // Ajouter les fichiers valides ET les fichiers avec erreur mais données brutes (Excel/PDF)
+        const filesToAdd = [...validFiles, ...errorFilesWithData];
+        
+        if (filesToAdd.length > 0) {
+          setSelectedFiles((prev) => [...prev, ...filesToAdd]);
+          if (errorFilesWithData.length > 0) {
+            toast.success(`${validFiles.length} fichier(s) ajouté(s). ${errorFilesWithData.length} fichier(s) sera analysé côté serveur.`);
+          } else {
+            toast.success(`${validFiles.length} fichier(s) ajouté(s)`);
+          }
         }
 
-        if (errorFiles.length > 0) {
-          errorFiles.forEach((f) => {
+        if (errorFilesWithoutData.length > 0) {
+          errorFilesWithoutData.forEach((f) => {
             toast.error(`${f.name}: ${f.error}`);
           });
         }

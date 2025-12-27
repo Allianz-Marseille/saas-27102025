@@ -11,6 +11,7 @@ import { checkBudgetLimit } from "@/lib/assistant/budget-alerts";
 import { openaiWithRetry } from "@/lib/assistant/retry";
 import { logUsage } from "@/lib/assistant/monitoring";
 import { logAction } from "@/lib/assistant/audit";
+import { parseFile } from "@/lib/assistant/file-parsers";
 // import { enrichMessagesWithKnowledge } from "@/lib/assistant/knowledge-loader"; // Plus utilisé, la logique métier est dans le system prompt
 
 const openai = new OpenAI({
@@ -506,7 +507,95 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
 ---\n\n`;
     }
     
-    const systemPrompt = `${coreKnowledge}${buttonPromptSection}${ocrPromptSection}${formattingRules}`;
+    // Parser les fichiers uploadés si présents
+    let parsedFilesContent = "";
+    if (files && Array.isArray(files) && files.length > 0) {
+      for (const file of files) {
+        try {
+          // Si le fichier a déjà un contenu parsé (parsing réussi côté client), l'utiliser
+          if (file.content && typeof file.content === "string" && file.content.trim()) {
+            parsedFilesContent += `\n\n--- FICHIER: ${file.name || "Sans nom"} (${file.type || "Type inconnu"}) ---\n${file.content}\n`;
+          } 
+          // Si le fichier a des données brutes (base64) mais pas de contenu, parser côté serveur
+          else if (file.data && typeof file.data === "string") {
+            try {
+              // Convertir base64 en Buffer
+              const base64Data = file.data.replace(/^data:.*,/, '');
+              const buffer = Buffer.from(base64Data, 'base64');
+              const parsedContent = await parseFile(buffer, file.name);
+              parsedFilesContent += `\n\n--- FICHIER: ${file.name || "Sans nom"} (${file.type || "Type inconnu"}) - Parsé côté serveur ---\n${parsedContent}\n`;
+            } catch (parseError) {
+              console.error(`Erreur lors du parsing serveur du fichier ${file.name}:`, parseError);
+              parsedFilesContent += `\n\n--- ERREUR lors du parsing serveur du fichier "${file.name || "Sans nom"}" : ${parseError instanceof Error ? parseError.message : "Erreur inconnue"} ---\n`;
+              if (file.error) {
+                parsedFilesContent += `Erreur parsing client: ${file.error}\n`;
+              }
+            }
+          }
+          // Si le fichier a une erreur de parsing côté client et pas de données brutes, noter l'erreur
+          else if (file.error) {
+            parsedFilesContent += `\n\n--- ERREUR avec le fichier "${file.name || "Sans nom"}" : ${file.error} ---\n`;
+            parsedFilesContent += `Note: Le parsing de ce fichier a échoué côté client et aucune donnée brute n'est disponible pour parsing serveur.\n`;
+          }
+          // Si le fichier n'a ni contenu ni erreur ni données, c'est qu'il n'a pas été traité
+          else {
+            parsedFilesContent += `\n\n--- FICHIER: ${file.name || "Sans nom"} (${file.type || "Type inconnu"}) ---\n`;
+            parsedFilesContent += `Note: Ce fichier n'a pas pu être parsé. Type: ${file.type || "inconnu"}\n`;
+          }
+        } catch (error) {
+          console.error(`Erreur lors du traitement du fichier ${file.name}:`, error);
+          parsedFilesContent += `\n\n--- ERREUR avec le fichier "${file.name || "Sans nom"}" : ${error instanceof Error ? error.message : "Erreur inconnue"} ---\n`;
+        }
+      }
+    }
+    
+    // Ajouter le prompt de gestion des fichiers
+    const fileManagementPrompt = parsedFilesContent ? `
+GESTION DES FICHIERS UPLOADÉS :
+
+L'utilisateur a uploadé des fichiers qui ont été parsés et intégrés dans le contexte.
+
+QUAND UN FICHIER EST PRÉSENT :
+1. Commence par analyser le contenu du fichier
+2. Extrais les informations pertinentes selon le rôle
+3. Structure ta réponse en incluant l'analyse du fichier
+4. Si c'est un tableau/classement : produis une analyse chiffrée
+5. Si c'est un document : extrais les points clés
+6. Si c'est une image : décris ce que tu vois et extrais les données
+
+FICHIERS ACTUELLEMENT SUPPORTÉS :
+- Images (PNG, JPG, WebP) : Vision + OCR
+- Excel/CSV : Parsing tableaux
+- PDF : Extraction texte + OCR
+- Documents (DOCX, TXT)
+
+FICHIERS UPLOADÉS PAR L'UTILISATEUR :
+
+${parsedFilesContent}
+
+Analyse ces fichiers selon le rôle choisi.
+` : `
+GESTION DES FICHIERS UPLOADÉS :
+
+L'utilisateur peut uploader des fichiers (images, Excel, PDF, etc.).
+Ces fichiers sont automatiquement parsés et leur contenu est intégré dans le contexte.
+
+QUAND UN FICHIER EST PRÉSENT :
+1. Commence par analyser le contenu du fichier
+2. Extrais les informations pertinentes selon le rôle
+3. Structure ta réponse en incluant l'analyse du fichier
+4. Si c'est un tableau/classement : produis une analyse chiffrée
+5. Si c'est un document : extrais les points clés
+6. Si c'est une image : décris ce que tu vois et extrais les données
+
+FICHIERS ACTUELLEMENT SUPPORTÉS :
+- Images (PNG, JPG, WebP) : Vision + OCR
+- Excel/CSV : Parsing tableaux
+- PDF : Extraction texte + OCR
+- Documents (DOCX, TXT)
+`;
+    
+    const systemPrompt = `${coreKnowledge}${buttonPromptSection}${ocrPromptSection}${fileManagementPrompt}${formattingRules}`;
 
     // Construire le contenu du message utilisateur
     let userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];
@@ -515,18 +604,10 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
     let messageText = message || "";
     
     // Ajouter le contenu des fichiers si présents
-    if (files && Array.isArray(files) && files.length > 0) {
-      const fileContents: string[] = [];
-      for (const file of files) {
-        if (file.content && typeof file.content === "string") {
-          fileContents.push(`\n\n--- Contenu du fichier "${file.name}" ---\n${file.content}`);
-        } else if (file.error) {
-          fileContents.push(`\n\n--- Erreur avec le fichier "${file.name}" : ${file.error} ---`);
-        }
-      }
-      if (fileContents.length > 0) {
-        messageText += fileContents.join("\n");
-      }
+    // Note: Le contenu parsé est déjà intégré dans parsedFilesContent et ajouté au systemPrompt
+    // On peut aussi l'ajouter au message utilisateur pour référence
+    if (parsedFilesContent) {
+      messageText += `\n\n[Fichiers uploadés analysés - voir contexte système pour détails]`;
     }
     
     // Ajouter le texte si présent
