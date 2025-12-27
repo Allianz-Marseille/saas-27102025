@@ -17,7 +17,12 @@ async function toArrayBuffer(file: File | Buffer): Promise<ArrayBuffer> {
     return await file.arrayBuffer();
   }
   // Si c'est un Buffer, le convertir en ArrayBuffer
-  return file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
+  // file.buffer peut être SharedArrayBuffer, on doit créer un nouvel ArrayBuffer pur
+  const uint8Array = new Uint8Array(file);
+  // Créer un nouvel ArrayBuffer en copiant les données
+  const newArrayBuffer = new ArrayBuffer(uint8Array.length);
+  new Uint8Array(newArrayBuffer).set(uint8Array);
+  return newArrayBuffer;
 }
 
 /**
