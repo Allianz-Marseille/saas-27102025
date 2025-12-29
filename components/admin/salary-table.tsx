@@ -151,25 +151,29 @@ export function SalaryTable({
 
   return (
     <>
-      <Card>
-        <CardHeader>
+      <Card className="border-none shadow-xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-950/50">
+        <CardHeader className="border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-white via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-950/10 dark:to-purple-950/10">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex flex-col gap-2">
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-blue-600" />
-                Tableau des rémunérations
+            <div className="flex flex-col gap-3">
+              <CardTitle className="flex items-center gap-3 text-2xl">
+                <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                  <Calendar className="h-6 w-6 text-white" />
+                </div>
+                <span className="bg-gradient-to-br from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent font-bold">
+                  Tableau des rémunérations
+                </span>
               </CardTitle>
               {hasDraft && (
-                <Badge variant="outline" className="w-fit text-xs border-blue-300 text-blue-600">
+                <Badge className="w-fit text-xs bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-none shadow-md hover:shadow-lg transition-all">
                   📝 Brouillon chargé - Modifiable à tout moment
                 </Badge>
               )}
             </div>
             
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3">
               {/* Toggle Mensuel / Annuel */}
               <Select value={displayMode} onValueChange={(value: "monthly" | "annual") => onDisplayModeChange(value)}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[140px] border-2 shadow-sm hover:shadow-md transition-all">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -181,11 +185,10 @@ export function SalaryTable({
               {/* Bouton Enregistrer brouillon */}
               {activeSimulationsCount > 0 && (
                 <Button
-                  variant="outline"
                   size="sm"
                   onClick={onSaveDraft}
                   disabled={savingDraft}
-                  className="gap-2 border-blue-300 text-blue-600 hover:bg-blue-50"
+                  className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-none shadow-md hover:shadow-lg transition-all"
                 >
                   <Save className="h-4 w-4" />
                   {savingDraft ? "Enregistrement..." : hasDraft ? "Mettre à jour" : "Enregistrer"}
@@ -198,7 +201,7 @@ export function SalaryTable({
                   variant="outline"
                   size="sm"
                   onClick={onDeleteDraft}
-                  className="gap-2 border-red-300 text-red-600 hover:bg-red-50"
+                  className="gap-2 border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 shadow-sm hover:shadow-md transition-all"
                 >
                   <Trash2 className="h-4 w-4" />
                   Supprimer brouillon
@@ -211,7 +214,7 @@ export function SalaryTable({
                   variant="outline"
                   size="sm"
                   onClick={onClearSimulations}
-                  className="gap-2"
+                  className="gap-2 border-2 shadow-sm hover:shadow-md transition-all"
                 >
                   <X className="h-4 w-4" />
                   Effacer ({activeSimulationsCount})
@@ -223,7 +226,7 @@ export function SalaryTable({
                 <Button
                   size="sm"
                   onClick={handleValidateAll}
-                  className="gap-2 bg-green-600 hover:bg-green-700"
+                  className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white border-none shadow-md hover:shadow-lg transition-all"
                 >
                   <Check className="h-4 w-4" />
                   Valider définitivement ({activeSimulationsCount})
@@ -235,7 +238,7 @@ export function SalaryTable({
                 variant="ghost"
                 size="sm"
                 onClick={onDataRefresh}
-                className="gap-2"
+                className="gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>
@@ -243,11 +246,11 @@ export function SalaryTable({
           </div>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow>
+              <TableHeader className="bg-gradient-to-r from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-950/20 dark:to-purple-950/20">
+                <TableRow className="border-b-2 border-gray-200 dark:border-gray-700 hover:bg-transparent">
                   <TableHead>
                     <Button
                       variant="ghost"
@@ -324,7 +327,16 @@ export function SalaryTable({
                     const hasSimulation = !!simulation;
 
                     return (
-                      <TableRow key={user.id} className={hasSimulation ? "bg-yellow-50 dark:bg-yellow-950/10" : ""}>
+                      <TableRow 
+                        key={user.id} 
+                        className={`
+                          transition-all duration-200 border-b border-gray-100 dark:border-gray-800
+                          ${hasSimulation 
+                            ? "bg-gradient-to-r from-amber-50/50 to-yellow-50/50 dark:from-amber-950/20 dark:to-yellow-950/20 hover:from-amber-50 hover:to-yellow-50 dark:hover:from-amber-950/30 dark:hover:to-yellow-950/30" 
+                            : "hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-purple-50/30 dark:hover:from-blue-950/10 dark:hover:to-purple-950/10"
+                          }
+                        `}
+                      >
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">
@@ -336,22 +348,26 @@ export function SalaryTable({
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
-                          <div className="flex flex-col gap-1 items-center">
+                          <div className="flex flex-col gap-2 items-center">
                             {user.contrat && (
-                              <Badge variant="outline" className="w-fit">
+                              <Badge className="w-fit bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-none shadow-sm">
                                 {user.contrat}
                               </Badge>
                             )}
                             {user.etp && (
-                              <Badge variant="secondary" className="w-fit text-xs">
+                              <Badge variant="secondary" className="w-fit text-xs shadow-sm">
                                 {user.etp}
                               </Badge>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-center font-medium">
-                          {currentSalary > 0 ? formatCurrency(currentSalary) : (
-                            <span className="text-muted-foreground text-sm">Non défini</span>
+                        <TableCell className="text-center">
+                          {currentSalary > 0 ? (
+                            <span className="font-semibold text-gray-900 dark:text-gray-100">
+                              {formatCurrency(currentSalary)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-sm italic">Non défini</span>
                           )}
                         </TableCell>
                         <TableCell className="text-center">
@@ -386,7 +402,7 @@ export function SalaryTable({
                         </TableCell>
                         <TableCell className="text-center">
                           {hasSimulation ? (
-                            <span className="font-semibold text-green-600">
+                            <span className="font-bold text-lg bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                               {formatCurrency(newSalary)}
                             </span>
                           ) : (
@@ -395,9 +411,11 @@ export function SalaryTable({
                         </TableCell>
                         <TableCell className="text-center">
                           {hasSimulation && difference !== 0 ? (
-                            <div className="flex items-center justify-center gap-1">
-                              <TrendingUp className={`h-4 w-4 ${difference > 0 ? "text-green-600" : "text-red-600"}`} />
-                              <span className={`font-semibold ${difference > 0 ? "text-green-600" : "text-red-600"}`}>
+                            <div className="flex items-center justify-center gap-2">
+                              <div className={`p-1 rounded-lg ${difference > 0 ? "bg-green-100 dark:bg-green-950/30" : "bg-red-100 dark:bg-red-950/30"}`}>
+                                <TrendingUp className={`h-4 w-4 ${difference > 0 ? "text-green-600" : "text-red-600"}`} />
+                              </div>
+                              <span className={`font-bold ${difference > 0 ? "text-green-600" : "text-red-600"}`}>
                                 {difference > 0 ? "+" : ""}{formatCurrency(difference)}
                               </span>
                             </div>
@@ -409,9 +427,8 @@ export function SalaryTable({
                           {hasSimulation ? (
                             <Button
                               size="sm"
-                              variant="outline"
                               onClick={() => handleValidateOne(user.id)}
-                              className="gap-2"
+                              className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white border-none shadow-sm hover:shadow-md transition-all"
                             >
                               <Check className="h-4 w-4" />
                               Valider
@@ -425,23 +442,47 @@ export function SalaryTable({
                   })
                 )}
               </TableBody>
-              <TableFooter>
-                <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableCell className="font-bold">TOTAL</TableCell>
-                  <TableCell></TableCell>
-                  <TableCell className="text-center font-bold text-lg">
-                    {formatCurrency(totalCurrentSalary)}
+              <TableFooter className="bg-gradient-to-r from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-950/20 dark:to-purple-950/20">
+                <TableRow className="border-t-2 border-gray-200 dark:border-gray-700 hover:bg-transparent">
+                  <TableCell className="font-bold text-lg bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                    TOTAL
                   </TableCell>
                   <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell className="text-center font-bold text-lg text-green-600">
-                    {totalNewSalary !== totalCurrentSalary ? formatCurrency(totalNewSalary) : "-"}
-                  </TableCell>
-                  <TableCell className="text-center font-bold text-lg">
-                    {totalDifference !== 0 ? (
-                      <span className={totalDifference > 0 ? "text-green-600" : "text-red-600"}>
-                        {totalDifference > 0 ? "+" : ""}{formatCurrency(totalDifference)}
+                  <TableCell className="text-center">
+                    <div className="inline-block px-4 py-2 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 shadow-inner">
+                      <span className="font-bold text-xl bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                        {formatCurrency(totalCurrentSalary)}
                       </span>
+                    </div>
+                  </TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell className="text-center">
+                    {totalNewSalary !== totalCurrentSalary ? (
+                      <div className="inline-block px-4 py-2 rounded-lg bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 shadow-inner">
+                        <span className="font-bold text-xl bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                          {formatCurrency(totalNewSalary)}
+                        </span>
+                      </div>
+                    ) : (
+                      "-"
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {totalDifference !== 0 ? (
+                      <div className={`inline-block px-4 py-2 rounded-lg shadow-inner ${
+                        totalDifference > 0 
+                          ? "bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30"
+                          : "bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30"
+                      }`}>
+                        <span className={`font-bold text-xl ${
+                          totalDifference > 0 
+                            ? "bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent"
+                            : "bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent"
+                        }`}>
+                          {totalDifference > 0 ? "+" : ""}{formatCurrency(totalDifference)}
+                        </span>
+                      </div>
                     ) : (
                       "-"
                     )}

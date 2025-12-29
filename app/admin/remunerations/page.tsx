@@ -220,45 +220,75 @@ export default function RemunerationsPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Collaborateurs</CardDescription>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-blue-600" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="border-none shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+            <CardHeader className="pb-4">
+              <CardDescription className="text-xs font-medium uppercase tracking-wider text-blue-600/70 dark:text-blue-400/70">
+                Collaborateurs
+              </CardDescription>
+              <CardTitle className="flex items-center gap-3 text-4xl font-bold bg-gradient-to-br from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
                 {users.length}
               </CardTitle>
             </CardHeader>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Masse salariale actuelle</CardDescription>
-              <CardTitle className="flex items-center gap-2 text-blue-600">
-                <Euro className="h-5 w-5" />
-                {formatCurrency(totals.current)}
+          <Card className="border-none shadow-lg bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+            <CardHeader className="pb-4">
+              <CardDescription className="text-xs font-medium uppercase tracking-wider text-emerald-600/70 dark:text-emerald-400/70">
+                Masse salariale actuelle
+              </CardDescription>
+              <CardTitle className="flex items-center gap-3 text-3xl font-bold bg-gradient-to-br from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg">
+                  <Euro className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-2xl">{formatCurrency(totals.current)}</span>
               </CardTitle>
             </CardHeader>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Masse salariale simulée</CardDescription>
-              <CardTitle className="flex items-center gap-2 text-emerald-600">
-                <TrendingUp className="h-5 w-5" />
-                {formatCurrency(totals.simulated)}
+          <Card className="border-none shadow-lg bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+            <CardHeader className="pb-4">
+              <CardDescription className="text-xs font-medium uppercase tracking-wider text-violet-600/70 dark:text-violet-400/70">
+                Masse salariale simulée
+              </CardDescription>
+              <CardTitle className="flex items-center gap-3 text-3xl font-bold bg-gradient-to-br from-violet-600 to-purple-600 bg-clip-text text-transparent">
+                <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg">
+                  <TrendingUp className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-2xl">{formatCurrency(totals.simulated)}</span>
               </CardTitle>
             </CardHeader>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Différence</CardDescription>
-              <CardTitle className={`flex items-center gap-2 ${
-                totals.difference > 0 ? "text-orange-600" : "text-gray-600"
+          <Card className={`border-none shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] ${
+            totals.difference > 0 
+              ? "bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20" 
+              : "bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-950/20 dark:to-slate-950/20"
+          }`}>
+            <CardHeader className="pb-4">
+              <CardDescription className={`text-xs font-medium uppercase tracking-wider ${
+                totals.difference > 0 
+                  ? "text-amber-600/70 dark:text-amber-400/70" 
+                  : "text-gray-600/70 dark:text-gray-400/70"
               }`}>
-                <TrendingUp className="h-5 w-5" />
-                {totals.difference > 0 ? "+" : ""}{formatCurrency(totals.difference)}
+                Différence
+              </CardDescription>
+              <CardTitle className={`flex items-center gap-3 text-3xl font-bold ${
+                totals.difference > 0 
+                  ? "bg-gradient-to-br from-amber-600 to-orange-600 bg-clip-text text-transparent" 
+                  : "bg-gradient-to-br from-gray-600 to-slate-600 bg-clip-text text-transparent"
+              }`}>
+                <div className={`p-3 rounded-xl shadow-lg ${
+                  totals.difference > 0 
+                    ? "bg-gradient-to-br from-amber-500 to-orange-600" 
+                    : "bg-gradient-to-br from-gray-500 to-slate-600"
+                }`}>
+                  <TrendingUp className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-2xl">{totals.difference > 0 ? "+" : ""}{formatCurrency(totals.difference)}</span>
               </CardTitle>
             </CardHeader>
           </Card>
