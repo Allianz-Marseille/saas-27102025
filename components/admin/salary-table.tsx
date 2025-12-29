@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, TrendingUp, RefreshCw, Calendar } from "lucide-react";
@@ -62,6 +62,14 @@ export function SalaryTable({
   };
 
   const multiplier = displayMode === "annual" ? 12 : 1;
+
+  // Calculer les totaux
+  const totalCurrentSalary = users.reduce((sum, user) => sum + (user.currentMonthlySalary || 0), 0) * multiplier;
+  const totalNewSalary = users.reduce((sum, user) => {
+    const simulation = simulations.get(user.id);
+    return sum + (simulation ? simulation.newSalary : (user.currentMonthlySalary || 0));
+  }, 0) * multiplier;
+  const totalDifference = totalNewSalary - totalCurrentSalary;
 
   return (
     <>
@@ -255,6 +263,30 @@ export function SalaryTable({
                   })
                 )}
               </TableBody>
+              <TableFooter>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableCell className="font-bold">TOTAL</TableCell>
+                  <TableCell></TableCell>
+                  <TableCell className="text-right font-bold text-lg">
+                    {formatCurrency(totalCurrentSalary)}
+                  </TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell className="text-right font-bold text-lg text-green-600">
+                    {totalNewSalary !== totalCurrentSalary ? formatCurrency(totalNewSalary) : "-"}
+                  </TableCell>
+                  <TableCell className="text-right font-bold text-lg">
+                    {totalDifference !== 0 ? (
+                      <span className={totalDifference > 0 ? "text-green-600" : "text-red-600"}>
+                        {totalDifference > 0 ? "+" : ""}{formatCurrency(totalDifference)}
+                      </span>
+                    ) : (
+                      "-"
+                    )}
+                  </TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
+              </TableFooter>
             </Table>
           </div>
         </CardContent>
