@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { History, TrendingUp, TrendingDown, ArrowRight, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { Timestamp } from "firebase/firestore";
 import { formatCurrency } from "@/lib/utils";
 import { cleanOldSalaryHistory } from "@/lib/firebase/salaries";
 import { toast } from "sonner";
@@ -35,6 +36,14 @@ export function SalaryHistoryView({ history, users, onRefresh }: SalaryHistoryVi
   const [filterUserId, setFilterUserId] = useState<string>("all");
   const [filterYear, setFilterYear] = useState<string>("all");
   const [loading, setLoading] = useState(false);
+
+  // Convertir Date | Timestamp en Date
+  const toDate = (value: Date | Timestamp): Date => {
+    if (value instanceof Timestamp) {
+      return value.toDate();
+    }
+    return value;
+  };
 
   // Obtenir les années disponibles
   const availableYears = useMemo(() => {
@@ -201,7 +210,7 @@ export function SalaryHistoryView({ history, users, onRefresh }: SalaryHistoryVi
                   return (
                     <TableRow key={entry.id}>
                       <TableCell>
-                        {format(entry.validatedAt, "dd/MM/yyyy HH:mm", { locale: fr })}
+                        {format(toDate(entry.validatedAt), "dd/MM/yyyy HH:mm", { locale: fr })}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">{entry.year}</Badge>
