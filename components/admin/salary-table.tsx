@@ -217,47 +217,47 @@ export function SalaryTable({
                       {getSortIcon("name")}
                     </Button>
                   </TableHead>
-                  <TableHead>
+                  <TableHead className="text-center">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort("contract")}
-                      className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50"
+                      className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50 mx-auto"
                     >
                       Contrat
                       {getSortIcon("contract")}
                     </Button>
                   </TableHead>
-                  <TableHead className="text-right">
+                  <TableHead className="text-center">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort("salary")}
-                      className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50 ml-auto"
+                      className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50 mx-auto"
                     >
                       Rémunération actuelle
                       {getSortIcon("salary")}
                     </Button>
                   </TableHead>
                   <TableHead className="text-center">Type augmentation</TableHead>
-                  <TableHead className="text-right">Augmentation</TableHead>
-                  <TableHead className="text-right">
+                  <TableHead className="text-center">Augmentation</TableHead>
+                  <TableHead className="text-center">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort("newSalary")}
-                      className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50 ml-auto"
+                      className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50 mx-auto"
                     >
                       Nouvelle rémunération
                       {getSortIcon("newSalary")}
                     </Button>
                   </TableHead>
-                  <TableHead className="text-right">
+                  <TableHead className="text-center">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort("difference")}
-                      className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50 ml-auto"
+                      className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50 mx-auto"
                     >
                       Différence
                       {getSortIcon("difference")}
@@ -293,8 +293,8 @@ export function SalaryTable({
                             <span className="text-xs text-muted-foreground">{user.email}</span>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-1">
+                        <TableCell className="text-center">
+                          <div className="flex flex-col gap-1 items-center">
                             {user.contrat && (
                               <Badge variant="outline" className="w-fit">
                                 {user.contrat}
@@ -307,12 +307,12 @@ export function SalaryTable({
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-right font-medium">
+                        <TableCell className="text-center font-medium">
                           {currentSalary > 0 ? formatCurrency(currentSalary) : (
                             <span className="text-muted-foreground text-sm">Non défini</span>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-center">
                           <Select
                             value={simulation?.type || "percentage"}
                             onValueChange={(value: "percentage" | "amount") => {
@@ -320,7 +320,7 @@ export function SalaryTable({
                               onSimulationUpdate(user.id, value, currentValue);
                             }}
                           >
-                            <SelectTrigger className="w-[100px]">
+                            <SelectTrigger className="w-[100px] mx-auto">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -329,7 +329,7 @@ export function SalaryTable({
                             </SelectContent>
                           </Select>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-center">
                           <Input
                             type="number"
                             step={simulation?.type === "percentage" ? "0.1" : "1"}
@@ -339,10 +339,10 @@ export function SalaryTable({
                               const value = parseFloat(e.target.value) || 0;
                               onSimulationUpdate(user.id, simulation?.type || "percentage", value);
                             }}
-                            className="w-[100px] text-right"
+                            className="w-[100px] text-center mx-auto"
                           />
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-center">
                           {hasSimulation ? (
                             <span className="font-semibold text-green-600">
                               {formatCurrency(newSalary)}
@@ -351,9 +351,9 @@ export function SalaryTable({
                             <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-center">
                           {hasSimulation && difference !== 0 ? (
-                            <div className="flex items-center justify-end gap-1">
+                            <div className="flex items-center justify-center gap-1">
                               <TrendingUp className={`h-4 w-4 ${difference > 0 ? "text-green-600" : "text-red-600"}`} />
                               <span className={`font-semibold ${difference > 0 ? "text-green-600" : "text-red-600"}`}>
                                 {difference > 0 ? "+" : ""}{formatCurrency(difference)}
@@ -387,15 +387,15 @@ export function SalaryTable({
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
                   <TableCell className="font-bold">TOTAL</TableCell>
                   <TableCell></TableCell>
-                  <TableCell className="text-right font-bold text-lg">
+                  <TableCell className="text-center font-bold text-lg">
                     {formatCurrency(totalCurrentSalary)}
                   </TableCell>
                   <TableCell></TableCell>
                   <TableCell></TableCell>
-                  <TableCell className="text-right font-bold text-lg text-green-600">
+                  <TableCell className="text-center font-bold text-lg text-green-600">
                     {totalNewSalary !== totalCurrentSalary ? formatCurrency(totalNewSalary) : "-"}
                   </TableCell>
-                  <TableCell className="text-right font-bold text-lg">
+                  <TableCell className="text-center font-bold text-lg">
                     {totalDifference !== 0 ? (
                       <span className={totalDifference > 0 ? "text-green-600" : "text-red-600"}>
                         {totalDifference > 0 ? "+" : ""}{formatCurrency(totalDifference)}
