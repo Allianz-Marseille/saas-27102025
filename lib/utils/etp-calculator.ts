@@ -30,3 +30,14 @@ export function formatEtp(etp: number): string {
   return etp.toFixed(2);
 }
 
+/**
+ * Calcule le ratio Commissions / ETP pour une année
+ * @param totalCommissions - Total des commissions (réel ou extrapolé)
+ * @param totalEtp - Total des ETP
+ * @returns Ratio arrondi (Commissions / ETP)
+ */
+export function calculateCommissionsPerEtp(totalCommissions: number, totalEtp: number): number {
+  if (totalEtp === 0) return 0;
+  return Math.round(totalCommissions / totalEtp);
+}
+

@@ -10,7 +10,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { getAvailableYears, getYearCommissions } from "@/lib/firebase/agency-commissions";
 import { AgencyCommission } from "@/types";
 import { formatCurrencyInteger, formatThousands, getMonthShortName, extrapolateYear } from "@/lib/utils/commission-calculator";
-import { calculateTotalEtp, formatEtp } from "@/lib/utils/etp-calculator";
+import { calculateTotalEtp, formatEtp, calculateCommissionsPerEtp } from "@/lib/utils/etp-calculator";
 import { MonthDataDialog } from "@/components/admin/commissions/month-data-dialog";
 import { CreateYearDialog } from "@/components/admin/commissions/create-year-dialog";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,10 @@ export default function CommissionsAgencePage() {
   // États pour les utilisateurs et ETP
   const [users, setUsers] = useState<Array<{ etp?: string; active: boolean }>>([]);
   const [totalEtp, setTotalEtp] = useState<number>(0);
+  
+  // États pour le ratio de l'année précédente
+  const [previousYearRatio, setPreviousYearRatio] = useState<number | null>(null);
+  const [previousYearForDisplay, setPreviousYearForDisplay] = useState<number | null>(null);
 
   // Charger les années disponibles
   const loadYears = async () => {
@@ -90,6 +94,54 @@ export default function CommissionsAgencePage() {
     }
   };
 
+  // Charger les données de l'année précédente si nécessaire
+  const loadPreviousYearIfNeeded = async () => {
+    // Vérifier si l'année a au moins un mois avec bénéfice
+    const hasYearProfit = yearData.some((month) => month.resultat > 0);
+    
+    if (!hasYearProfit && availableYears.length > 0) {
+      // Chercher l'année précédente disponible
+      const prevYear = selectedYear - 1;
+      
+      try {
+        const prevData = await getYearCommissions(prevYear);
+        
+        if (prevData.length > 0) {
+          // Calculer le ratio de l'année précédente
+          const prevMonthsWithData = prevData.filter((d) => d.totalCommissions > 0 || d.chargesAgence > 0).length;
+          const prevIsIncomplete = prevMonthsWithData < 12;
+          const prevExtrapolated = extrapolateYear(prevData);
+          const prevTotals = prevData.reduce(
+            (acc, month) => ({
+              totalCommissions: acc.totalCommissions + month.totalCommissions,
+            }),
+            { totalCommissions: 0 }
+          );
+          
+          const prevCommissions = prevIsIncomplete 
+            ? prevExtrapolated.totalCommissions 
+            : prevTotals.totalCommissions;
+          
+          if (totalEtp > 0) {
+            const ratio = calculateCommissionsPerEtp(prevCommissions, totalEtp);
+            setPreviousYearRatio(ratio);
+            setPreviousYearForDisplay(prevYear);
+          }
+        } else {
+          setPreviousYearRatio(null);
+          setPreviousYearForDisplay(null);
+        }
+      } catch (error) {
+        console.error("Erreur chargement année précédente:", error);
+        setPreviousYearRatio(null);
+        setPreviousYearForDisplay(null);
+      }
+    } else {
+      setPreviousYearRatio(null);
+      setPreviousYearForDisplay(null);
+    }
+  };
+
   useEffect(() => {
     loadYears();
     loadUsers();
@@ -100,6 +152,12 @@ export default function CommissionsAgencePage() {
       loadYearData();
     }
   }, [selectedYear]);
+  
+  useEffect(() => {
+    if (yearData.length > 0 && totalEtp > 0) {
+      loadPreviousYearIfNeeded();
+    }
+  }, [yearData, selectedYear, totalEtp]);
 
   const handleMonthClick = (month: number) => {
     const existingData = yearData.find((d) => d.month === month) || null;
@@ -140,6 +198,9 @@ export default function CommissionsAgencePage() {
   
   const extrapolated = extrapolateYear(yearData);
   const isIncomplete = monthsWithData < 12;
+  
+  // Vérifier si l'année a au moins un mois avec bénéfice
+  const hasProfit = yearData.some((month) => month.resultat > 0);
 
   // Fonction pour obtenir la valeur de la métrique sélectionnée
   const getMetricValue = (month: AgencyCommission) => {
@@ -499,19 +560,36 @@ export default function CommissionsAgencePage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
                   <Users className="h-4 w-4 text-indigo-600" />
-                  Résultat / ETP
+                  Commissions / ETP
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {totalEtp > 0 ? (
                   <>
                     <div className="text-2xl font-black text-indigo-600">
-                      {formatCurrencyInteger(
-                        Math.round((isIncomplete ? extrapolated.resultat : totals.resultat) / totalEtp)
-                      )}
+                      {(() => {
+                        // Calculer le ratio pour l'année courante
+                        const currentCommissions = isIncomplete 
+                          ? extrapolated.totalCommissions 
+                          : totals.totalCommissions;
+                        
+                        const currentRatio = calculateCommissionsPerEtp(currentCommissions, totalEtp);
+                        
+                        // Utiliser le ratio de l'année précédente si pas de bénéfice
+                        const displayRatio = !hasProfit && previousYearRatio !== null 
+                          ? previousYearRatio 
+                          : currentRatio;
+                        
+                        return formatCurrencyInteger(displayRatio);
+                      })()}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1 font-semibold">
                       📊 {formatEtp(totalEtp)} ETP
+                      {!hasProfit && previousYearRatio !== null && previousYearForDisplay !== null && (
+                        <span className="block mt-1 text-orange-600 font-bold">
+                          ⚠️ Ratio {previousYearForDisplay} (année précédente)
+                        </span>
+                      )}
                     </p>
                   </>
                 ) : (
