@@ -41,6 +41,15 @@ const HEALTH_COLLECTIVE_ACT_KINDS: HealthCollectiveActKind[] = [
 
 const HEALTH_COLLECTIVE_ORIGINS: HealthCollectiveActOrigin[] = ["PROACTIF", "REACTIF", "PROSPECTION"];
 
+const HEALTH_COLLECTIVE_AN_TYPES = [
+  "IND_AN_SANTE",
+  "IND_AN_PREVOYANCE",
+  "IND_AN_RETRAITE",
+  "COLL_AN_SANTE",
+  "COLL_AN_PREVOYANCE",
+  "COLL_AN_RETRAITE",
+];
+
 export function EditHealthCollectiveActDialog({ open, onOpenChange, act, onSuccess }: EditHealthCollectiveActDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -150,19 +159,10 @@ export function EditHealthCollectiveActDialog({ open, onOpenChange, act, onSucce
 
     // Vérification de l'unicité du numéro de contrat - UNIQUEMENT pour les affaires nouvelles (*_AN_*)
     // UNIQUEMENT si le numéro a changé
-    const healthCollectiveANTypes = [
-      "IND_AN_SANTE",
-      "IND_AN_PREVOYANCE",
-      "IND_AN_RETRAITE",
-      "COLL_AN_SANTE",
-      "COLL_AN_PREVOYANCE",
-      "COLL_AN_RETRAITE",
-    ];
-    
     const trimmedContractNumber = numeroContrat.trim();
     const originalContractNumber = act.numeroContrat?.trim();
     
-    if (healthCollectiveANTypes.includes(kind as string) && trimmedContractNumber !== originalContractNumber) {
+    if (HEALTH_COLLECTIVE_AN_TYPES.includes(kind as string) && trimmedContractNumber !== originalContractNumber) {
       setIsLoading(true);
       try {
         // Vérifier si le nouveau numéro existe déjà via l'API route
@@ -292,7 +292,7 @@ export function EditHealthCollectiveActDialog({ open, onOpenChange, act, onSucce
               onChange={(e) => setNumeroContrat(e.target.value)}
               placeholder="Ex: 123456789"
             />
-            {healthCollectiveANTypes.includes(kind as string) && (
+            {HEALTH_COLLECTIVE_AN_TYPES.includes(kind as string) && (
               <p className="text-xs text-muted-foreground">
                 Pour les Affaires Nouvelles, le numéro doit être unique
               </p>
