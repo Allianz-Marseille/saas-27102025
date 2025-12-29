@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, TrendingUp, RefreshCw, Calendar } from "lucide-react";
+import { Check, X, TrendingUp, RefreshCw, Calendar, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import type { User } from "@/types";
@@ -25,6 +25,9 @@ interface SalaryTableProps {
   currentUserId: string;
 }
 
+type SortColumn = "name" | "contract" | "salary" | "newSalary" | "difference" | null;
+type SortDirection = "asc" | "desc";
+
 export function SalaryTable({
   users,
   simulations,
@@ -38,6 +41,8 @@ export function SalaryTable({
 }: SalaryTableProps) {
   const [validationModalOpen, setValidationModalOpen] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [sortColumn, setSortColumn] = useState<SortColumn>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   const handleValidateOne = (userId: string) => {
     setSelectedUsers([userId]);
@@ -61,7 +66,72 @@ export function SalaryTable({
     onDataRefresh();
   };
 
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      // Inverser la direction si on clique sur la même colonne
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // Nouvelle colonne, tri ascendant par défaut
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortIcon = (column: SortColumn) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="h-4 w-4 text-muted-foreground" />;
+    }
+    return sortDirection === "asc" 
+      ? <ArrowUp className="h-4 w-4" /> 
+      : <ArrowDown className="h-4 w-4" />;
+  };
+
   const multiplier = displayMode === "annual" ? 12 : 1;
+
+  // Trier les utilisateurs
+  const sortedUsers = [...users].sort((a, b) => {
+    if (!sortColumn) return 0;
+
+    const direction = sortDirection === "asc" ? 1 : -1;
+
+    switch (sortColumn) {
+      case "name": {
+        const nameA = a.firstName && a.lastName 
+          ? `${a.firstName} ${a.lastName}`.toLowerCase()
+          : a.email.split("@")[0].toLowerCase();
+        const nameB = b.firstName && b.lastName 
+          ? `${b.firstName} ${b.lastName}`.toLowerCase()
+          : b.email.split("@")[0].toLowerCase();
+        return nameA.localeCompare(nameB) * direction;
+      }
+      case "contract": {
+        const contractA = a.contrat || "";
+        const contractB = b.contrat || "";
+        return contractA.localeCompare(contractB) * direction;
+      }
+      case "salary": {
+        const salaryA = a.currentMonthlySalary || 0;
+        const salaryB = b.currentMonthlySalary || 0;
+        return (salaryA - salaryB) * direction;
+      }
+      case "newSalary": {
+        const simA = simulations.get(a.id);
+        const simB = simulations.get(b.id);
+        const newSalaryA = simA ? simA.newSalary : (a.currentMonthlySalary || 0);
+        const newSalaryB = simB ? simB.newSalary : (b.currentMonthlySalary || 0);
+        return (newSalaryA - newSalaryB) * direction;
+      }
+      case "difference": {
+        const simA = simulations.get(a.id);
+        const simB = simulations.get(b.id);
+        const diffA = simA ? simA.newSalary - (a.currentMonthlySalary || 0) : 0;
+        const diffB = simB ? simB.newSalary - (b.currentMonthlySalary || 0) : 0;
+        return (diffA - diffB) * direction;
+      }
+      default:
+        return 0;
+    }
+  });
 
   // Calculer les totaux
   const totalCurrentSalary = users.reduce((sum, user) => sum + (user.currentMonthlySalary || 0), 0) * multiplier;
@@ -136,25 +206,75 @@ export function SalaryTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Collaborateur</TableHead>
-                  <TableHead>Contrat</TableHead>
-                  <TableHead className="text-right">Rémunération actuelle</TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort("name")}
+                      className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50"
+                    >
+                      Collaborateur
+                      {getSortIcon("name")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort("contract")}
+                      className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50"
+                    >
+                      Contrat
+                      {getSortIcon("contract")}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort("salary")}
+                      className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50 ml-auto"
+                    >
+                      Rémunération actuelle
+                      {getSortIcon("salary")}
+                    </Button>
+                  </TableHead>
                   <TableHead className="text-center">Type augmentation</TableHead>
                   <TableHead className="text-right">Augmentation</TableHead>
-                  <TableHead className="text-right">Nouvelle rémunération</TableHead>
-                  <TableHead className="text-right">Différence</TableHead>
+                  <TableHead className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort("newSalary")}
+                      className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50 ml-auto"
+                    >
+                      Nouvelle rémunération
+                      {getSortIcon("newSalary")}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort("difference")}
+                      className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50 ml-auto"
+                    >
+                      Différence
+                      {getSortIcon("difference")}
+                    </Button>
+                  </TableHead>
                   <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.length === 0 ? (
+                {sortedUsers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                       Aucun collaborateur trouvé
                     </TableCell>
                   </TableRow>
                 ) : (
-                  users.map((user) => {
+                  sortedUsers.map((user) => {
                     const simulation = simulations.get(user.id);
                     const currentSalary = (user.currentMonthlySalary || 0) * multiplier;
                     const newSalary = simulation ? simulation.newSalary * multiplier : currentSalary;
