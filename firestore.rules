@@ -142,6 +142,16 @@ service cloud.firestore {
       allow delete: if isAdmin(); // Seuls les admins peuvent supprimer (nettoyage > 3 ans)
     }
     
+    // Salary drafts collection
+    // Brouillons d'augmentations - chaque admin peut gérer son propre brouillon
+    // Permet de sauvegarder des simulations avant validation définitive
+    match /salary_drafts/{adminId} {
+      allow read: if isAdmin() && request.auth.uid == adminId; // Un admin ne peut lire que son propre brouillon
+      allow create: if isAdmin() && request.auth.uid == adminId; // Un admin ne peut créer que son propre brouillon
+      allow update: if isAdmin() && request.auth.uid == adminId; // Un admin ne peut modifier que son propre brouillon
+      allow delete: if isAdmin() && request.auth.uid == adminId; // Un admin ne peut supprimer que son propre brouillon
+    }
+    
     // Assistant conversations collection
     // Conversations sauvegardées - lecture/écriture pour le propriétaire
     // Note: La vérification du partage se fait côté serveur dans l'API car Firestore Rules

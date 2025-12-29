@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Banknote, TrendingUp, History, Users, Euro } from "lucide-react";
 import { useAuth } from "@/lib/firebase/use-auth";
-import { getCurrentSalaries, getSalaryHistory } from "@/lib/firebase/salaries";
+import { getCurrentSalaries, getSalaryHistory, getSalaryDraft, saveSalaryDraft, deleteSalaryDraft } from "@/lib/firebase/salaries";
 import { toast } from "sonner";
-import type { User, SalaryHistory } from "@/types";
+import type { User, SalaryHistory, SalaryDraft } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 import { SalaryTable } from "@/components/admin/salary-table";
 import { SalaryHistoryView } from "@/components/admin/salary-history-view";
@@ -28,6 +28,9 @@ export default function RemunerationsPage() {
   const [displayMode, setDisplayMode] = useState<DisplayMode>("monthly");
   const [simulations, setSimulations] = useState<Map<string, SalarySimulation>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
 
   // Charger les données au montage
   useEffect(() => {
@@ -43,11 +46,93 @@ export default function RemunerationsPage() {
       ]);
       setUsers(usersData);
       setHistory(historyData);
+
+      // Charger le brouillon si existant
+      if (user?.uid) {
+        await loadDraft();
+      }
     } catch (error) {
       console.error("Erreur lors du chargement des données:", error);
       toast.error("Erreur lors du chargement des données");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Charger le brouillon sauvegardé
+  const loadDraft = async () => {
+    if (!user?.uid) return;
+
+    try {
+      const draft = await getSalaryDraft(user.uid);
+      if (draft) {
+        // Convertir le brouillon en simulations
+        const newSimulations = new Map<string, SalarySimulation>();
+        draft.items.forEach(item => {
+          newSimulations.set(item.userId, {
+            type: item.type,
+            value: item.value,
+            newSalary: item.newSalary,
+          });
+        });
+        setSimulations(newSimulations);
+        setDraftLoaded(true);
+        setHasDraft(true);
+        toast.success(`Brouillon chargé (${draft.items.length} augmentation(s) pour ${draft.year})`);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement du brouillon:", error);
+      // Ne pas afficher d'erreur si aucun brouillon n'existe
+    }
+  };
+
+  // Enregistrer le brouillon
+  const handleSaveDraft = async () => {
+    if (!user?.uid || simulations.size === 0) {
+      toast.error("Aucune simulation à enregistrer");
+      return;
+    }
+
+    try {
+      setSavingDraft(true);
+      
+      // Convertir les simulations en items de brouillon
+      const items = Array.from(simulations.entries()).map(([userId, sim]) => {
+        const userObj = users.find(u => u.id === userId);
+        return {
+          userId,
+          type: sim.type,
+          value: sim.value,
+          currentSalary: userObj?.currentMonthlySalary || 0,
+          newSalary: sim.newSalary,
+        };
+      });
+
+      await saveSalaryDraft(items, new Date().getFullYear(), user.uid);
+      setHasDraft(true);
+      setDraftLoaded(true);
+      toast.success(`Brouillon enregistré (${items.length} augmentation(s))`);
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement du brouillon:", error);
+      toast.error("Erreur lors de l'enregistrement du brouillon");
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  // Supprimer le brouillon
+  const handleDeleteDraft = async () => {
+    if (!user?.uid) return;
+
+    try {
+      await deleteSalaryDraft(user.uid);
+      setHasDraft(false);
+      setDraftLoaded(false);
+      setSimulations(new Map());
+      toast.success("Brouillon supprimé");
+    } catch (error) {
+      console.error("Erreur lors de la suppression du brouillon:", error);
+      toast.error("Erreur lors de la suppression du brouillon");
     }
   };
 
@@ -204,6 +289,10 @@ export default function RemunerationsPage() {
             onDataRefresh={loadData}
             activeSimulationsCount={activeSimulationsCount}
             currentUserId={user?.uid || ""}
+            hasDraft={hasDraft}
+            onSaveDraft={handleSaveDraft}
+            onDeleteDraft={handleDeleteDraft}
+            savingDraft={savingDraft}
           />
         </TabsContent>
 

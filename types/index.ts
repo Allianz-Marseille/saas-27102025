@@ -194,3 +194,21 @@ export interface SalaryHistory {
   createdAt: Date | Timestamp; // Date de création de l'enregistrement
 }
 
+// Types pour les brouillons d'augmentations
+export interface SalaryDraftItem {
+  userId: string;
+  type: "percentage" | "amount"; // Type d'augmentation
+  value: number; // Valeur (% ou montant)
+  currentSalary: number; // Salaire actuel
+  newSalary: number; // Nouveau salaire calculé
+}
+
+export interface SalaryDraft {
+  id: string;
+  year: number; // Année d'application prévue
+  items: SalaryDraftItem[]; // Liste des augmentations
+  createdAt: Date | Timestamp;
+  updatedAt: Date | Timestamp;
+  createdBy: string; // UID de l'admin qui a créé le brouillon
+}
+

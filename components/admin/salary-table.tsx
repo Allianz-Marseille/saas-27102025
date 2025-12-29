@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, TrendingUp, RefreshCw, Calendar, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Check, X, TrendingUp, RefreshCw, Calendar, ArrowUpDown, ArrowUp, ArrowDown, Save, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import type { User } from "@/types";
@@ -23,6 +23,10 @@ interface SalaryTableProps {
   onDataRefresh: () => void;
   activeSimulationsCount: number;
   currentUserId: string;
+  hasDraft: boolean;
+  onSaveDraft: () => void;
+  onDeleteDraft: () => void;
+  savingDraft: boolean;
 }
 
 type SortColumn = "name" | "contract" | "salary" | "newSalary" | "difference" | null;
@@ -38,6 +42,10 @@ export function SalaryTable({
   onDataRefresh,
   activeSimulationsCount,
   currentUserId,
+  hasDraft,
+  onSaveDraft,
+  onDeleteDraft,
+  savingDraft,
 }: SalaryTableProps) {
   const [validationModalOpen, setValidationModalOpen] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -146,10 +154,17 @@ export function SalaryTable({
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-600" />
-              Tableau des rémunérations
-            </CardTitle>
+            <div className="flex flex-col gap-2">
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-blue-600" />
+                Tableau des rémunérations
+              </CardTitle>
+              {hasDraft && (
+                <Badge variant="outline" className="w-fit text-xs border-blue-300 text-blue-600">
+                  📝 Brouillon chargé - Modifiable à tout moment
+                </Badge>
+              )}
+            </div>
             
             <div className="flex flex-wrap items-center gap-2">
               {/* Toggle Mensuel / Annuel */}
@@ -162,6 +177,33 @@ export function SalaryTable({
                   <SelectItem value="annual">Annuel</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Bouton Enregistrer brouillon */}
+              {activeSimulationsCount > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onSaveDraft}
+                  disabled={savingDraft}
+                  className="gap-2 border-blue-300 text-blue-600 hover:bg-blue-50"
+                >
+                  <Save className="h-4 w-4" />
+                  {savingDraft ? "Enregistrement..." : hasDraft ? "Mettre à jour" : "Enregistrer"}
+                </Button>
+              )}
+
+              {/* Bouton Supprimer brouillon */}
+              {hasDraft && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onDeleteDraft}
+                  className="gap-2 border-red-300 text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Supprimer brouillon
+                </Button>
+              )}
 
               {/* Bouton Effacer simulations */}
               {activeSimulationsCount > 0 && (
@@ -184,7 +226,7 @@ export function SalaryTable({
                   className="gap-2 bg-green-600 hover:bg-green-700"
                 >
                   <Check className="h-4 w-4" />
-                  Valider toutes ({activeSimulationsCount})
+                  Valider définitivement ({activeSimulationsCount})
                 </Button>
               )}
 

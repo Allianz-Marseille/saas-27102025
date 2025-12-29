@@ -1,6 +1,6 @@
-import { collection, doc, getDocs, query, where, setDoc, deleteDoc, updateDoc, Timestamp, orderBy, limit } from "firebase/firestore";
+import { collection, doc, getDocs, query, where, setDoc, deleteDoc, updateDoc, Timestamp, orderBy, limit, getDoc } from "firebase/firestore";
 import { db } from "./config";
-import type { User, SalaryHistory } from "@/types";
+import type { User, SalaryHistory, SalaryDraft, SalaryDraftItem } from "@/types";
 
 /**
  * Récupère tous les utilisateurs actifs non-administrateurs avec leurs salaires actuels
@@ -254,6 +254,112 @@ export const getLastSalary = async (userId: string): Promise<number | null> => {
     return data.monthlySalary || null;
   } catch (error) {
     console.error("Erreur lors de la récupération du dernier salaire:", error);
+    throw error;
+  }
+};
+
+/**
+ * Enregistre un brouillon d'augmentations (modifiable, non définitif)
+ */
+export const saveSalaryDraft = async (
+  items: SalaryDraftItem[],
+  year: number,
+  createdBy: string
+): Promise<string> => {
+  if (!db) throw new Error("Firebase not initialized");
+
+  try {
+    const now = Timestamp.now();
+    
+    // Un seul brouillon actif par admin, identifié par l'ID de l'admin
+    const draftRef = doc(db, "salary_drafts", createdBy);
+    
+    const draftData: Omit<SalaryDraft, "id"> = {
+      year,
+      items,
+      createdAt: now,
+      updatedAt: now,
+      createdBy,
+    };
+
+    await setDoc(draftRef, draftData);
+    
+    return draftRef.id;
+  } catch (error) {
+    console.error("Erreur lors de l'enregistrement du brouillon:", error);
+    throw error;
+  }
+};
+
+/**
+ * Récupère le brouillon actif d'un admin
+ */
+export const getSalaryDraft = async (adminId: string): Promise<SalaryDraft | null> => {
+  if (!db) throw new Error("Firebase not initialized");
+
+  try {
+    const draftRef = doc(db, "salary_drafts", adminId);
+    const draftSnap = await getDoc(draftRef);
+    
+    if (!draftSnap.exists()) {
+      return null;
+    }
+
+    const data = draftSnap.data();
+    return {
+      id: draftSnap.id,
+      year: data.year,
+      items: data.items,
+      createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+      updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : data.updatedAt,
+      createdBy: data.createdBy,
+    } as SalaryDraft;
+  } catch (error) {
+    console.error("Erreur lors de la récupération du brouillon:", error);
+    throw error;
+  }
+};
+
+/**
+ * Supprime le brouillon actif d'un admin
+ */
+export const deleteSalaryDraft = async (adminId: string): Promise<void> => {
+  if (!db) throw new Error("Firebase not initialized");
+
+  try {
+    const draftRef = doc(db, "salary_drafts", adminId);
+    await deleteDoc(draftRef);
+  } catch (error) {
+    console.error("Erreur lors de la suppression du brouillon:", error);
+    throw error;
+  }
+};
+
+/**
+ * Valide un brouillon : applique les augmentations et supprime le brouillon
+ */
+export const validateDraft = async (
+  draft: SalaryDraft,
+  validatedBy: string
+): Promise<void> => {
+  if (!db) throw new Error("Firebase not initialized");
+
+  try {
+    // Appliquer toutes les augmentations
+    const increases = draft.items.map(item => ({
+      userId: item.userId,
+      currentSalary: item.currentSalary,
+      newSalary: item.newSalary,
+      changeType: item.type,
+      changeValue: item.value,
+    }));
+
+    await validateAllSalaryIncreases(increases, draft.year, validatedBy);
+
+    // Supprimer le brouillon
+    await deleteSalaryDraft(draft.createdBy);
+  } catch (error) {
+    console.error("Erreur lors de la validation du brouillon:", error);
     throw error;
   }
 };
