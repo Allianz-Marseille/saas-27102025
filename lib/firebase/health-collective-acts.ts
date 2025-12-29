@@ -50,9 +50,18 @@ export const createHealthCollectiveAct = async (
 ): Promise<HealthCollectiveAct> => {
   if (!db) throw new Error('Firebase not initialized');
   
-  // Vérification de l'unicité du numéro de contrat pour TOUS les types d'actes
+  // Vérification de l'unicité du numéro de contrat - UNIQUEMENT pour les affaires nouvelles (*_AN_*)
   const trimmedContractNumber = act.numeroContrat?.trim();
-  if (trimmedContractNumber) {
+  const healthCollectiveANTypes = [
+    "IND_AN_SANTE",
+    "IND_AN_PREVOYANCE",
+    "IND_AN_RETRAITE",
+    "COLL_AN_SANTE",
+    "COLL_AN_PREVOYANCE",
+    "COLL_AN_RETRAITE",
+  ];
+  
+  if (healthCollectiveANTypes.includes(act.kind) && trimmedContractNumber) {
     try {
       const response = await fetch("/api/health-acts/check-contract", {
         method: "POST",

@@ -148,12 +148,21 @@ export function EditHealthCollectiveActDialog({ open, onOpenChange, act, onSucce
       return;
     }
 
-    // Vérification de l'unicité du numéro de contrat
+    // Vérification de l'unicité du numéro de contrat - UNIQUEMENT pour les affaires nouvelles (*_AN_*)
     // UNIQUEMENT si le numéro a changé
+    const healthCollectiveANTypes = [
+      "IND_AN_SANTE",
+      "IND_AN_PREVOYANCE",
+      "IND_AN_RETRAITE",
+      "COLL_AN_SANTE",
+      "COLL_AN_PREVOYANCE",
+      "COLL_AN_RETRAITE",
+    ];
+    
     const trimmedContractNumber = numeroContrat.trim();
     const originalContractNumber = act.numeroContrat?.trim();
     
-    if (trimmedContractNumber !== originalContractNumber) {
+    if (healthCollectiveANTypes.includes(kind as string) && trimmedContractNumber !== originalContractNumber) {
       setIsLoading(true);
       try {
         // Vérifier si le nouveau numéro existe déjà via l'API route
@@ -283,9 +292,11 @@ export function EditHealthCollectiveActDialog({ open, onOpenChange, act, onSucce
               onChange={(e) => setNumeroContrat(e.target.value)}
               placeholder="Ex: 123456789"
             />
-            <p className="text-xs text-muted-foreground">
-              Le numéro de contrat doit être unique parmi tous les actes santé
-            </p>
+            {healthCollectiveANTypes.includes(kind as string) && (
+              <p className="text-xs text-muted-foreground">
+                Pour les Affaires Nouvelles, le numéro doit être unique
+              </p>
+            )}
           </div>
 
           {/* Compagnie */}

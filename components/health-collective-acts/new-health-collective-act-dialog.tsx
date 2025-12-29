@@ -189,28 +189,39 @@ export function NewHealthCollectiveActDialog({ open, onOpenChange, onSuccess }: 
     setIsSubmitting(true);
 
     try {
-      // Vérification de l'unicité du numéro de contrat
-      const trimmedContractNumber = numeroContrat.trim();
-      const response = await fetch("/api/health-acts/check-contract", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          numeroContrat: trimmedContractNumber,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Erreur lors de la vérification du numéro de contrat");
-      }
-
-      const data = await response.json();
+      // Vérification de l'unicité du numéro de contrat - UNIQUEMENT pour les affaires nouvelles (*_AN_*)
+      const healthCollectiveANTypes = [
+        "IND_AN_SANTE",
+        "IND_AN_PREVOYANCE",
+        "IND_AN_RETRAITE",
+        "COLL_AN_SANTE",
+        "COLL_AN_PREVOYANCE",
+        "COLL_AN_RETRAITE",
+      ];
       
-      if (data.exists) {
-        toast.error("Ce numéro de contrat est déjà utilisé par un autre acte");
-        setIsSubmitting(false);
-        return;
+      if (healthCollectiveANTypes.includes(kind as string)) {
+        const trimmedContractNumber = numeroContrat.trim();
+        const response = await fetch("/api/health-acts/check-contract", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            numeroContrat: trimmedContractNumber,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Erreur lors de la vérification du numéro de contrat");
+        }
+
+        const data = await response.json();
+        
+        if (data.exists) {
+          toast.error("Ce numéro de contrat est déjà utilisé par un autre acte");
+          setIsSubmitting(false);
+          return;
+        }
       }
 
       await createHealthCollectiveAct({

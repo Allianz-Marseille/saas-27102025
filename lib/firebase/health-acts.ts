@@ -17,9 +17,9 @@ export const HEALTH_ACT_COEFFICIENTS: Record<string, number> = {
 export const createHealthAct = async (act: Omit<HealthAct, 'id' | 'dateSaisie' | 'moisKey' | 'caPondere'>): Promise<HealthAct> => {
   if (!db) throw new Error('Firebase not initialized');
   
-  // Vérification de l'unicité du numéro de contrat pour TOUS les types d'actes
+  // Vérification de l'unicité du numéro de contrat - UNIQUEMENT pour les AFFAIRE_NOUVELLE
   const trimmedContractNumber = act.numeroContrat?.trim();
-  if (trimmedContractNumber) {
+  if (act.kind === "AFFAIRE_NOUVELLE" && trimmedContractNumber) {
     try {
       const response = await fetch("/api/health-acts/check-contract", {
         method: "POST",

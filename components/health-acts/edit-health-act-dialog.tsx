@@ -142,12 +142,12 @@ export function EditHealthActDialog({ open, onOpenChange, act, onSuccess }: Edit
       return;
     }
 
-    // Vérification de l'unicité du numéro de contrat
+    // Vérification de l'unicité du numéro de contrat - UNIQUEMENT pour les AFFAIRE_NOUVELLE
     // UNIQUEMENT si le numéro a changé
     const trimmedContractNumber = numeroContrat.trim();
     const originalContractNumber = act.numeroContrat?.trim();
     
-    if (trimmedContractNumber !== originalContractNumber) {
+    if (kind === "AFFAIRE_NOUVELLE" && trimmedContractNumber !== originalContractNumber) {
       setIsLoading(true);
       try {
         // Vérifier si le nouveau numéro existe déjà via l'API route
@@ -244,9 +244,11 @@ export function EditHealthActDialog({ open, onOpenChange, act, onSuccess }: Edit
               onChange={(e) => setNumeroContrat(e.target.value)}
               placeholder="Ex: 123456789"
             />
-            <p className="text-xs text-muted-foreground">
-              Le numéro de contrat doit être unique parmi tous les actes santé
-            </p>
+            {kind === "AFFAIRE_NOUVELLE" && (
+              <p className="text-xs text-muted-foreground">
+                Pour les Affaires Nouvelles, le numéro doit être unique
+              </p>
+            )}
           </div>
 
           {/* Type d'acte */}
