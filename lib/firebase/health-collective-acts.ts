@@ -50,6 +50,39 @@ export const createHealthCollectiveAct = async (
 ): Promise<HealthCollectiveAct> => {
   if (!db) throw new Error('Firebase not initialized');
   
+  // Vérification de l'unicité du numéro de contrat pour TOUS les types d'actes
+  const trimmedContractNumber = act.numeroContrat?.trim();
+  if (trimmedContractNumber) {
+    try {
+      const response = await fetch("/api/health-acts/check-contract", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          numeroContrat: trimmedContractNumber,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erreur lors de la vérification du numéro de contrat");
+      }
+
+      const data = await response.json();
+      
+      if (data.exists) {
+        throw new Error('Ce numéro de contrat est déjà enregistré.');
+      }
+    } catch (error) {
+      // Si c'est déjà une Error avec un message, la relancer
+      if (error instanceof Error) {
+        throw error;
+      }
+      // Sinon, envelopper dans une nouvelle Error
+      throw new Error('Erreur lors de la vérification du numéro de contrat.');
+    }
+  }
+  
   const dateSaisie = new Date();
   const moisKey = dateSaisie.toISOString().slice(0, 7); // YYYY-MM
 

@@ -15,8 +15,6 @@ import { CalendarIcon, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { updateHealthAct, getHealthActKindLabel } from "@/lib/firebase/health-acts";
 import { HealthAct } from "@/types";
-import { db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs } from "firebase/firestore";
 import { getCompanies, type Company } from "@/lib/firebase/companies";
 import { Timestamp } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
@@ -144,28 +142,34 @@ export function EditHealthActDialog({ open, onOpenChange, act, onSuccess }: Edit
       return;
     }
 
-    // Vérification de l'unicité du numéro de contrat pour les Affaires Nouvelles
+    // Vérification de l'unicité du numéro de contrat
     // UNIQUEMENT si le numéro a changé
     const trimmedContractNumber = numeroContrat.trim();
     const originalContractNumber = act.numeroContrat?.trim();
     
-    if (kind === "AFFAIRE_NOUVELLE" && trimmedContractNumber !== originalContractNumber) {
+    if (trimmedContractNumber !== originalContractNumber) {
       setIsLoading(true);
       try {
-        // Vérifier si le nouveau numéro existe déjà
-        if (!db) {
-          toast.error("Erreur de connexion à la base de données");
-          setIsLoading(false);
-          return;
+        // Vérifier si le nouveau numéro existe déjà via l'API route
+        const response = await fetch("/api/health-acts/check-contract", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            numeroContrat: trimmedContractNumber,
+            actId: act.id,
+            collection: "health_acts",
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Erreur lors de la vérification du numéro de contrat");
         }
 
-        const q = query(collection(db, "health_acts"), where("numeroContrat", "==", trimmedContractNumber));
-        const snapshot = await getDocs(q);
+        const data = await response.json();
         
-        // Vérifier si le numéro existe déjà (en excluant l'acte actuel)
-        const existsInOtherAct = snapshot.docs.some(doc => doc.id !== act.id);
-        
-        if (existsInOtherAct) {
+        if (data.exists) {
           toast.error("Ce numéro de contrat est déjà utilisé par un autre acte");
           setIsLoading(false);
           return;
@@ -240,11 +244,9 @@ export function EditHealthActDialog({ open, onOpenChange, act, onSuccess }: Edit
               onChange={(e) => setNumeroContrat(e.target.value)}
               placeholder="Ex: 123456789"
             />
-            {kind === "AFFAIRE_NOUVELLE" && (
-              <p className="text-xs text-muted-foreground">
-                Pour les Affaires Nouvelles, le numéro doit être unique
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              Le numéro de contrat doit être unique parmi tous les actes santé
+            </p>
           </div>
 
           {/* Type d'acte */}

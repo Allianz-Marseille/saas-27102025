@@ -189,6 +189,30 @@ export function NewHealthCollectiveActDialog({ open, onOpenChange, onSuccess }: 
     setIsSubmitting(true);
 
     try {
+      // Vérification de l'unicité du numéro de contrat
+      const trimmedContractNumber = numeroContrat.trim();
+      const response = await fetch("/api/health-acts/check-contract", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          numeroContrat: trimmedContractNumber,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erreur lors de la vérification du numéro de contrat");
+      }
+
+      const data = await response.json();
+      
+      if (data.exists) {
+        toast.error("Ce numéro de contrat est déjà utilisé par un autre acte");
+        setIsSubmitting(false);
+        return;
+      }
+
       await createHealthCollectiveAct({
         userId: user.uid,
         kind: kind as HealthCollectiveActKind,

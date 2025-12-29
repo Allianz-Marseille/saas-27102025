@@ -15,8 +15,6 @@ import { CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { updateHealthCollectiveAct, getHealthCollectiveActKindLabel, getHealthCollectiveActOriginLabel } from "@/lib/firebase/health-collective-acts";
 import { HealthCollectiveAct, HealthCollectiveActKind, HealthCollectiveActOrigin } from "@/types";
-import { db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs } from "firebase/firestore";
 import { getCompanies, type Company } from "@/lib/firebase/companies";
 import { Timestamp } from "firebase/firestore";
 
@@ -150,6 +148,46 @@ export function EditHealthCollectiveActDialog({ open, onOpenChange, act, onSucce
       return;
     }
 
+    // Vérification de l'unicité du numéro de contrat
+    // UNIQUEMENT si le numéro a changé
+    const trimmedContractNumber = numeroContrat.trim();
+    const originalContractNumber = act.numeroContrat?.trim();
+    
+    if (trimmedContractNumber !== originalContractNumber) {
+      setIsLoading(true);
+      try {
+        // Vérifier si le nouveau numéro existe déjà via l'API route
+        const response = await fetch("/api/health-acts/check-contract", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            numeroContrat: trimmedContractNumber,
+            actId: act.id,
+            collection: "health_collective_acts",
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Erreur lors de la vérification du numéro de contrat");
+        }
+
+        const data = await response.json();
+        
+        if (data.exists) {
+          toast.error("Ce numéro de contrat est déjà utilisé par un autre acte");
+          setIsLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error("Erreur lors de la vérification du numéro de contrat:", error);
+        toast.error("Erreur lors de la vérification du numéro de contrat");
+        setIsLoading(false);
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
       const updates: Partial<HealthCollectiveAct> = {
@@ -245,6 +283,9 @@ export function EditHealthCollectiveActDialog({ open, onOpenChange, act, onSucce
               onChange={(e) => setNumeroContrat(e.target.value)}
               placeholder="Ex: 123456789"
             />
+            <p className="text-xs text-muted-foreground">
+              Le numéro de contrat doit être unique parmi tous les actes santé
+            </p>
           </div>
 
           {/* Compagnie */}
