@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Coins, Plus, TrendingUp, TrendingDown, Trophy, AlertTriangle, Shield, Gem, Handshake, Star, DollarSign, Package, CheckCircle, User, Sparkles, LineChart as LineChartIcon } from "lucide-react";
+import { Coins, Plus, TrendingUp, TrendingDown, Trophy, AlertTriangle, Shield, Gem, Handshake, Star, DollarSign, Package, CheckCircle, User, Sparkles, LineChart as LineChartIcon, Users } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { getAvailableYears, getYearCommissions } from "@/lib/firebase/agency-commissions";
 import { AgencyCommission } from "@/types";
 import { formatCurrencyInteger, formatThousands, getMonthShortName, extrapolateYear } from "@/lib/utils/commission-calculator";
+import { calculateTotalEtp, formatEtp } from "@/lib/utils/etp-calculator";
 import { MonthDataDialog } from "@/components/admin/commissions/month-data-dialog";
 import { CreateYearDialog } from "@/components/admin/commissions/create-year-dialog";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,10 @@ export default function CommissionsAgencePage() {
   const [selectedYearsForComparison, setSelectedYearsForComparison] = useState<number[]>([]);
   const [comparisonMetric, setComparisonMetric] = useState<'resultat' | 'totalCommissions' | 'chargesAgence' | 'commissionsIARD' | 'commissionsVie' | 'commissionsCourtage'>('totalCommissions');
   const [allYearsData, setAllYearsData] = useState<Record<number, AgencyCommission[]>>({});
+  
+  // États pour les utilisateurs et ETP
+  const [users, setUsers] = useState<Array<{ etp?: string; active: boolean }>>([]);
+  const [totalEtp, setTotalEtp] = useState<number>(0);
 
   // Charger les années disponibles
   const loadYears = async () => {
@@ -69,8 +74,25 @@ export default function CommissionsAgencePage() {
     setIsLoading(false);
   };
 
+  // Charger les utilisateurs pour calculer les ETP
+  const loadUsers = async () => {
+    try {
+      const response = await fetch("/api/admin/users");
+      if (!response.ok) throw new Error("Erreur chargement utilisateurs");
+      const data = await response.json();
+      setUsers(data.users || []);
+      
+      // Calculer le total des ETP
+      const etp = calculateTotalEtp(data.users || []);
+      setTotalEtp(etp);
+    } catch (error) {
+      console.error("Erreur:", error);
+    }
+  };
+
   useEffect(() => {
     loadYears();
+    loadUsers();
   }, []);
 
   useEffect(() => {
@@ -390,7 +412,7 @@ export default function CommissionsAgencePage() {
           </Card>
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <Card className="border-2 shadow-lg hover:shadow-xl transition-all">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
@@ -470,6 +492,33 @@ export default function CommissionsAgencePage() {
                 <p className="text-xs text-muted-foreground mt-1 font-semibold">
                   Sur {monthsWithData} mois
                 </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 shadow-lg hover:shadow-xl transition-all">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <Users className="h-4 w-4 text-indigo-600" />
+                  Résultat / ETP
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {totalEtp > 0 ? (
+                  <>
+                    <div className="text-2xl font-black text-indigo-600">
+                      {formatCurrencyInteger(
+                        Math.round((isIncomplete ? extrapolated.resultat : totals.resultat) / totalEtp)
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 font-semibold">
+                      📊 {formatEtp(totalEtp)} ETP
+                    </p>
+                  </>
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    Aucun ETP configuré
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
