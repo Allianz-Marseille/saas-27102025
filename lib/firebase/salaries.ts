@@ -10,21 +10,17 @@ export const getCurrentSalaries = async (): Promise<User[]> => {
 
   try {
     const usersRef = collection(db, "users");
-    const q = query(
-      usersRef,
-      where("active", "==", true),
-      where("role", "!=", "ADMINISTRATEUR")
-    );
+    // On récupère tous les utilisateurs et on filtre côté client
+    // pour éviter de créer un index composite (where + !=)
+    const snapshot = await getDocs(usersRef);
     
-    const snapshot = await getDocs(q);
-    
-    return snapshot.docs.map(doc => {
+    const allUsers = snapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
         email: data.email,
         role: data.role,
-        active: data.active,
+        active: data.active !== false, // Par défaut true si non défini
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
         firstName: data.firstName,
         lastName: data.lastName,
@@ -34,6 +30,11 @@ export const getCurrentSalaries = async (): Promise<User[]> => {
         currentMonthlySalary: data.currentMonthlySalary,
       } as User;
     });
+
+    // Filtrer les utilisateurs actifs non-administrateurs
+    return allUsers.filter(user => 
+      user.active && user.role !== "ADMINISTRATEUR"
+    );
   } catch (error) {
     console.error("Erreur lors de la récupération des salaires:", error);
     throw error;
