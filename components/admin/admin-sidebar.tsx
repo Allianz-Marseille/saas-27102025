@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Home, Building2, LogOut, Users, User, ScrollText, ChevronLeft, ChevronRight, Heart, AlertTriangle, Coins, Workflow, Wrench } from "lucide-react";
+import { Home, Building2, LogOut, Users, User, ScrollText, ChevronLeft, ChevronRight, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -74,6 +74,11 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
       label: "Commissions Agence",
       icon: Coins,
       separator: true, // Séparateur avant cet item
+    },
+    {
+      href: "/admin/remunerations",
+      label: "Rémunérations",
+      icon: Banknote,
     },
     {
       href: "/admin/companies",

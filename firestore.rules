@@ -132,6 +132,16 @@ service cloud.firestore {
       allow delete: if isAdmin(); // Seuls les admins peuvent supprimer
     }
     
+    // Salary history collection
+    // Historique des rémunérations - accès réservé aux administrateurs uniquement
+    // Les données sont sensibles et confidentielles
+    match /salary_history/{historyId} {
+      allow read: if isAdmin(); // Seuls les admins peuvent lire
+      allow create: if isAdmin(); // Seuls les admins peuvent créer
+      allow update: if false; // L'historique est immuable une fois créé
+      allow delete: if isAdmin(); // Seuls les admins peuvent supprimer (nettoyage > 3 ans)
+    }
+    
     // Assistant conversations collection
     // Conversations sauvegardées - lecture/écriture pour le propriétaire
     // Note: La vérification du partage se fait côté serveur dans l'API car Firestore Rules

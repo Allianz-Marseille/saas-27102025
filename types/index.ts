@@ -11,6 +11,7 @@ export interface User {
   phone?: string;
   contrat?: string; // CDI, Alternant, etc.
   etp?: string; // Équivalent Temps Plein : 100%, 60%, 50%, etc.
+  currentMonthlySalary?: number; // Rémunération mensuelle actuelle en euros
 }
 
 export interface ActSuivi {
@@ -176,5 +177,20 @@ export interface AgencyCommission {
   updatedAt: Date | Timestamp;
   createdBy: string;
   lastUpdatedBy: string;
+}
+
+// Types pour Rémunérations
+export interface SalaryHistory {
+  id: string;
+  userId: string;
+  year: number; // Année d'application de la rémunération
+  monthlySalary: number; // Salaire mensuel en euros
+  previousMonthlySalary?: number; // Salaire mensuel précédent (pour traçabilité)
+  changeType: "initial" | "increase" | "decrease"; // Type de modification
+  changeAmount?: number; // Montant de l'augmentation en euros
+  changePercentage?: number; // Pourcentage d'augmentation
+  validatedAt: Date | Timestamp; // Date de validation
+  validatedBy: string; // UID de l'admin qui a validé
+  createdAt: Date | Timestamp; // Date de création de l'enregistrement
 }
 

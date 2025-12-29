@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
-import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench } from "lucide-react";
+import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { MobileMenu } from "@/components/navigation/mobile-menu";
 import { ResponsiveHeader } from "@/components/navigation/responsive-header";
@@ -59,6 +59,11 @@ const adminNavItems = [
     label: "Commissions Agence",
     icon: Coins,
     separator: true,
+  },
+  {
+    href: "/admin/remunerations",
+    label: "Rémunérations",
+    icon: Banknote,
   },
   {
     href: "/admin/companies",
