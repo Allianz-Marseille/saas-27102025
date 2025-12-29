@@ -474,20 +474,23 @@ export default function CommissionsAgencePage() {
 
           {/* KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <Card className="border-2 shadow-lg hover:shadow-xl transition-all">
-              <CardHeader className="pb-3">
+            <Card className="border-4 border-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 shadow-2xl hover:shadow-[0_20px_50px_rgba(251,191,36,0.5)] transition-all relative overflow-hidden bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-yellow-950/30 dark:via-amber-950/30 dark:to-orange-950/30">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-yellow-400/20 to-transparent rounded-full blur-2xl"></div>
+              <CardHeader className="pb-3 relative z-10">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <currentConfig.icon className={cn("h-4 w-4", currentConfig.color)} />
-                  {isIncomplete ? "Total Extrapolé" : "Total Année"}
+                  <currentConfig.icon className="h-5 w-5 text-amber-600 drop-shadow-lg" />
+                  <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                    {isIncomplete ? "💰 Total Extrapolé" : "💰 Total Année"}
+                  </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className={cn("text-2xl font-black", currentConfig.color)}>
+              <CardContent className="relative z-10">
+                <div className="text-3xl font-black bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-600 bg-clip-text text-transparent drop-shadow-sm">
                   {formatCurrencyInteger(isIncomplete ? currentMetricExtrapolated : currentMetricTotal)}
                 </div>
                 {isIncomplete && (
-                  <p className="text-xs text-muted-foreground mt-1 font-semibold">
-                    Basé sur {monthsWithData} mois
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 font-bold">
+                    ⚡ Basé sur {monthsWithData} mois
                   </p>
                 )}
               </CardContent>
@@ -556,17 +559,20 @@ export default function CommissionsAgencePage() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 shadow-lg hover:shadow-xl transition-all">
-              <CardHeader className="pb-3">
+            <Card className="border-4 border-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 shadow-2xl hover:shadow-[0_20px_50px_rgba(59,130,246,0.5)] transition-all relative overflow-hidden bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-50 dark:from-cyan-950/30 dark:via-blue-950/30 dark:to-indigo-950/30">
+              <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-400/20 to-transparent rounded-full blur-2xl"></div>
+              <CardHeader className="pb-3 relative z-10">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <Users className="h-4 w-4 text-indigo-600" />
-                  Commissions / ETP
+                  <Users className="h-5 w-5 text-blue-600 drop-shadow-lg" />
+                  <span className="bg-gradient-to-r from-cyan-600 to-indigo-600 bg-clip-text text-transparent">
+                    🚀 Commissions / ETP
+                  </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative z-10">
                 {totalEtp > 0 ? (
                   <>
-                    <div className="text-2xl font-black text-indigo-600">
+                    <div className="text-3xl font-black bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent drop-shadow-sm">
                       {(() => {
                         // Calculer le ratio pour l'année courante
                         const currentCommissions = isIncomplete 
@@ -583,10 +589,10 @@ export default function CommissionsAgencePage() {
                         return formatCurrencyInteger(displayRatio);
                       })()}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1 font-semibold">
+                    <p className="text-xs text-blue-700 dark:text-blue-400 mt-1 font-bold">
                       📊 {formatEtp(totalEtp)} ETP
                       {!hasProfit && previousYearRatio !== null && previousYearForDisplay !== null && (
-                        <span className="block mt-1 text-orange-600 font-bold">
+                        <span className="block mt-1 text-orange-600 font-extrabold animate-pulse">
                           ⚠️ Ratio {previousYearForDisplay} (année précédente)
                         </span>
                       )}
