@@ -45,19 +45,32 @@
 
 ### Initialisation (Point 0)
 
-- **Création de la base de données** : Importer les données du fichier `docs/sinistres-csv/29122025.csv`
+- **Création de la base de données** : Importer les données du fichier `docs/sinistres-csv/29122025.csv` dans Firebase (Firestore)
 - Ce fichier servira de point de départ (point 0) pour la base de données des sinistres
+- **Collection Firestore** : Créer une collection `sinistres` dans Firestore pour stocker les données
 
 ### Upload de fichiers
 
 - **Fonctionnalité** : Possibilité de télécharger depuis le front de nouveaux fichiers CSV
 - **Convention de nommage** : `DDMMYYYY.csv` (même logique que pour les fichiers sources)
 - **Interface** : Upload depuis la page admin dédiée aux sinistres
+
+#### Logique de déduplication et comparaison
+
+- **Source de vérité pour l'identification** : Le numéro de contrat (Numéro de la police - colonne 3 du CSV)
+- **Comparaison avec l'existant** : Lors d'un nouvel upload, comparer systématiquement avec les sinistres déjà enregistrés dans Firebase
+- **Règle de non-réintégration** :
+  - Si un sinistre existe déjà en base de données (même numéro de contrat), **ne pas le réintégrer**
+  - Les sinistres existants ont déjà été affectés, gérés, modifiés manuellement (route, statut, notes, etc.)
+  - Préserver toutes les modifications manuelles existantes
+- **Intégration uniquement des nouveaux** :
+  - Télécharger uniquement les sinistres avec un numéro de contrat **inconnu** (non présent en base)
+  - Les nouveaux sinistres sont créés avec les données du CSV
 - **Gestion des versions** :
-  - Lors d'un nouvel upload, conserver l'historique des versions précédentes
+  - Conserver l'historique des versions précédentes
   - Permettre de comparer les versions (diff)
   - Identifier les sinistres nouveaux, modifiés ou supprimés entre deux versions
-  - Option de fusion intelligente : préserver les modifications manuelles (affectation, route, statut, notes) lors de la mise à jour
+  - Afficher un rapport après l'upload : X nouveaux sinistres importés, Y sinistres déjà existants ignorés
 
 ### Mapping CSV → Base de données
 
@@ -125,8 +138,24 @@ Correspondance entre les colonnes CSV et les champs de la base de données :
 
 ### KPIs (Indicateurs de performance)
 
+#### KPIs permanents (affichés en permanence sur le tableau de bord)
+
+1. **Nombre de sinistres ouverts** (à minima)
+2. **Nombre de sinistres en retard / avec alertes** (dossiers qui traînent)
+3. **Nombre de sinistres non affectés** (sans chargé de clientèle)
+4. **Montant total des sinistres ouverts** (somme des montants restants à payer)
+5. **Nombre de sinistres par route** (répartition A/B/C/D/E/F)
+6. **Nombre de sinistres par statut** (répartition des statuts)
+7. **Sinistres en attente de pièces** (depuis plus de X jours)
+8. **Délai moyen de traitement** (jours depuis ouverture)
+9. **Taux de clôture** (sinistres clos / sinistres totaux)
+10. **Sinistres avec recours** (nombre et montant)
+
+#### KPIs contextuels (selon filtres appliqués)
+
 - **Métriques** : Indicateurs de performance qui respectent la logique de filtrage par année, mois, semaine et type de garantie sinistrée
 - **Affichage** : KPIs adaptés selon les critères de filtrage sélectionnés
+- **Comparaisons** : Possibilité de comparer les KPIs entre différentes périodes (mois précédent, année précédente, etc.)
 
 ### Affectation des sinistres
 
