@@ -188,11 +188,245 @@ POST /api/sinistres/upload-excel
 
 ## Outil de pilotage
 
+### Design Premium du Dashboard
+
+Le dashboard des sinistres doit offrir une expérience utilisateur **premium et moderne**, avec un design soigné et professionnel.
+
+#### Principes de design
+
+- **Esthétique moderne** : Interface épurée, élégante et professionnelle
+- **Hiérarchie visuelle claire** : Organisation logique de l'information avec une hiérarchie visuelle évidente
+- **Cohérence visuelle** : Design cohérent avec le reste de l'application, mais avec des éléments distinctifs pour le module sinistres
+- **Accessibilité** : Respect des standards d'accessibilité (contraste, taille de police, navigation au clavier)
+- **Responsive** : Adaptation parfaite à tous les écrans (desktop, tablette, mobile)
+
+#### Éléments de design premium
+
+**1. Header du Dashboard**
+- Header élégant avec titre principal et actions rapides
+- Indicateurs visuels subtils (badges, icônes)
+- Espacement généreux et aération visuelle
+- Typographie soignée avec hiérarchie claire
+
+**2. KPIs Dashboard**
+- **Cartes KPI modernes** : Design de cartes élégantes avec :
+  - Ombres subtiles et effets de profondeur
+  - Icônes expressives et colorées
+  - Animations subtiles au survol
+  - Indicateurs de tendance (flèches, pourcentages)
+  - Couleurs cohérentes et significatives (vert pour positif, rouge pour alerte, etc.)
+- **Mise en page en grille** : Organisation en grille responsive avec espacement harmonieux
+- **Graphiques visuels** : Utilisation de graphiques modernes (mini-charts, sparklines) pour illustrer les tendances
+
+**3. Filtres et Recherche**
+- **Barre de recherche élégante** : Design moderne avec icône et placeholder clair
+- **Filtres avancés** : Interface de filtrage intuitive avec :
+  - Badges de filtres actifs visibles
+  - Dropdowns stylisés
+  - Boutons de reset/clear visibles
+  - Indicateur du nombre de résultats
+
+**4. Tableaux de données**
+- **Table moderne** : 
+  - Lignes alternées subtiles pour la lisibilité
+  - Hover effects élégants
+  - Colonnes triables avec indicateurs visuels
+  - Pagination moderne
+  - Actions rapides accessibles (icônes, boutons)
+- **Badges de statut** : Design cohérent des badges de statut et route avec couleurs significatives
+- **Tooltips informatifs** : Tooltips élégants pour informations complémentaires
+
+**5. Vue Kanban**
+- **Colonnes Kanban modernes** : 
+  - Design de cartes élégantes pour chaque sinistre
+  - Drag & drop fluide avec animations
+  - Indicateurs visuels clairs (priorité, alertes)
+  - Ombres et profondeur pour la hiérarchie visuelle
+
+**6. Modales et Dialogs**
+- **Modales élégantes** : 
+  - Overlay subtil
+  - Animations d'ouverture/fermeture fluides
+  - Design centré et aéré
+  - Boutons d'action clairement identifiés
+
+**7. Boutons et Actions**
+- **Boutons premium** : 
+  - Styles variés (primary, secondary, outline, ghost)
+  - États visuels clairs (hover, active, disabled)
+  - Icônes cohérentes (lucide-react) - Voir section "Système d'icônes adaptées" pour le mapping détaillé
+  - Animations subtiles
+
+**8. Couleurs et Thème**
+- **Palette de couleurs cohérente** : 
+  - Couleurs primaires pour les actions principales
+  - Couleurs sémantiques pour les statuts (succès, avertissement, erreur)
+  - Support du mode sombre (dark mode)
+  - Gradients subtils pour les éléments premium
+
+**9. Animations et Transitions**
+- **Micro-interactions** : 
+  - Transitions fluides entre les états
+  - Animations subtiles pour les chargements
+  - Feedback visuel immédiat sur les actions
+  - Animations de chargement élégantes (skeletons, spinners)
+
+**10. Typographie**
+- **Hiérarchie typographique claire** : 
+  - Tailles de police cohérentes
+  - Poids de police variés pour l'emphase
+  - Espacement des lignes optimal
+  - Polices lisibles et modernes
+
+#### Technologies et bibliothèques recommandées
+
+- **shadcn/ui** : Composants UI modernes et personnalisables (déjà utilisé dans le projet)
+- **Tailwind CSS** : Pour le styling avec classes utilitaires
+- **Framer Motion** : Pour les animations fluides (optionnel)
+- **Recharts ou Chart.js** : Pour les graphiques et visualisations
+- **Lucide React** : Pour les icônes cohérentes et modernes
+
+#### Exigences spécifiques
+
+- **Performance** : Chargement rapide, pas de lag lors des interactions
+- **Accessibilité** : Navigation au clavier, lecteurs d'écran, contraste suffisant
+- **Responsive** : Adaptation parfaite mobile-first
+- **Cohérence** : Design aligné avec le reste de l'application mais avec une identité propre au module sinistres
+
+#### Système d'icônes adaptées
+
+**Bibliothèque** : **Lucide React** (déjà utilisée dans le projet) - Icônes modernes, cohérentes et personnalisables
+
+**Principes d'utilisation** :
+- **Cohérence** : Utiliser des icônes cohérentes pour représenter les mêmes concepts dans tout le module
+- **Sémantique** : Choisir des icônes qui communiquent clairement la fonction ou le statut
+- **Taille** : Tailles standardisées (16px, 20px, 24px) selon le contexte
+- **Couleurs** : Couleurs sémantiques alignées avec les statuts et actions
+
+**Mapping des icônes par élément** :
+
+**1. Module Sinistres (Navigation & Header)**
+- **Icône principale du module** : `AlertTriangle` ou `FileWarning` ou `ShieldAlert`
+- **Bouton d'import Excel** : `Upload` ou `FileSpreadsheet` ou `FileUp`
+- **Bouton de synchronisation** : `RefreshCw` ou `Sync`
+- **Menu/Options** : `MoreVertical` ou `Settings`
+
+**2. Statuts des sinistres**
+- **À qualifier** : `HelpCircle` ou `CircleDot` (couleur : gris/orange)
+- **En attente pièces assuré** : `FileText` ou `FileQuestion` (couleur : orange)
+- **En attente infos tiers** : `Users` ou `UserSearch` (couleur : orange)
+- **Mission en cours** : `Briefcase` ou `Workflow` (couleur : bleu)
+- **En attente devis** : `FileCheck` ou `Receipt` (couleur : jaune)
+- **En attente rapport** : `FileSearch` ou `ClipboardList` (couleur : jaune)
+- **En attente accord compagnie** : `Clock` ou `Hourglass` (couleur : jaune)
+- **Travaux en cours** : `Hammer` ou `Wrench` (couleur : bleu)
+- **En attente facture** : `Receipt` ou `FileText` (couleur : orange)
+- **Règlement en cours** : `DollarSign` ou `CreditCard` (couleur : vert clair)
+- **Clos** : `CheckCircle` ou `CheckCircle2` (couleur : vert)
+- **Litige / contestation** : `AlertCircle` ou `XCircle` (couleur : rouge)
+- **Non assigné** : `UserX` ou `UserMinus` (couleur : gris)
+
+**3. Routes de gestion**
+- **Route A - Réparation pilotée / réseau d'artisans** : `Wrench` ou `Tool` ou `Hammer`
+- **Route B - Expertise dommages** : `Search` ou `Microscope` ou `FileSearch`
+- **Route C - Auto matériel conventionnel (IRSA)** : `Car` ou `CarFront`
+- **Route D - Auto corporel (IRCA)** : `Heart` ou `Stethoscope` ou `UserHeart`
+- **Route E - Immeuble / dégât des eaux / incendie (IRSI)** : `Building` ou `Droplet` ou `Flame`
+- **Route F - Responsabilité / litige / protection juridique** : `Scale` ou `Gavel` ou `FileText`
+- **Route non définie** : `MinusCircle` ou `Circle` (couleur : gris)
+
+**4. Actions et boutons**
+- **Créer un sinistre** : `Plus` ou `PlusCircle`
+- **Modifier/Éditer** : `Pencil` ou `Edit` ou `PenTool`
+- **Supprimer** : `Trash2` ou `Trash`
+- **Voir les détails** : `Eye` ou `ExternalLink`
+- **Télécharger/Exporter** : `Download` ou `FileDown`
+- **Imprimer** : `Printer`
+- **Filtrer** : `Filter` ou `SlidersHorizontal`
+- **Rechercher** : `Search` ou `SearchIcon`
+- **Réinitialiser les filtres** : `X` ou `RotateCcw`
+- **Affecter à un chargé de clientèle** : `UserPlus` ou `UserCheck`
+- **Ajouter une note** : `MessageSquare` ou `StickyNote`
+- **Voir l'historique** : `History` ou `Clock`
+- **Voir les alertes** : `Bell` ou `AlertCircle`
+- **Fermer** : `X` ou `XCircle`
+
+**5. KPIs et indicateurs**
+- **Nombre de sinistres ouverts** : `FileText` ou `FolderOpen`
+- **Sinistres en retard / alertes** : `AlertTriangle` ou `BellRing`
+- **Sinistres non affectés** : `UserX` ou `Users`
+- **Montant total** : `DollarSign` ou `Euro` ou `Coins`
+- **Taux de clôture** : `TrendingUp` ou `ArrowUpCircle`
+- **Délai moyen** : `Clock` ou `Timer`
+- **Recours** : `Scale` ou `Gavel`
+- **Graphique/Tendance** : `TrendingUp` / `TrendingDown` / `Minus`
+
+**6. Filtres et recherche**
+- **Filtre par année** : `Calendar` ou `CalendarDays`
+- **Filtre par mois** : `Calendar` ou `CalendarRange`
+- **Filtre par semaine** : `Calendar` ou `CalendarCheck`
+- **Filtre par garantie** : `Shield` ou `ShieldCheck`
+- **Filtre par route** : `Route` ou `Navigation`
+- **Filtre par statut** : `Filter` ou `ListFilter`
+- **Filtre par chargé de clientèle** : `User` ou `Users`
+- **Filtre par date** : `Calendar` ou `CalendarRange`
+- **Filtre par montant** : `DollarSign` ou `Coins`
+- **Recherche textuelle** : `Search`
+
+**7. Vue Kanban**
+- **Déplacer une carte** : `GripVertical` ou `Move`
+- **Ajouter une carte** : `Plus` ou `PlusCircle`
+- **Voir plus de détails** : `ChevronRight` ou `ArrowRight`
+
+**8. Notes et commentaires**
+- **Ajouter une note** : `MessageSquare` ou `StickyNote`
+- **Modifier une note** : `Pencil` ou `Edit`
+- **Supprimer une note** : `Trash2`
+- **Pièce jointe** : `Paperclip` ou `File`
+- **Auteur** : `User` ou `UserCircle`
+
+**9. Historique et traçabilité**
+- **Voir l'historique** : `History` ou `Clock`
+- **Modification** : `Edit` ou `Pencil`
+- **Création** : `PlusCircle` ou `FilePlus`
+- **Suppression** : `Trash2`
+- **Changement de statut** : `ArrowRight` ou `RefreshCw`
+- **Changement de route** : `Route` ou `Navigation`
+
+**10. Alertes et notifications**
+- **Alerte générale** : `AlertTriangle` (couleur : orange/rouge)
+- **Alerte critique** : `AlertCircle` (couleur : rouge)
+- **Information** : `Info` ou `CircleInfo` (couleur : bleu)
+- **Succès** : `CheckCircle` (couleur : vert)
+- **Avertissement** : `AlertTriangle` (couleur : jaune/orange)
+
+**11. Import et export**
+- **Importer un fichier Excel** : `Upload` ou `FileSpreadsheet` ou `FileUp`
+- **Exporter les données** : `Download` ou `FileDown` ou `FileSpreadsheet`
+- **Fichier Excel** : `FileSpreadsheet` ou `File`
+- **Chargement/Import en cours** : `Loader2` (avec animation spin)
+
+**12. Navigation et vues**
+- **Vue tableau** : `Table` ou `List`
+- **Vue Kanban** : `LayoutGrid` ou `Columns`
+- **Vue par route** : `Route` ou `Navigation`
+- **Vue détaillée** : `FileText` ou `File`
+- **Retour** : `ArrowLeft` ou `ChevronLeft`
+- **Menu** : `Menu` ou `MoreVertical`
+
+**Conventions d'utilisation** :
+- **Taille standard** : 16px pour les icônes inline, 20px pour les boutons, 24px pour les en-têtes
+- **Espacement** : 4-8px entre l'icône et le texte
+- **Cohérence** : Utiliser la même icône pour représenter le même concept partout
+- **Accessibilité** : Ajouter des labels `aria-label` pour les icônes sans texte
+- **Couleurs contextuelles** : Les couleurs des icônes doivent s'aligner avec les statuts et actions (vert = succès, rouge = erreur, orange = attention, bleu = information)
+
 ### Interface utilisateur
 
 - **Modale explicative des routes** : Sur le tableau de bord, prévoir une modale qui explique les 6 routes de gestion (A à F)
   - Accessible depuis le tableau de bord pour aider les utilisateurs à comprendre le système de routes
   - Contient les informations détaillées sur chaque route (quand l'utiliser, étapes typiques, contexte)
+  - **Design premium** : Modale élégante avec design soigné, animations fluides et contenu bien structuré
 
 ### Alertes
 
@@ -228,6 +462,14 @@ POST /api/sinistres/upload-excel
 
 ### KPIs (Indicateurs de performance)
 
+**Design premium** : Les KPIs doivent être présentés dans des **cartes élégantes et modernes** avec :
+- Design visuel soigné (ombres, bordures subtiles, effets de profondeur)
+- Icônes expressives et colorées pour chaque KPI
+- Animations subtiles au survol
+- Indicateurs de tendance (flèches, pourcentages, mini-graphiques)
+- Couleurs sémantiques cohérentes
+- Mise en page en grille responsive avec espacement harmonieux
+
 #### KPIs permanents (affichés en permanence sur le tableau de bord)
 
 1. **Nombre de sinistres ouverts** (à minima)
@@ -246,6 +488,7 @@ POST /api/sinistres/upload-excel
 - **Métriques** : Indicateurs de performance qui respectent la logique de filtrage par année, mois, semaine et type de garantie sinistrée
 - **Affichage** : KPIs adaptés selon les critères de filtrage sélectionnés
 - **Comparaisons** : Possibilité de comparer les KPIs entre différentes périodes (mois précédent, année précédente, etc.)
+- **Design premium** : Graphiques modernes (mini-charts, sparklines) pour illustrer les tendances et comparaisons
 
 ### Affectation des sinistres
 
