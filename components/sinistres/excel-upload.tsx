@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { ExcelImportResult } from "@/types/sinistre";
 import { format } from "date-fns";
+import { Timestamp } from "firebase/firestore";
 
 interface ExcelUploadProps {
   onSuccess?: () => void;
@@ -198,7 +199,12 @@ export function ExcelUpload({ onSuccess, onError }: ExcelUploadProps) {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Date d'import:</span>
                   <span className="font-medium">
-                    {format(importResult.importDate, "dd/MM/yyyy 'à' HH:mm")}
+                    {format(
+                      importResult.importDate instanceof Timestamp
+                        ? importResult.importDate.toDate()
+                        : importResult.importDate,
+                      "dd/MM/yyyy 'à' HH:mm"
+                    )}
                   </span>
                 </div>
               </div>

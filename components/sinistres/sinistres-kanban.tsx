@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sinistre, SinistreStatus } from "@/types/sinistre";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
+import { Timestamp } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { updateSinistre } from "@/lib/firebase/sinistres";
 import { useAuth } from "@/lib/firebase/use-auth";
@@ -115,8 +116,11 @@ export function SinistresKanban({
   // Détecter les sinistres en retard (plus de 30 jours sans modification)
   const getSinistreAlerts = (sinistre: Sinistre) => {
     const alerts: string[] = [];
+    const updatedAtDate = sinistre.updatedAt instanceof Timestamp
+      ? sinistre.updatedAt.toDate()
+      : sinistre.updatedAt;
     const daysSinceUpdate = Math.floor(
-      (Date.now() - new Date(sinistre.updatedAt).getTime()) / (1000 * 60 * 60 * 24)
+      (Date.now() - updatedAtDate.getTime()) / (1000 * 60 * 60 * 24)
     );
     if (daysSinceUpdate > 30) {
       alerts.push(`${daysSinceUpdate}j`);
@@ -188,7 +192,14 @@ export function SinistresKanban({
                         <div className="space-y-1 text-xs">
                           <div className="flex items-center justify-between">
                             <span className="text-muted-foreground">Date:</span>
-                            <span>{format(sinistre.incidentDate, "dd/MM/yyyy")}</span>
+                            <span>
+                              {format(
+                                sinistre.incidentDate instanceof Timestamp
+                                  ? sinistre.incidentDate.toDate()
+                                  : sinistre.incidentDate,
+                                "dd/MM/yyyy"
+                              )}
+                            </span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-muted-foreground">Montant:</span>

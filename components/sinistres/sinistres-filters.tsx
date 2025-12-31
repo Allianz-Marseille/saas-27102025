@@ -93,7 +93,7 @@ export function SinistresFilters({
 
   const resetFilters = () => {
     onFiltersChange({});
-    setDateRange({});
+    setDateRange(undefined);
     setSearchText("");
   };
 

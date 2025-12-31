@@ -314,7 +314,8 @@ export async function parseSinistresExcel(
 
   try {
     // Charger le workbook depuis le buffer
-    await workbook.xlsx.load(buffer);
+    // ExcelJS accepte Buffer ou ArrayBuffer
+    await workbook.xlsx.load(buffer as any);
 
     // Utiliser la première feuille uniquement
     const worksheet = workbook.worksheets[0];

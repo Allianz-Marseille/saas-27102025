@@ -11,13 +11,14 @@ import {
   isAdmin,
   isCommercial,
   isCommercialSanteIndividuel,
-  isCommercialSanteCollective
+  isCommercialSanteCollective,
+  isGestionnaireSinistre
 } from "@/lib/utils/roles";
 import { toast } from "sonner";
 
 interface RouteGuardProps {
   children: React.ReactNode;
-  allowedRoles?: ("ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL" | "COMMERCIAL_SANTE_COLLECTIVE")[];
+  allowedRoles?: ("ADMINISTRATEUR" | "CDC_COMMERCIAL" | "COMMERCIAL_SANTE_INDIVIDUEL" | "COMMERCIAL_SANTE_COLLECTIVE" | "GESTIONNAIRE_SINISTRE")[];
   requireAuth?: boolean;
 }
 
@@ -98,6 +99,7 @@ export function RouteGuard({
         if (role === "CDC_COMMERCIAL") return isCommercial(userData);
         if (role === "COMMERCIAL_SANTE_INDIVIDUEL") return isCommercialSanteIndividuel(userData);
         if (role === "COMMERCIAL_SANTE_COLLECTIVE") return isCommercialSanteCollective(userData);
+        if (role === "GESTIONNAIRE_SINISTRE") return isGestionnaireSinistre(userData);
         return false;
       });
 

@@ -290,13 +290,24 @@ export function SinistreNotes({ sinistreId }: SinistreNotesProps) {
                       <span>{note.authorEmail}</span>
                       <span>•</span>
                       <span>
-                        {format(note.createdAt, "dd/MM/yyyy à HH:mm")}
+                        {format(
+                          note.createdAt instanceof Timestamp
+                            ? note.createdAt.toDate()
+                            : note.createdAt,
+                          "dd/MM/yyyy à HH:mm"
+                        )}
                       </span>
                       {note.updatedAt && (
                         <>
                           <span>•</span>
                           <span className="italic">
-                            Modifié le {format(note.updatedAt, "dd/MM/yyyy à HH:mm")}
+                            Modifié le{" "}
+                            {format(
+                              note.updatedAt instanceof Timestamp
+                                ? note.updatedAt.toDate()
+                                : note.updatedAt,
+                              "dd/MM/yyyy à HH:mm"
+                            )}
                           </span>
                         </>
                       )}

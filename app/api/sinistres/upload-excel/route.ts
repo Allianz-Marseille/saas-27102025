@@ -149,14 +149,14 @@ export async function POST(request: NextRequest) {
         try {
           const sinistreData = convertParsedLineToSinistre(line, excelVersion, auth.userId);
           
-          // Convertir les dates en Timestamp
+          // Convertir les dates en Timestamp (convertParsedLineToSinistre retourne toujours des Date)
           const docRef = adminDb.collection("sinistres").doc();
           batch.set(docRef, {
             ...sinistreData,
-            incidentDate: Timestamp.fromDate(sinistreData.incidentDate),
-            importDate: Timestamp.fromDate(sinistreData.importDate),
-            createdAt: Timestamp.fromDate(sinistreData.createdAt),
-            updatedAt: Timestamp.fromDate(sinistreData.updatedAt),
+            incidentDate: Timestamp.fromDate(sinistreData.incidentDate as Date),
+            importDate: Timestamp.fromDate(sinistreData.importDate as Date),
+            createdAt: Timestamp.fromDate(sinistreData.createdAt as Date),
+            updatedAt: Timestamp.fromDate(sinistreData.updatedAt as Date),
           });
 
           imported++;

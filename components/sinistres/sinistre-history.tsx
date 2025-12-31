@@ -11,6 +11,7 @@ import { History, Clock, User } from "lucide-react";
 import { SinistreHistory } from "@/types/sinistre";
 import { getSinistreHistory } from "@/lib/firebase/sinistres";
 import { format } from "date-fns";
+import { Timestamp } from "firebase/firestore";
 import { toast } from "sonner";
 
 interface SinistreHistoryProps {
@@ -148,7 +149,14 @@ export function SinistreHistoryComponent({ sinistreId }: SinistreHistoryProps) {
                     <span>{item.authorEmail}</span>
                     <span>•</span>
                     <Clock className="h-3 w-3" />
-                    <span>{format(item.timestamp, "dd/MM/yyyy à HH:mm")}</span>
+                    <span>
+                      {format(
+                        item.timestamp instanceof Timestamp
+                          ? item.timestamp.toDate()
+                          : item.timestamp,
+                        "dd/MM/yyyy à HH:mm"
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>

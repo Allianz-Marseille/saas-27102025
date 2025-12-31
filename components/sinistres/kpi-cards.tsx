@@ -23,6 +23,7 @@ import {
 import { SinistreKPI, SinistreStatus, SinistreRoute } from "@/types/sinistre";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
+import { Timestamp } from "firebase/firestore";
 import { motion } from "framer-motion";
 
 interface KPICardProps {
@@ -271,7 +272,12 @@ export function SinistresKPICards({ kpi }: SinistresKPICardsProps) {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Date d'import</span>
                 <span className="text-sm font-medium">
-                  {format(kpi.lastImport.importDate, "dd/MM/yyyy 'à' HH:mm")}
+                  {format(
+                    kpi.lastImport.importDate instanceof Timestamp
+                      ? kpi.lastImport.importDate.toDate()
+                      : kpi.lastImport.importDate,
+                    "dd/MM/yyyy 'à' HH:mm"
+                  )}
                 </span>
               </div>
               <div className="flex items-center justify-between">

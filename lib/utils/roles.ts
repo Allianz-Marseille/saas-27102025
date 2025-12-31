@@ -39,6 +39,13 @@ export function isCommercialSanteCollective(userData: UserData | null): boolean 
 }
 
 /**
+ * Vérifie si l'utilisateur est un Gestionnaire Sinistre
+ */
+export function isGestionnaireSinistre(userData: UserData | null): boolean {
+  return userData?.role === ROLES.GESTIONNAIRE_SINISTRE && userData?.active === true;
+}
+
+/**
  * Vérifie si l'utilisateur a accès à une fonctionnalité
  */
 export function hasAccess(

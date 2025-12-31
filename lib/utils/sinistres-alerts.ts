@@ -3,6 +3,14 @@
  */
 
 import { Sinistre, SinistreStatus } from "@/types/sinistre";
+import { Timestamp } from "firebase/firestore";
+
+/**
+ * Helper pour convertir Date | Timestamp en Date
+ */
+function toDate(value: Date | Timestamp): Date {
+  return value instanceof Timestamp ? value.toDate() : value;
+}
 
 export interface SinistreAlert {
   sinistreId: string;
@@ -25,8 +33,9 @@ export function detectStatusUnchangedAlerts(
   sinistres.forEach((sinistre) => {
     if (!sinistre.status || !sinistre.updatedAt) return;
 
+    const updatedAtDate = toDate(sinistre.updatedAt);
     const daysSinceUpdate = Math.floor(
-      (now - new Date(sinistre.updatedAt).getTime()) / (1000 * 60 * 60 * 24)
+      (now - updatedAtDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
     if (daysSinceUpdate > thresholdDays) {
@@ -57,8 +66,9 @@ export function detectPendingQuoteAlerts(
     if (sinistre.status !== SinistreStatus.EN_ATTENTE_DEVIS) return;
     if (!sinistre.updatedAt) return;
 
+    const updatedAtDate = toDate(sinistre.updatedAt);
     const daysSinceUpdate = Math.floor(
-      (now - new Date(sinistre.updatedAt).getTime()) / (1000 * 60 * 60 * 24)
+      (now - updatedAtDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
     if (daysSinceUpdate > thresholdDays) {
@@ -89,8 +99,9 @@ export function detectPendingReportAlerts(
     if (sinistre.status !== SinistreStatus.EN_ATTENTE_RAPPORT) return;
     if (!sinistre.updatedAt) return;
 
+    const updatedAtDate = toDate(sinistre.updatedAt);
     const daysSinceUpdate = Math.floor(
-      (now - new Date(sinistre.updatedAt).getTime()) / (1000 * 60 * 60 * 24)
+      (now - updatedAtDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
     if (daysSinceUpdate > thresholdDays) {
@@ -121,8 +132,9 @@ export function detectMissingDocumentsAlerts(
     if (sinistre.status !== SinistreStatus.EN_ATTENTE_PIECES_ASSURE) return;
     if (!sinistre.updatedAt) return;
 
+    const updatedAtDate = toDate(sinistre.updatedAt);
     const daysSinceUpdate = Math.floor(
-      (now - new Date(sinistre.updatedAt).getTime()) / (1000 * 60 * 60 * 24)
+      (now - updatedAtDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
     if (daysSinceUpdate > thresholdDays) {
@@ -158,8 +170,11 @@ export function detectOldSinistresAlerts(
       return;
     }
 
+    const incidentDate = sinistre.incidentDate instanceof Timestamp
+      ? sinistre.incidentDate.toDate()
+      : sinistre.incidentDate;
     const daysSinceIncident = Math.floor(
-      (now - new Date(sinistre.incidentDate).getTime()) / (1000 * 60 * 60 * 24)
+      (now - incidentDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
     if (daysSinceIncident > thresholds.error) {

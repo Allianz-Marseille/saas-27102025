@@ -25,6 +25,7 @@ import { SinistreNotes } from "./sinistre-notes";
 import { SinistreHistoryComponent } from "./sinistre-history";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
+import { Timestamp } from "firebase/firestore";
 import { toast } from "sonner";
 import { Loader2, Save, X } from "lucide-react";
 import { useAuth } from "@/lib/firebase/use-auth";
@@ -140,7 +141,12 @@ export function SinistreDetailsDialog({
                 <div>
                   <Label>Date de survenance</Label>
                   <Input
-                    value={format(sinistre.incidentDate, "dd/MM/yyyy")}
+                    value={format(
+                      sinistre.incidentDate instanceof Timestamp
+                        ? sinistre.incidentDate.toDate()
+                        : sinistre.incidentDate,
+                      "dd/MM/yyyy"
+                    )}
                     disabled
                   />
                 </div>
@@ -238,7 +244,14 @@ export function SinistreDetailsDialog({
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <div className="flex justify-between">
                 <span>Date d'import:</span>
-                <span>{format(sinistre.importDate, "dd/MM/yyyy à HH:mm")}</span>
+                <span>
+                  {format(
+                    sinistre.importDate instanceof Timestamp
+                      ? sinistre.importDate.toDate()
+                      : sinistre.importDate,
+                    "dd/MM/yyyy à HH:mm"
+                  )}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Fichier source:</span>
@@ -246,11 +259,25 @@ export function SinistreDetailsDialog({
               </div>
               <div className="flex justify-between">
                 <span>Créé le:</span>
-                <span>{format(sinistre.createdAt, "dd/MM/yyyy à HH:mm")}</span>
+                <span>
+                  {format(
+                    sinistre.createdAt instanceof Timestamp
+                      ? sinistre.createdAt.toDate()
+                      : sinistre.createdAt,
+                    "dd/MM/yyyy à HH:mm"
+                  )}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Modifié le:</span>
-                <span>{format(sinistre.updatedAt, "dd/MM/yyyy à HH:mm")}</span>
+                <span>
+                  {format(
+                    sinistre.updatedAt instanceof Timestamp
+                      ? sinistre.updatedAt.toDate()
+                      : sinistre.updatedAt,
+                    "dd/MM/yyyy à HH:mm"
+                  )}
+                </span>
               </div>
             </CardContent>
           </Card>
