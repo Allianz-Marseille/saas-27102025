@@ -1,13 +1,28 @@
 /**
  * Parser pour les fichiers Excel de sinistres exportés depuis le CRM Lagon
  * 
- * Structure réelle du fichier Excel :
- * A: N° SINISTRE, B: N° POLICE, C: DATE SINISTRE, D: DATE DECLARATION (ignorée),
- * E: DATE OUVERTURE SINISTRE, F: DATE CLOTURE SINISTRE, G: MONTANT SINISTRE,
- * H: MONTANT FRANCHISE, I: MONTANT REMBOURSE, J: MONTANT RESTANT DU,
- * K: STATUT SINISTRE, L: ROUTE SINISTRE, M: CHARGE CLIENTELE, N: COMMENTAIRES
+ * IMPORTANT : On extrait UNIQUEMENT les colonnes A, B, D-M
+ * Les autres colonnes (C, N-U) sont ignorées
+ * 
+ * Colonnes extraites :
+ * A: string - numéro lagon
+ * B: string - nom client
+ * D: string - société (AAA = Allianz)
+ * E: string - numéro de contrat
+ * F: string - situation (O = Ouvert)
+ * G: string - Responsabilité (0 = pas responsable, 4 = responsable)
+ * H: float - Provision
+ * I: float - Recours encaissé
+ * J: float - Règlement
+ * K: string - Nom du tiers
+ * L: string - garantie sinistrée 1
+ * M: string - garantie sinistrée 2
+ * 
+ * Les champs de gestion (route, status, assignedTo) sont ajoutés dans le front
+ * et ne proviennent PAS du fichier Excel
+ * 
  * Première ligne = en-têtes (à ignorer)
- * Lignes partielles : seule la colonne I (MONTANT REMBOURSE) remplie
+ * Lignes partielles : seule la colonne I (Recours encaissé) ou J (Règlement) remplie
  */
 
 import ExcelJS from "exceljs";
@@ -443,7 +458,10 @@ export function convertParsedLineToSinistre(
   
   const now = new Date();
 
+  // Retourner l'objet Sinistre avec uniquement les données extraites de l'Excel
+  // Les champs de gestion (route, status, assignedTo) seront ajoutés dans le front
   return {
+    // Données extraites de l'Excel (colonnes A, B, D-M uniquement)
     clientName: line.clientName,
     clientLagonNumber: line.clientLagonNumber,
     policyNumber: line.policyNumber,
@@ -457,6 +475,7 @@ export function convertParsedLineToSinistre(
     damagedCoverage: line.damagedCoverage, // Garanties sinistrées (L et M)
     totalAmountPaid,
     totalAmount,
+    // Métadonnées d'import
     importDate: now,
     excelVersion,
     createdAt: now,
@@ -464,6 +483,8 @@ export function convertParsedLineToSinistre(
     createdBy: userId,
     lastUpdatedBy: userId,
     source: "excel",
+    // Note: route, status, assignedTo ne sont PAS définis ici
+    // Ils seront ajoutés manuellement dans le front via l'interface de gestion
   };
 }
 
