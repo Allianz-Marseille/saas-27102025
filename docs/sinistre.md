@@ -9,10 +9,11 @@
 ### Permissions
 
 - **Admin** : Accès complet (lecture, modification, suppression, upload CSV)
-- **Chargé de clientèle** : Accès limité aux sinistres qui lui sont affectés
-  - Lecture et modification des sinistres affectés
+- **Chargé de clientèle** : Accès à tous les sinistres
+  - Peut lire et modifier tous les sinistres
   - Possibilité d'ajouter des notes/commentaires
-  - Pas d'accès aux fonctionnalités d'administration (upload CSV, affectation globale, etc.)
+  - Ne peut pas accéder aux fonctions d'administration (ex : upload de CSV)
+  - Après qu'un admin ait uploadé un fichier, les chargés de clientèle voient immédiatement le résultat de cet upload, au même titre que les admins
 
 ## Données sources
 
