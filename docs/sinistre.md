@@ -79,8 +79,10 @@
 
 - **Source de vérité pour l'identification** : Le numéro de contrat (Numéro de la police - colonne 3 du fichier Excel)
 - **Comparaison avec l'existant** : Lors d'un nouvel upload, comparer systématiquement avec les sinistres déjà enregistrés dans Firebase
-- **Règle de non-réintégration** :
-  - Si un sinistre existe déjà en base de données (même numéro de contrat), **ne pas le réintégrer**
+- **Règle de non-réintégration avec mise à jour partielle** :
+  - Si un sinistre existe déjà en base de données (même numéro de contrat), **ne pas le réintégrer intégralement**
+  - Cependant, si certaines données ont changé dans le nouvel Excel (ex : un montant déjà payé mis à jour), mettre à jour ces champs dans la base existante
+  - Ne pas écraser les champs qui ont été modifiés manuellement ou qui ne sont pas concernés par la mise à jour automatique
   - Les sinistres existants ont déjà été affectés, gérés, modifiés manuellement (route, statut, notes, etc.)
   - Préserver toutes les modifications manuelles existantes
 - **Intégration uniquement des nouveaux** :

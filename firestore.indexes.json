@@ -63,6 +63,52 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "timestamp", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "sinistres",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "incidentDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "sinistres",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "route", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "sinistres",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "assignedTo", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "sinistres",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "incidentDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "sinistres",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "damagedCoverage", "order": "ASCENDING" },
+        { "fieldPath": "incidentDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "sinistres",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "policyNumber", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

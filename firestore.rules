@@ -168,6 +168,51 @@ service cloud.firestore {
       
       // Note: Les conversations partagées sont gérées via l'API qui vérifie les permissions côté serveur
     }
+    
+    // Sinistres collection
+    // Gestion des sinistres - accès pour Admin, Gestionnaire Sinistre et CDC Commercial
+    match /sinistres/{sinistreId} {
+      // Lecture : Admin, Gestionnaire Sinistre ou CDC Commercial
+      allow read: if isAdmin() || isGestionnaireSinistre() || isCDC();
+      
+      // Création : Admin uniquement (via API)
+      allow create: if isAdmin();
+      
+      // Modification : Admin, Gestionnaire Sinistre ou CDC Commercial (pour leurs sinistres affectés)
+      // Un CDC peut modifier uniquement les sinistres qui lui sont affectés
+      allow update: if isAdmin() || 
+                      isGestionnaireSinistre() || 
+                      (isCDC() && (resource.data.assignedTo == request.auth.uid || !resource.data.assignedTo));
+      
+      // Suppression : Admin uniquement
+      allow delete: if isAdmin();
+      
+      // Notes sous-collection
+      match /notes/{noteId} {
+        // Lecture/écriture pour tous les rôles autorisés
+        allow read: if isAdmin() || isGestionnaireSinistre() || isCDC();
+        allow create: if isAdmin() || isGestionnaireSinistre() || isCDC();
+        // Modification : propriétaire de la note ou admin
+        allow update: if isAdmin() || (isAuthenticated() && resource.data.authorId == request.auth.uid);
+        // Suppression : propriétaire de la note ou admin
+        allow delete: if isAdmin() || (isAuthenticated() && resource.data.authorId == request.auth.uid);
+      }
+      
+      // Historique sous-collection
+      match /history/{historyId} {
+        // Lecture pour tous les rôles autorisés, écriture admin uniquement (via API)
+        allow read: if isAdmin() || isGestionnaireSinistre() || isCDC();
+        allow create: if isAdmin(); // L'historique est créé automatiquement par l'API
+        allow update, delete: if false; // L'historique est immuable
+      }
+    }
+    
+    // Sinistres metadata collection
+    // Métadonnées des imports - lecture pour tous les rôles autorisés, écriture admin uniquement
+    match /sinistres_metadata/{docId} {
+      allow read: if isAdmin() || isGestionnaireSinistre() || isCDC();
+      allow create, update, delete: if isAdmin();
+    }
   }
 }
 

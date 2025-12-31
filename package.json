@@ -22,6 +22,7 @@
     "import:kheira-may": "ts-node --project tsconfig.scripts.json scripts/import-kheira-may.ts",
     "import:commissions": "ts-node --project tsconfig.scripts.json scripts/import-commissions-from-md.ts",
     "import:commissions-2023": "ts-node --project tsconfig.scripts.json scripts/import-commissions-2023.ts",
+    "import:sinistres-initial": "ts-node --project tsconfig.scripts.json scripts/import-sinistres-initial.ts",
     "get-user-info": "ts-node --project tsconfig.scripts.json scripts/get-user-info.ts",
     "test:rules": "ts-node --project tsconfig.scripts.json scripts/test-firebase-rules.ts",
     "test:rules:emulator": "ts-node --project tsconfig.scripts.json scripts/test-firestore-rules-emulator.ts",
