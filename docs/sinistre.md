@@ -20,8 +20,10 @@
 - **Source principale** : Fichiers Excel exportés directement depuis le CRM Lagon
 - **Format** : Fichier Excel (`.xlsx`) - Format standard Microsoft Excel
 - **Format stable** : ⚠️ **Important** : Les fichiers Excel exportés depuis le CRM Lagon ont **toujours le même format**. La structure des colonnes, l'ordre des données et le format des valeurs sont constants. Cette stabilité permet de s'appuyer sur une structure fixe pour l'implémentation du parser.
-- **Convention de nommage** : Le nom du fichier peut contenir la date (ex: `LISTE SINISTRES202512311032.xlsx`)
-  - Pour l'import initial (Point 0) : Utiliser le fichier Excel du 29 décembre 2025
+- **Convention de nommage** : Le nom du fichier contient la date et l'heure d'export au format `LISTE SINISTRESYYYYMMDDHHMM.xlsx`
+  - Format : `YYYY` (année) + `MM` (mois) + `DD` (jour) + `HHMM` (heure)
+  - Exemple : `LISTE SINISTRES202512311032.xlsx` = 31 décembre 2025 à 10h32
+  - Pour l'import initial (Point 0) : Utiliser le fichier `LISTE SINISTRES202512311032.xlsx` (31 décembre 2025 à 10h32)
   - Pour les imports ultérieurs : Utiliser le fichier Excel le plus récent exporté depuis Lagon
 - **Structure** : Fichier Excel avec une feuille de calcul contenant les données, colonnes dans l'ordre suivant (format fixe et constant) :
   1. Nom du client
@@ -50,7 +52,7 @@
 ### Initialisation (Point 0)
 
 - **Source de données** : Fichier Excel exporté depuis le CRM Lagon
-- **Fichier initial** : Fichier Excel du 29 décembre 2025 (ex: `LISTE SINISTRES202512291032.xlsx` ou similaire)
+- **Fichier initial** : `LISTE SINISTRES202512311032.xlsx` (31 décembre 2025 à 10h32)
 - **Création de la base de données** : Importer les données du fichier Excel initial dans Firebase (Firestore)
 - Ce fichier servira de point de départ (point 0) pour la base de données des sinistres
 - **Collection Firestore** : Créer une collection `sinistres` dans Firestore pour stocker les données
