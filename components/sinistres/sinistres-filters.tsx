@@ -196,16 +196,16 @@ export function SinistresFilters({
             <div className="space-y-2">
               <Label>Année</Label>
               <Select
-                value={filters.year?.toString() || ""}
+                value={filters.year?.toString() || "all"}
                 onValueChange={(value) =>
-                  updateFilter("year", value ? parseInt(value) : undefined)
+                  updateFilter("year", value === "all" ? undefined : parseInt(value))
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Toutes les années" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Toutes les années</SelectItem>
+                  <SelectItem value="all">Toutes les années</SelectItem>
                   {years.map((year) => (
                     <SelectItem key={year} value={year.toString()}>
                       {year}
@@ -220,16 +220,16 @@ export function SinistresFilters({
               <div className="space-y-2">
                 <Label>Mois</Label>
                 <Select
-                  value={filters.month?.toString() || ""}
+                  value={filters.month?.toString() || "all"}
                   onValueChange={(value) =>
-                    updateFilter("month", value ? parseInt(value) : undefined)
+                    updateFilter("month", value === "all" ? undefined : parseInt(value))
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Tous les mois" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tous les mois</SelectItem>
+                    <SelectItem value="all">Tous les mois</SelectItem>
                     {months.map((month) => (
                       <SelectItem key={month.value} value={month.value.toString()}>
                         {month.label}
@@ -293,16 +293,16 @@ export function SinistresFilters({
             <div className="space-y-2">
               <Label>Route</Label>
               <Select
-                value={filters.route || ""}
+                value={filters.route || "all"}
                 onValueChange={(value) =>
-                  updateFilter("route", value ? (value as SinistreRoute) : undefined)
+                  updateFilter("route", value === "all" ? undefined : (value as SinistreRoute))
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Toutes les routes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Toutes les routes</SelectItem>
+                  <SelectItem value="all">Toutes les routes</SelectItem>
                   {ROUTE_OPTIONS.map((route) => (
                     <SelectItem key={route.value} value={route.value}>
                       {route.label}
@@ -316,11 +316,11 @@ export function SinistresFilters({
             <div className="space-y-2">
               <Label>Statut</Label>
               <Select
-                value={filters.status && filters.status.length > 0 ? filters.status[0] : ""}
+                value={filters.status && filters.status.length > 0 ? filters.status[0] : "all"}
                 onValueChange={(value) =>
                   updateFilter(
                     "status",
-                    value ? [value as SinistreStatus] : undefined
+                    value === "all" ? undefined : [value as SinistreStatus]
                   )
                 }
               >
@@ -328,7 +328,7 @@ export function SinistresFilters({
                   <SelectValue placeholder="Tous les statuts" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tous les statuts</SelectItem>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
                   {STATUS_OPTIONS.map((status) => (
                     <SelectItem key={status.value} value={status.value}>
                       {status.label}

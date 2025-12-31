@@ -65,8 +65,8 @@ export function AssigneeSelector({
 
   return (
     <Select
-      value={value || ""}
-      onValueChange={(val) => onValueChange(val || undefined)}
+      value={value || "none"}
+      onValueChange={(val) => onValueChange(val === "none" ? undefined : val)}
       disabled={disabled}
     >
       <SelectTrigger>
@@ -85,7 +85,7 @@ export function AssigneeSelector({
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="">À affecter</SelectItem>
+        <SelectItem value="none">À affecter</SelectItem>
         {charges.map((charge) => (
           <SelectItem key={charge.id} value={charge.id}>
             <div className="flex items-center gap-2">

@@ -123,9 +123,9 @@ export function StatusSelector({
 
   return (
     <Select
-      value={value || ""}
+      value={value || "none"}
       onValueChange={(val) =>
-        onValueChange(val ? (val as SinistreStatus) : undefined)
+        onValueChange(val === "none" ? undefined : (val as SinistreStatus))
       }
       disabled={disabled}
     >
@@ -140,7 +140,7 @@ export function StatusSelector({
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="">Aucun statut</SelectItem>
+        <SelectItem value="none">Aucun statut</SelectItem>
         {STATUS_OPTIONS.map((status) => {
           const Icon = status.icon;
           return (

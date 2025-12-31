@@ -73,9 +73,9 @@ export function RouteSelector({
 
   return (
     <Select
-      value={value || ""}
+      value={value || "none"}
       onValueChange={(val) =>
-        onValueChange(val ? (val as SinistreRoute) : undefined)
+        onValueChange(val === "none" ? undefined : (val as SinistreRoute))
       }
       disabled={disabled}
     >
@@ -90,7 +90,7 @@ export function RouteSelector({
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="">Aucune route</SelectItem>
+        <SelectItem value="none">Aucune route</SelectItem>
         {ROUTE_OPTIONS.map((route) => {
           const Icon = route.icon;
           return (
