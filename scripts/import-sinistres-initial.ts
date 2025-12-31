@@ -66,13 +66,25 @@ async function importSinistresInitial() {
       chunk.forEach((sinistre, index) => {
         try {
           const docRef = adminDb.collection("sinistres").doc();
-          batch.set(docRef, {
+          // convertParsedLineToSinistre retourne des Date, on peut les convertir directement
+          // Exclure les champs undefined pour éviter les erreurs Firestore
+          const sinistreData: any = {
             ...sinistre,
-            incidentDate: Timestamp.fromDate(sinistre.incidentDate),
-            importDate: Timestamp.fromDate(sinistre.importDate),
-            createdAt: Timestamp.fromDate(sinistre.createdAt),
-            updatedAt: Timestamp.fromDate(sinistre.updatedAt),
-          });
+            incidentDate: Timestamp.fromDate(sinistre.incidentDate as Date),
+            importDate: Timestamp.fromDate(sinistre.importDate as Date),
+            createdAt: Timestamp.fromDate(sinistre.createdAt as Date),
+            updatedAt: Timestamp.fromDate(sinistre.updatedAt as Date),
+          };
+          
+          // Supprimer les champs undefined
+          if (sinistreData.createdBy === undefined) {
+            delete sinistreData.createdBy;
+          }
+          if (sinistreData.lastUpdatedBy === undefined) {
+            delete sinistreData.lastUpdatedBy;
+          }
+          
+          batch.set(docRef, sinistreData);
           imported++;
         } catch (error) {
           const lineIndex = i + index + 1;
