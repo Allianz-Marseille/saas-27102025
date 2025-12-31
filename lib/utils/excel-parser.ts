@@ -1,14 +1,20 @@
 /**
  * Parser pour les fichiers Excel de sinistres exportés depuis le CRM Lagon
  * 
- * Format fixe : 11 colonnes dans un ordre déterminé
+ * Structure réelle du fichier Excel :
+ * A: N° SINISTRE, B: N° POLICE, C: DATE SINISTRE, D: DATE DECLARATION (ignorée),
+ * E: DATE OUVERTURE SINISTRE, F: DATE CLOTURE SINISTRE, G: MONTANT SINISTRE,
+ * H: MONTANT FRANCHISE, I: MONTANT REMBOURSE, J: MONTANT RESTANT DU,
+ * K: STATUT SINISTRE, L: ROUTE SINISTRE, M: CHARGE CLIENTELE, N: COMMENTAIRES
  * Première ligne = en-têtes (à ignorer)
- * Lignes partielles : seule la colonne 8 (montant payé) remplie
+ * Lignes partielles : seule la colonne I (MONTANT REMBOURSE) remplie
  */
 
 import ExcelJS from "exceljs";
+import { SinistreStatus, SinistreRoute } from "../../types/sinistre";
 
 export interface ParsedExcelLine {
+  // Champs de base (pour compatibilité avec le type Sinistre)
   clientName: string;
   clientLagonNumber: string;
   policyNumber: string;
@@ -23,6 +29,16 @@ export interface ParsedExcelLine {
   isPartialLine: boolean;
   lineIndex: number;
   partialAmounts: number[];
+  // Champs supplémentaires du fichier Excel réel (colonnes A, B, D-M)
+  societe?: string; // D: société (AAA = Allianz)
+  situation?: string; // F: situation (O = Ouvert)
+  responsabilite?: string; // G: Responsabilité (0 ou 4)
+  provision?: string | number; // H: float - Provision
+  recoursEncaisse?: string | number; // I: float - Recours encaissé
+  reglement?: string | number; // J: float - Règlement
+  nomTiers?: string; // K: Nom du tiers
+  garantie1?: string; // L: garantie sinistrée 1
+  garantie2?: string; // M: garantie sinistrée 2
 }
 
 export interface ParsedExcelResult {
@@ -179,15 +195,17 @@ function isPartialLine(row: ExcelJS.Row, rowNumber: number): boolean {
     return false;
   }
 
-  // Vérifier que les colonnes 0-7 sont vides et que la colonne 8 est remplie
-  const col0 = parseCellValue(row.getCell(1)); // Colonne A (index 1 dans ExcelJS)
-  const col1 = parseCellValue(row.getCell(2)); // Colonne B
-  const col2 = parseCellValue(row.getCell(3)); // Colonne C
-  const col3 = parseCellValue(row.getCell(4)); // Colonne D
-  const col4 = parseCellValue(row.getCell(5)); // Colonne E
-  const col5 = parseCellValue(row.getCell(6)); // Colonne F
-  const col6 = parseCellValue(row.getCell(7)); // Colonne G
-  const col7 = parseCellValue(row.getCell(8)); // Colonne H (montant payé)
+  // Vérifier que les colonnes A, B, D-G sont vides et que la colonne I (Recours encaissé) ou J (Règlement) est remplie
+  const colA = parseCellValue(row.getCell(1)); // Colonne A: numéro lagon
+  const colB = parseCellValue(row.getCell(2)); // Colonne B: nom client
+  // Colonne C: ignorée
+  const colD = parseCellValue(row.getCell(4)); // Colonne D: société
+  const colE = parseCellValue(row.getCell(5)); // Colonne E: numéro de contrat
+  const colF = parseCellValue(row.getCell(6)); // Colonne F: situation
+  const colG = parseCellValue(row.getCell(7)); // Colonne G: Responsabilité
+  const colH = parseCellValue(row.getCell(8)); // Colonne H: Provision
+  const colI = parseCellValue(row.getCell(9)); // Colonne I: Recours encaissé
+  const colJ = parseCellValue(row.getCell(10)); // Colonne J: Règlement
 
   const isEmpty = (val: string | number | null): boolean => {
     if (val === null || val === undefined) return true;
@@ -197,19 +215,34 @@ function isPartialLine(row: ExcelJS.Row, rowNumber: number): boolean {
   };
 
   return (
-    isEmpty(col0) &&
-    isEmpty(col1) &&
-    isEmpty(col2) &&
-    isEmpty(col3) &&
-    isEmpty(col4) &&
-    isEmpty(col5) &&
-    isEmpty(col6) &&
-    !isEmpty(col7)
+    isEmpty(colA) &&
+    isEmpty(colB) &&
+    isEmpty(colD) &&
+    isEmpty(colE) &&
+    isEmpty(colF) &&
+    isEmpty(colG) &&
+    isEmpty(colH) &&
+    (!isEmpty(colI) || !isEmpty(colJ))
   );
 }
 
 /**
  * Parse une ligne Excel en objet ParsedExcelLine
+ * Structure réelle du fichier Excel (colonnes A à U, on utilise seulement A, B, D-M) :
+ * A: string - numéro lagon
+ * B: string - nom client
+ * C: ignorée
+ * D: string - société (AAA = Allianz)
+ * E: string - numéro de contrat
+ * F: string - situation (O = Ouvert)
+ * G: string - Responsabilité (0 = pas responsable, 4 = responsable)
+ * H: float - Provision
+ * I: float - Recours encaissé
+ * J: float - Règlement
+ * K: string - Nom du tiers
+ * L: string - garantie sinistrée 1
+ * M: string - garantie sinistrée 2
+ * N-U: ignorées (seront utilisées pour la gestion en agence plus tard)
  */
 function parseExcelRow(row: ExcelJS.Row, rowNumber: number): ParsedExcelLine | null {
   // Ignorer la première ligne (en-têtes)
@@ -219,42 +252,57 @@ function parseExcelRow(row: ExcelJS.Row, rowNumber: number): ParsedExcelLine | n
 
   try {
     // ExcelJS utilise des index 1-based pour les colonnes
-    // Colonnes : A=1, B=2, C=3, D=4, E=5, F=6, G=7, H=8, I=9, J=10, K=11
-    const clientName = String(parseCellValue(row.getCell(1)) || "").trim();
-    const clientLagonNumber = String(parseCellValue(row.getCell(2)) || "").trim();
-    const policyNumber = String(parseCellValue(row.getCell(3)) || "").trim();
-    const policyCategory = String(parseCellValue(row.getCell(4)) || "").trim();
-    const productType = String(parseCellValue(row.getCell(5)) || "").trim();
-    const claimNumber = String(parseCellValue(row.getCell(6)) || "").trim();
-    const incidentDate = parseCellValue(row.getCell(7));
-    const amountPaid = parseCellValue(row.getCell(8));
-    const remainingAmount = parseCellValue(row.getCell(9));
-    const recourse = parseCellValue(row.getCell(10));
-    const damagedCoverage = String(parseCellValue(row.getCell(11)) || "").trim();
+    // A=1, B=2, C=3 (ignorée), D=4, E=5, F=6, G=7, H=8, I=9, J=10, K=11, L=12, M=13
+    const clientLagonNumber = String(parseCellValue(row.getCell(1)) || "").trim(); // A: numéro lagon
+    const clientName = String(parseCellValue(row.getCell(2)) || "").trim(); // B: nom client
+    // C: ignorée
+    const societe = String(parseCellValue(row.getCell(4)) || "").trim(); // D: société (AAA = Allianz)
+    const policyNumber = String(parseCellValue(row.getCell(5)) || "").trim(); // E: numéro de contrat
+    const situation = String(parseCellValue(row.getCell(6)) || "").trim(); // F: situation (O = Ouvert)
+    const responsabilite = String(parseCellValue(row.getCell(7)) || "").trim(); // G: Responsabilité (0 ou 4)
+    const provision = parseCellValue(row.getCell(8)); // H: float - Provision
+    const recoursEncaisse = parseCellValue(row.getCell(9)); // I: float - Recours encaissé
+    const reglement = parseCellValue(row.getCell(10)); // J: float - Règlement
+    const nomTiers = String(parseCellValue(row.getCell(11)) || "").trim(); // K: Nom du tiers
+    const garantie1 = String(parseCellValue(row.getCell(12)) || "").trim(); // L: garantie sinistrée 1
+    const garantie2 = String(parseCellValue(row.getCell(13)) || "").trim(); // M: garantie sinistrée 2
 
-    // Vérifier si c'est une ligne partielle
+    // Vérifier si c'est une ligne partielle (seule la colonne I (Recours encaissé) ou J (Règlement) est remplie)
     const isPartial = isPartialLine(row, rowNumber);
 
     // Si c'est une ligne partielle et qu'on n'a pas de données principales, ignorer
-    if (isPartial && !clientName && !policyNumber) {
+    if (isPartial && !clientLagonNumber && !policyNumber) {
       return null;
     }
+
+    // Combiner les garanties sinistrées
+    const garantiesSinistrees = [garantie1, garantie2].filter(g => g).join(", ");
 
     return {
       clientName,
       clientLagonNumber,
       policyNumber,
-      policyCategory,
-      productType,
-      claimNumber,
-      incidentDate: incidentDate || "",
-      amountPaid: amountPaid || "",
-      remainingAmount: remainingAmount || "",
-      recourse: recourse || "",
-      damagedCoverage,
+      policyCategory: societe, // Société stockée dans policyCategory
+      productType: "", // Non disponible dans le fichier Excel
+      claimNumber: "", // Non disponible dans le fichier Excel (peut-être généré)
+      incidentDate: "", // Non disponible dans le fichier Excel
+      amountPaid: reglement || "", // J: Règlement
+      remainingAmount: provision || "", // H: Provision (reste à payer)
+      recourse: responsabilite === "4", // G: Responsabilité (4 = responsable = recours)
+      damagedCoverage: garantiesSinistrees, // L et M: garanties sinistrées
       isPartialLine: isPartial,
       lineIndex: rowNumber,
       partialAmounts: [],
+      // Champs supplémentaires du fichier Excel réel
+      societe: societe,
+      situation: situation,
+      responsabilite: responsabilite,
+      provision: provision || "",
+      recoursEncaisse: recoursEncaisse || "",
+      reglement: reglement || "",
+      nomTiers: nomTiers,
+      garantie1: garantie1,
+      garantie2: garantie2,
     };
   } catch (error) {
     throw new Error(`Erreur lors du parsing de la ligne ${rowNumber}: ${error instanceof Error ? error.message : "Erreur inconnue"}`);
@@ -361,26 +409,52 @@ export function convertParsedLineToSinistre(
   excelVersion: string,
   userId?: string
 ): Omit<import("../../types/sinistre").Sinistre, "id"> {
-  const amountPaid = parseAmount(line.amountPaid);
-  const remainingAmount = parseAmount(line.remainingAmount);
-  const totalAmountPaid = amountPaid + line.partialAmounts.reduce((sum, amt) => sum + amt, 0);
-  const totalAmount = totalAmountPaid + remainingAmount;
-  const incidentDate = parseDate(line.incidentDate);
-  const recourse = parseRecourse(line.recourse);
+  // Calculer les montants depuis les colonnes Excel
+  // H: Provision (reste à payer)
+  // I: Recours encaissé
+  // J: Règlement (montant payé)
+  const provision = parseAmount(line.provision || 0);
+  const recoursEncaisse = parseAmount(line.recoursEncaisse || 0);
+  const reglement = parseAmount(line.reglement || 0);
+  
+  // Montants partiels additionnels (lignes partielles)
+  const partialAmounts = line.partialAmounts.reduce((sum, amt) => sum + amt, 0);
+  
+  // amountPaid = Règlement (J) + montants partiels
+  const amountPaid = reglement + partialAmounts;
+  
+  // remainingAmount = Provision (H)
+  const remainingAmount = provision;
+  
+  // totalAmountPaid = Règlement + Recours encaissé + montants partiels
+  const totalAmountPaid = reglement + recoursEncaisse + partialAmounts;
+  
+  // totalAmount = Provision + Recours encaissé + Règlement
+  const totalAmount = provision + recoursEncaisse + reglement;
+  
+  // recourse = true si Responsabilité (G) = "4"
+  const recourse = line.responsabilite === "4";
+  
+  // Générer un claimNumber si non disponible (basé sur numéro lagon + numéro contrat)
+  const claimNumber = line.claimNumber || `${line.clientLagonNumber}-${line.policyNumber}`;
+  
+  // incidentDate non disponible dans le fichier Excel, utiliser la date d'import
+  const incidentDate = parseDate(line.incidentDate) || new Date();
+  
   const now = new Date();
 
   return {
     clientName: line.clientName,
     clientLagonNumber: line.clientLagonNumber,
     policyNumber: line.policyNumber,
-    policyCategory: line.policyCategory,
-    productType: line.productType,
-    claimNumber: line.claimNumber,
+    policyCategory: line.policyCategory, // Société (AAA = Allianz)
+    productType: line.productType || "",
+    claimNumber,
     incidentDate,
     amountPaid,
     remainingAmount,
     recourse,
-    damagedCoverage: line.damagedCoverage,
+    damagedCoverage: line.damagedCoverage, // Garanties sinistrées (L et M)
     totalAmountPaid,
     totalAmount,
     importDate: now,
