@@ -8,21 +8,22 @@
 
 ### Permissions
 
-- **Admin** : Accès complet (lecture, modification, suppression, upload CSV)
+- **Admin** : Accès complet (lecture, modification, suppression, import de fichiers Excel)
 - **Chargé de clientèle** : Accès à tous les sinistres
   - Peut lire et modifier tous les sinistres
   - Possibilité d'ajouter des notes/commentaires
-  - Ne peut pas accéder aux fonctions d'administration (ex : upload de CSV)
-  - Après qu'un admin ait uploadé un fichier, les chargés de clientèle voient immédiatement le résultat de cet upload, au même titre que les admins
+  - Ne peut pas accéder aux fonctions d'administration (ex : import de fichiers Excel)
+  - Après qu'un admin ait importé un fichier Excel, les chargés de clientèle voient immédiatement le résultat de cet import, au même titre que les admins
 
 ## Données sources
 
-- **Répertoire** : `sinistres-csv`
-- **Contenu** : État du stock des sinistres de l'agence à ce jour
-- **Format** : CSV
-- **Convention de nommage** : `DDMMYYYY.csv` (date à laquelle le fichier a été créé)
-  - Exemple : `29122025.csv` (29 décembre 2025)
-- **Structure** : Fichier sans en-têtes, colonnes dans l'ordre suivant :
+- **Source principale** : Fichiers Excel exportés directement depuis le CRM Lagon
+- **Format** : Fichier Excel (`.xlsx`) - Format standard Microsoft Excel
+- **Format stable** : ⚠️ **Important** : Les fichiers Excel exportés depuis le CRM Lagon ont **toujours le même format**. La structure des colonnes, l'ordre des données et le format des valeurs sont constants. Cette stabilité permet de s'appuyer sur une structure fixe pour l'implémentation du parser.
+- **Convention de nommage** : Le nom du fichier peut contenir la date (ex: `LISTE SINISTRES202512311032.xlsx`)
+  - Pour l'import initial (Point 0) : Utiliser le fichier Excel du 29 décembre 2025
+  - Pour les imports ultérieurs : Utiliser le fichier Excel le plus récent exporté depuis Lagon
+- **Structure** : Fichier Excel avec une feuille de calcul contenant les données, colonnes dans l'ordre suivant (format fixe et constant) :
   1. Nom du client
   2. Numéro Lagon du client
   3. Numéro de la police
@@ -37,55 +38,72 @@
 
 ### Structure des lignes
 
-- **Lignes complètes** : Chaque ligne représente un sinistre avec toutes les informations
+- **Lignes complètes** : Chaque ligne de la feuille Excel représente un sinistre avec toutes les informations
 - **Lignes partielles** : Parfois, des lignes contiennent uniquement une information dans la colonne "Montant déjà payé"
   - Dans ce cas, le montant payé doit être rattaché à la première ligne supérieure qui est pleinement renseignée (avec nom, numéro client, etc.)
+  - Détection automatique : une ligne est considérée comme partielle si seule la colonne "Montant déjà payé" (colonne 8) contient une valeur
 - **Multiplicité** : Un sinistre pour un client peut avoir plusieurs lignes (ligne principale + lignes de montants payés supplémentaires)
+- **Gestion des en-têtes** : ⚠️ **Important** : La première ligne du fichier Excel contient **toujours les en-têtes de colonne**. Cette ligne doit être **ignorée lors du parsing** et les données commencent à partir de la deuxième ligne
 
 ## Implémentation
 
 ### Initialisation (Point 0)
 
-- **Création de la base de données** : Importer les données du fichier `docs/sinistres-csv/29122025.csv` dans Firebase (Firestore)
+- **Source de données** : Fichier Excel exporté depuis le CRM Lagon
+- **Fichier initial** : Fichier Excel du 29 décembre 2025 (ex: `LISTE SINISTRES202512291032.xlsx` ou similaire)
+- **Création de la base de données** : Importer les données du fichier Excel initial dans Firebase (Firestore)
 - Ce fichier servira de point de départ (point 0) pour la base de données des sinistres
 - **Collection Firestore** : Créer une collection `sinistres` dans Firestore pour stocker les données
+- **Script d'import** : `scripts/import-sinistres-initial.ts` (utilise la bibliothèque `xlsx` pour parser le fichier Excel)
 
-### Upload de fichiers
+### Import de fichiers Excel
 
-- **Fonctionnalité** : Possibilité de télécharger depuis le front de nouveaux fichiers CSV
-- **Convention de nommage** : `DDMMYYYY.csv` (même logique que pour les fichiers sources)
-- **Interface** : Upload depuis la page admin dédiée aux sinistres
+- **Source principale** : Fichiers Excel exportés directement depuis le CRM Lagon
+- **Workflow d'import** :
+  1. Export du fichier Excel depuis le CRM Lagon (format `.xlsx`)
+  2. Upload du fichier Excel depuis le frontend via un bouton "Importer un fichier Excel"
+  3. Le système parse automatiquement le fichier Excel (première feuille de calcul)
+  4. Import automatique des nouveaux sinistres uniquement (déduplication basée sur `policyNumber`)
+  5. Affichage d'un rapport d'import : X nouveaux sinistres importés, Y sinistres déjà existants ignorés
+- **Interface** : 
+  - Bouton d'upload de fichier Excel visible uniquement pour les administrateurs sur la page admin dédiée aux sinistres
+  - Zone de drag & drop ou sélection de fichier
+  - Indicateur de progression pendant l'import
+- **Bibliothèque utilisée** : `xlsx` (SheetJS) pour parser les fichiers Excel
+- **Version** : Le nom du fichier Excel est utilisé comme `excelVersion` pour tracer l'origine des données
+- **Gestion des feuilles** : Par défaut, le système utilise la première feuille de calcul du fichier Excel
 
 #### Logique de déduplication et comparaison
 
-- **Source de vérité pour l'identification** : Le numéro de contrat (Numéro de la police - colonne 3 du CSV)
+- **Source de vérité pour l'identification** : Le numéro de contrat (Numéro de la police - colonne 3 du fichier Excel)
 - **Comparaison avec l'existant** : Lors d'un nouvel upload, comparer systématiquement avec les sinistres déjà enregistrés dans Firebase
 - **Règle de non-réintégration** :
   - Si un sinistre existe déjà en base de données (même numéro de contrat), **ne pas le réintégrer**
   - Les sinistres existants ont déjà été affectés, gérés, modifiés manuellement (route, statut, notes, etc.)
   - Préserver toutes les modifications manuelles existantes
 - **Intégration uniquement des nouveaux** :
-  - Télécharger uniquement les sinistres avec un numéro de contrat **inconnu** (non présent en base)
-  - Les nouveaux sinistres sont créés avec les données du CSV
+  - Importer uniquement les sinistres avec un numéro de contrat **inconnu** (non présent en base)
+  - Les nouveaux sinistres sont créés avec les données du fichier Excel
 - **Gestion des versions** :
-  - Conserver l'historique des versions précédentes
+  - Chaque import utilise le nom du fichier Excel comme version
+  - Conserver l'historique des versions précédentes via le champ `excelVersion`
   - Permettre de comparer les versions (diff)
   - Identifier les sinistres nouveaux, modifiés ou supprimés entre deux versions
-  - Afficher un rapport après l'upload : X nouveaux sinistres importés, Y sinistres déjà existants ignorés
+  - Afficher un rapport après l'import : X nouveaux sinistres importés, Y sinistres déjà existants ignorés
 
-### Mapping CSV → Base de données
+### Mapping Excel → Base de données
 
-Correspondance entre les colonnes CSV et les champs de la base de données :
+Correspondance entre les colonnes du fichier Excel et les champs de la base de données :
 
-| Colonne CSV | Champ Base de données | Notes |
-|-------------|----------------------|-------|
+| Colonne Excel | Champ Base de données | Notes |
+|---------------|----------------------|-------|
 | 1. Nom du client | `clientName` | |
 | 2. Numéro Lagon du client | `clientLagonNumber` | Identifiant unique client |
-| 3. Numéro de la police | `policyNumber` | |
+| 3. Numéro de la police | `policyNumber` | **Source de vérité pour la déduplication** |
 | 4. Catégorie de la police | `policyCategory` | |
 | 5. Type de produit | `productType` | |
 | 6. Numéro de sinistre | `claimNumber` | Identifiant unique sinistre |
-| 7. Date de survenance | `incidentDate` | Format date à parser |
+| 7. Date de survenance | `incidentDate` | Format date Excel à parser (peut être un nombre de jours depuis 1900 ou une date) |
 | 8. Montant déjà payé | `amountPaid` | Peut être multiple (lignes partielles) |
 | 9. Reste à payer | `remainingAmount` | |
 | 10. Recours | `recourse` | Booléen ou texte |
@@ -94,8 +112,79 @@ Correspondance entre les colonnes CSV et les champs de la base de données :
 **Champs calculés/ajoutés lors de l'import** :
 - `totalAmountPaid` : Somme de tous les montants payés (lignes principales + partielles)
 - `totalAmount` : `amountPaid` + `remainingAmount`
-- `importDate` : Date d'import du CSV
-- `csvVersion` : Référence au fichier CSV source
+- `importDate` : Date d'import du fichier Excel
+- `excelVersion` : Nom du fichier Excel source (ex: `LISTE SINISTRES202512311032.xlsx`)
+
+**Notes techniques sur le parsing Excel** :
+- **Format stable** : Le format des fichiers Excel étant constant, le parser peut s'appuyer sur une structure fixe (11 colonnes dans un ordre déterminé), ce qui simplifie l'implémentation et réduit les risques d'erreurs
+- **Première ligne = en-têtes** : La première ligne du fichier Excel contient toujours les en-têtes de colonne et doit être ignorée lors du parsing (les données commencent à la ligne 2)
+- Utilisation de la bibliothèque `xlsx` (SheetJS) pour lire les fichiers Excel
+- Gestion des formats de date Excel (conversion depuis le format Excel vers Date JavaScript)
+- Gestion des formats numériques (montants avec séparateurs de milliers, décimales)
+- Détection automatique des lignes partielles (lignes avec seulement le montant payé rempli)
+
+### Implémentation technique de l'import Excel
+
+#### Bibliothèque requise
+- **`xlsx`** (SheetJS) : Bibliothèque JavaScript pour lire et écrire des fichiers Excel
+- Installation : `npm install xlsx` ou `npm install xlsx @types/xlsx` (pour TypeScript)
+
+#### Workflow d'import depuis le frontend
+
+1. **Upload du fichier** :
+   - L'utilisateur sélectionne ou glisse-dépose un fichier Excel (`.xlsx`) depuis l'interface
+   - Le fichier est envoyé via une requête POST multipart/form-data vers `/api/sinistres/upload-excel`
+
+2. **Traitement côté serveur** :
+   - Le serveur reçoit le fichier Excel
+   - Utilisation de `xlsx.readFile()` ou `xlsx.read()` pour parser le fichier
+   - Extraction de la première feuille de calcul
+   - **Ignorer la première ligne** : La première ligne (index 0) contient les en-têtes de colonne et doit être ignorée
+   - **Parsing par index de colonnes** : Grâce au format stable, le parser peut accéder directement aux colonnes par leur index (0-10) à partir de la deuxième ligne
+   - Conversion des lignes en objets JavaScript selon la structure fixe
+   - Application de la logique de déduplication (comparaison avec les `policyNumber` existants)
+   - Import en batch dans Firestore des nouveaux sinistres uniquement
+
+3. **Gestion des formats Excel** :
+   - **Dates** : Conversion depuis le format Excel (nombre de jours depuis le 1er janvier 1900) vers Date JavaScript
+   - **Montants** : Gestion des formats numériques français (virgule comme séparateur décimal, espace comme séparateur de milliers)
+   - **Lignes partielles** : Détection des lignes où seule la colonne "Montant déjà payé" est remplie
+
+4. **Rapport d'import** :
+   - Retour d'un rapport JSON contenant :
+     - Nombre total de lignes traitées
+     - Nombre de nouveaux sinistres importés
+     - Nombre de sinistres existants ignorés
+     - Liste des erreurs éventuelles (lignes avec des données invalides)
+
+#### Structure de l'API route
+
+```typescript
+// app/api/sinistres/upload-excel/route.ts
+POST /api/sinistres/upload-excel
+- Body: FormData avec le fichier Excel
+- Response: {
+    success: boolean,
+    result: {
+      totalLines: number,
+      newSinistres: number,
+      existingSinistres: number,
+      errors: Array<{ line: number; error: string }>,
+      excelVersion: string,
+      importDate: Date
+    }
+  }
+```
+
+#### Script d'import initial
+
+```typescript
+// scripts/import-sinistres-initial.ts
+- Lit le fichier Excel depuis le système de fichiers
+- Parse le fichier avec xlsx
+- Importe toutes les données dans Firestore (sans déduplication pour le point 0)
+- Génère un rapport d'import
+```
 
 ## Outil de pilotage
 
@@ -190,7 +279,7 @@ Correspondance entre les colonnes CSV et les champs de la base de données :
   - Modifications d'affectation (changement de chargé de clientèle)
   - Modifications de montants
   - Ajout/modification/suppression de notes
-  - Upload de nouveaux CSV (impact sur le sinistre)
+  - Import de fichiers Excel (impact sur le sinistre)
 - **Informations enregistrées** :
   - Date et heure de la modification
   - Auteur de la modification
