@@ -107,31 +107,46 @@ export function NewYearCelebration({ onClose }: NewYearCelebrationProps) {
         </div>
 
         {/* Texte Star Wars */}
-        <div className="relative h-full w-full flex items-center justify-center perspective-1000">
+        <div className="relative h-full w-full flex items-center justify-center perspective-1000 overflow-hidden">
           <motion.div
             className="text-center text-yellow-400 font-bold text-4xl md:text-6xl lg:text-8xl star-wars-text"
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
             style={{
               transformStyle: "preserve-3d",
-              transform: "perspective(1000px) rotateX(25deg)",
+              perspective: "1000px",
             }}
           >
             <motion.div
-              initial={{ y: 0 }}
-              animate={{ y: -200 }}
+              initial={{ 
+                y: 0,
+                scale: 1,
+                opacity: 1,
+              }}
+              animate={{ 
+                y: -1000,
+                scale: 0.05,
+                opacity: 0,
+              }}
               transition={{
-                duration: 10,
+                duration: 20,
                 ease: "linear",
                 repeat: Infinity,
+              }}
+              style={{
+                transformStyle: "preserve-3d",
+                transform: "perspective(1000px) rotateX(25deg)",
               }}
               className="space-y-8"
             >
               <motion.p
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5, duration: 1 }}
+                animate={{ opacity: [0, 1, 1, 0] }}
+                transition={{ 
+                  delay: 0.5, 
+                  duration: 20,
+                  times: [0, 0.08, 0.6, 1],
+                  ease: "linear",
+                  repeat: Infinity,
+                }}
                 className="text-5xl md:text-7xl lg:text-9xl mb-8"
                 style={{
                   textShadow: "0 0 10px #ffd700, 0 0 20px #ffd700, 0 0 30px #ffd700",
@@ -142,8 +157,14 @@ export function NewYearCelebration({ onClose }: NewYearCelebrationProps) {
               
               <motion.p
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.5, duration: 1 }}
+                animate={{ opacity: [0, 1, 1, 0] }}
+                transition={{ 
+                  delay: 1.5, 
+                  duration: 20,
+                  times: [0, 0.1, 0.65, 1],
+                  ease: "linear",
+                  repeat: Infinity,
+                }}
                 className="text-6xl md:text-8xl lg:text-[12rem]"
                 style={{
                   textShadow: "0 0 10px #ffd700, 0 0 20px #ffd700, 0 0 30px #ffd700",
@@ -154,8 +175,14 @@ export function NewYearCelebration({ onClose }: NewYearCelebrationProps) {
 
               <motion.p
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 2.5, duration: 1 }}
+                animate={{ opacity: [0, 1, 1, 0] }}
+                transition={{ 
+                  delay: 2.5, 
+                  duration: 20,
+                  times: [0, 0.12, 0.7, 1],
+                  ease: "linear",
+                  repeat: Infinity,
+                }}
                 className="text-2xl md:text-4xl lg:text-5xl mt-12"
                 style={{
                   textShadow: "0 0 5px #ffd700, 0 0 10px #ffd700",
