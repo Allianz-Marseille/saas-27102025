@@ -62,7 +62,7 @@ export function SinistresTable({
   const columns: ColumnDef<Sinistre>[] = useMemo(
     () => [
       {
-        accessorKey: "clientName",
+        accessorKey: "clientLagonNumber",
         header: ({ column }) => {
           return (
             <Button
@@ -70,7 +70,7 @@ export function SinistresTable({
               onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
               className="h-8 px-2"
             >
-              Client
+              Numéro Lagon
               {column.getIsSorted() === "asc" ? (
                 <ArrowUp className="ml-2 h-4 w-4" />
               ) : column.getIsSorted() === "desc" ? (
@@ -82,7 +82,31 @@ export function SinistresTable({
           );
         },
         cell: ({ row }) => (
-          <div className="font-medium">{row.getValue("clientName")}</div>
+          <div className="font-medium">{row.getValue("clientLagonNumber") || "-"}</div>
+        ),
+      },
+      {
+        accessorKey: "clientName",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+              className="h-8 px-2"
+            >
+              Nom Client
+              {column.getIsSorted() === "asc" ? (
+                <ArrowUp className="ml-2 h-4 w-4" />
+              ) : column.getIsSorted() === "desc" ? (
+                <ArrowDown className="ml-2 h-4 w-4" />
+              ) : (
+                <ArrowUpDown className="ml-2 h-4 w-4" />
+              )}
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div>{row.getValue("clientName") || "-"}</div>
         ),
       },
       {
@@ -94,7 +118,7 @@ export function SinistresTable({
               onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
               className="h-8 px-2"
             >
-              Police
+              Numéro Contrat
               {column.getIsSorted() === "asc" ? (
                 <ArrowUp className="ml-2 h-4 w-4" />
               ) : column.getIsSorted() === "desc" ? (
@@ -105,35 +129,23 @@ export function SinistresTable({
             </Button>
           );
         },
+        cell: ({ row }) => (
+          <div>{row.getValue("policyNumber") || "-"}</div>
+        ),
       },
       {
         accessorKey: "claimNumber",
         header: "Sinistre",
+        cell: ({ row }) => (
+          <div>{row.getValue("claimNumber") || "-"}</div>
+        ),
       },
       {
-        accessorKey: "incidentDate",
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-              className="h-8 px-2"
-            >
-              Date survenance
-              {column.getIsSorted() === "asc" ? (
-                <ArrowUp className="ml-2 h-4 w-4" />
-              ) : column.getIsSorted() === "desc" ? (
-                <ArrowDown className="ml-2 h-4 w-4" />
-              ) : (
-                <ArrowUpDown className="ml-2 h-4 w-4" />
-              )}
-            </Button>
-          );
-        },
-        cell: ({ row }) => {
-          const date = row.getValue("incidentDate") as Date;
-          return format(date, "dd/MM/yyyy");
-        },
+        accessorKey: "policyCategory",
+        header: "Société",
+        cell: ({ row }) => (
+          <div>{row.getValue("policyCategory") || "-"}</div>
+        ),
       },
       {
         accessorKey: "route",
@@ -168,7 +180,7 @@ export function SinistresTable({
               onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
               className="h-8 px-2"
             >
-              Montant
+              Montant Total
               {column.getIsSorted() === "asc" ? (
                 <ArrowUp className="ml-2 h-4 w-4" />
               ) : column.getIsSorted() === "desc" ? (
@@ -181,7 +193,40 @@ export function SinistresTable({
         },
         cell: ({ row }) => {
           const amount = row.getValue("totalAmount") as number;
-          return formatCurrency(amount);
+          return formatCurrency(amount || 0);
+        },
+      },
+      {
+        accessorKey: "remainingAmount",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+              className="h-8 px-2"
+            >
+              Reste à Payer
+              {column.getIsSorted() === "asc" ? (
+                <ArrowUp className="ml-2 h-4 w-4" />
+              ) : column.getIsSorted() === "desc" ? (
+                <ArrowDown className="ml-2 h-4 w-4" />
+              ) : (
+                <ArrowUpDown className="ml-2 h-4 w-4" />
+              )}
+            </Button>
+          );
+        },
+        cell: ({ row }) => {
+          const amount = row.getValue("remainingAmount") as number;
+          return formatCurrency(amount || 0);
+        },
+      },
+      {
+        accessorKey: "damagedCoverage",
+        header: "Garanties Sinistrées",
+        cell: ({ row }) => {
+          const coverage = row.getValue("damagedCoverage") as string;
+          return <div className="text-sm">{coverage || "-"}</div>;
         },
       },
       {
