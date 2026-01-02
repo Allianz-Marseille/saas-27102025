@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Home, Building2, LogOut, Users, User, ScrollText, ChevronLeft, ChevronRight, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -8,9 +8,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/firebase/use-auth";
 import Image from "next/image";
-
-// Date de création du bouton Process - à partir d'aujourd'hui
-const PROCESS_FEATURE_START_DATE = new Date();
 
 interface AdminSidebarProps {
   onLogout: () => void;
@@ -21,16 +18,6 @@ interface AdminSidebarProps {
 export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: AdminSidebarProps) {
   const pathname = usePathname();
   const { userData } = useAuth();
-  const [showProcessCapsule, setShowProcessCapsule] = useState(false);
-
-  // Vérifier si on est dans la fenêtre de 7 jours
-  useEffect(() => {
-    const today = new Date();
-    const daysDiff = Math.floor(
-      (today.getTime() - PROCESS_FEATURE_START_DATE.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    setShowProcessCapsule(daysDiff < 7);
-  }, []);
 
   const navItems = [
     {
@@ -162,7 +149,6 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
                 : item.exact 
                   ? pathname === item.href
                   : pathname?.startsWith(item.href);
-              const isProcessButton = item.href === "/commun/process";
 
               return (
                 <div key={item.href}>
@@ -170,21 +156,12 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
                   {item.separator && !isCollapsed && (
                     <div className="my-3 border-t border-muted" />
                   )}
-                  <div
-                    className={cn(
-                      "relative",
-                      isProcessButton && showProcessCapsule && !isCollapsed && "p-1"
-                    )}
-                  >
-                    {isProcessButton && showProcessCapsule && !isCollapsed && (
-                      <div className="absolute inset-0 rounded-lg bg-red-500 border-2 border-red-600 shadow-lg shadow-red-500/50 animate-pulse" />
-                    )}
+                  <div className="relative">
                     <Link href={item.href}>
                       <Button
                         variant="ghost"
                         className={cn(
                           "w-full justify-start gap-3 transition-all relative overflow-hidden",
-                          isProcessButton && showProcessCapsule && !isCollapsed && "z-10",
                           isActive 
                             ? "bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 text-white font-semibold hover:from-blue-700 hover:via-purple-700 hover:to-blue-700 shadow-md shadow-blue-500/20" 
                             : "hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30",

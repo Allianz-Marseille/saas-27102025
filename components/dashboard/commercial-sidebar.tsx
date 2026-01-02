@@ -53,24 +53,11 @@ const menuItems: SidebarItem[] = [
   },
 ];
 
-// Date de création du bouton Process - à partir d'aujourd'hui
-const PROCESS_FEATURE_START_DATE = new Date();
-
 export function CommercialSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, userData } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [showProcessCapsule, setShowProcessCapsule] = useState(false);
-
-  // Vérifier si on est dans la fenêtre de 7 jours
-  useEffect(() => {
-    const today = new Date();
-    const daysDiff = Math.floor(
-      (today.getTime() - PROCESS_FEATURE_START_DATE.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    setShowProcessCapsule(daysDiff < 7);
-  }, []);
 
   const handleLogout = async () => {
     try {
@@ -158,25 +145,17 @@ export function CommercialSidebar() {
           const isActive = item.href === "/commun/process" 
             ? pathname?.startsWith("/commun/process")
             : pathname === item.href;
-          const isProcessButton = item.href === "/commun/process";
 
           return (
             <div
               key={item.href}
-              className={cn(
-                "relative",
-                isProcessButton && showProcessCapsule && !isCollapsed && "p-1"
-              )}
+              className="relative"
             >
-              {isProcessButton && showProcessCapsule && !isCollapsed && (
-                <div className="absolute inset-0 rounded-lg bg-red-500 border-2 border-red-600 shadow-lg shadow-red-500/50 animate-pulse" />
-              )}
               <Button
                 data-href={item.href}
                 variant={isActive ? "default" : "ghost"}
                 className={cn(
                   "w-full justify-start gap-3 transition-all relative",
-                  isProcessButton && showProcessCapsule && !isCollapsed && "z-10",
                   isActive && "bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 hover:from-blue-700 hover:via-purple-700 hover:to-blue-700 text-white shadow-md shadow-blue-500/20",
                   !isActive && "hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30",
                   isCollapsed && "justify-center px-2"
