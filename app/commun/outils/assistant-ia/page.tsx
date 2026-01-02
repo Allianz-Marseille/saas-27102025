@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Fragment } from "react";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { isAdmin } from "@/lib/utils/roles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Image as ImageIcon, X, RotateCcw, Copy, Check, Plus, Save, XCircle, ClipboardCopy, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Bot, FileText, Trash2, Loader2, Send, Image as ImageIcon, X, RotateCcw, Copy, Check, Plus, Save, XCircle, ClipboardCopy, AlertTriangle, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,6 +31,9 @@ import { ImageFile, convertImagesToBase64, processImageFiles } from "@/lib/assis
 import { ProcessedFile, processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
 import { extractLagonOCRData } from "@/lib/assistant/ocr-parser";
 import { convertOCRToContext, extractAgeFromText, extractCAFromText, extractEffectifFromText } from "@/lib/assistant/context-converter";
+import { motion, AnimatePresence } from "framer-motion";
+import { getRelativeTime, groupMessagesByDate, getDateLabel } from "@/lib/utils/date-helpers";
+import { useMemo } from "react";
 
 interface Message {
   id: string;
@@ -82,7 +85,10 @@ export default function AssistantIAPage() {
   const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const chatFileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -90,10 +96,42 @@ export default function AssistantIAPage() {
 
   const isUserAdmin = isAdmin(userData);
 
-  // Scroll vers le bas quand de nouveaux messages arrivent
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // Groupement des messages par date
+  const groupedMessages = useMemo(() => {
+    return groupMessagesByDate(messages);
   }, [messages]);
+
+  // Scroll intelligent - détection de la position
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const isNearBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+      
+      setShouldAutoScroll(isNearBottom);
+      setShowScrollToBottom(!isNearBottom && messages.length > 0);
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    handleScroll(); // Vérifier la position initiale
+
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [messages.length]);
+
+  // Scroll automatique seulement si l'utilisateur est en bas
+  useEffect(() => {
+    if (shouldAutoScroll && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, shouldAutoScroll]);
+
+  // Fonction pour scroller vers le bas
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setShouldAutoScroll(true);
+  };
 
   // Focus automatique sur le textarea quand la réponse du bot est terminée
   useEffect(() => {
@@ -1132,9 +1170,13 @@ export default function AssistantIAPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
+            <CardContent className="flex-1 flex flex-col overflow-hidden p-0 relative">
               {/* Zone de messages */}
-              <div className="flex-1 overflow-y-auto mb-4 space-y-1 px-4 py-4 min-h-0 bg-[#ECE5DD] dark:bg-[#0b141a]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}>
+              <div 
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto mb-4 space-y-1 px-4 py-4 min-h-0 bg-[#ECE5DD] dark:bg-[#0b141a]" 
+                style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}
+              >
                 {messages.length === 0 && !isStarted ? (
                   <div className="flex justify-start">
                     <div className="max-w-[75%] bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
@@ -1149,108 +1191,136 @@ export default function AssistantIAPage() {
                     </div>
                   </div>
                 ) : (
-                    messages.map((message, msgIndex) => {
-                    // Calculer l'index de correspondance pour ce message
-                    let matchIndexInMessage = -1;
-                    if (searchQuery && searchResults.length > 0) {
-                      const currentResult = searchResults[currentSearchIndex];
-                      if (currentResult && currentResult.messageId === message.id) {
-                        matchIndexInMessage = currentResult.index;
-                      }
-                    }
-
+                  Object.entries(groupedMessages).map(([dateKey, dateMessages]) => {
+                    const date = new Date(dateKey);
+                    const dateLabel = getDateLabel(date);
+                    
                     return (
-                      <div
-                        key={message.id}
-                        id={`message-${message.id}`}
-                        className={`flex mb-1 ${
-                          message.role === "user" ? "justify-end" : "justify-start"
-                        }`}
-                      >
-                        <div
-                          className={cn(
-                            "max-w-[75%] rounded-2xl p-3 shadow-sm",
-                            message.role === "user"
-                              ? "bg-[#DCF8C6] dark:bg-[#056162] text-gray-900 dark:text-gray-100 rounded-tr-none"
-                              : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-none border border-gray-200 dark:border-gray-700"
-                          )}
-                        >
-                          {message.role === "user" ? (
-                            <>
-                              {message.images && message.images.length > 0 && (
-                                <div className="mb-3 flex flex-wrap gap-2">
-                                  {message.images.map((img, idx) => (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img
-                                      key={idx}
-                                      src={img}
-                                      alt={`Image ${idx + 1}`}
-                                      className="max-w-[200px] max-h-[200px] rounded-md object-cover"
-                                    />
-                                  ))}
-                                </div>
-                              )}
-                              <p className="whitespace-pre-wrap">
-                                <HighlightedText
-                                  text={message.content}
-                                  searchQuery={searchQuery}
-                                  currentMatchIndex={matchIndexInMessage}
-                                />
-                              </p>
-                            </>
-                          ) : (
-                            <div className="relative group">
-                              {searchQuery ? (
-                                <div className="prose prose-sm dark:prose-invert max-w-none">
-                                  <HighlightedText
-                                    text={message.content}
-                                    searchQuery={searchQuery}
-                                    currentMatchIndex={matchIndexInMessage}
-                                  />
-                                </div>
-                              ) : (
-                                <>
-                                  <MarkdownRenderer content={message.content} />
-                                  {/* Boutons de réponse rapide pour les questions avec alternatives */}
-                                  {message.role === "assistant" && (
-                                    <QuickReplyButtons
-                                      content={message.content}
-                                      onSelect={(option) => {
-                                        // Envoyer directement le message avec l'option sélectionnée
-                                        handleSendMessage(option);
-                                      }}
-                                      disabled={isLoading}
-                                    />
-                                  )}
-                                </>
-                              )}
-                              {message.role === "assistant" && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={() => handleCopyMessage(message.id, message.content)}
-                                  aria-label="Copier le message"
-                                  title="Copier le message"
-                                >
-                                  {copiedMessageId === message.id ? (
-                                    <Check className="h-3.5 w-3.5 text-green-600" />
-                                  ) : (
-                                    <Copy className="h-3.5 w-3.5" />
-                                  )}
-                                </Button>
-                              )}
-                            </div>
-                          )}
+                      <Fragment key={dateKey}>
+                        {/* Séparateur de date */}
+                        <div className="flex items-center justify-center my-4">
+                          <div className="flex items-center gap-2 px-3 py-1 bg-white/80 dark:bg-gray-800/80 rounded-full border border-gray-200 dark:border-gray-700">
+                            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                              {dateLabel}
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                        
+                        {/* Messages du jour */}
+                        {dateMessages.map((message, msgIndex) => {
+                          // Calculer l'index de correspondance pour ce message
+                          let matchIndexInMessage = -1;
+                          if (searchQuery && searchResults.length > 0) {
+                            const currentResult = searchResults[currentSearchIndex];
+                            if (currentResult && currentResult.messageId === message.id) {
+                              matchIndexInMessage = currentResult.index;
+                            }
+                          }
+
+                          return (
+                            <div
+                              key={message.id}
+                              id={`message-${message.id}`}
+                              className={`flex mb-1 ${
+                                message.role === "user" ? "justify-end" : "justify-start"
+                              }`}
+                            >
+                              <div
+                                className={cn(
+                                  "max-w-[75%] rounded-2xl p-3 shadow-sm",
+                                  message.role === "user"
+                                    ? "bg-[#DCF8C6] dark:bg-[#056162] text-gray-900 dark:text-gray-100 rounded-tr-none"
+                                    : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-none border border-gray-200 dark:border-gray-700"
+                                )}
+                              >
+                                {message.role === "user" ? (
+                                  <>
+                                    {message.images && message.images.length > 0 && (
+                                      <div className="mb-3 flex flex-wrap gap-2">
+                                        {message.images.map((img, idx) => (
+                                          // eslint-disable-next-line @next/next/no-img-element
+                                          <img
+                                            key={idx}
+                                            src={img}
+                                            alt={`Image ${idx + 1}`}
+                                            className="max-w-[200px] max-h-[200px] rounded-md object-cover"
+                                          />
+                                        ))}
+                                      </div>
+                                    )}
+                                    <p className="whitespace-pre-wrap">
+                                      <HighlightedText
+                                        text={message.content}
+                                        searchQuery={searchQuery}
+                                        currentMatchIndex={matchIndexInMessage}
+                                      />
+                                    </p>
+                                    <p className="text-xs opacity-70 mt-1">{getRelativeTime(message.timestamp)}</p>
+                                  </>
+                                ) : (
+                                  <div className="relative group">
+                                    {searchQuery ? (
+                                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                                        <HighlightedText
+                                          text={message.content}
+                                          searchQuery={searchQuery}
+                                          currentMatchIndex={matchIndexInMessage}
+                                        />
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <MarkdownRenderer content={message.content} />
+                                        {/* Boutons de réponse rapide pour les questions avec alternatives */}
+                                        {message.role === "assistant" && (
+                                          <QuickReplyButtons
+                                            content={message.content}
+                                            onSelect={(option) => {
+                                              // Envoyer directement le message avec l'option sélectionnée
+                                              handleSendMessage(option);
+                                            }}
+                                            disabled={isLoading}
+                                          />
+                                        )}
+                                      </>
+                                    )}
+                                    {message.role === "assistant" && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => handleCopyMessage(message.id, message.content)}
+                                        aria-label="Copier le message"
+                                        title="Copier le message"
+                                      >
+                                        {copiedMessageId === message.id ? (
+                                          <Check className="h-3.5 w-3.5 text-green-600" />
+                                        ) : (
+                                          <Copy className="h-3.5 w-3.5" />
+                                        )}
+                                      </Button>
+                                    )}
+                                    <p className="text-xs opacity-70 mt-1">{getRelativeTime(message.timestamp)}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </Fragment>
                     );
-                    })
-                  )}
+                  })
+                )}
                 {isLoading && (
                   <div className="flex justify-start">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-                      <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">L'assistant réfléchit...</span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1367,7 +1437,7 @@ export default function AssistantIAPage() {
                 }}
               >
                 <div className="flex gap-2">
-                  <div className="flex-1 flex flex-col gap-2">
+                  <div className="flex-1 flex flex-col gap-2 relative">
                     <Textarea
                       ref={textareaRef}
                       value={input}
@@ -1393,9 +1463,22 @@ export default function AssistantIAPage() {
                         }
                       }}
                       placeholder="Tapez votre message... (Vous pouvez coller des images avec Ctrl+V / Cmd+V)"
-                      className="min-h-[60px]"
+                      className="min-h-[60px] pr-12"
                       disabled={isLoading}
+                      maxLength={4000}
                     />
+                    {input.length > 0 && (
+                      <div className="absolute bottom-2 right-2">
+                        <span
+                          className={cn(
+                            "text-xs",
+                            input.length > 3500 ? "text-red-500" : "text-muted-foreground"
+                          )}
+                        >
+                          {input.length}/4000
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2">
                       <input
                         ref={imageInputRef}
@@ -1476,6 +1559,23 @@ export default function AssistantIAPage() {
                 </div>
                 </div>
               </div>
+
+              {/* Bouton "Aller en bas" */}
+              <AnimatePresence>
+                {showScrollToBottom && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    onClick={scrollToBottom}
+                    className="absolute bottom-24 right-8 z-50 p-3 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-shadow"
+                    aria-label="Aller en bas"
+                    title="Aller en bas"
+                  >
+                    <ChevronDown className="h-5 w-5" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
             </CardContent>
           </Card>
         </TabsContent>

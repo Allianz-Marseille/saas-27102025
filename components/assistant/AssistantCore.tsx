@@ -1,17 +1,19 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState, useMemo, Fragment } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send, Image as ImageIcon, FileText, X, Copy, Check } from "lucide-react";
+import { Loader2, Send, Image as ImageIcon, FileText, X, Copy, Check, ChevronDown } from "lucide-react";
 import { useAssistantStore } from "@/lib/assistant/assistant-store";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { QuickReplyButtons } from "./QuickReplyButtons";
 import { convertImagesToBase64, processImageFiles } from "@/lib/assistant/image-utils";
 import { processFiles, MAX_FILES_PER_MESSAGE } from "@/lib/assistant/file-processing";
 import { cn } from "@/lib/utils";
+import { getRelativeTime, groupMessagesByDate, getDateLabel } from "@/lib/utils/date-helpers";
 
 interface AssistantCoreProps {
   variant: "drawer";
@@ -44,17 +46,52 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
   const [isDragging, setIsDragging] = React.useState(false);
   const [isProcessingFiles, setIsProcessingFiles] = React.useState(false);
   const [copiedMessageId, setCopiedMessageId] = React.useState<string | null>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Scroll automatique
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // Groupement des messages par date
+  const groupedMessages = useMemo(() => {
+    return groupMessagesByDate(messages);
   }, [messages]);
+
+  // Scroll intelligent - détection de la position
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const isNearBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+      
+      setShouldAutoScroll(isNearBottom);
+      setShowScrollToBottom(!isNearBottom && messages.length > 0);
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    handleScroll(); // Vérifier la position initiale
+
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [messages.length]);
+
+  // Scroll automatique seulement si l'utilisateur est en bas
+  useEffect(() => {
+    if (shouldAutoScroll && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, shouldAutoScroll]);
+
+  // Fonction pour scroller vers le bas
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setShouldAutoScroll(true);
+  };
 
   // Auto-resize textarea
   useEffect(() => {
@@ -483,9 +520,10 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
   if (!user) return null;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       {/* Messages */}
       <div
+        ref={messagesContainerRef}
         className="flex-1 overflow-y-auto mb-4 space-y-1 px-4 py-4 min-h-0 bg-[#ECE5DD] dark:bg-[#0b141a]"
         style={{
           backgroundImage:
@@ -510,89 +548,114 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
           </div>
         )}
 
-        {/* Messages normaux (après le clic Bonjour, on passe directement en conversation) */}
-        {messages.length > 0 &&
-          messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} mb-1`}
-            >
-              <div
-                className={cn(
-                  "max-w-[75%] rounded-2xl p-3 shadow-sm",
-                  message.role === "user"
-                    ? "bg-[#DCF8C6] dark:bg-[#056162] text-gray-900 dark:text-gray-100 rounded-tr-none"
-                    : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-none border border-gray-200 dark:border-gray-700"
-                )}
-              >
-                {message.role === "user" ? (
-                  <>
-                    {message.images && message.images.length > 0 && (
-                      <div className="mb-2 space-y-1">
-                        {message.images.map((img, idx) => (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            key={idx}
-                            src={img}
-                            alt={`Image ${idx + 1}`}
-                            className="max-w-full h-auto rounded max-h-32 object-contain"
-                          />
-                        ))}
-                      </div>
-                    )}
-                    {message.files && message.files.length > 0 && (
-                      <div className="mb-2 space-y-1">
-                        {message.files.map((file, idx) => (
-                          <div key={idx} className="flex items-center gap-2 p-2 bg-background/50 rounded-md">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">{file.name}</span>
-                            {file.error && <span className="text-xs text-destructive">({file.error})</span>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <p className="text-sm whitespace-pre-wrap text-gray-900 dark:text-gray-100">{message.content}</p>
-                  </>
-                ) : (
-                  <div className="relative group">
-                    <MarkdownRenderer content={message.content} />
-                    {/* Boutons de réponse rapide pour les questions avec alternatives */}
-                    {message.role === "assistant" && (
-                      <QuickReplyButtons
-                        content={message.content}
-                        onSelect={(option) => {
-                          handleSendMessage(option);
-                        }}
-                        disabled={isLoading}
-                      />
-                    )}
-                    {message.role === "assistant" && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => handleCopyMessage(message.id, message.content)}
-                        aria-label="Copier le message"
-                        title="Copier le message"
-                      >
-                        {copiedMessageId === message.id ? (
-                          <Check className="h-3.5 w-3.5 text-green-600" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                )}
-                <p className="text-xs opacity-70 mt-1">{message.timestamp.toLocaleTimeString()}</p>
+        {/* Messages normaux avec groupement par date */}
+        {Object.entries(groupedMessages).map(([dateKey, dateMessages]) => {
+          const date = new Date(dateKey);
+          const dateLabel = getDateLabel(date);
+          
+          return (
+                      <Fragment key={dateKey}>
+              {/* Séparateur de date */}
+              <div className="flex items-center justify-center my-4">
+                <div className="flex items-center gap-2 px-3 py-1 bg-white/80 dark:bg-gray-800/80 rounded-full border border-gray-200 dark:border-gray-700">
+                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                    {dateLabel}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+              
+              {/* Messages du jour */}
+              {dateMessages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} mb-1`}
+                >
+                  <div
+                    className={cn(
+                      "max-w-[75%] rounded-2xl p-3 shadow-sm",
+                      message.role === "user"
+                        ? "bg-[#DCF8C6] dark:bg-[#056162] text-gray-900 dark:text-gray-100 rounded-tr-none"
+                        : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-none border border-gray-200 dark:border-gray-700"
+                    )}
+                  >
+                    {message.role === "user" ? (
+                      <>
+                        {message.images && message.images.length > 0 && (
+                          <div className="mb-2 space-y-1">
+                            {message.images.map((img, idx) => (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                key={idx}
+                                src={img}
+                                alt={`Image ${idx + 1}`}
+                                className="max-w-full h-auto rounded max-h-32 object-contain"
+                              />
+                            ))}
+                          </div>
+                        )}
+                        {message.files && message.files.length > 0 && (
+                          <div className="mb-2 space-y-1">
+                            {message.files.map((file, idx) => (
+                              <div key={idx} className="flex items-center gap-2 p-2 bg-background/50 rounded-md">
+                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm font-medium">{file.name}</span>
+                                {file.error && <span className="text-xs text-destructive">({file.error})</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-sm whitespace-pre-wrap text-gray-900 dark:text-gray-100">{message.content}</p>
+                      </>
+                    ) : (
+                      <div className="relative group">
+                        <MarkdownRenderer content={message.content} />
+                        {/* Boutons de réponse rapide pour les questions avec alternatives */}
+                        {message.role === "assistant" && (
+                          <QuickReplyButtons
+                            content={message.content}
+                            onSelect={(option) => {
+                              handleSendMessage(option);
+                            }}
+                            disabled={isLoading}
+                          />
+                        )}
+                        {message.role === "assistant" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleCopyMessage(message.id, message.content)}
+                            aria-label="Copier le message"
+                            title="Copier le message"
+                          >
+                            {copiedMessageId === message.id ? (
+                              <Check className="h-3.5 w-3.5 text-green-600" />
+                            ) : (
+                              <Copy className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    <p className="text-xs opacity-70 mt-1">{getRelativeTime(message.timestamp)}</p>
+                  </div>
+                </div>
+              ))}
+            </Fragment>
+          );
+        })}
 
         {isLoading && (
           <div className="flex justify-start">
             <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-              <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+                <span className="text-xs text-gray-500 dark:text-gray-400">L'assistant réfléchit...</span>
+              </div>
             </div>
           </div>
         )}
@@ -612,16 +675,29 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
             onDrop={handleDrop}
           >
             <div className="flex gap-2">
-              <div className="flex-1 flex flex-col gap-2">
+              <div className="flex-1 flex flex-col gap-2 relative">
                 <Textarea
                   ref={textareaRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Tapez votre message... (Vous pouvez coller des images avec Ctrl+V / Cmd+V)"
-                  className="min-h-[60px]"
+                  className="min-h-[60px] pr-12"
                   disabled={isLoading || isProcessingFiles}
+                  maxLength={4000}
                 />
+                {input.length > 0 && (
+                  <div className="absolute bottom-2 right-2">
+                    <span
+                      className={cn(
+                        "text-xs",
+                        input.length > 3500 ? "text-red-500" : "text-muted-foreground"
+                      )}
+                    >
+                      {input.length}/4000
+                    </span>
+                  </div>
+                )}
                 {(selectedImages.length > 0 || selectedFiles.length > 0) && (
                   <div className="flex flex-wrap gap-2">
                     {selectedImages.map((image) => (
@@ -726,6 +802,23 @@ export function AssistantCore({ variant }: AssistantCoreProps) {
           </div>
         </div>
       )}
+
+      {/* Bouton "Aller en bas" */}
+      <AnimatePresence>
+        {showScrollToBottom && (
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            onClick={scrollToBottom}
+            className="absolute bottom-20 right-6 z-50 p-3 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-shadow"
+            aria-label="Aller en bas"
+            title="Aller en bas"
+          >
+            <ChevronDown className="h-5 w-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
