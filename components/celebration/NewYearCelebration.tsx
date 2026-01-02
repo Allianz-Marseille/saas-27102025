@@ -10,6 +10,7 @@ interface NewYearCelebrationProps {
 
 export function NewYearCelebration({ onClose }: NewYearCelebrationProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const currentYear = new Date().getFullYear();
 
   // Lecture automatique du son de fête au montage
@@ -107,9 +108,12 @@ export function NewYearCelebration({ onClose }: NewYearCelebrationProps) {
         </div>
 
         {/* Texte Star Wars */}
-        <div className="relative h-full w-full flex items-center justify-center perspective-1000 overflow-hidden">
+        <div 
+          ref={containerRef}
+          className="relative h-full w-full flex items-center justify-center perspective-1000 overflow-hidden"
+        >
           <motion.div
-            className="text-center text-yellow-400 font-bold text-4xl md:text-6xl lg:text-8xl star-wars-text"
+            className="text-center text-yellow-400 font-bold star-wars-text w-full"
             style={{
               transformStyle: "preserve-3d",
               perspective: "1000px",
@@ -118,74 +122,51 @@ export function NewYearCelebration({ onClose }: NewYearCelebrationProps) {
             <motion.div
               initial={{ 
                 y: 0,
-                scale: 1,
-                opacity: 1,
-              }}
-              animate={{ 
-                y: -1000,
-                scale: 0.05,
+                scale: 0.1,
                 opacity: 0,
               }}
+              animate={{ 
+                y: [0, 0, -2000],
+                scale: [0.1, 1, 0.05],
+                opacity: [0, 1, 0],
+              }}
               transition={{
-                duration: 20,
+                duration: 15,
                 ease: "linear",
                 repeat: Infinity,
+                times: [0, 0.3, 1],
               }}
               style={{
                 transformStyle: "preserve-3d",
                 transform: "perspective(1000px) rotateX(25deg)",
               }}
-              className="space-y-8"
+              className="space-y-8 w-full"
             >
               <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 1, 1, 0] }}
-                transition={{ 
-                  delay: 0.5, 
-                  duration: 20,
-                  times: [0, 0.08, 0.6, 1],
-                  ease: "linear",
-                  repeat: Infinity,
-                }}
-                className="text-5xl md:text-7xl lg:text-9xl mb-8"
+                className="text-5xl md:text-7xl lg:text-9xl mb-8 w-full"
                 style={{
                   textShadow: "0 0 10px #ffd700, 0 0 20px #ffd700, 0 0 30px #ffd700",
+                  fontSize: "clamp(2rem, 15vw, 12rem)",
                 }}
               >
                 BONNE ANNÉE
               </motion.p>
               
               <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 1, 1, 0] }}
-                transition={{ 
-                  delay: 1.5, 
-                  duration: 20,
-                  times: [0, 0.1, 0.65, 1],
-                  ease: "linear",
-                  repeat: Infinity,
-                }}
-                className="text-6xl md:text-8xl lg:text-[12rem]"
+                className="text-6xl md:text-8xl lg:text-[12rem] w-full"
                 style={{
                   textShadow: "0 0 10px #ffd700, 0 0 20px #ffd700, 0 0 30px #ffd700",
+                  fontSize: "clamp(3rem, 20vw, 15rem)",
                 }}
               >
                 {currentYear}
               </motion.p>
 
               <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 1, 1, 0] }}
-                transition={{ 
-                  delay: 2.5, 
-                  duration: 20,
-                  times: [0, 0.12, 0.7, 1],
-                  ease: "linear",
-                  repeat: Infinity,
-                }}
-                className="text-2xl md:text-4xl lg:text-5xl mt-12"
+                className="text-2xl md:text-4xl lg:text-5xl mt-12 w-full"
                 style={{
                   textShadow: "0 0 5px #ffd700, 0 0 10px #ffd700",
+                  fontSize: "clamp(1.25rem, 5vw, 4rem)",
                 }}
               >
                 Que la force soit avec vous !
