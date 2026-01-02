@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { AssistantWrapper } from "@/components/assistant/AssistantWrapper";
+import { NewYearWrapper } from "@/components/celebration/NewYearWrapper";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,7 +33,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <NewYearWrapper>
+            {children}
+          </NewYearWrapper>
           <Toaster />
           <AssistantWrapper />
         </ThemeProvider>

@@ -560,3 +560,25 @@
   animation: level-up 2s ease-out;
 }
 
+/* ==================== NEW YEAR CELEBRATION - STAR WARS EFFECT ==================== */
+
+/* Effet Star Wars - texte qui défile */
+.star-wars-text {
+  font-family: 'Arial', sans-serif;
+  letter-spacing: 0.1em;
+  line-height: 1.5;
+  text-align: center;
+  overflow: hidden;
+}
+
+/* Animation des étoiles */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* Perspective 3D */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
