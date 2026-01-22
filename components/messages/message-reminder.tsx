@@ -24,12 +24,8 @@ export function MessageReminder() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Ne rien faire pendant le chargement de l'authentification
-  if (authLoading) {
-    return null;
-  }
-
   // Ne pas afficher pour les admins ou si userData n'est pas disponible
-  if (!userData || isAdmin(userData)) {
+  if (authLoading || !userData || isAdmin(userData)) {
     return null;
   }
 
@@ -51,7 +47,13 @@ export function MessageReminder() {
 
   // Vérifier les messages non lus > 24h
   useEffect(() => {
+    // Ne rien faire si les conditions ne sont pas remplies
     if (!user || !userData || messagesLoading || !preferences || preferences.reminderFrequency === "none") {
+      return;
+    }
+
+    // S'assurer que messages est un tableau valide
+    if (!messages || !Array.isArray(messages)) {
       return;
     }
 
@@ -63,7 +65,13 @@ export function MessageReminder() {
         }
 
         // Récupérer les destinataires de l'utilisateur
-        const recipients = await getRecipientsByUser(user.uid);
+        let recipients: any[] = [];
+        try {
+          recipients = await getRecipientsByUser(user.uid);
+        } catch (error) {
+          console.error("Erreur lors de la récupération des destinataires:", error);
+          return;
+        }
         
         // Vérifier que recipients est un tableau
         if (!Array.isArray(recipients)) {
@@ -126,6 +134,7 @@ export function MessageReminder() {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
   }, [user, userData, messages, messagesLoading, preferences, lastReminderTime]);
