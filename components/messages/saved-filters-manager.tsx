@@ -108,7 +108,7 @@ export function SavedFiltersManager({
         priority: currentFilters.priority ? [currentFilters.priority] : undefined,
         category: currentFilters.category ? [currentFilters.category] : undefined,
         tags: undefined,
-        sortBy: currentSort.sortBy === "date" ? "createdAt" : currentSort.sortBy === "readRate" ? "readCount" : currentSort.sortBy === "recipients" ? "recipients" : "priority",
+        sortBy: currentSort.sortBy === "date" ? "createdAt" : currentSort.sortBy === "readRate" ? "readCount" : currentSort.sortBy === "priority" ? "priority" : "createdAt",
         sortOrder: currentSort.sortOrder,
       };
 
