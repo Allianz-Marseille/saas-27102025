@@ -187,7 +187,15 @@ export default function SanteCollectivePage() {
   };
 
   const level = calculateLevel(kpi.caPondere);
-  const xpProgress = ((kpi.caPondere % 10000) / 10000) * 100;
+  // Calcul de la progression XP selon les seuils santé collective
+  const getXPProgress = (ca: number) => {
+    if (ca < 6000) return (ca / 6000) * 100;
+    if (ca < 10000) return ((ca - 6000) / 4000) * 100;
+    if (ca < 14000) return ((ca - 10000) / 4000) * 100;
+    if (ca < 18000) return ((ca - 14000) / 4000) * 100;
+    return 100;
+  };
+  const xpProgress = getXPProgress(kpi.caPondere);
 
   // Succès basés sur des objectifs de CA
   const achievements = [
@@ -211,25 +219,25 @@ export default function SanteCollectivePage() {
       icon: <Trophy className="h-5 w-5" />, 
       label: "Seuil 1", 
       description: "Atteignez le premier seuil de commission (2%)",
-      achieved: kpi.caPondere >= 10000, 
+      achieved: kpi.caPondere >= 6000, 
       color: "from-blue-500 to-cyan-500", 
-      target: "10 000 € de CA pondéré" 
+      target: "6 000 € de CA pondéré" 
     },
     { 
       icon: <Star className="h-5 w-5" />, 
       label: "Seuil 2", 
       description: "Atteignez le deuxième seuil de commission (3%)",
-      achieved: kpi.caPondere >= 14000, 
+      achieved: kpi.caPondere >= 10000, 
       color: "from-indigo-500 to-purple-500", 
-      target: "14 000 € de CA pondéré" 
+      target: "10 000 € de CA pondéré" 
     },
     { 
       icon: <Award className="h-5 w-5" />, 
       label: "Seuil 3", 
       description: "Atteignez le troisième seuil de commission (4%)",
-      achieved: kpi.caPondere >= 18000, 
+      achieved: kpi.caPondere >= 14000, 
       color: "from-purple-500 to-pink-500", 
-      target: "18 000 € de CA pondéré" 
+      target: "14 000 € de CA pondéré" 
     },
     { 
       icon: <Crown className="h-5 w-5" />, 
@@ -237,7 +245,7 @@ export default function SanteCollectivePage() {
       description: "Atteignez le niveau maximum (6% de commission)",
       achieved: kpi.caPondere >= 18000, 
       color: "from-green-500 to-emerald-500", 
-      target: "22 000 € de CA pondéré" 
+      target: "18 000 € de CA pondéré" 
     },
   ];
 
@@ -486,17 +494,17 @@ export default function SanteCollectivePage() {
                   <div className="absolute left-0 text-xs font-bold text-muted-foreground hover:text-emerald-600 transition-colors cursor-default">
                     0€
                   </div>
-                  <div className="absolute text-xs font-bold text-muted-foreground hover:text-emerald-600 transition-colors cursor-default" style={{ left: '45.45%', transform: 'translateX(-50%)' }}>
+                  <div className="absolute text-xs font-bold text-muted-foreground hover:text-emerald-600 transition-colors cursor-default" style={{ left: '33.33%', transform: 'translateX(-50%)' }}>
+                    6k€
+                  </div>
+                  <div className="absolute text-xs font-bold text-muted-foreground hover:text-emerald-600 transition-colors cursor-default" style={{ left: '55.56%', transform: 'translateX(-50%)' }}>
                     10k€
                   </div>
-                  <div className="absolute text-xs font-bold text-muted-foreground hover:text-emerald-600 transition-colors cursor-default" style={{ left: '63.63%', transform: 'translateX(-50%)' }}>
+                  <div className="absolute text-xs font-bold text-muted-foreground hover:text-emerald-600 transition-colors cursor-default" style={{ left: '77.78%', transform: 'translateX(-50%)' }}>
                     14k€
                   </div>
-                  <div className="absolute text-xs font-bold text-muted-foreground hover:text-emerald-600 transition-colors cursor-default" style={{ left: '81.81%', transform: 'translateX(-50%)' }}>
-                    18k€
-                  </div>
                   <div className="absolute right-0 text-xs font-bold text-muted-foreground hover:text-green-600 transition-colors cursor-default">
-                    22k€
+                    18k€
                   </div>
                 </div>
               </div>
@@ -504,11 +512,11 @@ export default function SanteCollectivePage() {
               {/* Cartes des seuils - Style super héro avec tooltips */}
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 {[
-                  { seuil: 1, max: 6000, taux: 0, color: "gray", emoji: "🎯", label: "Démarrage", description: "0 - 6 000€" },
-                  { seuil: 2, max: 10000, taux: 2, color: "yellow", emoji: "⚡", label: "Progression", description: "6 001€ - 10 000€" },
-                  { seuil: 3, max: 14000, taux: 3, color: "blue", emoji: "🚀", label: "Performance", description: "10 001€ - 14 000€" },
-                  { seuil: 4, max: 18000, taux: 4, color: "indigo", emoji: "💎", label: "Excellence", description: "14 001€ - 18 000€" },
-                  { seuil: 5, max: Infinity, taux: 6, color: "green", emoji: "👑", label: "Champion", description: "≥ 18 001€" },
+                  { seuil: 1, max: 6000, taux: 0, color: "gray", emoji: "🎯", label: "Démarrage", description: "0 - 5 999€" },
+                  { seuil: 2, max: 10000, taux: 2, color: "yellow", emoji: "⚡", label: "Progression", description: "6 000€ - 9 999€" },
+                  { seuil: 3, max: 14000, taux: 3, color: "blue", emoji: "🚀", label: "Performance", description: "10 000€ - 13 999€" },
+                  { seuil: 4, max: 18000, taux: 4, color: "indigo", emoji: "💎", label: "Excellence", description: "14 000€ - 17 999€" },
+                  { seuil: 5, max: Infinity, taux: 6, color: "green", emoji: "👑", label: "Champion", description: "≥ 18 000€" },
                 ].map(({ seuil, max, taux, color, emoji, label, description }) => {
                   const isAtteint = kpi.seuilAtteint > seuil || (kpi.seuilAtteint === seuil && kpi.caPondere >= max);
                   const isCurrent = kpi.seuilAtteint === seuil;
