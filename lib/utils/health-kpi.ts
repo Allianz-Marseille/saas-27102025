@@ -10,12 +10,13 @@ export const HEALTH_COMMISSION_THRESHOLDS = [
 ];
 
 // Grille de rémunération santé collective
+// Selon coll.md : commissions sur CA pondéré depuis le 1er euro
 export const HEALTH_COLLECTIVE_COMMISSION_THRESHOLDS = [
-  { min: 0, max: 6000, rate: 0, label: "Seuil 1" },
-  { min: 6000, max: 10000, rate: 0.02, label: "Seuil 2" },
-  { min: 10000, max: 14000, rate: 0.03, label: "Seuil 3" },
-  { min: 14000, max: 18000, rate: 0.04, label: "Seuil 4" },
-  { min: 18000, max: Infinity, rate: 0.06, label: "Seuil 5" },
+  { min: 0, max: 6000, rate: 0, label: "Seuil 1" }, // 0 à 5999€ : 0%
+  { min: 6000, max: 10000, rate: 0.02, label: "Seuil 2" }, // 6000 à 9999€ : 2% depuis le 1er euro
+  { min: 10000, max: 14000, rate: 0.03, label: "Seuil 3" }, // 10000 à 13999€ : 3% depuis le 1er euro
+  { min: 14000, max: 18000, rate: 0.04, label: "Seuil 4" }, // 14000 à 17999€ : 4% depuis le 1er euro
+  { min: 18000, max: Infinity, rate: 0.06, label: "Seuil 5" }, // Au-delà de 18000€ : 6% depuis le 1er euro
 ];
 
 /**
