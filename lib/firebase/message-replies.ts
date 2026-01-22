@@ -16,7 +16,6 @@ import {
 } from "firebase/firestore";
 import { db } from "./config";
 import { MessageReply } from "@/types/message";
-import { updateDoc } from "firebase/firestore";
 
 const REPLIES_COLLECTION = "message_replies";
 const MESSAGES_COLLECTION = "admin_messages";

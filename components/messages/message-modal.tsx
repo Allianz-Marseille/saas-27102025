@@ -56,10 +56,10 @@ export function MessageModal({
   const hasMultipleUnread = unreadMessages.length > 1 && currentUnreadIndex >= 0;
 
   useEffect(() => {
-    if (message && user && open && !isMarkingAsRead) {
+    if (message && authUser && open && !isMarkingAsRead) {
       setIsMarkingAsRead(true);
       // Marquer comme lu automatiquement à l'ouverture
-      markAsRead(message.id, user.uid)
+      markAsRead(message.id, authUser.uid)
         .catch((err) => {
           console.error("Error marking message as read:", err);
         })
