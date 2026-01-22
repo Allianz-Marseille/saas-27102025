@@ -37,6 +37,16 @@ export function useAuth(): AuthState {
 
           if (userDocSnap.exists()) {
             const data = userDocSnap.data();
+            console.log("📋 Données Firestore récupérées pour:", {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              hasData: !!data,
+              dataKeys: data ? Object.keys(data) : [],
+              dataId: data?.id,
+              dataEmail: data?.email,
+              dataRole: data?.role,
+              dataActive: data?.active,
+            });
             
             // Valider que tous les champs requis sont présents
             if (!data.id || !data.email || !data.role || data.active === undefined) {
@@ -222,10 +232,19 @@ export function useAuth(): AuthState {
               }
             }
           } else {
+            console.error("❌ Document Firestore n'existe pas pour l'utilisateur:", {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+            });
             setUserData(null);
           }
         } catch (error) {
-          console.error("Error fetching user data:", error);
+          console.error("❌ Erreur lors de la récupération des données utilisateur:", {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            error: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined,
+          });
           setUserData(null);
         }
       } else {
