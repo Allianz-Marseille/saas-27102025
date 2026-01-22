@@ -510,7 +510,7 @@ export default function SanteCollectivePage() {
               </div>
 
               {/* Cartes des seuils - Style super héro avec tooltips */}
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-8">
                 {[
                   { seuil: 1, max: 6000, taux: 0, color: "gray", emoji: "🎯", label: "Démarrage", description: "0 - 5 999€" },
                   { seuil: 2, max: 10000, taux: 2, color: "yellow", emoji: "⚡", label: "Progression", description: "6 000€ - 9 999€" },
