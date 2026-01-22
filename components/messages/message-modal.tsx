@@ -66,7 +66,7 @@ export function MessageModal({
           setIsMarkingAsRead(false);
         });
     }
-  }, [message, user, open, isMarkingAsRead]);
+  }, [message, authUser, open, isMarkingAsRead]);
 
   if (!message) {
     return null;
