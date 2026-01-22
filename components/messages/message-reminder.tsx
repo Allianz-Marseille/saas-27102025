@@ -16,14 +16,19 @@ import { isAdmin } from "@/lib/utils/roles";
  * Vérifie quotidiennement et affiche un toast discret
  */
 export function MessageReminder() {
-  const { user, userData } = useAuth();
-  const { messages } = useMessages();
+  const { user, userData, loading: authLoading } = useAuth();
+  const { messages, loading: messagesLoading } = useMessages();
   const [preferences, setPreferences] = useState<UserMessagePreferences | null>(null);
   const [lastReminderTime, setLastReminderTime] = useState<Date | null>(null);
   const [oldUnreadCount, setOldUnreadCount] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Ne pas afficher pour les admins
+  // Ne rien faire pendant le chargement de l'authentification
+  if (authLoading) {
+    return null;
+  }
+
+  // Ne pas afficher pour les admins ou si userData n'est pas disponible
   if (!userData || isAdmin(userData)) {
     return null;
   }
@@ -46,14 +51,24 @@ export function MessageReminder() {
 
   // Vérifier les messages non lus > 24h
   useEffect(() => {
-    if (!user || !preferences || preferences.reminderFrequency === "none") {
+    if (!user || !userData || messagesLoading || !preferences || preferences.reminderFrequency === "none") {
       return;
     }
 
     const checkOldUnreadMessages = async () => {
       try {
+        // Vérifier que user et messages sont disponibles
+        if (!user || !messages || !Array.isArray(messages)) {
+          return;
+        }
+
         // Récupérer les destinataires de l'utilisateur
         const recipients = await getRecipientsByUser(user.uid);
+        
+        // Vérifier que recipients est un tableau
+        if (!Array.isArray(recipients)) {
+          return;
+        }
         
         // Filtrer les messages non lus > 24h
         const oldUnread = getOldUnreadMessages(messages, recipients);
@@ -94,7 +109,9 @@ export function MessageReminder() {
           setLastReminderTime(new Date());
         }
       } catch (error) {
+        // Ne pas propager l'erreur, juste la logger
         console.error("Erreur lors de la vérification des rappels:", error);
+        // Ne pas mettre à jour oldUnreadCount en cas d'erreur
       }
     };
 
@@ -111,7 +128,7 @@ export function MessageReminder() {
         clearInterval(intervalRef.current);
       }
     };
-  }, [user, messages, preferences, lastReminderTime]);
+  }, [user, userData, messages, messagesLoading, preferences, lastReminderTime]);
 
   // Ne rien rendre (composant invisible)
   return null;

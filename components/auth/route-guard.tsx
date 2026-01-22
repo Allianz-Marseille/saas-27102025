@@ -134,6 +134,18 @@ export function RouteGuard({
     return null;
   }
 
+  // Si l'utilisateur est connecté mais que userData n'est pas encore chargé, afficher un loader
+  if (requireAuth && user && !userData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Chargement des données utilisateur...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Ne pas afficher le contenu si l'utilisateur n'a pas accès
   if (user && userData) {
     if (!userData.active) {

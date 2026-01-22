@@ -38,6 +38,20 @@ export function useAuth(): AuthState {
           if (userDocSnap.exists()) {
             const data = userDocSnap.data();
             
+            // Valider que tous les champs requis sont présents
+            if (!data.id || !data.email || !data.role || data.active === undefined) {
+              console.error("Données utilisateur incomplètes dans Firestore:", {
+                uid: firebaseUser.uid,
+                hasId: !!data.id,
+                hasEmail: !!data.email,
+                hasRole: !!data.role,
+                hasActive: data.active !== undefined,
+              });
+              setUserData(null);
+              setLoading(false);
+              return;
+            }
+            
             // Gérer createdAt : soit un Timestamp Firebase, soit déjà une Date
             let createdAt: Date;
             if (data.createdAt && typeof data.createdAt.toDate === 'function') {
@@ -50,11 +64,14 @@ export function useAuth(): AuthState {
               createdAt = new Date();
             }
             
+            // S'assurer que active est un booléen
+            const active = typeof data.active === 'boolean' ? data.active : true;
+            
             setUserData({
-              id: data.id,
-              email: data.email,
-              role: data.role,
-              active: data.active,
+              id: String(data.id),
+              email: String(data.email),
+              role: String(data.role),
+              active,
               createdAt,
             });
 
