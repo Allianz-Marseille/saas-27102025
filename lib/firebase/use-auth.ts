@@ -219,6 +219,7 @@ export function useAuth(): AuthState {
                     "   Ceci peut indiquer un problème de connexion réseau ou de configuration Firestore."
                   );
                 });
+              }
             }
           } else {
             setUserData(null);
