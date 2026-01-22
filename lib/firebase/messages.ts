@@ -246,43 +246,52 @@ export async function createMessage(
  * Récupère tous les messages (ADMIN uniquement)
  */
 export async function getAllMessages(): Promise<AdminMessage[]> {
-  if (!db) throw new Error("Firebase not initialized");
+  if (!db) {
+    console.error("Firebase not initialized");
+    return [];
+  }
 
-  const messagesRef = collection(db, MESSAGES_COLLECTION);
-  const q = query(messagesRef, orderBy("createdAt", "desc"));
+  try {
+    const messagesRef = collection(db, MESSAGES_COLLECTION);
+    const q = query(messagesRef, orderBy("createdAt", "desc"));
 
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => {
-    const data = doc.data();
-    return {
-      id: doc.id,
-      createdBy: data.createdBy,
-      createdByName: data.createdByName,
-      title: data.title,
-      content: data.content,
-      priority: data.priority,
-      targetType: data.targetType,
-      targetRole: data.targetRole,
-      targetUserId: data.targetUserId,
-      status: data.status,
-      sentAt: data.sentAt ? toDate(data.sentAt) : undefined,
-      scheduledAt: data.scheduledAt ? toDate(data.scheduledAt) : undefined,
-      pinned: data.pinned || false,
-      awaitingReply: data.awaitingReply || false,
-      totalRecipients: data.totalRecipients || 0,
-      readCount: data.readCount || 0,
-      unreadCount: data.unreadCount || 0,
-      category: data.category,
-      tags: data.tags || [],
-      images: data.images || [],
-      videos: data.videos || [],
-      attachments: data.attachments || [],
-      averageReadTime: data.averageReadTime,
-      clickCount: data.clickCount,
-      completionRate: data.completionRate,
-      createdAt: toDate(data.createdAt),
-    } as AdminMessage;
-  });
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        createdBy: data.createdBy,
+        createdByName: data.createdByName,
+        title: data.title,
+        content: data.content,
+        priority: data.priority,
+        targetType: data.targetType,
+        targetRole: data.targetRole,
+        targetUserId: data.targetUserId,
+        status: data.status,
+        sentAt: data.sentAt ? toDate(data.sentAt) : undefined,
+        scheduledAt: data.scheduledAt ? toDate(data.scheduledAt) : undefined,
+        pinned: data.pinned || false,
+        awaitingReply: data.awaitingReply || false,
+        totalRecipients: data.totalRecipients || 0,
+        readCount: data.readCount || 0,
+        unreadCount: data.unreadCount || 0,
+        category: data.category,
+        tags: data.tags || [],
+        images: data.images || [],
+        videos: data.videos || [],
+        attachments: data.attachments || [],
+        averageReadTime: data.averageReadTime,
+        clickCount: data.clickCount,
+        completionRate: data.completionRate,
+        createdAt: toDate(data.createdAt),
+      } as AdminMessage;
+    });
+  } catch (error) {
+    // En cas d'erreur (par exemple, permissions Firestore), retourner un tableau vide
+    console.error("Erreur lors de la récupération de tous les messages:", error);
+    return [];
+  }
 }
 
 /**

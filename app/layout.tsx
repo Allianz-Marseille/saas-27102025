@@ -39,7 +39,8 @@ export default function RootLayout({
           </NewYearWrapper>
           <Toaster />
           <AssistantWrapper />
-          <MessageReminder />
+          {/* MessageReminder désactivé - cause React error #310 */}
+          {/* <MessageReminder /> */}
         </ThemeProvider>
       </body>
     </html>
