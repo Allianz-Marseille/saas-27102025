@@ -56,8 +56,13 @@ const menuItems: SidebarItem[] = [
 export function CommercialSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, userData } = useAuth();
+  const { user, userData, loading } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Ne rien rendre pendant le chargement ou si userData n'est pas disponible
+  if (loading || !userData) {
+    return null;
+  }
 
   const handleLogout = async () => {
     try {
