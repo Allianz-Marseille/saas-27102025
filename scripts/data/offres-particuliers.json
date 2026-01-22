@@ -1,0 +1,273 @@
+[
+  {
+    "segment": "Auto",
+    "sous_segment": "Affaires nouvelles",
+    "offre": "-15 % en AN Auto Pro",
+    "code": "4016",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Auto",
+    "sous_segment": "Offre packagée",
+    "offre": "-15 % en AN Auto offre packagée",
+    "code": "4015",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Auto",
+    "sous_segment": "Packagée Hamon / Reprise bancassurance",
+    "offre": "-25 % en AN Auto offre packagée Hamon ou reprise bancassurance",
+    "code": "4025 / 4026",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Auto",
+    "sous_segment": "VSA",
+    "offre": "-5 % en AN/avenant Auto VSA",
+    "code": "",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Auto",
+    "sous_segment": "EDPM",
+    "offre": "EDPM AN Pleins Phares",
+    "code": "1307",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Auto",
+    "sous_segment": "Stage post permis",
+    "offre": "-10 % en AN Auto Stage post permis",
+    "code": "1022",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Auto",
+    "sous_segment": "Passerelle AEC",
+    "offre": "-10 % en AN Auto clients issus d'une passerelle AEC",
+    "code": "3664",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Auto",
+    "sous_segment": "Passerelle DADS",
+    "offre": "-25% prospect / -35% gendarme actif / -45% novice",
+    "code": "4028 / 4029 / 4030",
+    "conditions": "client issu d'une passerelle DADS",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Auto",
+    "sous_segment": "Agricole",
+    "offre": "-25 % en AN Auto agricole",
+    "code": "2575",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Camping-Car",
+    "sous_segment": "FFCC / Clubs",
+    "offre": "-30 % FFCC / -15 % adhérents club CC",
+    "code": "1330 / 0950",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "2 Roues",
+    "sous_segment": "Bons conducteurs",
+    "offre": "-25 % en AN",
+    "code": "3160",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "2 Roues",
+    "sous_segment": "Antécédents",
+    "offre": "-15 à -62 % en AN",
+    "code": "1447",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "2 Roues",
+    "sous_segment": "Marques premium",
+    "offre": "-10 % Ducati / Harley Davidson / BMW",
+    "code": "",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "2 Roues",
+    "sous_segment": "Cyclomoteurs",
+    "offre": "-15 % pour +25 ans / -25 % détention Auto ou MRH",
+    "code": "3968 / 3969",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Voiturette",
+    "sous_segment": "Électrique sans permis",
+    "offre": "-45 % en AN",
+    "code": "3784",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Voiturette",
+    "sous_segment": "Thermique",
+    "offre": "-45 % en AN voiturette thermique avec antécédents",
+    "code": "0390",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "MRH",
+    "sous_segment": "Packagée",
+    "offre": "-25 % en AN MRH packagée",
+    "code": "1354",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "MRH",
+    "sous_segment": "Locataires packagée",
+    "offre": "-30 % en AN MRH packagée locataires",
+    "code": "6130",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "MRH",
+    "sous_segment": "Propriétaires packagée",
+    "offre": "-30 % en AN MRH packagée propriétaires avec GAV",
+    "code": "6330",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "MRH",
+    "sous_segment": "Étudiants",
+    "offre": "-20 % si perte d'un critère",
+    "code": "2715",
+    "conditions": "offre étudiant",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "CNO",
+    "sous_segment": "Standard",
+    "offre": "-15 % en AN CNO",
+    "code": "1895",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "CNO",
+    "sous_segment": "Copropriété",
+    "offre": "-25 % en AN CNO si copropriété",
+    "code": "1658",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Scolaire",
+    "sous_segment": "Multipossession Auto/MRH",
+    "offre": "12 MG en AN",
+    "code": "",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Vélos",
+    "sous_segment": "Loisirs-vélos",
+    "offre": "-20 % si GAV / -25 % si photos certifiées",
+    "code": "3913 / 7058",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Chasse",
+    "sous_segment": "Sans chien + GAV",
+    "offre": "-50 % en AN et PTF",
+    "code": "2987",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Santé",
+    "sous_segment": "Multipossession",
+    "offre": "-10 % en AN Santé",
+    "code": "0836",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Santé",
+    "sous_segment": "Retraités sortant d'un collectif Allianz",
+    "offre": "-15 %",
+    "code": "B462",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Prévoyance",
+    "sous_segment": "Multipossession ABR",
+    "offre": "-10 % sur AN Allianz Prévoyance",
+    "code": "B421",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  },
+  {
+    "segment": "Retraite",
+    "sous_segment": "PERi",
+    "offre": "Bonus Allianz+ 2025 : +1% PB brut sous conditions",
+    "code": "",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "2025"
+  },
+  {
+    "segment": "Santé Chiens Chats",
+    "sous_segment": "Multipossession",
+    "offre": "-10 % (2e animal) / -15 % (3e+)",
+    "code": "AZMULTI10 / AZMULTI15",
+    "conditions": "",
+    "categorie_client": "particulier",
+    "periode": "Q3 2025"
+  }
+]
+
