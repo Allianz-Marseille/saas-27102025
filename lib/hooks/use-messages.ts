@@ -45,11 +45,11 @@ export function useMessages(): UseMessagesResult {
       if (isAdmin(userData)) {
         // Admin : récupérer tous les messages
         const allMessages = await getAllMessages();
-        setMessages(allMessages);
+        setMessages(Array.isArray(allMessages) ? allMessages : []);
       } else {
         // Autres rôles : récupérer uniquement leurs messages
         const userMessages = await getMessagesByUser(user.uid);
-        setMessages(userMessages);
+        setMessages(Array.isArray(userMessages) ? userMessages : []);
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error("Erreur lors du chargement des messages");
@@ -66,8 +66,11 @@ export function useMessages(): UseMessagesResult {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, userData, authLoading]);
 
+  // S'assurer que messages est toujours un tableau
+  const safeMessages = Array.isArray(messages) ? messages : [];
+
   return {
-    messages,
+    messages: safeMessages,
     loading,
     error,
     refetch: fetchMessages,

@@ -291,37 +291,43 @@ export async function getAllMessages(): Promise<AdminMessage[]> {
 export async function getMessagesByUser(userId: string): Promise<AdminMessage[]> {
   if (!db) throw new Error("Firebase not initialized");
 
-  // Récupérer tous les recipients de l'utilisateur
-  const recipientsRef = collection(db, RECIPIENTS_COLLECTION);
-  const q = query(
-    recipientsRef,
-    where("userId", "==", userId),
-    orderBy("createdAt", "desc")
-  );
+  try {
+    // Récupérer tous les recipients de l'utilisateur
+    const recipientsRef = collection(db, RECIPIENTS_COLLECTION);
+    const q = query(
+      recipientsRef,
+      where("userId", "==", userId),
+      orderBy("createdAt", "desc")
+    );
 
-  const recipientsSnapshot = await getDocs(q);
-  const messageIds = recipientsSnapshot.docs.map((doc) => doc.data().messageId);
+    const recipientsSnapshot = await getDocs(q);
+    const messageIds = recipientsSnapshot.docs.map((doc) => doc.data().messageId);
 
-  if (messageIds.length === 0) {
+    if (messageIds.length === 0) {
+      return [];
+    }
+
+    // Récupérer les messages correspondants un par un
+    // Note: On utilise Promise.all pour récupérer tous les messages en parallèle
+    const messagePromises = messageIds.map((messageId) =>
+      getMessageById(messageId).catch(() => null) // Retourner null en cas d'erreur
+    );
+
+    const messages = await Promise.all(messagePromises);
+
+    // Filtrer les null et trier par date de création (plus récent en premier)
+    return messages
+      .filter((msg): msg is AdminMessage => msg !== null)
+      .sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt : toDate(a.createdAt);
+        const dateB = b.createdAt instanceof Date ? b.createdAt : toDate(b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      });
+  } catch (error) {
+    // En cas d'erreur (par exemple, permissions Firestore), retourner un tableau vide
+    console.error("Erreur lors de la récupération des messages:", error);
     return [];
   }
-
-  // Récupérer les messages correspondants un par un
-  // Note: On utilise Promise.all pour récupérer tous les messages en parallèle
-  const messagePromises = messageIds.map((messageId) =>
-    getMessageById(messageId)
-  );
-
-  const messages = await Promise.all(messagePromises);
-
-  // Filtrer les null et trier par date de création (plus récent en premier)
-  return messages
-    .filter((msg): msg is AdminMessage => msg !== null)
-    .sort((a, b) => {
-      const dateA = a.createdAt instanceof Date ? a.createdAt : toDate(a.createdAt);
-      const dateB = b.createdAt instanceof Date ? b.createdAt : toDate(b.createdAt);
-      return dateB.getTime() - dateA.getTime();
-    });
 }
 
 /**
