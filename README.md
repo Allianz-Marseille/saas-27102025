@@ -655,6 +655,84 @@ Pour plus de détails sur la configuration Vercel et les variables d'environneme
 
 ## 🤝 Contribution
 
+### Workflow Git - Développement de nouvelles fonctionnalités
+
+Pour développer de nouvelles fonctionnalités sans mettre en danger la branche `main`, suivez ce workflow :
+
+#### 1. Créer une branche de fonctionnalité
+
+```bash
+# S'assurer d'être sur main et à jour
+git checkout main
+git pull origin main
+
+# Créer une nouvelle branche pour votre fonctionnalité
+git checkout -b feature/nom-de-la-fonctionnalite
+
+# Exemples :
+# git checkout -b feature/messagerie-amelioree
+# git checkout -b feature/nouveau-dashboard
+# git checkout -b fix/correction-bug-xyz
+```
+
+#### 2. Développer sur la branche
+
+```bash
+# Faire vos modifications, commits, etc.
+git add .
+git commit -m "feat: Ajout de la fonctionnalité X"
+
+# Pousser la branche sur le dépôt distant
+git push origin feature/nom-de-la-fonctionnalite
+```
+
+#### 3. Tester et valider
+
+- Tester localement votre fonctionnalité
+- Vérifier qu'il n'y a pas de régression
+- S'assurer que les tests passent (si applicable)
+
+#### 4. Fusionner dans main
+
+```bash
+# Revenir sur main
+git checkout main
+git pull origin main
+
+# Fusionner la branche de fonctionnalité
+git merge feature/nom-de-la-fonctionnalite
+
+# Pousser sur origin
+git push origin main
+
+# Supprimer la branche locale (optionnel)
+git branch -d feature/nom-de-la-fonctionnalite
+
+# Supprimer la branche distante (optionnel)
+git push origin --delete feature/nom-de-la-fonctionnalite
+```
+
+#### 5. Conventions de nommage des branches
+
+- **`feature/`** : Nouvelles fonctionnalités
+  - Exemple : `feature/nouveau-module-sinistres`
+- **`fix/`** : Corrections de bugs
+  - Exemple : `fix/erreur-connexion-emma`
+- **`refactor/`** : Refactorisation de code
+  - Exemple : `refactor/optimisation-queries-firestore`
+- **`docs/`** : Documentation uniquement
+  - Exemple : `docs/guide-deploiement`
+
+#### 6. Éviter les déploiements multiples
+
+Pour les commits intermédiaires sur une branche de fonctionnalité, utilisez `[skip vercel]` :
+
+```bash
+git commit -m "fix: Correction intermédiaire [skip vercel]"
+```
+
+Le commit final de fusion dans `main` déclenchera le déploiement.
+
 ### Structure du code
 
 - **Composants** : Dans `components/`, organisés par fonctionnalité
