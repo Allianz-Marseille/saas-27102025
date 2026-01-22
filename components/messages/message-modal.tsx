@@ -45,8 +45,7 @@ export function MessageModal({
   onNext,
   onPrevious,
 }: MessageModalProps) {
-  const { user } = useAuth();
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
   const [isMarkingAsRead, setIsMarkingAsRead] = useState(false);
 
   // Filtrer les messages non lus pour l'indicateur de progression
