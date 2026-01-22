@@ -29,6 +29,8 @@ import { cn } from "@/lib/utils";
 import { toDate } from "@/lib/utils/date-helpers";
 import { togglePinMessage } from "@/lib/firebase/messages";
 import { toast } from "sonner";
+import { SavedFiltersManager } from "./saved-filters-manager";
+import { SavedFilter } from "@/types/message";
 
 interface AdminMessageListProps {
   onMessageClick?: (message: AdminMessage) => void;
@@ -71,6 +73,37 @@ export function AdminMessageList({ onMessageClick }: AdminMessageListProps) {
     } finally {
       setPinningMessageId(null);
     }
+  };
+
+  const handleApplySavedFilter = (filter: SavedFilter) => {
+    // Appliquer les filtres
+    const newFilters: MessageFilters = { search: "" };
+    if (filter.status && filter.status.length > 0) {
+      newFilters.status = filter.status[0];
+    }
+    if (filter.priority && filter.priority.length > 0) {
+      newFilters.priority = filter.priority[0];
+    }
+    if (filter.category && filter.category.length > 0) {
+      newFilters.category = filter.category[0];
+    }
+    setFilters(newFilters);
+
+    // Appliquer le tri
+    if (filter.sortBy) {
+      const sortByMap: Record<string, SortBy> = {
+        createdAt: "date",
+        readCount: "readRate",
+        recipients: "recipients",
+        priority: "priority",
+      };
+      setSortBy(sortByMap[filter.sortBy] || "date");
+    }
+    if (filter.sortOrder) {
+      setSortOrder(filter.sortOrder);
+    }
+
+    toast.success(`Filtre "${filter.name}" appliqué`);
   };
 
   // Filtrer les messages
@@ -355,6 +388,15 @@ export function AdminMessageList({ onMessageClick }: AdminMessageListProps) {
               <LayoutGrid className="h-4 w-4" />
             </Button>
           </div>
+        </div>
+
+        {/* Gestionnaire de filtres sauvegardés */}
+        <div className="border rounded-lg p-4 bg-muted/30">
+          <SavedFiltersManager
+            currentFilters={filters}
+            currentSort={{ sortBy, sortOrder }}
+            onApplyFilter={handleApplySavedFilter}
+          />
         </div>
 
         {/* Badges de filtres actifs */}

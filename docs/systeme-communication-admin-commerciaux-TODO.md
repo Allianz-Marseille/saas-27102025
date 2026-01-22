@@ -346,10 +346,10 @@ Si vous avez déjà implémenté plusieurs étapes et que vous avez 1000 erreurs
 - [x] Ajouter lien vers page de paramètres depuis profil
 
 ### 5.4 Filtres Sauvegardés
-- [ ] Créer le fichier `lib/firebase/saved-filters.ts`
-- [ ] Implémenter sauvegarde de combinaisons de filtres
-- [ ] Implémenter vues personnalisées avec filtres pré-configurés
-- [ ] Créer interface pour créer/gérer les vues sauvegardées
+- [x] Créer le fichier `lib/firebase/saved-filters.ts`
+- [x] Implémenter sauvegarde de combinaisons de filtres
+- [x] Implémenter vues personnalisées avec filtres pré-configurés
+- [x] Créer interface pour créer/gérer les vues sauvegardées
 
 ### 5.5 Système de Réponses (Amélioration Validée)
 - [ ] Créer le fichier `lib/firebase/message-replies.ts`
