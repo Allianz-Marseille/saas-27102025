@@ -17,6 +17,8 @@ import { isAdmin } from "@/lib/utils/roles";
  */
 export function MessageReminder() {
   const { user, userData, loading: authLoading } = useAuth();
+  // Toujours appeler useMessages() pour respecter les règles des hooks React
+  // mais on ne l'utilisera que si les conditions sont remplies
   const { messages, loading: messagesLoading } = useMessages();
   const [preferences, setPreferences] = useState<UserMessagePreferences | null>(null);
   const [lastReminderTime, setLastReminderTime] = useState<Date | null>(null);
@@ -25,6 +27,7 @@ export function MessageReminder() {
 
   // Ne rien faire pendant le chargement de l'authentification
   // Ne pas afficher pour les admins ou si userData n'est pas disponible
+  // IMPORTANT: Ce return doit être APRÈS tous les hooks pour respecter les règles React
   if (authLoading || !userData || isAdmin(userData)) {
     return null;
   }
