@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { logout } from "@/lib/firebase/auth";
 import { logUserLogout } from "@/lib/firebase/logs";
@@ -31,7 +31,7 @@ export function useAutoLogout(options: UseAutoLogoutOptions = {}) {
   const warningTimeoutIdRef = useRef<NodeJS.Timeout | null>(null);
   const hasShownWarningRef = useRef(false);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       // Logger la déconnexion automatique
       if (userId && userEmail) {
@@ -50,18 +50,18 @@ export function useAutoLogout(options: UseAutoLogoutOptions = {}) {
     } catch (error) {
       console.error("Erreur lors de la déconnexion automatique:", error);
     }
-  };
+  }, [userId, userEmail, router]);
 
-  const showWarning = () => {
+  const showWarning = useCallback(() => {
     if (!hasShownWarningRef.current) {
       hasShownWarningRef.current = true;
       toast.warning("Déconnexion imminente", {
         description: `Vous serez déconnecté dans ${warningMinutes} minute${warningMinutes > 1 ? 's' : ''} si aucune activité n'est détectée.`,
       });
     }
-  };
+  }, [warningMinutes]);
 
-  const resetTimer = () => {
+  const resetTimer = useCallback(() => {
     // Réinitialiser le flag d'avertissement
     hasShownWarningRef.current = false;
 
@@ -88,9 +88,14 @@ export function useAutoLogout(options: UseAutoLogoutOptions = {}) {
     timeoutIdRef.current = setTimeout(() => {
       handleLogout();
     }, timeoutMs);
-  };
+  }, [timeoutMinutes, warningMinutes, showWarning, handleLogout]);
 
   useEffect(() => {
+    // Ne rien faire si userId n'est pas disponible
+    if (!userId) {
+      return;
+    }
+
     // Événements à surveiller pour détecter l'activité
     const events = [
       "mousedown",
@@ -121,6 +126,7 @@ export function useAutoLogout(options: UseAutoLogoutOptions = {}) {
         document.removeEventListener(event, resetTimer);
       });
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, userEmail, timeoutMinutes, warningMinutes]);
 }
 
