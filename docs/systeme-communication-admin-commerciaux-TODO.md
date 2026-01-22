@@ -338,12 +338,12 @@ Si vous avez déjà implémenté plusieurs étapes et que vous avez 1000 erreurs
 ### 5.3 Préférences Utilisateur
 - [x] Créer le fichier `lib/firebase/user-preferences.ts`
 - [x] Créer la collection Firestore `user_message_preferences`
-- [ ] Créer le fichier `app/settings/messages/page.tsx`
-- [ ] Implémenter paramètres :
-  - [ ] Activer/désactiver notifications sonores
-  - [ ] Fréquence des rappels
-  - [ ] Préférence d'affichage (liste/grille)
-- [ ] Ajouter lien vers page de paramètres depuis profil
+- [x] Créer le fichier `app/settings/messages/page.tsx`
+- [x] Implémenter paramètres :
+  - [x] Activer/désactiver notifications sonores
+  - [x] Fréquence des rappels
+  - [x] Préférence d'affichage (liste/grille)
+- [x] Ajouter lien vers page de paramètres depuis profil
 
 ### 5.4 Filtres Sauvegardés
 - [ ] Créer le fichier `lib/firebase/saved-filters.ts`

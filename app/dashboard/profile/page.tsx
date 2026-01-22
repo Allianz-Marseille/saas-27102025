@@ -3,7 +3,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { User, Mail, Shield, MessageSquare, Settings } from "lucide-react";
+import Link from "next/link";
+import { isAdmin } from "@/lib/utils/roles";
 
 export default function ProfilePage() {
   const { user, userData } = useAuth();
@@ -63,7 +66,7 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Carte de paramètres à venir */}
+          {/* Carte de paramètres */}
           <Card>
             <CardHeader>
               <CardTitle>Paramètres</CardTitle>
@@ -71,9 +74,19 @@ export default function ProfilePage() {
                 Gérez vos préférences
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Les paramètres du profil seront disponibles prochainement.
+            <CardContent className="space-y-4">
+              {userData && !isAdmin(userData) && (
+                <Link href="/settings/messages">
+                  <Button variant="outline" className="w-full justify-start">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Paramètres des messages
+                  </Button>
+                </Link>
+              )}
+              <p className="text-sm text-muted-foreground">
+                {userData && !isAdmin(userData)
+                  ? "Configurez vos notifications et préférences d'affichage"
+                  : "Les paramètres seront disponibles prochainement."}
               </p>
             </CardContent>
           </Card>

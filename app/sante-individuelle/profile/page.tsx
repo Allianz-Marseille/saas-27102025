@@ -3,8 +3,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Shield, Stethoscope, Sparkles, Crown, Zap, Star, Activity } from "lucide-react";
-import { getRoleLabel } from "@/lib/utils/roles";
+import { Button } from "@/components/ui/button";
+import { User, Mail, Shield, Stethoscope, Sparkles, Crown, Zap, Star, Activity, MessageSquare } from "lucide-react";
+import { getRoleLabel, isAdmin } from "@/lib/utils/roles";
+import Link from "next/link";
 
 export default function ProfilePage() {
   const { user, userData } = useAuth();
@@ -259,7 +261,7 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Carte de paramètres à venir */}
+          {/* Carte de paramètres */}
           <Card className="border-0 shadow-2xl glass-morphism overflow-hidden relative card-3d">
             <div className="absolute inset-0 cyber-grid opacity-10" />
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
@@ -274,16 +276,20 @@ export default function ProfilePage() {
                 Gérez vos préférences
               </CardDescription>
             </CardHeader>
-            <CardContent className="relative z-10">
-              <div className="p-6 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-2 border-indigo-500/30 text-center">
-                <Sparkles className="h-12 w-12 mx-auto text-indigo-600 dark:text-indigo-400 mb-3" />
-                <p className="text-muted-foreground font-bold">
-                Les paramètres du profil seront disponibles prochainement.
+            <CardContent className="relative z-10 space-y-4">
+              {userData && !isAdmin(userData) && (
+                <Link href="/settings/messages">
+                  <Button variant="outline" className="w-full justify-start bg-white/50 dark:bg-slate-900/50">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Paramètres des messages
+                  </Button>
+                </Link>
+              )}
+              <p className="text-sm text-muted-foreground text-center">
+                {userData && !isAdmin(userData)
+                  ? "Configurez vos notifications et préférences d'affichage"
+                  : "Les paramètres seront disponibles prochainement."}
               </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Nouvelles fonctionnalités en développement ! 🚀
-                </p>
-              </div>
             </CardContent>
           </Card>
         </div>
