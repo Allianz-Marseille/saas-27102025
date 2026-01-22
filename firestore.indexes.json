@@ -92,29 +92,8 @@
       "collectionGroup": "sinistres",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "incidentDate", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "sinistres",
-      "queryScope": "COLLECTION",
-      "fields": [
         { "fieldPath": "damagedCoverage", "order": "ASCENDING" },
         { "fieldPath": "incidentDate", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "sinistres",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "policyNumber", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "admin_messages",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
     {
