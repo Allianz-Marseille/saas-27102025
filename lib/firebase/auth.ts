@@ -74,12 +74,25 @@ export const getUserData = async (uid: string): Promise<UserData | null> => {
 
   if (docSnap.exists()) {
     const data = docSnap.data();
+    
+    // Gérer createdAt : soit un Timestamp Firebase, soit déjà une Date
+    let createdAt: Date;
+    if (data.createdAt && typeof data.createdAt.toDate === 'function') {
+      createdAt = data.createdAt.toDate();
+    } else if (data.createdAt instanceof Date) {
+      createdAt = data.createdAt;
+    } else if (data.createdAt) {
+      createdAt = new Date(data.createdAt);
+    } else {
+      createdAt = new Date();
+    }
+    
     return {
       id: data.id,
       email: data.email,
       role: data.role,
       active: data.active,
-      createdAt: data.createdAt.toDate(),
+      createdAt,
     };
   }
 
