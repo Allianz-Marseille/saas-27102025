@@ -45,6 +45,7 @@ interface MessageFilters {
   priority?: MessagePriority;
   category?: MessageCategory;
   status?: MessageStatus;
+  awaitingReply?: boolean;
 }
 
 const ITEMS_PER_PAGE = 20;
@@ -135,6 +136,11 @@ export function AdminMessageList({ onMessageClick }: AdminMessageListProps) {
       result = result.filter((msg) => msg.status === filters.status);
     }
 
+    // Filtre par "en attente de réponse"
+    if (filters.awaitingReply !== undefined) {
+      result = result.filter((msg) => msg.awaitingReply === filters.awaitingReply);
+    }
+
     return result;
   }, [messages, filters]);
 
@@ -196,6 +202,7 @@ export function AdminMessageList({ onMessageClick }: AdminMessageListProps) {
     if (filters.category) count++;
     if (filters.status) count++;
     if (filters.search.trim()) count++;
+    if (filters.awaitingReply !== undefined) count++;
     return count;
   }, [filters]);
 
@@ -205,7 +212,11 @@ export function AdminMessageList({ onMessageClick }: AdminMessageListProps) {
   };
 
   const clearFilter = (key: keyof MessageFilters) => {
-    setFilters((prev) => ({ ...prev, [key]: key === "search" ? "" : undefined }));
+    if (key === "search") {
+      setFilters((prev) => ({ ...prev, [key]: "" }));
+    } else {
+      setFilters((prev) => ({ ...prev, [key]: undefined }));
+    }
     setCurrentPage(1);
   };
 
@@ -302,6 +313,23 @@ export function AdminMessageList({ onMessageClick }: AdminMessageListProps) {
               <SelectItem value="sent">Envoyé</SelectItem>
               <SelectItem value="scheduled">Programmé</SelectItem>
               <SelectItem value="archived">Archivé</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Filtre "En attente de réponse" */}
+          <Select
+            value={filters.awaitingReply === undefined ? "all" : filters.awaitingReply ? "yes" : "no"}
+            onValueChange={(value) =>
+              updateFilter("awaitingReply", value === "all" ? undefined : value === "yes")
+            }
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Réponse" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les messages</SelectItem>
+              <SelectItem value="yes">En attente de réponse</SelectItem>
+              <SelectItem value="no">Pas de réponse attendue</SelectItem>
             </SelectContent>
           </Select>
 
@@ -437,6 +465,15 @@ export function AdminMessageList({ onMessageClick }: AdminMessageListProps) {
                 <X
                   className="h-3 w-3 cursor-pointer"
                   onClick={() => clearFilter("status")}
+                />
+              </Badge>
+            )}
+            {filters.awaitingReply !== undefined && (
+              <Badge variant="secondary" className="gap-1">
+                {filters.awaitingReply ? "En attente de réponse" : "Pas de réponse attendue"}
+                <X
+                  className="h-3 w-3 cursor-pointer"
+                  onClick={() => clearFilter("awaitingReply")}
                 />
               </Badge>
             )}

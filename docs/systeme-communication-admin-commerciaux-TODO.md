@@ -352,16 +352,16 @@ Si vous avez déjà implémenté plusieurs étapes et que vous avez 1000 erreurs
 - [x] Créer interface pour créer/gérer les vues sauvegardées
 
 ### 5.5 Système de Réponses (Amélioration Validée)
-- [ ] Créer le fichier `lib/firebase/message-replies.ts`
-- [ ] Créer la collection Firestore `message_replies`
-- [ ] Créer le fichier `components/messages/message-reply.tsx`
-- [ ] Créer le fichier `components/messages/message-replies-list.tsx`
-- [ ] Implémenter interface pour répondre aux messages (commerciaux)
-- [ ] Implémenter thread de conversation (affichage des réponses)
-- [ ] Implémenter notifications admin quand un commercial répond
-- [ ] Implémenter statut "En attente de réponse" sur les messages
-- [ ] Ajouter badge/indicateur visuel pour messages nécessitant une réponse
-- [ ] Implémenter filtre "En attente" dans l'interface admin
+- [x] Créer le fichier `lib/firebase/message-replies.ts`
+- [x] Créer la collection Firestore `message_replies`
+- [x] Créer le fichier `components/messages/message-reply.tsx`
+- [x] Créer le fichier `components/messages/message-replies-list.tsx`
+- [x] Implémenter interface pour répondre aux messages (commerciaux)
+- [x] Implémenter thread de conversation (affichage des réponses)
+- [x] Implémenter notifications admin quand un commercial répond
+- [x] Implémenter statut "En attente de réponse" sur les messages
+- [x] Ajouter badge/indicateur visuel pour messages nécessitant une réponse
+- [x] Implémenter filtre "En attente" dans l'interface admin
 - [ ] Ajouter les Firestore Rules pour `message_replies`
 - [ ] Ajouter les indexes Firestore pour `message_replies`
 

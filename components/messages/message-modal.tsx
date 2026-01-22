@@ -20,6 +20,8 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { MarkdownRenderer } from "@/components/assistant/MarkdownRenderer";
 import { cn } from "@/lib/utils";
+import { MessageReply } from "./message-reply";
+import { MessageRepliesList } from "./message-replies-list";
 
 interface MessageModalProps {
   message: AdminMessage | null;
@@ -43,6 +45,7 @@ export function MessageModal({
   onNext,
   onPrevious,
 }: MessageModalProps) {
+  const { user } = useAuth();
   const { user } = useAuth();
   const [isMarkingAsRead, setIsMarkingAsRead] = useState(false);
 
@@ -181,6 +184,23 @@ export function MessageModal({
               </div>
             )}
           </div>
+
+          {/* Liste des réponses */}
+          <MessageRepliesList
+            messageId={message.id}
+            onRepliesChange={() => {
+              // Rafraîchir si nécessaire
+            }}
+          />
+
+          {/* Formulaire de réponse (commerciaux uniquement) */}
+          <MessageReply
+            messageId={message.id}
+            onReplySent={() => {
+              // Recharger les réponses
+              window.location.reload();
+            }}
+          />
 
           {/* Navigation entre messages */}
           {hasMultipleUnread && (canGoNext || canGoPrevious) && (
