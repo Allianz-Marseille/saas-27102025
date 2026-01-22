@@ -1,10 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Optimisations pour accélérer le build
-  swcMinify: true,
-  
-  // Optimiser les imports
+  // Optimiser les imports (compatible avec Turbopack)
   experimental: {
     optimizePackageImports: [
       'lucide-react',
@@ -18,21 +15,8 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // Exclure certaines dépendances du bundle si possible
-  webpack: (config, { isServer }) => {
-    // Optimiser les dépendances lourdes pour le client uniquement
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        path: false,
-        crypto: false,
-      };
-    }
-    return config;
-  },
-
-  // Vercel gère déjà l'optimisation du build
+  // Configuration Turbopack (Next.js 16 utilise Turbopack par défaut)
+  turbopack: {},
 };
 
 export default nextConfig;
