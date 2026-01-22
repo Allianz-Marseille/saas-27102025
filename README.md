@@ -613,6 +613,22 @@ Toutes les routes sont protégées par le composant `RouteGuard` qui vérifie :
 2. Configurer les variables d'environnement dans Vercel (voir [Guide de déploiement](docs/deployment.md))
 3. Déployer automatiquement à chaque push sur `main`
 
+### ⚠️ Éviter les déploiements multiples
+
+**Important** : Vercel déclenche automatiquement un déploiement à chaque commit poussé sur `main`.
+
+Pour éviter les déploiements multiples lors de commits intermédiaires, utilisez `[skip vercel]` dans le message de commit :
+
+```bash
+git commit -m "fix: Correction intermédiaire [skip vercel]"
+```
+
+Les commits avec `[skip vercel]` dans le message seront ignorés par Vercel et ne déclencheront pas de déploiement.
+
+**Exemple de workflow recommandé :**
+- Commits intermédiaires : utiliser `[skip vercel]`
+- Commit final/prêt pour production : commit normal (sans `[skip vercel]`)
+
 ### Variables d'environnement de production
 
 **📖 Documentation complète** : Voir [docs/deployment.md](docs/deployment.md) pour la liste complète des variables d'environnement requises.
