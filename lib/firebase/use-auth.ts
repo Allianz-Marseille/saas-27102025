@@ -67,10 +67,24 @@ export function useAuth(): AuthState {
             // S'assurer que active est un booléen
             const active = typeof data.active === 'boolean' ? data.active : true;
             
+            // Valider et typer le rôle
+            type ValidRole = UserData["role"];
+            const validRoles: ValidRole[] = [
+              "ADMINISTRATEUR",
+              "CDC_COMMERCIAL",
+              "COMMERCIAL_SANTE_INDIVIDUEL",
+              "COMMERCIAL_SANTE_COLLECTIVE",
+              "GESTIONNAIRE_SINISTRE",
+            ];
+            const roleString = String(data.role);
+            const role: ValidRole = validRoles.includes(roleString as ValidRole)
+              ? (roleString as ValidRole)
+              : "CDC_COMMERCIAL"; // Valeur par défaut si le rôle n'est pas valide
+            
             setUserData({
               id: String(data.id),
               email: String(data.email),
-              role: String(data.role),
+              role: role,
               active,
               createdAt,
             });
