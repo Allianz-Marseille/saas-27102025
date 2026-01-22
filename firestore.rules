@@ -256,6 +256,30 @@ service cloud.firestore {
       // Suppression : Seuls les admins peuvent supprimer
       allow delete: if isAdmin();
     }
+    
+    // Message replies collection
+    // Réponses des commerciaux aux messages admin
+    match /message_replies/{replyId} {
+      // Lecture : Admin voit tout, commercial voit uniquement les réponses de ses messages
+      // Pour vérifier si un message appartient à un commercial, on doit vérifier via message_recipients
+      allow read: if isAdmin() || 
+                    (isAuthenticated() && resource.data.userId == request.auth.uid);
+      
+      // Création : Les commerciaux peuvent créer des réponses pour leurs messages
+      // Vérification que l'utilisateur est bien l'auteur de la réponse
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == request.auth.uid &&
+                      !isAdmin(); // Seuls les non-admins (commerciaux) peuvent répondre
+      
+      // Modification : Seuls les admins peuvent marquer comme lu
+      // Les commerciaux ne peuvent pas modifier leurs réponses après envoi
+      allow update: if isAdmin() && 
+                      // Seuls les champs readByAdmin et readByAdminAt peuvent être modifiés
+                      (!request.resource.diff(resource).affectedKeys().hasAny(['id', 'messageId', 'userId', 'userName', 'userEmail', 'content', 'createdAt']));
+      
+      // Suppression : Seuls les admins peuvent supprimer
+      allow delete: if isAdmin();
+    }
   }
 }
 

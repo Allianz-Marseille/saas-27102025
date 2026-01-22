@@ -362,8 +362,8 @@ Si vous avez déjà implémenté plusieurs étapes et que vous avez 1000 erreurs
 - [x] Implémenter statut "En attente de réponse" sur les messages
 - [x] Ajouter badge/indicateur visuel pour messages nécessitant une réponse
 - [x] Implémenter filtre "En attente" dans l'interface admin
-- [ ] Ajouter les Firestore Rules pour `message_replies`
-- [ ] Ajouter les indexes Firestore pour `message_replies`
+- [x] Ajouter les Firestore Rules pour `message_replies`
+- [x] Ajouter les indexes Firestore pour `message_replies`
 
 ### 5.6 Rich Media et Catégories (Améliorations Validées)
 - [ ] Créer le fichier `lib/firebase/message-attachments.ts`
