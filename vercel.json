@@ -4,11 +4,6 @@
       "path": "/api/cron/update-leaderboard",
       "schedule": "0 2 * * *"
     }
-  ],
-  "git": {
-    "deploymentEnabled": {
-      "messagerie": false
-    }
-  }
+  ]
 }
 
