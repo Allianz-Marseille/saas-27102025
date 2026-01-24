@@ -44,10 +44,18 @@ service cloud.firestore {
     }
     
     // Users collection
-    // Lecture restreinte : uniquement le propriétaire ou l'admin
+    // Lecture : admin, propriétaire, ou utilisateurs authentifiés pour les commerciaux (nécessaire pour l'affichage des tags)
     // Protection des données personnelles des utilisateurs
     match /users/{userId} {
-      allow read: if isAdmin() || (isAuthenticated() && userId == request.auth.uid);
+      // Admin peut tout lire
+      // Utilisateur peut lire son propre document
+      // Utilisateurs authentifiés peuvent lire les documents des commerciaux (pour affichage des tags dans les process)
+      allow read: if isAdmin() || 
+                    (isAuthenticated() && userId == request.auth.uid) ||
+                    (isAuthenticated() && 
+                     (resource.data.role == 'CDC_COMMERCIAL' || 
+                      resource.data.role == 'COMMERCIAL_SANTE_INDIVIDUEL' || 
+                      resource.data.role == 'COMMERCIAL_SANTE_COLLECTIVE'));
       allow create: if false; // Only server-side
       allow update: if isAdmin();
       allow delete: if isAdmin();

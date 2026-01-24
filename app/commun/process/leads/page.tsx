@@ -2,7 +2,7 @@
 
 /* eslint-disable react/no-unescaped-entities */
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -21,9 +21,56 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { getActiveMembersNames } from "@/lib/config/team-members";
+import { db } from "@/lib/firebase/config";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
-const PEOPLE = getActiveMembersNames();
+/**
+ * Extrait le prénom depuis l'email
+ */
+function extractFirstName(email: string): string {
+  const emailParts = email.split("@")[0].split(".");
+  const rawFirstName = emailParts[0] || "Commercial";
+  return (
+    rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1).toLowerCase()
+  );
+}
+
+/**
+ * Récupère tous les commerciaux actifs depuis Firestore
+ */
+async function getActiveCommercials(): Promise<string[]> {
+  if (!db) return [];
+
+  try {
+    const usersRef = collection(db, "users");
+    const commercialRoles = [
+      "CDC_COMMERCIAL",
+      "COMMERCIAL_SANTE_INDIVIDUEL",
+      "COMMERCIAL_SANTE_COLLECTIVE",
+    ];
+
+    // Récupérer tous les utilisateurs actifs et filtrer côté client
+    const q = query(usersRef, where("active", "==", true));
+    const querySnapshot = await getDocs(q);
+
+    const firstNames = querySnapshot.docs
+      .map((doc) => {
+        const data = doc.data();
+        // Filtrer uniquement les rôles commerciaux
+        if (commercialRoles.includes(data.role)) {
+          return extractFirstName(data.email || "");
+        }
+        return null;
+      })
+      .filter((name): name is string => name !== null && name !== "Commercial")
+      .sort();
+
+    return firstNames;
+  } catch (error) {
+    console.error("Erreur lors de la récupération des commerciaux:", error);
+    return [];
+  }
+}
 
 const WORKFLOW_STEPS = [
   {
@@ -117,6 +164,19 @@ const itemVariants = {
 
 export default function LeadsProcessPage() {
   const router = useRouter();
+  const [commercialNames, setCommercialNames] = useState<string[]>([]);
+  const [isLoadingCommercials, setIsLoadingCommercials] = useState(true);
+
+  useEffect(() => {
+    const loadCommercials = async () => {
+      setIsLoadingCommercials(true);
+      const names = await getActiveCommercials();
+      setCommercialNames(names);
+      setIsLoadingCommercials(false);
+    };
+
+    loadCommercials();
+  }, []);
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-5xl">
@@ -162,17 +222,27 @@ export default function LeadsProcessPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {PEOPLE.map((person) => (
-                  <Badge
-                    key={person}
-                    variant="outline"
-                    className="text-sm px-3 py-1"
-                  >
-                    {person}
-                  </Badge>
-                ))}
-              </div>
+              {isLoadingCommercials ? (
+                <div className="text-sm text-muted-foreground">
+                  Chargement des commerciaux...
+                </div>
+              ) : commercialNames.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {commercialNames.map((name) => (
+                    <Badge
+                      key={name}
+                      variant="outline"
+                      className="text-sm px-3 py-1"
+                    >
+                      {name}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  Aucun commercial actif trouvé
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>

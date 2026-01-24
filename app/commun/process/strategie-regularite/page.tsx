@@ -1,16 +1,80 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Target, Clock, TrendingUp, Lightbulb, MessageSquare, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Target, Clock, TrendingUp, Lightbulb, MessageSquare, CheckCircle2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import DecryptedText from "@/components/DecryptedText";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { db } from "@/lib/firebase/config";
+import { collection, query, where, getDocs } from "firebase/firestore";
+
+/**
+ * Extrait le prénom depuis l'email
+ */
+function extractFirstName(email: string): string {
+  const emailParts = email.split("@")[0].split(".");
+  const rawFirstName = emailParts[0] || "Commercial";
+  return (
+    rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1).toLowerCase()
+  );
+}
+
+/**
+ * Récupère tous les commerciaux actifs depuis Firestore
+ */
+async function getActiveCommercials(): Promise<string[]> {
+  if (!db) return [];
+
+  try {
+    const usersRef = collection(db, "users");
+    const commercialRoles = [
+      "CDC_COMMERCIAL",
+      "COMMERCIAL_SANTE_INDIVIDUEL",
+      "COMMERCIAL_SANTE_COLLECTIVE",
+    ];
+
+    // Récupérer tous les utilisateurs actifs et filtrer côté client
+    const q = query(usersRef, where("active", "==", true));
+    const querySnapshot = await getDocs(q);
+
+    const firstNames = querySnapshot.docs
+      .map((doc) => {
+        const data = doc.data();
+        // Filtrer uniquement les rôles commerciaux
+        if (commercialRoles.includes(data.role)) {
+          return extractFirstName(data.email || "");
+        }
+        return null;
+      })
+      .filter((name): name is string => name !== null && name !== "Commercial")
+      .sort();
+
+    return firstNames;
+  } catch (error) {
+    console.error("Erreur lors de la récupération des commerciaux:", error);
+    return [];
+  }
+}
 
 export default function StrategieRegularitePage() {
   const router = useRouter();
+  const [commercialNames, setCommercialNames] = useState<string[]>([]);
+  const [isLoadingCommercials, setIsLoadingCommercials] = useState(true);
+
+  useEffect(() => {
+    const loadCommercials = async () => {
+      setIsLoadingCommercials(true);
+      const names = await getActiveCommercials();
+      setCommercialNames(names);
+      setIsLoadingCommercials(false);
+    };
+
+    loadCommercials();
+  }, []);
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
@@ -40,6 +104,45 @@ export default function StrategieRegularitePage() {
       </div>
 
       <div className="space-y-6">
+        {/* Personnes concernées */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <Card className="border-2 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-950/20 dark:to-gray-950/20 border-slate-200 dark:border-slate-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <Users className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                Personnes concernées
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoadingCommercials ? (
+                <div className="text-sm text-muted-foreground">
+                  Chargement des commerciaux...
+                </div>
+              ) : commercialNames.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {commercialNames.map((name) => (
+                    <Badge
+                      key={name}
+                      variant="outline"
+                      className="text-sm px-3 py-1"
+                    >
+                      {name}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  Aucun commercial actif trouvé
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Section Image principale - Les 4 */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
