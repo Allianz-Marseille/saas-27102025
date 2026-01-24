@@ -44,18 +44,16 @@ service cloud.firestore {
     }
     
     // Users collection
-    // Lecture : admin, propriétaire, ou utilisateurs authentifiés pour les commerciaux (nécessaire pour l'affichage des tags)
+    // Lecture : admin, propriétaire, ou utilisateurs authentifiés pour les utilisateurs actifs (nécessaire pour l'affichage des tags)
     // Protection des données personnelles des utilisateurs
     match /users/{userId} {
       // Admin peut tout lire
       // Utilisateur peut lire son propre document
-      // Utilisateurs authentifiés peuvent lire les documents des commerciaux (pour affichage des tags dans les process)
+      // Utilisateurs authentifiés peuvent lire les documents des utilisateurs actifs (pour affichage des tags dans les process)
+      // Le filtrage par rôle se fait côté client
       allow read: if isAdmin() || 
                     (isAuthenticated() && userId == request.auth.uid) ||
-                    (isAuthenticated() && 
-                     (resource.data.role == 'CDC_COMMERCIAL' || 
-                      resource.data.role == 'COMMERCIAL_SANTE_INDIVIDUEL' || 
-                      resource.data.role == 'COMMERCIAL_SANTE_COLLECTIVE'));
+                    (isAuthenticated() && resource.data.active == true);
       allow create: if false; // Only server-side
       allow update: if isAdmin();
       allow delete: if isAdmin();

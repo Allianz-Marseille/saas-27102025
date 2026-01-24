@@ -40,17 +40,13 @@ function extractFirstName(email: string): string {
 
 /**
  * Récupère tous les commerciaux actifs depuis Firestore
+ * Uniquement les commerciaux CDC (exclut les commerciaux santé)
  */
 async function getActiveCommercials(): Promise<string[]> {
   if (!db) return [];
 
   try {
     const usersRef = collection(db, "users");
-    const commercialRoles = [
-      "CDC_COMMERCIAL",
-      "COMMERCIAL_SANTE_INDIVIDUEL",
-      "COMMERCIAL_SANTE_COLLECTIVE",
-    ];
 
     // Récupérer tous les utilisateurs actifs et filtrer côté client
     const q = query(usersRef, where("active", "==", true));
@@ -59,8 +55,8 @@ async function getActiveCommercials(): Promise<string[]> {
     const firstNames = querySnapshot.docs
       .map((doc) => {
         const data = doc.data();
-        // Filtrer uniquement les rôles commerciaux
-        if (commercialRoles.includes(data.role)) {
+        // Filtrer uniquement les commerciaux CDC (exclut COMMERCIAL_SANTE_INDIVIDUEL et COMMERCIAL_SANTE_COLLECTIVE)
+        if (data.role === "CDC_COMMERCIAL") {
           return extractFirstName(data.email || "");
         }
         return null;
