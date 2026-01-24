@@ -1093,7 +1093,7 @@ export default function AssistantIAPage() {
         </TabsList>
 
         <TabsContent value="chat" className="mt-6">
-          <Card className="h-[600px] flex flex-col">
+          <Card className="min-h-[600px] h-[calc(100vh-280px)] flex flex-col">
             <SearchBar
               onSearch={handleSearch}
               onNavigate={handleSearchNavigate}
