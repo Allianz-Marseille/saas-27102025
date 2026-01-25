@@ -5,10 +5,11 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Workflow, Users, FileText, Target } from "lucide-react";
+import { Workflow, Users, FileText, Target, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/firebase/use-auth";
+import { isCommercial, isAdmin } from "@/lib/utils/roles";
 
 export type ProcessTag = "commercial" | "sante-individuel" | "sante-collective" | "vie-agence" | "sinistre";
 
@@ -45,6 +46,16 @@ const processes: Process[] = [
     tags: ["commercial"],
   },
   {
+    id: "m-plus-3",
+    title: "Processus M+3 : Suivi client",
+    description: "Guide complet du processus M+3 : recontacter les nouveaux clients 3 mois après la souscription pour sécuriser la qualité du dossier, mieux connaître le client et identifier son potentiel commercial.",
+    icon: Calendar,
+    href: "/commun/process/m-plus-3",
+    color: "from-cyan-600 via-blue-600 to-cyan-600",
+    hoverColor: "hover:from-cyan-700 hover:via-blue-700 hover:to-cyan-700",
+    tags: ["commercial"],
+  },
+  {
     id: "strategie-regularite",
     title: "Stratégie Process : L'art de la régularité",
     description: "Un rappel essentiel pour votre succès et celui de l'agence. Objectif quotidien : 4 process par jour minimum (M+3, Préterme Auto, Préterme IRD).",
@@ -74,17 +85,34 @@ const tagColors: Record<ProcessTag, string> = {
 
 export default function ProcessPage() {
   const router = useRouter();
+  const { userData } = useAuth();
   const [selectedTag, setSelectedTag] = useState<ProcessTag | "all">("all");
   
   // Toujours afficher tous les tags disponibles pour le filtre
   // Même s'ils ne sont pas encore utilisés, ils seront nécessaires pour les futurs processus
   const availableTagsForFilter: ProcessTag[] = ["commercial", "sante-individuel", "sante-collective", "vie-agence", "sinistre"];
   
-  // Tous les processus sont visibles par tous les utilisateurs (base de référence commune)
-  // Filtrer uniquement selon le tag sélectionné
+  // Filtrer les processus selon le rôle de l'utilisateur
+  const roleFilteredProcesses = (() => {
+    // Admin voit tous les processus
+    if (isAdmin(userData)) {
+      return processes;
+    }
+    
+    // Commercial CDC voit uniquement les processus avec tag "commercial"
+    if (isCommercial(userData)) {
+      return processes.filter(process => process.tags.includes("commercial"));
+    }
+    
+    // Pour les autres rôles, on peut ajouter la logique ici si nécessaire
+    // Pour l'instant, on retourne un tableau vide pour les autres rôles
+    return [];
+  })();
+  
+  // Filtrer ensuite selon le tag sélectionné
   const filteredProcesses = selectedTag === "all"
-    ? processes
-    : processes.filter(process => 
+    ? roleFilteredProcesses
+    : roleFilteredProcesses.filter(process => 
         process.tags.includes(selectedTag)
       );
 
