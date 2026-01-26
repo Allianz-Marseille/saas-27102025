@@ -253,17 +253,17 @@ export default function RemunerationsPage() {
       }, 0);
 
     const multiplier = displayMode === "annual" ? 12 : 1;
-    const totalSavings = (savingsFromExclusions + savingsFromDepartures) * multiplier;
-    const totalCosts = costsFromArrivals * multiplier;
-    const impactNet = totalCosts - totalSavings;
-    const evolutionPercentage = currentTotal > 0 ? (impactNet / (currentTotal * multiplier)) * 100 : 0;
+    const totalSavings = Math.round((savingsFromExclusions + savingsFromDepartures) * multiplier * 100) / 100;
+    const totalCosts = Math.round(costsFromArrivals * multiplier * 100) / 100;
+    const impactNet = Math.round((totalCosts - totalSavings) * 100) / 100;
+    const evolutionPercentage = currentTotal > 0 ? Math.round((impactNet / (currentTotal * multiplier)) * 100 * 100) / 100 : 0;
 
     return {
-      current: currentTotal * multiplier,
-      simulated: simulatedTotal * multiplier,
-      difference: (simulatedTotal - currentTotal) * multiplier,
-      savingsFromDepartures: savingsFromDepartures * multiplier,
-      savingsFromExclusions: savingsFromExclusions * multiplier,
+      current: Math.round(currentTotal * multiplier * 100) / 100,
+      simulated: Math.round(simulatedTotal * multiplier * 100) / 100,
+      difference: Math.round((simulatedTotal - currentTotal) * multiplier * 100) / 100,
+      savingsFromDepartures: Math.round(savingsFromDepartures * multiplier * 100) / 100,
+      savingsFromExclusions: Math.round(savingsFromExclusions * multiplier * 100) / 100,
       totalSavings,
       costsFromArrivals: totalCosts,
       impactNet,
@@ -286,6 +286,9 @@ export default function RemunerationsPage() {
     } else {
       newSalary = currentSalary + value;
     }
+
+    // Arrondir à 2 décimales
+    newSalary = Math.round(newSalary * 100) / 100;
 
     const newSimulations = new Map(simulations);
     if (value === 0) {
@@ -357,15 +360,17 @@ export default function RemunerationsPage() {
     }
 
     const currentSalary = userObj.currentMonthlySalary || 0;
+    // Arrondir à 2 décimales
+    const roundedMonthlySalary = Math.round(monthlySalary * 100) / 100;
     
     try {
       await validateSalaryIncrease(
         userId,
         currentSalary,
-        monthlySalary,
+        roundedMonthlySalary,
         year,
         "amount",
-        monthlySalary - currentSalary,
+        Math.round((roundedMonthlySalary - currentSalary) * 100) / 100,
         user.uid
       );
       

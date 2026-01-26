@@ -534,10 +534,19 @@ export function SalaryTable({
                                 step="0.01"
                                 min="0"
                                 placeholder="0"
-                                value={editingSalaries.get(user.id)?.monthly ?? (user.currentMonthlySalary || 0)}
+                                value={(() => {
+                                  const monthly = editingSalaries.get(user.id)?.monthly ?? (user.currentMonthlySalary || 0);
+                                  return monthly === 0 ? "" : Math.round(monthly * 100) / 100;
+                                })()}
+                                onFocus={(e) => {
+                                  const currentValue = parseFloat(e.target.value);
+                                  if (currentValue === 0) {
+                                    e.target.value = "";
+                                  }
+                                }}
                                 onChange={(e) => {
-                                  const monthlyValue = parseFloat(e.target.value) || 0;
-                                  const annualValue = monthlyValue * 12;
+                                  const monthlyValue = e.target.value === "" ? 0 : Math.round(parseFloat(e.target.value) * 100) / 100;
+                                  const annualValue = Math.round(monthlyValue * 12 * 100) / 100;
                                   const currentYear = editingSalaries.get(user.id)?.year || new Date().getFullYear();
                                   const newEditing = new Map(editingSalaries);
                                   newEditing.set(user.id, { monthly: monthlyValue, annual: annualValue, year: currentYear });
@@ -561,10 +570,19 @@ export function SalaryTable({
                                 step="0.01"
                                 min="0"
                                 placeholder="0"
-                                value={editingSalaries.get(user.id)?.annual ?? ((user.currentMonthlySalary || 0) * 12)}
+                                value={(() => {
+                                  const annual = editingSalaries.get(user.id)?.annual ?? ((user.currentMonthlySalary || 0) * 12);
+                                  return annual === 0 ? "" : Math.round(annual * 100) / 100;
+                                })()}
+                                onFocus={(e) => {
+                                  const currentValue = parseFloat(e.target.value);
+                                  if (currentValue === 0) {
+                                    e.target.value = "";
+                                  }
+                                }}
                                 onChange={(e) => {
-                                  const annualValue = parseFloat(e.target.value) || 0;
-                                  const monthlyValue = annualValue / 12;
+                                  const annualValue = e.target.value === "" ? 0 : Math.round(parseFloat(e.target.value) * 100) / 100;
+                                  const monthlyValue = Math.round((annualValue / 12) * 100) / 100;
                                   const currentYear = editingSalaries.get(user.id)?.year || new Date().getFullYear();
                                   const newEditing = new Map(editingSalaries);
                                   newEditing.set(user.id, { monthly: monthlyValue, annual: annualValue, year: currentYear });
@@ -675,11 +693,22 @@ export function SalaryTable({
                         <TableCell className="text-center">
                           <Input
                             type="number"
-                            step={simulation?.type === "percentage" ? "0.1" : "1"}
+                            step={simulation?.type === "percentage" ? "0.1" : "0.01"}
                             placeholder={simulation?.type === "percentage" ? "0" : "0"}
-                            value={simulation?.value || ""}
+                            value={(() => {
+                              const val = simulation?.value || 0;
+                              return val === 0 ? "" : (simulation?.type === "percentage" ? val : Math.round(val * 100) / 100);
+                            })()}
+                            onFocus={(e) => {
+                              const currentValue = parseFloat(e.target.value);
+                              if (currentValue === 0) {
+                                e.target.value = "";
+                              }
+                            }}
                             onChange={(e) => {
-                              const value = parseFloat(e.target.value) || 0;
+                              const value = e.target.value === "" ? 0 : (simulation?.type === "percentage" 
+                                ? parseFloat(e.target.value) || 0 
+                                : Math.round(parseFloat(e.target.value) * 100) / 100);
                               onSimulationUpdate(user.id, simulation?.type || "percentage", value);
                             }}
                             className="w-[100px] text-center mx-auto"
