@@ -1,271 +1,156 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { History, TrendingUp, TrendingDown, ArrowRight, Trash2 } from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
-import { Timestamp } from "firebase/firestore";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
+import { History, Euro } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import { cleanOldSalaryHistory } from "@/lib/firebase/salaries";
-import { toast } from "sonner";
 import type { User, SalaryHistory } from "@/types";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 interface SalaryHistoryViewProps {
   history: SalaryHistory[];
   users: User[];
   onRefresh: () => void;
+  displayMode?: "monthly" | "annual";
 }
 
-export function SalaryHistoryView({ history, users, onRefresh }: SalaryHistoryViewProps) {
-  const [filterUserId, setFilterUserId] = useState<string>("all");
-  const [filterYear, setFilterYear] = useState<string>("all");
-  const [loading, setLoading] = useState(false);
+export function SalaryHistoryView({ 
+  history, 
+  users, 
+  onRefresh,
+  displayMode = "monthly"
+}: SalaryHistoryViewProps) {
+  const multiplier = displayMode === "annual" ? 12 : 1;
 
-  // Convertir Date | Timestamp en Date
-  const toDate = (value: Date | Timestamp): Date => {
-    if (value instanceof Timestamp) {
-      return value.toDate();
-    }
-    return value;
-  };
-
-  // Obtenir les années disponibles
+  // Obtenir les années disponibles depuis l'historique (uniquement validées)
   const availableYears = useMemo(() => {
-    const years = new Set(history.map(h => h.year));
-    return Array.from(years).sort((a, b) => b - a);
+    const years = new Set(history.map(h => h.year).filter((year): year is number => typeof year === 'number'));
+    years.add(2025); // Toujours inclure 2025
+    return Array.from(years).sort((a, b) => a - b);
   }, [history]);
 
-  // Filtrer l'historique
-  const filteredHistory = useMemo(() => {
-    return history.filter(h => {
-      if (filterUserId !== "all" && h.userId !== filterUserId) return false;
-      if (filterYear !== "all" && h.year !== parseInt(filterYear)) return false;
-      return true;
+  // Fonction helper pour récupérer le salaire validé d'un utilisateur pour une année
+  const getSalaryForYear = (userId: string, year: number): number => {
+    // Chercher une entrée exacte pour cette année
+    const exactEntry = history.find(
+      h => h.userId === userId && h.year === year
+    );
+    if (exactEntry) {
+      return exactEntry.monthlySalary;
+    }
+
+    // Chercher la dernière entrée avant cette année
+    const entriesBeforeYear = history
+      .filter(h => h.userId === userId && h.year < year)
+      .sort((a, b) => {
+        const aYear = typeof a.year === 'number' ? a.year : 0;
+        const bYear = typeof b.year === 'number' ? b.year : 0;
+        return bYear - aYear;
+      });
+    
+    if (entriesBeforeYear.length > 0) {
+      return entriesBeforeYear[0].monthlySalary;
+    }
+
+    // Sinon, retourner le salaire actuel de l'utilisateur
+    const userObj = users.find(u => u.id === userId);
+    return userObj?.currentMonthlySalary || 0;
+  };
+
+  // Calculer les totaux par année
+  const totalsByYear = useMemo(() => {
+    const totals = new Map<number, number>();
+    availableYears.forEach(year => {
+      const total = users.reduce((sum, user) => {
+        const salary = getSalaryForYear(user.id, year);
+        return sum + (salary * multiplier);
+      }, 0);
+      totals.set(year, total);
     });
-  }, [history, filterUserId, filterYear]);
+    return totals;
+  }, [users, availableYears, displayMode, history, multiplier]);
 
-  // Trouver le nom d'un utilisateur
-  const getUserName = (userId: string) => {
-    const user = users.find(u => u.id === userId);
-    if (!user) return "Utilisateur inconnu";
-    if (user.firstName && user.lastName) {
-      return `${user.firstName} ${user.lastName}`;
-    }
-    return user.email.split("@")[0];
-  };
-
-  // Nettoyer l'historique ancien
-  const handleCleanOldHistory = async () => {
-    try {
-      setLoading(true);
-      const deletedCount = await cleanOldSalaryHistory();
-      toast.success(`${deletedCount} entrée(s) supprimée(s)`);
-      onRefresh();
-    } catch (error) {
-      console.error("Erreur lors du nettoyage:", error);
-      toast.error("Erreur lors du nettoyage de l'historique");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Obtenir le badge de type de changement
-  const getChangeTypeBadge = (changeType: "initial" | "increase" | "decrease") => {
-    switch (changeType) {
-      case "initial":
-        return <Badge variant="secondary">Initial</Badge>;
-      case "increase":
-        return <Badge className="bg-green-600">Augmentation</Badge>;
-      case "decrease":
-        return <Badge variant="destructive">Diminution</Badge>;
-    }
-  };
 
   return (
-    <Card>
+    <Card className="border-none shadow-xl">
       <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 text-purple-600" />
-              Historique des rémunérations
-            </CardTitle>
-            <CardDescription>
-              Historique des 3 dernières années • {filteredHistory.length} entrée(s)
-            </CardDescription>
+        <CardTitle className="flex items-center gap-3">
+          <div className="p-2.5 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl shadow-lg">
+            <History className="h-6 w-6 text-white" />
           </div>
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2 text-red-600 hover:text-red-700">
-                <Trash2 className="h-4 w-4" />
-                Nettoyer anciennes données
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Nettoyer l'historique</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Cette action va supprimer toutes les entrées de plus de 3 ans.
-                  Cette opération ne peut pas être annulée.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleCleanOldHistory}
-                  disabled={loading}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  {loading ? "Suppression..." : "Confirmer"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
+          <span>Historique des rémunérations</span>
+        </CardTitle>
+        <CardDescription>
+          Affichage en lecture seule des rémunérations validées par année
+        </CardDescription>
       </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* Filtres */}
-        <div className="flex flex-wrap gap-2">
-          <Select value={filterUserId} onValueChange={setFilterUserId}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Tous les collaborateurs" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les collaborateurs</SelectItem>
-              {users.map(user => (
-                <SelectItem key={user.id} value={user.id}>
-                  {getUserName(user.id)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={filterYear} onValueChange={setFilterYear}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Toutes les années" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes les années</SelectItem>
-              {availableYears.map(year => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Tableau */}
+      <CardContent>
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="min-w-full">
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Année</TableHead>
-                <TableHead>Collaborateur</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-right">Ancien salaire</TableHead>
-                <TableHead className="text-center">
-                  <ArrowRight className="h-4 w-4 mx-auto" />
-                </TableHead>
-                <TableHead className="text-right">Nouveau salaire</TableHead>
-                <TableHead className="text-right">Variation</TableHead>
-                <TableHead>Validé par</TableHead>
+                <TableHead className="sticky left-0 z-10 bg-background">Collaborateur</TableHead>
+                {availableYears.map((year) => (
+                  <TableHead key={year} className="text-center min-w-[150px]">
+                    {year}
+                  </TableHead>
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredHistory.length === 0 ? (
+              {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                    Aucun historique trouvé
+                  <TableCell colSpan={availableYears.length + 1} className="text-center text-muted-foreground py-8">
+                    Aucun collaborateur trouvé
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredHistory.map((entry) => {
-                  const validatedBy = users.find(u => u.id === entry.validatedBy);
-                  const validatedByName = validatedBy
-                    ? (validatedBy.firstName && validatedBy.lastName
-                        ? `${validatedBy.firstName} ${validatedBy.lastName}`
-                        : validatedBy.email.split("@")[0])
-                    : "Inconnu";
-
-                  return (
-                    <TableRow key={entry.id}>
-                      <TableCell>
-                        {format(toDate(entry.validatedAt), "dd/MM/yyyy HH:mm", { locale: fr })}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{entry.year}</Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {getUserName(entry.userId)}
-                      </TableCell>
-                      <TableCell>
-                        {getChangeTypeBadge(entry.changeType)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {entry.previousMonthlySalary
-                          ? formatCurrency(entry.previousMonthlySalary)
-                          : "-"}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {entry.changeType === "increase" ? (
-                          <TrendingUp className="h-4 w-4 text-green-600 mx-auto" />
-                        ) : entry.changeType === "decrease" ? (
-                          <TrendingDown className="h-4 w-4 text-red-600 mx-auto" />
-                        ) : (
-                          <ArrowRight className="h-4 w-4 text-muted-foreground mx-auto" />
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {formatCurrency(entry.monthlySalary)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {entry.changeAmount !== undefined && entry.changeAmount !== 0 ? (
-                          <div className="flex flex-col items-end">
-                            <span className={entry.changeAmount > 0 ? "text-green-600" : "text-red-600"}>
-                              {entry.changeAmount > 0 ? "+" : ""}
-                              {formatCurrency(entry.changeAmount)}
-                            </span>
-                            {entry.changePercentage !== undefined && (
-                              <span className="text-xs text-muted-foreground">
-                                ({entry.changePercentage > 0 ? "+" : ""}
-                                {entry.changePercentage.toFixed(2)}%)
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {validatedByName}
+                users.map((user) => (
+                  <TableRow key={user.id} className="hover:bg-muted/50 transition-colors">
+                    <TableCell className="sticky left-0 z-10 bg-background">
+                      <div className="flex flex-col">
+                        <span className="font-semibold">
+                          {user.firstName} {user.lastName}
                         </span>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
+                        {user.email && (
+                          <span className="text-xs text-muted-foreground">{user.email}</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    {availableYears.map((year) => {
+                      const salary = getSalaryForYear(user.id, year);
+                      const displaySalary = salary * multiplier;
+                      
+                      return (
+                        <TableCell key={year} className="text-center">
+                          <span className="font-semibold text-lg">
+                            {displaySalary > 0 ? formatCurrency(displaySalary) : (
+                              <span className="text-muted-foreground text-sm italic">Non défini</span>
+                            )}
+                          </span>
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))
               )}
             </TableBody>
+            <TableFooter>
+              <TableRow className="border-t-2 font-bold">
+                <TableCell className="sticky left-0 z-10 bg-background text-lg">TOTAL</TableCell>
+                {availableYears.map((year) => {
+                  const total = totalsByYear.get(year) || 0;
+                  
+                  return (
+                    <TableCell key={year} className="text-center">
+                      <span className="text-xl font-bold">
+                        {formatCurrency(total)}
+                      </span>
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            </TableFooter>
           </Table>
         </div>
       </CardContent>

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, TrendingUp, RefreshCw, Calendar, ArrowUpDown, ArrowUp, ArrowDown, Save, Trash2, UserPlus } from "lucide-react";
+import { Check, X, TrendingUp, RefreshCw, Calendar, ArrowUpDown, ArrowUp, ArrowDown, Save, Trash2, UserPlus, Euro, Users } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import type { User, SimulatedUser } from "@/types";
@@ -38,7 +38,9 @@ interface SalaryTableProps {
   onAddSimulatedUser: () => void;
   onRemoveSimulatedUser: (userId: string) => void;
   includedUsers?: Set<string>;
-  onToggleInclusion?: (userId: string, included: boolean) => void;
+  comparisonYear?: number;
+  salaryHistory?: import("@/types").SalaryHistory[];
+  onToggleInclusion?: (userId: string, year: number, included: boolean) => void;
   onSaveSalary?: (userId: string, monthlySalary: number, year: number) => Promise<void>;
 }
 
@@ -63,6 +65,8 @@ export function SalaryTable({
   onAddSimulatedUser,
   onRemoveSimulatedUser,
   includedUsers,
+  comparisonYear = new Date().getFullYear(),
+  salaryHistory = [],
   onToggleInclusion,
   onSaveSalary,
 }: SalaryTableProps) {
@@ -80,16 +84,46 @@ export function SalaryTable({
     includedUsers || new Set([...users.map(u => u.id), ...Array.from(simulatedUsers.keys())])
   );
   
-  const currentIncludedUsers = includedUsers || localIncludedUsers;
-  const handleToggleInclusion = onToggleInclusion || ((userId: string, included: boolean) => {
-    const newSet = new Set(localIncludedUsers);
-    if (included) {
-      newSet.add(userId);
-    } else {
-      newSet.delete(userId);
+  // Fonction helper pour récupérer le salaire d'un utilisateur pour une année donnée
+  const getUserSalaryForYear = (userId: string, year: number): number => {
+    // Chercher une entrée exacte pour cette année
+    const exactEntry = salaryHistory.find(
+      h => h.userId === userId && h.year === year
+    );
+    if (exactEntry) {
+      return exactEntry.monthlySalary;
     }
-    setLocalIncludedUsers(newSet);
-  });
+
+    // Chercher la dernière entrée avant cette année
+    const entriesBeforeYear = salaryHistory
+      .filter(h => h.userId === userId && h.year < year)
+      .sort((a, b) => {
+        const aYear = typeof a.year === 'number' ? a.year : 0;
+        const bYear = typeof b.year === 'number' ? b.year : 0;
+        return bYear - aYear;
+      });
+    
+    if (entriesBeforeYear.length > 0) {
+      return entriesBeforeYear[0].monthlySalary;
+    }
+
+    // Sinon, retourner le salaire actuel de l'utilisateur
+    const userObj = users.find(u => u.id === userId);
+    return userObj?.currentMonthlySalary || 0;
+  };
+
+  const currentIncludedUsers = includedUsers || localIncludedUsers;
+  const handleToggleInclusion = onToggleInclusion 
+    ? (userId: string, included: boolean) => onToggleInclusion(userId, comparisonYear, included)
+    : ((userId: string, included: boolean) => {
+        const newSet = new Set(localIncludedUsers);
+        if (included) {
+          newSet.add(userId);
+        } else {
+          newSet.delete(userId);
+        }
+        setLocalIncludedUsers(newSet);
+      });
 
   const handleValidateOne = (userId: string) => {
     // Ne pas permettre la validation des utilisateurs simulés
@@ -147,7 +181,9 @@ export function SalaryTable({
   type CombinedUser = (User & { isSimulated?: false }) | (SimulatedUser & { isSimulated: true });
   const allUsers: CombinedUser[] = [
     ...users.map(u => ({ ...u, isSimulated: false as const })),
-    ...Array.from(simulatedUsers.values()).map(u => ({ ...u, isSimulated: true as const })),
+    ...Array.from(simulatedUsers.values())
+      .filter(user => !user.arrivalYear || user.arrivalYear <= comparisonYear)
+      .map(u => ({ ...u, isSimulated: true as const })),
   ];
 
   // Trier les utilisateurs
@@ -172,22 +208,38 @@ export function SalaryTable({
         return contractA.localeCompare(contractB) * direction;
       }
       case "salary": {
-        const salaryA = a.currentMonthlySalary || 0;
-        const salaryB = b.currentMonthlySalary || 0;
+        const salaryA = a.isSimulated 
+          ? a.currentMonthlySalary || 0 
+          : getUserSalaryForYear(a.id, comparisonYear);
+        const salaryB = b.isSimulated 
+          ? b.currentMonthlySalary || 0 
+          : getUserSalaryForYear(b.id, comparisonYear);
         return (salaryA - salaryB) * direction;
       }
       case "newSalary": {
         const simA = simulations.get(a.id);
         const simB = simulations.get(b.id);
-        const newSalaryA = simA ? simA.newSalary : (a.currentMonthlySalary || 0);
-        const newSalaryB = simB ? simB.newSalary : (b.currentMonthlySalary || 0);
+        const baseSalaryA = a.isSimulated 
+          ? a.currentMonthlySalary || 0 
+          : getUserSalaryForYear(a.id, comparisonYear);
+        const baseSalaryB = b.isSimulated 
+          ? b.currentMonthlySalary || 0 
+          : getUserSalaryForYear(b.id, comparisonYear);
+        const newSalaryA = simA ? simA.newSalary : baseSalaryA;
+        const newSalaryB = simB ? simB.newSalary : baseSalaryB;
         return (newSalaryA - newSalaryB) * direction;
       }
       case "difference": {
         const simA = simulations.get(a.id);
         const simB = simulations.get(b.id);
-        const diffA = simA ? simA.newSalary - (a.currentMonthlySalary || 0) : 0;
-        const diffB = simB ? simB.newSalary - (b.currentMonthlySalary || 0) : 0;
+        const baseSalaryA = a.isSimulated 
+          ? a.currentMonthlySalary || 0 
+          : getUserSalaryForYear(a.id, comparisonYear);
+        const baseSalaryB = b.isSimulated 
+          ? b.currentMonthlySalary || 0 
+          : getUserSalaryForYear(b.id, comparisonYear);
+        const diffA = simA ? simA.newSalary - baseSalaryA : 0;
+        const diffB = simB ? simB.newSalary - baseSalaryB : 0;
         return (diffA - diffB) * direction;
       }
       default:
@@ -195,13 +247,21 @@ export function SalaryTable({
     }
   });
 
-  // Calculer les totaux (uniquement pour les utilisateurs inclus)
+  // Calculer les totaux (uniquement pour les utilisateurs inclus pour l'année sélectionnée)
   const totalCurrentSalary = (
     users
       .filter(user => currentIncludedUsers.has(user.id))
-      .reduce((sum, user) => sum + (user.currentMonthlySalary || 0), 0) +
+      .reduce((sum, user) => {
+        return sum + getUserSalaryForYear(user.id, comparisonYear);
+      }, 0) +
     Array.from(simulatedUsers.values())
-      .filter(user => currentIncludedUsers.has(user.id))
+      .filter(user => {
+        // Filtrer selon l'année d'arrivée
+        if (user.arrivalYear && user.arrivalYear > comparisonYear) {
+          return false;
+        }
+        return currentIncludedUsers.has(user.id);
+      })
       .reduce((sum, user) => sum + user.currentMonthlySalary, 0)
   ) * multiplier;
   const totalNewSalary = (
@@ -209,10 +269,17 @@ export function SalaryTable({
       .filter(user => currentIncludedUsers.has(user.id))
       .reduce((sum, user) => {
         const simulation = simulations.get(user.id);
-        return sum + (simulation ? simulation.newSalary : (user.currentMonthlySalary || 0));
+        const baseSalary = getUserSalaryForYear(user.id, comparisonYear);
+        return sum + (simulation ? simulation.newSalary : baseSalary);
       }, 0) +
     Array.from(simulatedUsers.values())
-      .filter(user => currentIncludedUsers.has(user.id))
+      .filter(user => {
+        // Filtrer selon l'année d'arrivée
+        if (user.arrivalYear && user.arrivalYear > comparisonYear) {
+          return false;
+        }
+        return currentIncludedUsers.has(user.id);
+      })
       .reduce((sum, user) => {
         const simulation = simulations.get(user.id);
         return sum + (simulation ? simulation.newSalary : user.currentMonthlySalary);
@@ -252,17 +319,6 @@ export function SalaryTable({
                 <UserPlus className="h-4 w-4" />
                 Simuler un recrutement
               </Button>
-
-              {/* Toggle Mensuel / Annuel */}
-              <Select value={displayMode} onValueChange={(value: "monthly" | "annual") => onDisplayModeChange(value)}>
-                <SelectTrigger className="w-[140px] border-2 shadow-sm hover:shadow-md transition-all">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="monthly">Mensuel</SelectItem>
-                  <SelectItem value="annual">Annuel</SelectItem>
-                </SelectContent>
-              </Select>
 
               {/* Bouton Enregistrer brouillon */}
               {activeSimulationsCount > 0 && (
@@ -329,8 +385,8 @@ export function SalaryTable({
         </CardHeader>
 
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+            <Table className="min-w-[1000px] md:min-w-full">
               <TableHeader className="bg-gradient-to-r from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-950/20 dark:to-purple-950/20">
                 <TableRow className="border-b-2 border-gray-200 dark:border-gray-700 hover:bg-transparent">
                   <TableHead className="w-12">
@@ -367,22 +423,38 @@ export function SalaryTable({
                       {getSortIcon("contract")}
                     </Button>
                   </TableHead>
-                  <TableHead className="text-center">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSort("salary")}
-                      className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50 mx-auto"
-                    >
-                      Salaire mensuel
-                      {getSortIcon("salary")}
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-center">
-                    <span className="text-xs font-semibold">Salaire annuel</span>
-                  </TableHead>
-                  <TableHead className="text-center">
-                    <span className="text-xs font-semibold">Année</span>
+                  {displayMode === "monthly" ? (
+                    <TableHead className="text-center bg-gradient-to-r from-transparent via-emerald-50/30 to-transparent dark:via-emerald-950/30">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort("salary")}
+                        className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50 mx-auto transition-all duration-200"
+                      >
+                        <Euro className="h-3.5 w-3.5" />
+                        Salaire mensuel
+                        {getSortIcon("salary")}
+                      </Button>
+                    </TableHead>
+                  ) : (
+                    <TableHead className="text-center bg-gradient-to-r from-transparent via-emerald-50/30 to-transparent dark:via-emerald-950/30">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort("salary")}
+                        className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50 mx-auto transition-all duration-200"
+                      >
+                        <Euro className="h-3.5 w-3.5" />
+                        Salaire annuel
+                        {getSortIcon("salary")}
+                      </Button>
+                    </TableHead>
+                  )}
+                  <TableHead className="text-center bg-gradient-to-r from-transparent via-blue-50/30 to-transparent dark:via-blue-950/30">
+                    <div className="flex items-center justify-center gap-1">
+                      <Calendar className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
+                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Année</span>
+                    </div>
                   </TableHead>
                   <TableHead className="text-center">Type augmentation</TableHead>
                   <TableHead className="text-center">Augmentation</TableHead>
@@ -414,14 +486,25 @@ export function SalaryTable({
               <TableBody>
                 {sortedUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                       Aucun collaborateur trouvé
                     </TableCell>
                   </TableRow>
                 ) : (
-                  sortedUsers.map((user) => {
+                  sortedUsers
+                    .filter(user => {
+                      // Filtrer les utilisateurs simulés selon leur année d'arrivée
+                      if (user.isSimulated && user.arrivalYear && user.arrivalYear > comparisonYear) {
+                        return false;
+                      }
+                      return true;
+                    })
+                    .map((user, index) => {
                     const simulation = simulations.get(user.id);
-                    const currentSalary = (user.currentMonthlySalary || 0) * multiplier;
+                    const userSalaryForYear = user.isSimulated 
+                      ? user.currentMonthlySalary 
+                      : getUserSalaryForYear(user.id, comparisonYear);
+                    const currentSalary = userSalaryForYear * multiplier;
                     const newSalary = simulation ? simulation.newSalary * multiplier : currentSalary;
                     const difference = newSalary - currentSalary;
                     const hasSimulation = !!simulation;
@@ -432,28 +515,42 @@ export function SalaryTable({
                       <TableRow 
                         key={user.id} 
                         className={`
-                          transition-all duration-200 border-b ${
+                          transition-all duration-300 border-b group animate-in fade-in slide-in-from-left-2 ${
                             isSimulated 
                               ? "border-blue-300 dark:border-blue-800 border-dashed" 
                               : "border-gray-100 dark:border-gray-800"
                           }
                           ${
                             !isIncluded
-                              ? "opacity-50 bg-gray-50/50 dark:bg-gray-900/50"
+                              ? "opacity-50 bg-gray-50/50 dark:bg-gray-900/50 hover:opacity-70"
                               : isSimulated
-                                ? "bg-gradient-to-r from-blue-50/30 to-cyan-50/30 dark:from-blue-950/10 dark:to-cyan-950/10 hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20"
+                                ? "bg-gradient-to-r from-blue-50/30 to-cyan-50/30 dark:from-blue-950/10 dark:to-cyan-950/10 hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 hover:shadow-md hover:scale-[1.01]"
                                 : hasSimulation 
-                                  ? "bg-gradient-to-r from-amber-50/50 to-yellow-50/50 dark:from-amber-950/20 dark:to-yellow-950/20 hover:from-amber-50 hover:to-yellow-50 dark:hover:from-amber-950/30 dark:hover:to-yellow-950/30" 
-                                  : "hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-purple-50/30 dark:hover:from-blue-950/10 dark:hover:to-purple-950/10"
+                                  ? "bg-gradient-to-r from-amber-50/50 to-yellow-50/50 dark:from-amber-950/20 dark:to-yellow-950/20 hover:from-amber-50 hover:to-yellow-50 dark:hover:from-amber-950/30 dark:hover:to-yellow-950/30 hover:shadow-md hover:scale-[1.01]" 
+                                  : "hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-purple-50/30 dark:hover:from-blue-950/10 dark:hover:to-purple-950/10 hover:shadow-md hover:scale-[1.01]"
                           }
+                          ${!isIncluded ? "" : "border-l-4 border-l-transparent hover:border-l-emerald-500 dark:hover:border-l-emerald-400"}
                         `}
+                        style={{ animationDelay: `${index * 50}ms` }}
                       >
                         <TableCell className="text-center">
-                          <Checkbox
-                            checked={isIncluded}
-                            onCheckedChange={(checked) => handleToggleInclusion(user.id, checked === true)}
-                            aria-label={`Inclure ${user.firstName} ${user.lastName} dans la comparaison`}
-                          />
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div>
+                                  <Checkbox
+                                    checked={isIncluded}
+                                    onCheckedChange={(checked) => handleToggleInclusion(user.id, checked === true)}
+                                    aria-label={`Inclure ${user.firstName} ${user.lastName} dans la comparaison ${comparisonYear}`}
+                                    className="transition-all duration-200 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                                  />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Inclure/exclure de la comparaison {comparisonYear}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
@@ -497,8 +594,17 @@ export function SalaryTable({
                                 min="0"
                                 placeholder="0"
                                 value={(() => {
-                                  const monthly = editingSalaries.get(user.id)?.monthly ?? (user.currentMonthlySalary || 0);
-                                  return monthly === 0 ? "" : Math.round(monthly * 100) / 100;
+                                  if (displayMode === "annual") {
+                                    const annual = editingSalaries.get(user.id)?.annual ?? ((user.isSimulated 
+                                      ? user.currentMonthlySalary || 0 
+                                      : getUserSalaryForYear(user.id, comparisonYear)) * 12);
+                                    return annual === 0 ? "" : Math.round(annual * 100) / 100;
+                                  } else {
+                                    const monthly = editingSalaries.get(user.id)?.monthly ?? (user.isSimulated 
+                                      ? user.currentMonthlySalary || 0 
+                                      : getUserSalaryForYear(user.id, comparisonYear));
+                                    return monthly === 0 ? "" : Math.round(monthly * 100) / 100;
+                                  }
                                 })()}
                                 onFocus={(e) => {
                                   const currentValue = parseFloat(e.target.value);
@@ -507,41 +613,57 @@ export function SalaryTable({
                                   }
                                 }}
                                 onChange={(e) => {
-                                  const monthlyValue = e.target.value === "" ? 0 : Math.round(parseFloat(e.target.value) * 100) / 100;
-                                  const annualValue = Math.round(monthlyValue * 12 * 100) / 100;
                                   const currentYear = editingSalaries.get(user.id)?.year || new Date().getFullYear();
-                                  const newEditing = new Map(editingSalaries);
-                                  newEditing.set(user.id, { monthly: monthlyValue, annual: annualValue, year: currentYear });
-                                  setEditingSalaries(newEditing);
+                                  if (displayMode === "annual") {
+                                    const annualValue = e.target.value === "" ? 0 : Math.round(parseFloat(e.target.value) * 100) / 100;
+                                    const monthlyValue = Math.round((annualValue / 12) * 100) / 100;
+                                    const newEditing = new Map(editingSalaries);
+                                    newEditing.set(user.id, { monthly: monthlyValue, annual: annualValue, year: currentYear });
+                                    setEditingSalaries(newEditing);
+                                  } else {
+                                    const monthlyValue = e.target.value === "" ? 0 : Math.round(parseFloat(e.target.value) * 100) / 100;
+                                    const annualValue = Math.round(monthlyValue * 12 * 100) / 100;
+                                    const newEditing = new Map(editingSalaries);
+                                    newEditing.set(user.id, { monthly: monthlyValue, annual: annualValue, year: currentYear });
+                                    setEditingSalaries(newEditing);
+                                  }
                                 }}
                                 className="w-[120px] text-center"
                                 disabled={savingSalaries.has(user.id)}
                               />
                             </div>
                           ) : (
-                            <span className="font-semibold text-gray-900 dark:text-gray-100">
-                              {currentSalary > 0 ? formatCurrency(currentSalary) : <span className="text-muted-foreground text-sm italic">Non défini</span>}
-                            </span>
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                                {currentSalary > 0 ? formatCurrency(currentSalary) : <span className="text-muted-foreground text-sm italic">Non défini</span>}
+                              </span>
+                              {currentSalary > 0 && (
+                                <Badge variant="outline" className="text-xs py-0 px-1.5 h-5">
+                                  {comparisonYear}
+                                </Badge>
+                              )}
+                            </div>
                           )}
                         </TableCell>
-                        <TableCell className="text-center">
-                          {!isSimulated && onSaveSalary ? (
-                            <div className="flex flex-col gap-1 items-center">
-                              <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="0"
-                                value={(() => {
-                                  const annual = editingSalaries.get(user.id)?.annual ?? ((user.currentMonthlySalary || 0) * 12);
-                                  return annual === 0 ? "" : Math.round(annual * 100) / 100;
-                                })()}
-                                onFocus={(e) => {
-                                  const currentValue = parseFloat(e.target.value);
-                                  if (currentValue === 0) {
-                                    e.target.value = "";
-                                  }
-                                }}
+                        {displayMode === "annual" && (
+                          <TableCell className="text-center">
+                            {!isSimulated && onSaveSalary ? (
+                              <div className="flex flex-col gap-1 items-center">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="0"
+                                  value={(() => {
+                                    const annual = editingSalaries.get(user.id)?.annual ?? ((user.currentMonthlySalary || 0) * 12);
+                                    return annual === 0 ? "" : Math.round(annual * 100) / 100;
+                                  })()}
+                                  onFocus={(e) => {
+                                    const currentValue = parseFloat(e.target.value);
+                                    if (currentValue === 0) {
+                                      e.target.value = "";
+                                    }
+                                  }}
                                 onChange={(e) => {
                                   const annualValue = e.target.value === "" ? 0 : Math.round(parseFloat(e.target.value) * 100) / 100;
                                   const monthlyValue = Math.round((annualValue / 12) * 100) / 100;
@@ -555,11 +677,19 @@ export function SalaryTable({
                               />
                             </div>
                           ) : (
-                            <span className="font-semibold text-gray-900 dark:text-gray-100">
-                              {currentSalary > 0 ? formatCurrency(currentSalary * 12) : <span className="text-muted-foreground text-sm italic">Non défini</span>}
-                            </span>
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                                {currentSalary > 0 ? formatCurrency(currentSalary * 12) : <span className="text-muted-foreground text-sm italic">Non défini</span>}
+                              </span>
+                              {currentSalary > 0 && (
+                                <Badge variant="outline" className="text-xs py-0 px-1.5 h-5">
+                                  {comparisonYear}
+                                </Badge>
+                              )}
+                            </div>
                           )}
-                        </TableCell>
+                          </TableCell>
+                        )}
                         <TableCell className="text-center">
                           {!isSimulated && onSaveSalary ? (
                             <div className="flex flex-col gap-1 items-center">
@@ -754,7 +884,6 @@ export function SalaryTable({
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell></TableCell>
                   <TableCell></TableCell>
                   <TableCell className="text-center">
                     {totalNewSalary !== totalCurrentSalary ? (

@@ -42,6 +42,25 @@ export const getCurrentSalaries = async (): Promise<User[]> => {
 };
 
 /**
+ * Supprime toutes les entrées d'historique pour une année donnée
+ */
+export const deleteYearFromHistory = async (year: number): Promise<void> => {
+  if (!db) throw new Error("Firebase not initialized");
+
+  try {
+    const historyRef = collection(db, "salary_history");
+    const q = query(historyRef, where("year", "==", year));
+    const snapshot = await getDocs(q);
+
+    const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
+  } catch (error) {
+    console.error("Erreur lors de la suppression de l'année:", error);
+    throw error;
+  }
+};
+
+/**
  * Récupère l'historique des salaires
  * @param userId - Optionnel : filtrer par userId
  * @param year - Optionnel : filtrer par année
@@ -134,8 +153,16 @@ export const validateSalaryIncrease = async (
       ? ((newSalary - currentSalary) / currentSalary) * 100 
       : 0;
 
-    // Créer l'entrée d'historique
-    const historyRef = doc(collection(db, "salary_history"));
+    // Vérifier si une entrée existe déjà pour cette année et cet utilisateur
+    // Si oui, la mettre à jour, sinon créer une nouvelle entrée
+    const historyRef = collection(db, "salary_history");
+    const existingQuery = query(
+      historyRef,
+      where("userId", "==", userId),
+      where("year", "==", year)
+    );
+    const existingSnapshot = await getDocs(existingQuery);
+    
     const historyData: Omit<SalaryHistory, "id"> = {
       userId,
       year,
@@ -149,13 +176,26 @@ export const validateSalaryIncrease = async (
       createdAt: now,
     };
 
-    await setDoc(historyRef, historyData);
+    if (existingSnapshot.empty) {
+      // Créer une nouvelle entrée
+      const newHistoryRef = doc(collection(db, "salary_history"));
+      await setDoc(newHistoryRef, historyData);
+    } else {
+      // Mettre à jour l'entrée existante
+      const existingDoc = existingSnapshot.docs[0];
+      await setDoc(existingDoc.ref, historyData, { merge: false });
+    }
 
     // Mettre à jour le salaire actuel dans le document utilisateur
-    const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, {
-      currentMonthlySalary: newSalary,
-    });
+    // UNIQUEMENT si l'année est l'année actuelle ou future
+    // Pour les années passées, on ne met pas à jour currentMonthlySalary
+    const currentYear = new Date().getFullYear();
+    if (year >= currentYear) {
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, {
+        currentMonthlySalary: newSalary,
+      });
+    }
   } catch (error) {
     console.error("Erreur lors de la validation de l'augmentation:", error);
     throw error;

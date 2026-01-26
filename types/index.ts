@@ -204,6 +204,7 @@ export interface SimulatedUser {
   contrat?: string; // Optionnel
   etp?: string; // Optionnel
   role?: string; // Optionnel, pour info
+  arrivalYear?: number; // Année d'arrivée du recrutement simulé
   isSimulated: true; // Flag pour différencier des vrais users
 }
 
@@ -221,6 +222,7 @@ export interface SalaryDraftItem {
     email?: string;
     contrat?: string;
     etp?: string;
+    arrivalYear?: number; // Année d'arrivée du recrutement simulé
   };
 }
 

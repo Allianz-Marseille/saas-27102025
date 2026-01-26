@@ -12,7 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Calendar } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { SimulatedUser } from "@/types";
 
 interface AddSimulatedUserDialogProps {
@@ -32,6 +34,7 @@ export function AddSimulatedUserDialog({
   const [salary, setSalary] = useState<string>("");
   const [contrat, setContrat] = useState("");
   const [etp, setEtp] = useState("");
+  const [arrivalYear, setArrivalYear] = useState<number>(new Date().getFullYear());
 
   const handleSubmit = (continueAdding: boolean = false) => {
     if (!firstName.trim() || !lastName.trim() || !salary) {
@@ -50,6 +53,7 @@ export function AddSimulatedUserDialog({
       currentMonthlySalary: salaryValue,
       contrat: contrat.trim() || undefined,
       etp: etp.trim() || undefined,
+      arrivalYear: arrivalYear,
     });
 
     // Réinitialiser le formulaire
@@ -59,6 +63,7 @@ export function AddSimulatedUserDialog({
     setSalary("");
     setContrat("");
     setEtp("");
+    setArrivalYear(new Date().getFullYear());
 
     // Fermer le dialog si on ne continue pas
     if (!continueAdding) {
@@ -70,15 +75,15 @@ export function AddSimulatedUserDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg">
-              <UserPlus className="h-5 w-5 text-white" />
+      <DialogContent className="max-w-md w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white p-6 -m-6 mb-4 rounded-t-lg">
+          <DialogTitle className="flex items-center gap-3 text-white">
+            <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+              <UserPlus className="h-6 w-6 text-white" />
             </div>
             Simuler un recrutement
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-blue-50">
             Ajoutez un collaborateur simulé pour quantifier l'impact sur la masse salariale.
             Ces recrutements ne peuvent pas être validés définitivement.
           </DialogDescription>
@@ -156,6 +161,47 @@ export function AddSimulatedUserDialog({
               onChange={(e) => setEtp(e.target.value)}
               placeholder="100%, 60%, 50%, etc."
             />
+          </div>
+
+          <div className="space-y-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Label htmlFor="arrivalYear" className="flex items-center gap-2 cursor-help">
+                    <div className="p-1.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-md">
+                      <Calendar className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    Année d'arrivée <span className="text-red-500">*</span>
+                  </Label>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Année d'arrivée du recrutement simulé</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <Select
+              value={String(arrivalYear)}
+              onValueChange={(value) => setArrivalYear(parseInt(value))}
+            >
+              <SelectTrigger 
+                id="arrivalYear"
+                className="border-2 border-blue-200 dark:border-blue-800 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i).map((year) => (
+                  <SelectItem key={year} value={String(year)}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="p-2 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                ℹ️ L'utilisateur simulé sera inclus uniquement pour {arrivalYear} et les années suivantes
+              </p>
+            </div>
           </div>
         </div>
 
