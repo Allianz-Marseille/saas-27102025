@@ -80,6 +80,14 @@ export function GlobalValidationModal({
       return;
     }
 
+    if (!db) {
+      toast.error("Erreur : Firebase n'est pas initialisé");
+      return;
+    }
+
+    // Variable locale pour que TypeScript comprenne que db n'est pas undefined
+    const firestoreDb = db;
+
     try {
       setLoading(true);
 
@@ -117,7 +125,7 @@ export function GlobalValidationModal({
           arrivalsToValidate.map(async (arrival) => {
             // Générer un ID temporaire (sera remplacé par l'UID réel lors de la création Auth)
             const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-            const userRef = doc(db, "users", tempId);
+            const userRef = doc(firestoreDb, "users", tempId);
             
             await setDoc(userRef, {
               id: tempId,
@@ -133,7 +141,7 @@ export function GlobalValidationModal({
             });
 
             // Créer l'entrée de salaire dans l'historique
-            await addDoc(collection(db, "salary_history"), {
+            await addDoc(collection(firestoreDb, "salary_history"), {
               userId: tempId,
               year,
               monthlySalary: arrival.monthlySalary,
