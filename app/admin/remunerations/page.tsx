@@ -29,15 +29,22 @@ export default function RemunerationsPage() {
   const [creatingYear, setCreatingYear] = useState(false);
   const [deletingYear, setDeletingYear] = useState(false);
 
-  // Récupérer les années disponibles depuis l'historique
-  // Toujours inclure 2025 comme année de départ
-  const availableYears = useMemo(() => {
+  // Récupérer toutes les années disponibles depuis l'historique (pour l'onglet Historique)
+  const allAvailableYears = useMemo(() => {
     const yearsFromHistory = new Set(
       history.map(h => h.year).filter((year): year is number => typeof year === 'number')
     );
     yearsFromHistory.add(2025); // Toujours inclure 2025
     return Array.from(yearsFromHistory).sort((a, b) => a - b);
   }, [history]);
+
+  // Pour l'onglet Pilotage : n'afficher que les 2 dernières années
+  const pilotageYears = useMemo(() => {
+    if (allAvailableYears.length === 0) return [2025];
+    if (allAvailableYears.length === 1) return allAvailableYears;
+    // Prendre les 2 dernières années (les plus récentes)
+    return allAvailableYears.slice(-2);
+  }, [allAvailableYears]);
 
   // Fonction helper pour récupérer le salaire d'un utilisateur pour une année donnée
   // Prend en compte les brouillons et l'historique validé
@@ -116,11 +123,11 @@ export default function RemunerationsPage() {
       return;
     }
 
-    const lastYear = availableYears[availableYears.length - 1];
+    const lastYear = allAvailableYears[allAvailableYears.length - 1];
     const newYear = lastYear + 1;
     
     // Vérifier si l'année existe déjà
-    const yearAlreadyExists = availableYears.includes(newYear);
+      const yearAlreadyExists = allAvailableYears.includes(newYear);
     if (yearAlreadyExists) {
       toast.error(`L'année ${newYear} existe déjà`);
       return;
@@ -231,12 +238,12 @@ export default function RemunerationsPage() {
       return;
     }
 
-    if (availableYears.length <= 1) {
+    if (allAvailableYears.length <= 1) {
       toast.error("Impossible de supprimer la dernière année (2025)");
       return;
     }
 
-    const lastYear = availableYears[availableYears.length - 1];
+    const lastYear = allAvailableYears[allAvailableYears.length - 1];
     
     try {
       setDeletingYear(true);
@@ -330,7 +337,7 @@ export default function RemunerationsPage() {
           </Button>
 
           {/* Bouton supprimer dernière année */}
-          {availableYears.length > 1 && (
+          {allAvailableYears.length > 1 && (
             <Button
               onClick={handleDeleteLastYear}
               disabled={deletingYear || creatingYear}
@@ -338,7 +345,7 @@ export default function RemunerationsPage() {
               className="gap-2"
             >
               <Trash2 className="h-4 w-4" />
-              {deletingYear ? "Suppression..." : `Supprimer ${availableYears[availableYears.length - 1]}`}
+              {deletingYear ? "Suppression..." : `Supprimer ${allAvailableYears[allAvailableYears.length - 1]}`}
             </Button>
           )}
         </div>
@@ -360,7 +367,7 @@ export default function RemunerationsPage() {
         <TabsContent value="pilotage" className="mt-6">
           <MultiYearSalaryTable
             users={users}
-            years={availableYears}
+            years={pilotageYears}
             displayMode={displayMode}
             getSalaryForYear={getSalaryForYear}
             onSaveSalary={handleSaveSalary}
