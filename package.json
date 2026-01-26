@@ -30,6 +30,7 @@
     "cleanup:rag": "ts-node --project tsconfig.scripts.json scripts/cleanup-rag-collections.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.18",
     "@google-cloud/vision": "^5.3.4",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -46,6 +47,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@types/dompurify": "^3.0.5",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "ai": "^6.0.49",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
