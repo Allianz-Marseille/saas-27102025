@@ -140,7 +140,7 @@ export const validateSalaryIncrease = async (
       userId,
       year,
       monthlySalary: newSalary,
-      previousMonthlySalary: currentSalary || undefined,
+      ...(currentSalary > 0 && { previousMonthlySalary: currentSalary }),
       changeType: salaryChangeType,
       changeAmount: actualChangeAmount,
       changePercentage: actualChangePercentage,
