@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Banknote, TrendingUp, History, Users, Euro, UserMinus, RotateCcw, Check } from "lucide-react";
+import { Banknote, TrendingUp, History, Users, Euro, Check } from "lucide-react";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { getCurrentSalaries, getSalaryHistory, getSharedSalaryDraft, saveSharedSalaryDraft, deleteSharedSalaryDraft, validateSalaryIncrease } from "@/lib/firebase/salaries";
 import { toast } from "sonner";
@@ -36,7 +36,6 @@ export default function RemunerationsPage() {
   const [savingDraft, setSavingDraft] = useState(false);
   const [addSimulatedDialogOpen, setAddSimulatedDialogOpen] = useState(false);
   const [includedUsers, setIncludedUsers] = useState<Set<string>>(new Set());
-  const [neutralizedDepartures, setNeutralizedDepartures] = useState<Set<string>>(new Set());
   const [globalValidationModalOpen, setGlobalValidationModalOpen] = useState(false);
 
   // Charger les données au montage
@@ -198,20 +197,20 @@ export default function RemunerationsPage() {
 
   // Calculer les totaux (uniquement pour les utilisateurs inclus, en excluant les départs neutralisés)
   const totals = useMemo(() => {
-    // Masse salariale actuelle : uniquement les utilisateurs inclus (hors départs neutralisés)
+    // Masse salariale actuelle : uniquement les utilisateurs inclus
     const currentTotal = users
-      .filter(user => includedUsers.has(user.id) && !neutralizedDepartures.has(user.id))
+      .filter(user => includedUsers.has(user.id))
       .reduce((sum, user) => {
         return sum + (user.currentMonthlySalary || 0);
       }, 0) + Array.from(simulatedUsers.values())
-      .filter(user => includedUsers.has(user.id) && !neutralizedDepartures.has(user.id))
+      .filter(user => includedUsers.has(user.id))
       .reduce((sum, user) => {
         return sum + user.currentMonthlySalary;
       }, 0);
 
-    // Masse salariale simulée : uniquement les utilisateurs inclus (hors départs neutralisés)
+    // Masse salariale simulée : uniquement les utilisateurs inclus
     const simulatedTotal = users
-      .filter(user => includedUsers.has(user.id) && !neutralizedDepartures.has(user.id))
+      .filter(user => includedUsers.has(user.id))
       .reduce((sum, user) => {
         const simulation = simulations.get(user.id);
         if (simulation) {
@@ -219,7 +218,7 @@ export default function RemunerationsPage() {
         }
         return sum + (user.currentMonthlySalary || 0);
       }, 0) + Array.from(simulatedUsers.values())
-      .filter(user => includedUsers.has(user.id) && !neutralizedDepartures.has(user.id))
+      .filter(user => includedUsers.has(user.id))
       .reduce((sum, user) => {
         const simulation = simulations.get(user.id);
         if (simulation) {
@@ -228,32 +227,22 @@ export default function RemunerationsPage() {
         return sum + user.currentMonthlySalary;
       }, 0);
 
-    // Économies réalisées (départs neutralisés + utilisateurs exclus)
-    const excludedUsers = users.filter(user => !includedUsers.has(user.id) && !neutralizedDepartures.has(user.id));
+    // Économies réalisées (utilisateurs exclus)
+    const excludedUsers = users.filter(user => !includedUsers.has(user.id));
     const savingsFromExclusions = excludedUsers.reduce((sum, user) => {
       return sum + (user.currentMonthlySalary || 0);
     }, 0);
-    
-    const savingsFromDepartures = users
-      .filter(user => neutralizedDepartures.has(user.id))
-      .reduce((sum, user) => {
-        return sum + (user.currentMonthlySalary || 0);
-      }, 0) + Array.from(simulatedUsers.values())
-      .filter(user => neutralizedDepartures.has(user.id))
-      .reduce((sum, user) => {
-        return sum + user.currentMonthlySalary;
-      }, 0);
 
     // Coûts supplémentaires (arrivées simulées incluses dans la comparaison)
     const costsFromArrivals = Array.from(simulatedUsers.values())
-      .filter(user => includedUsers.has(user.id) && !neutralizedDepartures.has(user.id))
+      .filter(user => includedUsers.has(user.id))
       .reduce((sum, user) => {
         const simulation = simulations.get(user.id);
         return sum + (simulation ? simulation.newSalary : user.currentMonthlySalary);
       }, 0);
 
     const multiplier = displayMode === "annual" ? 12 : 1;
-    const totalSavings = Math.round((savingsFromExclusions + savingsFromDepartures) * multiplier * 100) / 100;
+    const totalSavings = Math.round(savingsFromExclusions * multiplier * 100) / 100;
     const totalCosts = Math.round(costsFromArrivals * multiplier * 100) / 100;
     const impactNet = Math.round((totalCosts - totalSavings) * 100) / 100;
     const evolutionPercentage = currentTotal > 0 ? Math.round((impactNet / (currentTotal * multiplier)) * 100 * 100) / 100 : 0;
@@ -262,14 +251,13 @@ export default function RemunerationsPage() {
       current: Math.round(currentTotal * multiplier * 100) / 100,
       simulated: Math.round(simulatedTotal * multiplier * 100) / 100,
       difference: Math.round((simulatedTotal - currentTotal) * multiplier * 100) / 100,
-      savingsFromDepartures: Math.round(savingsFromDepartures * multiplier * 100) / 100,
       savingsFromExclusions: Math.round(savingsFromExclusions * multiplier * 100) / 100,
       totalSavings,
       costsFromArrivals: totalCosts,
       impactNet,
       evolutionPercentage,
     };
-  }, [users, simulatedUsers, simulations, displayMode, includedUsers, neutralizedDepartures]);
+  }, [users, simulatedUsers, simulations, displayMode, includedUsers]);
 
   // Mettre à jour une simulation
   const updateSimulation = (userId: string, type: "percentage" | "amount", value: number) => {
@@ -488,7 +476,7 @@ export default function RemunerationsPage() {
       </div>
 
       {/* Section de comparaison détaillée */}
-      {(simulations.size > 0 || simulatedUsers.size > 0 || neutralizedDepartures.size > 0 || includedUsers.size < users.length + simulatedUsers.size) && (
+      {(simulations.size > 0 || simulatedUsers.size > 0 || includedUsers.size < users.length + simulatedUsers.size) && (
         <Card className="border-none shadow-xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-950/50">
           <CardHeader className="border-b border-gray-200 dark:border-gray-800">
             <CardTitle className="flex items-center gap-3 text-2xl">
@@ -564,8 +552,8 @@ export default function RemunerationsPage() {
                       {totals.evolutionPercentage > 0 ? "+" : ""}{totals.evolutionPercentage.toFixed(2)}%
                     </div>
                   </div>
-                  {Math.abs(totals.savingsFromDepartures) < 100 && Math.abs(totals.costsFromArrivals) < 100 && 
-                   Math.abs(totals.savingsFromDepartures - totals.costsFromArrivals) < 50 && (
+                  {Math.abs(totals.savingsFromExclusions) < 100 && Math.abs(totals.costsFromArrivals) < 100 && 
+                   Math.abs(totals.savingsFromExclusions - totals.costsFromArrivals) < 50 && (
                     <div className="p-3 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                       <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
                         ℹ️ Remplacement neutre
@@ -590,7 +578,7 @@ export default function RemunerationsPage() {
                     <div className="text-sm text-muted-foreground mb-1">Économies réalisées</div>
                     <div className="text-xl font-bold text-red-600">-{formatCurrency(totals.totalSavings)}</div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      {neutralizedDepartures.size} départ(s) + {users.length + simulatedUsers.size - includedUsers.size} exclusion(s)
+                      {users.length + simulatedUsers.size - includedUsers.size} exclusion(s)
                     </div>
                   </div>
                   <div className="p-4 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -605,7 +593,7 @@ export default function RemunerationsPage() {
             </div>
 
             {/* Bouton de validation globale */}
-            {(simulations.size > 0 || neutralizedDepartures.size > 0 || simulatedUsers.size > 0) && (
+            {(simulations.size > 0 || simulatedUsers.size > 0) && (
               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-800 flex justify-center">
                 <Button
                   size="lg"
@@ -626,10 +614,6 @@ export default function RemunerationsPage() {
                   <div className="text-xs text-muted-foreground mb-1">Exclus</div>
                   <div className="text-lg font-semibold">{users.length + simulatedUsers.size - includedUsers.size}</div>
                 </div>
-                <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
-                  <div className="text-xs text-muted-foreground mb-1">Départs</div>
-                  <div className="text-lg font-semibold text-orange-600">{neutralizedDepartures.size}</div>
-                </div>
                 <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
                   <div className="text-xs text-muted-foreground mb-1">Arrivées</div>
                   <div className="text-lg font-semibold text-blue-600">{simulatedUsers.size}</div>
@@ -641,10 +625,6 @@ export default function RemunerationsPage() {
                 <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                   <div className="text-xs text-muted-foreground mb-1">Économies exclusions</div>
                   <div className="text-sm font-semibold">{formatCurrency(totals.savingsFromExclusions)}</div>
-                </div>
-                <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                  <div className="text-xs text-muted-foreground mb-1">Économies départs</div>
-                  <div className="text-sm font-semibold">{formatCurrency(totals.savingsFromDepartures)}</div>
                 </div>
               </div>
             </div>
@@ -666,65 +646,6 @@ export default function RemunerationsPage() {
         </TabsList>
 
         <TabsContent value="table">
-          {/* Section des départs neutralisés */}
-          {neutralizedDepartures.size > 0 && (
-            <Card className="mb-6 border-orange-200 dark:border-orange-800 bg-gradient-to-r from-orange-50/50 to-red-50/50 dark:from-orange-950/20 dark:to-red-950/20">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <UserMinus className="h-5 w-5 text-orange-600" />
-                  Départs neutralisés ({neutralizedDepartures.size})
-                </CardTitle>
-                <CardDescription>
-                  Utilisateurs marqués comme partants (simulation)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {Array.from(neutralizedDepartures).map((userId) => {
-                    const userObj = users.find(u => u.id === userId);
-                    const simulatedUser = simulatedUsers.get(userId);
-                    const user = userObj || simulatedUser;
-                    if (!user) return null;
-                    
-                    const salary = (userObj?.currentMonthlySalary || simulatedUser?.currentMonthlySalary || 0) * (displayMode === "annual" ? 12 : 1);
-                    
-                    return (
-                      <div
-                        key={userId}
-                        className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-orange-200 dark:border-orange-800 shadow-sm"
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {user.firstName} {user.lastName}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            Économie : {formatCurrency(salary)}
-                          </span>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            const newSet = new Set(neutralizedDepartures);
-                            newSet.delete(userId);
-                            setNeutralizedDepartures(newSet);
-                            // Réactiver le toggle d'inclusion
-                            const newIncluded = new Set(includedUsers);
-                            newIncluded.add(userId);
-                            setIncludedUsers(newIncluded);
-                          }}
-                          className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          
           <SalaryTable
             users={users}
             simulatedUsers={simulatedUsers}
@@ -753,24 +674,6 @@ export default function RemunerationsPage() {
               setIncludedUsers(newSet);
             }}
             onSaveSalary={handleSaveSalary}
-            neutralizedDepartures={neutralizedDepartures}
-            onToggleDeparture={(userId, neutralized) => {
-              const newSet = new Set(neutralizedDepartures);
-              if (neutralized) {
-                newSet.add(userId);
-                // Décocher automatiquement le toggle d'inclusion quand on neutralise
-                const newIncluded = new Set(includedUsers);
-                newIncluded.delete(userId);
-                setIncludedUsers(newIncluded);
-              } else {
-                newSet.delete(userId);
-                // Recocher automatiquement le toggle d'inclusion quand on réactive
-                const newIncluded = new Set(includedUsers);
-                newIncluded.add(userId);
-                setIncludedUsers(newIncluded);
-              }
-              setNeutralizedDepartures(newSet);
-            }}
           />
           <AddSimulatedUserDialog
             open={addSimulatedDialogOpen}
@@ -795,16 +698,14 @@ export default function RemunerationsPage() {
         users={users}
         simulatedUsers={simulatedUsers}
         simulations={simulations}
-        neutralizedDepartures={neutralizedDepartures}
         displayMode={displayMode}
         currentUserId={user?.uid || ""}
         totals={totals}
         onSuccess={async () => {
           setGlobalValidationModalOpen(false);
-          // Réinitialiser les simulations et départs
+          // Réinitialiser les simulations
           setSimulations(new Map());
           setSimulatedUsers(new Map());
-          setNeutralizedDepartures(new Set());
           // Recharger les données
           await loadData();
         }}

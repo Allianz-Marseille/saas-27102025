@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { AlertCircle, Check, Loader2, TrendingUp, UserMinus, UserPlus } from "lucide-react";
+import { AlertCircle, Check, Loader2, TrendingUp, UserPlus } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { validateAllSalaryIncreases, validateSalaryIncrease } from "@/lib/firebase/salaries";
 import { toast } from "sonner";
@@ -28,7 +28,6 @@ interface GlobalValidationModalProps {
   users: User[];
   simulatedUsers: Map<string, SimulatedUser>;
   simulations: Map<string, { type: "percentage" | "amount"; value: number; newSalary: number }>;
-  neutralizedDepartures: Set<string>;
   displayMode: "monthly" | "annual";
   currentUserId: string;
   totals: {
@@ -47,7 +46,6 @@ export function GlobalValidationModal({
   users,
   simulatedUsers,
   simulations,
-  neutralizedDepartures,
   displayMode,
   currentUserId,
   totals,
@@ -61,16 +59,6 @@ export function GlobalValidationModal({
   const realUsersWithSimulations = Array.from(simulations.keys()).filter(
     userId => !simulatedUsers.has(userId)
   );
-
-  // Départs à valider
-  const departuresToValidate = Array.from(neutralizedDepartures).map(userId => {
-    const user = users.find(u => u.id === userId);
-    return user ? {
-      id: userId,
-      name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email,
-      monthlySalary: user.currentMonthlySalary || 0,
-    } : null;
-  }).filter((item): item is NonNullable<typeof item> => item !== null);
 
   // Arrivées à valider (recrutements simulés)
   const arrivalsToValidate = Array.from(simulatedUsers.values()).map(user => ({
@@ -120,20 +108,7 @@ export function GlobalValidationModal({
         }
       }
 
-      // 2. Valider les départs (désactiver les utilisateurs)
-      if (departuresToValidate.length > 0) {
-        await Promise.all(
-          departuresToValidate.map(async (departure) => {
-            const userRef = doc(db, "users", departure.id);
-            await updateDoc(userRef, {
-              active: false,
-            });
-          })
-        );
-        toast.success(`${departuresToValidate.length} départ(s) validé(s)`);
-      }
-
-      // 3. Valider les arrivées (créer les utilisateurs)
+      // 2. Valider les arrivées (créer les utilisateurs)
       if (arrivalsToValidate.length > 0) {
         // Note: La création d'utilisateurs nécessite Firebase Auth
         // Pour l'instant, on crée juste les documents Firestore
@@ -183,7 +158,7 @@ export function GlobalValidationModal({
     }
   };
 
-  const totalItems = realUsersWithSimulations.length + departuresToValidate.length + arrivalsToValidate.length;
+  const totalItems = realUsersWithSimulations.length + arrivalsToValidate.length;
 
   if (totalItems === 0) {
     return null;
@@ -198,7 +173,7 @@ export function GlobalValidationModal({
             Validation globale
           </DialogTitle>
           <DialogDescription>
-            Valider toutes les modifications en une seule opération : {realUsersWithSimulations.length} augmentation(s), {departuresToValidate.length} départ(s), {arrivalsToValidate.length} arrivée(s)
+            Valider toutes les modifications en une seule opération : {realUsersWithSimulations.length} augmentation(s), {arrivalsToValidate.length} arrivée(s)
           </DialogDescription>
         </DialogHeader>
 
@@ -289,40 +264,6 @@ export function GlobalValidationModal({
                             </TableRow>
                           );
                         })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            )}
-
-            {/* Départs */}
-            {departuresToValidate.length > 0 && (
-              <AccordionItem value="departures">
-                <AccordionTrigger className="font-semibold">
-                  <div className="flex items-center gap-2">
-                    <UserMinus className="h-4 w-4 text-red-600" />
-                    Départs ({departuresToValidate.length})
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="border rounded-lg overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Collaborateur</TableHead>
-                          <TableHead className="text-right">Économie ({displayMode === "annual" ? "annuelle" : "mensuelle"})</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {departuresToValidate.map((departure) => (
-                          <TableRow key={departure.id}>
-                            <TableCell>{departure.name}</TableCell>
-                            <TableCell className="text-right font-semibold text-red-600">
-                              -{formatCurrency(departure.monthlySalary * multiplier)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
                       </TableBody>
                     </Table>
                   </div>

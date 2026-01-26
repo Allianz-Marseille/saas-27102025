@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, TrendingUp, RefreshCw, Calendar, ArrowUpDown, ArrowUp, ArrowDown, Save, Trash2, UserPlus, UserMinus, RotateCcw } from "lucide-react";
+import { Check, X, TrendingUp, RefreshCw, Calendar, ArrowUpDown, ArrowUp, ArrowDown, Save, Trash2, UserPlus } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import type { User, SimulatedUser } from "@/types";
@@ -40,8 +40,6 @@ interface SalaryTableProps {
   includedUsers?: Set<string>;
   onToggleInclusion?: (userId: string, included: boolean) => void;
   onSaveSalary?: (userId: string, monthlySalary: number, year: number) => Promise<void>;
-  neutralizedDepartures?: Set<string>;
-  onToggleDeparture?: (userId: string, neutralized: boolean) => void;
 }
 
 type SortColumn = "name" | "contract" | "salary" | "newSalary" | "difference" | null;
@@ -67,8 +65,6 @@ export function SalaryTable({
   includedUsers,
   onToggleInclusion,
   onSaveSalary,
-  neutralizedDepartures,
-  onToggleDeparture,
 }: SalaryTableProps) {
   const [validationModalOpen, setValidationModalOpen] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -78,22 +74,6 @@ export function SalaryTable({
   // États pour l'édition directe des salaires
   const [editingSalaries, setEditingSalaries] = useState<Map<string, { monthly: number; annual: number; year: number }>>(new Map());
   const [savingSalaries, setSavingSalaries] = useState<Set<string>>(new Set());
-  
-  // État local pour les départs neutralisés si non fourni en props
-  const [localNeutralizedDepartures, setLocalNeutralizedDepartures] = useState<Set<string>>(
-    neutralizedDepartures || new Set()
-  );
-  
-  const currentNeutralizedDepartures = neutralizedDepartures || localNeutralizedDepartures;
-  const handleToggleDeparture = onToggleDeparture || ((userId: string, neutralized: boolean) => {
-    const newSet = new Set(localNeutralizedDepartures);
-    if (neutralized) {
-      newSet.add(userId);
-    } else {
-      newSet.delete(userId);
-    }
-    setLocalNeutralizedDepartures(newSet);
-  });
   
   // État local pour les toggles d'inclusion si non fourni en props
   const [localIncludedUsers, setLocalIncludedUsers] = useState<Set<string>>(
@@ -215,38 +195,28 @@ export function SalaryTable({
     }
   });
 
-  // Calculer les totaux (uniquement pour les utilisateurs inclus, en excluant les départs neutralisés)
+  // Calculer les totaux (uniquement pour les utilisateurs inclus)
   const totalCurrentSalary = (
     users
-      .filter(user => currentIncludedUsers.has(user.id) && !currentNeutralizedDepartures.has(user.id))
+      .filter(user => currentIncludedUsers.has(user.id))
       .reduce((sum, user) => sum + (user.currentMonthlySalary || 0), 0) +
     Array.from(simulatedUsers.values())
-      .filter(user => currentIncludedUsers.has(user.id) && !currentNeutralizedDepartures.has(user.id))
+      .filter(user => currentIncludedUsers.has(user.id))
       .reduce((sum, user) => sum + user.currentMonthlySalary, 0)
   ) * multiplier;
   const totalNewSalary = (
     users
-      .filter(user => currentIncludedUsers.has(user.id) && !currentNeutralizedDepartures.has(user.id))
+      .filter(user => currentIncludedUsers.has(user.id))
       .reduce((sum, user) => {
         const simulation = simulations.get(user.id);
         return sum + (simulation ? simulation.newSalary : (user.currentMonthlySalary || 0));
       }, 0) +
     Array.from(simulatedUsers.values())
-      .filter(user => currentIncludedUsers.has(user.id) && !currentNeutralizedDepartures.has(user.id))
+      .filter(user => currentIncludedUsers.has(user.id))
       .reduce((sum, user) => {
         const simulation = simulations.get(user.id);
         return sum + (simulation ? simulation.newSalary : user.currentMonthlySalary);
       }, 0)
-  ) * multiplier;
-  
-  // Calculer les économies réalisées (départs neutralisés)
-  const savingsFromDepartures = (
-    users
-      .filter(user => currentNeutralizedDepartures.has(user.id))
-      .reduce((sum, user) => sum + (user.currentMonthlySalary || 0), 0) +
-    Array.from(simulatedUsers.values())
-      .filter(user => currentNeutralizedDepartures.has(user.id))
-      .reduce((sum, user) => sum + user.currentMonthlySalary, 0)
   ) * multiplier;
   
   const totalDifference = totalNewSalary - totalCurrentSalary;
@@ -457,7 +427,6 @@ export function SalaryTable({
                     const hasSimulation = !!simulation;
                     const isSimulated = user.isSimulated === true;
                     const isIncluded = currentIncludedUsers.has(user.id);
-                    const isNeutralized = currentNeutralizedDepartures.has(user.id);
 
                     return (
                       <TableRow 
@@ -469,15 +438,13 @@ export function SalaryTable({
                               : "border-gray-100 dark:border-gray-800"
                           }
                           ${
-                            isNeutralized
-                              ? "opacity-60 bg-gradient-to-r from-gray-100/50 to-slate-100/50 dark:from-gray-900/30 dark:to-slate-900/30 border-l-4 border-red-400"
-                              : !isIncluded
-                                ? "opacity-50 bg-gray-50/50 dark:bg-gray-900/50"
-                                : isSimulated
-                                  ? "bg-gradient-to-r from-blue-50/30 to-cyan-50/30 dark:from-blue-950/10 dark:to-cyan-950/10 hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20"
-                                  : hasSimulation 
-                                    ? "bg-gradient-to-r from-amber-50/50 to-yellow-50/50 dark:from-amber-950/20 dark:to-yellow-950/20 hover:from-amber-50 hover:to-yellow-50 dark:hover:from-amber-950/30 dark:hover:to-yellow-950/30" 
-                                    : "hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-purple-50/30 dark:hover:from-blue-950/10 dark:hover:to-purple-950/10"
+                            !isIncluded
+                              ? "opacity-50 bg-gray-50/50 dark:bg-gray-900/50"
+                              : isSimulated
+                                ? "bg-gradient-to-r from-blue-50/30 to-cyan-50/30 dark:from-blue-950/10 dark:to-cyan-950/10 hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20"
+                                : hasSimulation 
+                                  ? "bg-gradient-to-r from-amber-50/50 to-yellow-50/50 dark:from-amber-950/20 dark:to-yellow-950/20 hover:from-amber-50 hover:to-yellow-50 dark:hover:from-amber-950/30 dark:hover:to-yellow-950/30" 
+                                  : "hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-purple-50/30 dark:hover:from-blue-950/10 dark:hover:to-purple-950/10"
                           }
                         `}
                       >
@@ -499,11 +466,6 @@ export function SalaryTable({
                               {isSimulated && (
                                 <Badge className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-none shadow-sm text-xs">
                                   SIMULÉ
-                                </Badge>
-                              )}
-                              {isNeutralized && (
-                                <Badge className="bg-gradient-to-r from-red-500 to-orange-600 text-white border-none shadow-sm text-xs">
-                                  DÉPART SIMULÉ
                                 </Badge>
                               )}
                             </div>
@@ -760,45 +722,6 @@ export function SalaryTable({
                               </TooltipProvider>
                             ) : (
                               <>
-                                {isNeutralized ? (
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={() => handleToggleDeparture(user.id, false)}
-                                          className="gap-2 border-orange-300 text-orange-600 hover:bg-orange-50 shadow-sm hover:shadow-md transition-all"
-                                        >
-                                          <RotateCcw className="h-4 w-4" />
-                                          Réactiver
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Réactiver cet utilisateur (annuler le départ)</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                ) : (
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={() => handleToggleDeparture(user.id, true)}
-                                          className="gap-2 border-red-300 text-red-600 hover:bg-red-50 shadow-sm hover:shadow-md transition-all"
-                                        >
-                                          <UserMinus className="h-4 w-4" />
-                                          Neutraliser départ
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Marquer comme partant (simulation)</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                )}
                                 {hasSimulation && (
                                   <Button
                                     size="sm"
