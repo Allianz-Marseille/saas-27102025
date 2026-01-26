@@ -3,7 +3,9 @@
 import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
-import { History, Euro } from "lucide-react";
+import { History, Euro, Calendar, CalendarRange } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/utils";
 import type { User, SalaryHistory } from "@/types";
 
@@ -12,13 +14,15 @@ interface SalaryHistoryViewProps {
   users: User[];
   onRefresh: () => void;
   displayMode?: "monthly" | "annual";
+  onDisplayModeChange?: (mode: "monthly" | "annual") => void;
 }
 
 export function SalaryHistoryView({ 
   history, 
   users, 
   onRefresh,
-  displayMode = "monthly"
+  displayMode = "monthly",
+  onDisplayModeChange
 }: SalaryHistoryViewProps) {
   const multiplier = displayMode === "annual" ? 12 : 1;
 
@@ -128,15 +132,57 @@ export function SalaryHistoryView({
   return (
     <Card className="border-none shadow-xl">
       <CardHeader>
-        <CardTitle className="flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl shadow-lg">
-            <History className="h-6 w-6 text-white" />
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2.5 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl shadow-lg">
+                <History className="h-6 w-6 text-white" />
+              </div>
+              <span>Historique des rémunérations</span>
+            </CardTitle>
+            <CardDescription>
+              Affichage en lecture seule des rémunérations validées par année
+            </CardDescription>
           </div>
-          <span>Historique des rémunérations</span>
-        </CardTitle>
-        <CardDescription>
-          Affichage en lecture seule des rémunérations validées par année
-        </CardDescription>
+          
+          {/* Toggle mensuel/annuel */}
+          {onDisplayModeChange && (
+            <div className="flex items-center gap-3 bg-background/50 rounded-lg p-3 border">
+              <div className={`p-2 rounded-lg ${
+                displayMode === "annual"
+                  ? "bg-gradient-to-br from-violet-500 to-purple-600"
+                  : "bg-gradient-to-br from-emerald-500 to-teal-600"
+              }`}>
+                {displayMode === "annual" ? (
+                  <CalendarRange className="h-4 w-4 text-white" />
+                ) : (
+                  <Calendar className="h-4 w-4 text-white" />
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Affichage
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-medium ${
+                    displayMode === "monthly" ? "text-emerald-600 font-semibold" : "text-muted-foreground"
+                  }`}>
+                    Mensuel
+                  </span>
+                  <Switch
+                    checked={displayMode === "annual"}
+                    onCheckedChange={(checked) => onDisplayModeChange(checked ? "annual" : "monthly")}
+                  />
+                  <span className={`text-xs font-medium ${
+                    displayMode === "annual" ? "text-violet-600 font-semibold" : "text-muted-foreground"
+                  }`}>
+                    Annuel
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">

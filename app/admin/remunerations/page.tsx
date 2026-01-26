@@ -380,6 +380,7 @@ export default function RemunerationsPage() {
             users={users}
             onRefresh={loadData}
             displayMode={displayMode}
+            onDisplayModeChange={setDisplayMode}
           />
         </TabsContent>
       </Tabs>
