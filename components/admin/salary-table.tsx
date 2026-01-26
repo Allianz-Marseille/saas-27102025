@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, TrendingUp, RefreshCw, Calendar, ArrowUpDown, ArrowUp, ArrowDown, Save, Trash2, UserPlus } from "lucide-react";
+import { Check, X, TrendingUp, RefreshCw, Calendar, ArrowUpDown, ArrowUp, ArrowDown, Save, Trash2, UserPlus, UserMinus, RotateCcw } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import type { User, SimulatedUser } from "@/types";
 import { SalaryValidationModal } from "./salary-validation-modal";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
   TooltipContent,
@@ -36,6 +37,11 @@ interface SalaryTableProps {
   savingDraft: boolean;
   onAddSimulatedUser: () => void;
   onRemoveSimulatedUser: (userId: string) => void;
+  includedUsers?: Set<string>;
+  onToggleInclusion?: (userId: string, included: boolean) => void;
+  onSaveSalary?: (userId: string, monthlySalary: number, year: number) => Promise<void>;
+  neutralizedDepartures?: Set<string>;
+  onToggleDeparture?: (userId: string, neutralized: boolean) => void;
 }
 
 type SortColumn = "name" | "contract" | "salary" | "newSalary" | "difference" | null;
@@ -58,11 +64,52 @@ export function SalaryTable({
   savingDraft,
   onAddSimulatedUser,
   onRemoveSimulatedUser,
+  includedUsers,
+  onToggleInclusion,
+  onSaveSalary,
+  neutralizedDepartures,
+  onToggleDeparture,
 }: SalaryTableProps) {
   const [validationModalOpen, setValidationModalOpen] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [sortColumn, setSortColumn] = useState<SortColumn>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  
+  // États pour l'édition directe des salaires
+  const [editingSalaries, setEditingSalaries] = useState<Map<string, { monthly: number; annual: number; year: number }>>(new Map());
+  const [savingSalaries, setSavingSalaries] = useState<Set<string>>(new Set());
+  
+  // État local pour les départs neutralisés si non fourni en props
+  const [localNeutralizedDepartures, setLocalNeutralizedDepartures] = useState<Set<string>>(
+    neutralizedDepartures || new Set()
+  );
+  
+  const currentNeutralizedDepartures = neutralizedDepartures || localNeutralizedDepartures;
+  const handleToggleDeparture = onToggleDeparture || ((userId: string, neutralized: boolean) => {
+    const newSet = new Set(localNeutralizedDepartures);
+    if (neutralized) {
+      newSet.add(userId);
+    } else {
+      newSet.delete(userId);
+    }
+    setLocalNeutralizedDepartures(newSet);
+  });
+  
+  // État local pour les toggles d'inclusion si non fourni en props
+  const [localIncludedUsers, setLocalIncludedUsers] = useState<Set<string>>(
+    includedUsers || new Set([...users.map(u => u.id), ...Array.from(simulatedUsers.keys())])
+  );
+  
+  const currentIncludedUsers = includedUsers || localIncludedUsers;
+  const handleToggleInclusion = onToggleInclusion || ((userId: string, included: boolean) => {
+    const newSet = new Set(localIncludedUsers);
+    if (included) {
+      newSet.add(userId);
+    } else {
+      newSet.delete(userId);
+    }
+    setLocalIncludedUsers(newSet);
+  });
 
   const handleValidateOne = (userId: string) => {
     // Ne pas permettre la validation des utilisateurs simulés
@@ -168,21 +215,40 @@ export function SalaryTable({
     }
   });
 
-  // Calculer les totaux (incluant les utilisateurs simulés)
+  // Calculer les totaux (uniquement pour les utilisateurs inclus, en excluant les départs neutralisés)
   const totalCurrentSalary = (
-    users.reduce((sum, user) => sum + (user.currentMonthlySalary || 0), 0) +
-    Array.from(simulatedUsers.values()).reduce((sum, user) => sum + user.currentMonthlySalary, 0)
+    users
+      .filter(user => currentIncludedUsers.has(user.id) && !currentNeutralizedDepartures.has(user.id))
+      .reduce((sum, user) => sum + (user.currentMonthlySalary || 0), 0) +
+    Array.from(simulatedUsers.values())
+      .filter(user => currentIncludedUsers.has(user.id) && !currentNeutralizedDepartures.has(user.id))
+      .reduce((sum, user) => sum + user.currentMonthlySalary, 0)
   ) * multiplier;
   const totalNewSalary = (
-    users.reduce((sum, user) => {
-      const simulation = simulations.get(user.id);
-      return sum + (simulation ? simulation.newSalary : (user.currentMonthlySalary || 0));
-    }, 0) +
-    Array.from(simulatedUsers.values()).reduce((sum, user) => {
-      const simulation = simulations.get(user.id);
-      return sum + (simulation ? simulation.newSalary : user.currentMonthlySalary);
-    }, 0)
+    users
+      .filter(user => currentIncludedUsers.has(user.id) && !currentNeutralizedDepartures.has(user.id))
+      .reduce((sum, user) => {
+        const simulation = simulations.get(user.id);
+        return sum + (simulation ? simulation.newSalary : (user.currentMonthlySalary || 0));
+      }, 0) +
+    Array.from(simulatedUsers.values())
+      .filter(user => currentIncludedUsers.has(user.id) && !currentNeutralizedDepartures.has(user.id))
+      .reduce((sum, user) => {
+        const simulation = simulations.get(user.id);
+        return sum + (simulation ? simulation.newSalary : user.currentMonthlySalary);
+      }, 0)
   ) * multiplier;
+  
+  // Calculer les économies réalisées (départs neutralisés)
+  const savingsFromDepartures = (
+    users
+      .filter(user => currentNeutralizedDepartures.has(user.id))
+      .reduce((sum, user) => sum + (user.currentMonthlySalary || 0), 0) +
+    Array.from(simulatedUsers.values())
+      .filter(user => currentNeutralizedDepartures.has(user.id))
+      .reduce((sum, user) => sum + user.currentMonthlySalary, 0)
+  ) * multiplier;
+  
   const totalDifference = totalNewSalary - totalCurrentSalary;
 
   return (
@@ -297,6 +363,18 @@ export function SalaryTable({
             <Table>
               <TableHeader className="bg-gradient-to-r from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-950/20 dark:to-purple-950/20">
                 <TableRow className="border-b-2 border-gray-200 dark:border-gray-700 hover:bg-transparent">
+                  <TableHead className="w-12">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-xs font-semibold text-muted-foreground">Inclure</span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Inclure/exclure de la comparaison</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableHead>
                   <TableHead>
                     <Button
                       variant="ghost"
@@ -326,9 +404,15 @@ export function SalaryTable({
                       onClick={() => handleSort("salary")}
                       className="h-8 gap-1 px-2 font-semibold hover:bg-muted/50 mx-auto"
                     >
-                      Rémunération actuelle
+                      Salaire mensuel
                       {getSortIcon("salary")}
                     </Button>
+                  </TableHead>
+                  <TableHead className="text-center">
+                    <span className="text-xs font-semibold">Salaire annuel</span>
+                  </TableHead>
+                  <TableHead className="text-center">
+                    <span className="text-xs font-semibold">Année</span>
                   </TableHead>
                   <TableHead className="text-center">Type augmentation</TableHead>
                   <TableHead className="text-center">Augmentation</TableHead>
@@ -360,7 +444,7 @@ export function SalaryTable({
               <TableBody>
                 {sortedUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                       Aucun collaborateur trouvé
                     </TableCell>
                   </TableRow>
@@ -372,6 +456,8 @@ export function SalaryTable({
                     const difference = newSalary - currentSalary;
                     const hasSimulation = !!simulation;
                     const isSimulated = user.isSimulated === true;
+                    const isIncluded = currentIncludedUsers.has(user.id);
+                    const isNeutralized = currentNeutralizedDepartures.has(user.id);
 
                     return (
                       <TableRow 
@@ -383,14 +469,25 @@ export function SalaryTable({
                               : "border-gray-100 dark:border-gray-800"
                           }
                           ${
-                            isSimulated
-                              ? "bg-gradient-to-r from-blue-50/30 to-cyan-50/30 dark:from-blue-950/10 dark:to-cyan-950/10 hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20"
-                              : hasSimulation 
-                                ? "bg-gradient-to-r from-amber-50/50 to-yellow-50/50 dark:from-amber-950/20 dark:to-yellow-950/20 hover:from-amber-50 hover:to-yellow-50 dark:hover:from-amber-950/30 dark:hover:to-yellow-950/30" 
-                                : "hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-purple-50/30 dark:hover:from-blue-950/10 dark:hover:to-purple-950/10"
+                            isNeutralized
+                              ? "opacity-60 bg-gradient-to-r from-gray-100/50 to-slate-100/50 dark:from-gray-900/30 dark:to-slate-900/30 border-l-4 border-red-400"
+                              : !isIncluded
+                                ? "opacity-50 bg-gray-50/50 dark:bg-gray-900/50"
+                                : isSimulated
+                                  ? "bg-gradient-to-r from-blue-50/30 to-cyan-50/30 dark:from-blue-950/10 dark:to-cyan-950/10 hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20"
+                                  : hasSimulation 
+                                    ? "bg-gradient-to-r from-amber-50/50 to-yellow-50/50 dark:from-amber-950/20 dark:to-yellow-950/20 hover:from-amber-50 hover:to-yellow-50 dark:hover:from-amber-950/30 dark:hover:to-yellow-950/30" 
+                                    : "hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-purple-50/30 dark:hover:from-blue-950/10 dark:hover:to-purple-950/10"
                           }
                         `}
                       >
+                        <TableCell className="text-center">
+                          <Checkbox
+                            checked={isIncluded}
+                            onCheckedChange={(checked) => handleToggleInclusion(user.id, checked === true)}
+                            aria-label={`Inclure ${user.firstName} ${user.lastName} dans la comparaison`}
+                          />
+                        </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-2">
@@ -402,6 +499,11 @@ export function SalaryTable({
                               {isSimulated && (
                                 <Badge className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-none shadow-sm text-xs">
                                   SIMULÉ
+                                </Badge>
+                              )}
+                              {isNeutralized && (
+                                <Badge className="bg-gradient-to-r from-red-500 to-orange-600 text-white border-none shadow-sm text-xs">
+                                  DÉPART SIMULÉ
                                 </Badge>
                               )}
                             </div>
@@ -425,26 +527,146 @@ export function SalaryTable({
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
-                          {currentSalary > 0 ? (
-                            <span className="font-semibold text-gray-900 dark:text-gray-100">
-                              {formatCurrency(currentSalary)}
-                            </span>
+                          {!isSimulated && onSaveSalary ? (
+                            <div className="flex flex-col gap-1 items-center">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="0"
+                                value={editingSalaries.get(user.id)?.monthly ?? (user.currentMonthlySalary || 0)}
+                                onChange={(e) => {
+                                  const monthlyValue = parseFloat(e.target.value) || 0;
+                                  const annualValue = monthlyValue * 12;
+                                  const currentYear = editingSalaries.get(user.id)?.year || new Date().getFullYear();
+                                  const newEditing = new Map(editingSalaries);
+                                  newEditing.set(user.id, { monthly: monthlyValue, annual: annualValue, year: currentYear });
+                                  setEditingSalaries(newEditing);
+                                }}
+                                className="w-[120px] text-center"
+                                disabled={savingSalaries.has(user.id)}
+                              />
+                            </div>
                           ) : (
-                            <span className="text-muted-foreground text-sm italic">Non défini</span>
+                            <span className="font-semibold text-gray-900 dark:text-gray-100">
+                              {currentSalary > 0 ? formatCurrency(currentSalary) : <span className="text-muted-foreground text-sm italic">Non défini</span>}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {!isSimulated && onSaveSalary ? (
+                            <div className="flex flex-col gap-1 items-center">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="0"
+                                value={editingSalaries.get(user.id)?.annual ?? ((user.currentMonthlySalary || 0) * 12)}
+                                onChange={(e) => {
+                                  const annualValue = parseFloat(e.target.value) || 0;
+                                  const monthlyValue = annualValue / 12;
+                                  const currentYear = editingSalaries.get(user.id)?.year || new Date().getFullYear();
+                                  const newEditing = new Map(editingSalaries);
+                                  newEditing.set(user.id, { monthly: monthlyValue, annual: annualValue, year: currentYear });
+                                  setEditingSalaries(newEditing);
+                                }}
+                                className="w-[120px] text-center"
+                                disabled={savingSalaries.has(user.id)}
+                              />
+                            </div>
+                          ) : (
+                            <span className="font-semibold text-gray-900 dark:text-gray-100">
+                              {currentSalary > 0 ? formatCurrency(currentSalary * 12) : <span className="text-muted-foreground text-sm italic">Non défini</span>}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {!isSimulated && onSaveSalary ? (
+                            <div className="flex flex-col gap-1 items-center">
+                              <Select
+                                value={String(editingSalaries.get(user.id)?.year || new Date().getFullYear())}
+                                onValueChange={(value) => {
+                                  const year = parseInt(value);
+                                  const current = editingSalaries.get(user.id) || { 
+                                    monthly: user.currentMonthlySalary || 0, 
+                                    annual: (user.currentMonthlySalary || 0) * 12,
+                                    year: new Date().getFullYear()
+                                  };
+                                  const newEditing = new Map(editingSalaries);
+                                  newEditing.set(user.id, { ...current, year });
+                                  setEditingSalaries(newEditing);
+                                }}
+                              >
+                                <SelectTrigger className="w-[100px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i).map((year) => (
+                                    <SelectItem key={year} value={String(year)}>
+                                      {year}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  if (!onSaveSalary) return;
+                                  const editing = editingSalaries.get(user.id);
+                                  if (!editing) return;
+                                  
+                                  setSavingSalaries(prev => new Set(prev).add(user.id));
+                                  try {
+                                    await onSaveSalary(user.id, editing.monthly, editing.year);
+                                    const newEditing = new Map(editingSalaries);
+                                    newEditing.delete(user.id);
+                                    setEditingSalaries(newEditing);
+                                    toast.success(`Salaire de ${user.firstName} ${user.lastName} sauvegardé`);
+                                  } catch (error) {
+                                    console.error("Erreur lors de la sauvegarde:", error);
+                                    toast.error("Erreur lors de la sauvegarde du salaire");
+                                  } finally {
+                                    setSavingSalaries(prev => {
+                                      const newSet = new Set(prev);
+                                      newSet.delete(user.id);
+                                      return newSet;
+                                    });
+                                  }
+                                }}
+                                disabled={savingSalaries.has(user.id) || !editingSalaries.has(user.id)}
+                                className="h-7 text-xs"
+                              >
+                                {savingSalaries.has(user.id) ? (
+                                  <RefreshCw className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Save className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">
+                              {new Date().getFullYear()}
+                            </span>
                           )}
                         </TableCell>
                         <TableCell className="text-center">
                           <Select
-                            value={simulation?.type || "percentage"}
-                            onValueChange={(value: "percentage" | "amount") => {
-                              const currentValue = simulation?.value || 0;
-                              onSimulationUpdate(user.id, value, currentValue);
+                            value={simulation ? (simulation.type === "percentage" ? "percentage" : "amount") : "none"}
+                            onValueChange={(value: "percentage" | "amount" | "none") => {
+                              if (value === "none") {
+                                onSimulationUpdate(user.id, "percentage", 0);
+                              } else {
+                                const currentValue = simulation?.value || 0;
+                                onSimulationUpdate(user.id, value, currentValue);
+                              }
                             }}
                           >
                             <SelectTrigger className="w-[100px] mx-auto">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value="none">Aucune</SelectItem>
                               <SelectItem value="percentage">%</SelectItem>
                               <SelectItem value="amount">€</SelectItem>
                             </SelectContent>
@@ -487,37 +709,80 @@ export function SalaryTable({
                           )}
                         </TableCell>
                         <TableCell className="text-center">
-                          {isSimulated ? (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
+                          <div className="flex items-center justify-center gap-2">
+                            {isSimulated ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => onRemoveSimulatedUser(user.id)}
+                                      className="gap-2 shadow-sm hover:shadow-md transition-all"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                      Supprimer
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Supprimer ce recrutement simulé</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : (
+                              <>
+                                {isNeutralized ? (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleToggleDeparture(user.id, false)}
+                                          className="gap-2 border-orange-300 text-orange-600 hover:bg-orange-50 shadow-sm hover:shadow-md transition-all"
+                                        >
+                                          <RotateCcw className="h-4 w-4" />
+                                          Réactiver
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Réactiver cet utilisateur (annuler le départ)</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                ) : (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleToggleDeparture(user.id, true)}
+                                          className="gap-2 border-red-300 text-red-600 hover:bg-red-50 shadow-sm hover:shadow-md transition-all"
+                                        >
+                                          <UserMinus className="h-4 w-4" />
+                                          Neutraliser départ
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Marquer comme partant (simulation)</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                                {hasSimulation && (
                                   <Button
                                     size="sm"
-                                    variant="destructive"
-                                    onClick={() => onRemoveSimulatedUser(user.id)}
-                                    className="gap-2 shadow-sm hover:shadow-md transition-all"
+                                    onClick={() => handleValidateOne(user.id)}
+                                    className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white border-none shadow-sm hover:shadow-md transition-all"
                                   >
-                                    <Trash2 className="h-4 w-4" />
-                                    Supprimer
+                                    <Check className="h-4 w-4" />
+                                    Valider
                                   </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Supprimer ce recrutement simulé</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          ) : hasSimulation ? (
-                            <Button
-                              size="sm"
-                              onClick={() => handleValidateOne(user.id)}
-                              className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white border-none shadow-sm hover:shadow-md transition-all"
-                            >
-                              <Check className="h-4 w-4" />
-                              Valider
-                            </Button>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">-</span>
-                          )}
+                                )}
+                              </>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
