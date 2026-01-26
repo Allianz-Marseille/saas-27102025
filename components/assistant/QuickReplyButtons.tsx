@@ -3,11 +3,13 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { M3BotResponse } from "@/types/m3-session";
 
 interface QuickReplyButtonsProps {
   content: string;
   onSelect: (option: string) => void;
   disabled?: boolean;
+  structuredResponse?: M3BotResponse; // Support pour réponse JSON structurée
 }
 
 /**
@@ -139,8 +141,22 @@ function extractOptions(content: string): string[] {
   return [];
 }
 
-export function QuickReplyButtons({ content, onSelect, disabled = false }: QuickReplyButtonsProps) {
-  const options = extractOptions(content);
+export function QuickReplyButtons({ 
+  content, 
+  onSelect, 
+  disabled = false,
+  structuredResponse 
+}: QuickReplyButtonsProps) {
+  // Priorité au JSON structuré si fourni
+  let options: string[] = [];
+  
+  if (structuredResponse?.buttons && structuredResponse.buttons.length > 0) {
+    // Utiliser les boutons depuis le JSON structuré
+    options = structuredResponse.buttons.map(btn => btn.label);
+  } else {
+    // Fallback : extraction automatique depuis le texte
+    options = extractOptions(content);
+  }
 
   if (options.length < 2) {
     return null;

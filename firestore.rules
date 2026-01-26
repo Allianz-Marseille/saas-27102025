@@ -177,6 +177,31 @@ service cloud.firestore {
       // Note: Les conversations partagées sont gérées via l'API qui vérifie les permissions côté serveur
     }
     
+    // M3 sessions collection
+    // Sessions M+3 - workflow interactif pour les CDC
+    // Données sensibles : fiches clients Lagon, contrats, analyses commerciales
+    match /m3_sessions/{sessionId} {
+      // Création : l'utilisateur doit être le propriétaire (CDC ou Admin)
+      allow create: if isAuthenticated() && 
+                      (isCDC() || isAdmin()) &&
+                      request.resource.data.userId == request.auth.uid;
+      
+      // Lecture : le propriétaire peut lire sa session, les admins peuvent tout lire
+      allow read: if isAdmin() || 
+                    (isAuthenticated() && resource.data.userId == request.auth.uid);
+      
+      // Mise à jour : le propriétaire peut mettre à jour sa session, les admins peuvent tout modifier
+      allow update: if isAdmin() || 
+                      (isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       // Vérifier que le userId ne change pas
+                       request.resource.data.userId == resource.data.userId);
+      
+      // Suppression : le propriétaire peut supprimer sa session, les admins peuvent tout supprimer
+      allow delete: if isAdmin() || 
+                      (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+    
     // Sinistres collection
     // Gestion des sinistres - accès pour Admin, Gestionnaire Sinistre et CDC Commercial
     match /sinistres/{sinistreId} {

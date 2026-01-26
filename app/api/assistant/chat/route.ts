@@ -453,6 +453,7 @@ Tu as accès à plusieurs fonctions pour récupérer des informations sur les en
 
     // Intégrer le prompt basé sur uiEvent
     let buttonPromptSection = "";
+    let m3SessionId: string | null = null;
     
     // Cas unique : uiEvent="start" (bouton "Bonjour" cliqué)
     if (uiEvent === "start") {
@@ -460,6 +461,65 @@ Tu as accès à plusieurs fonctions pour récupérer des informations sur les en
       const startPrompt = getStartPrompt();
       if (startPrompt) {
         buttonPromptSection = `\n\n--- COMPORTEMENT INITIAL (START) ---\n\n${startPrompt}\n\n---\n\n`;
+      }
+    }
+    
+    // Détection mode M+3 : si context contient subButtonId="m-plus-3" ou message mentionne M+3
+    const isM3Mode = 
+      (context && (context as any).subButtonId === "m-plus-3") ||
+      (context && (context as any).buttonId === "commercial" && (context as any).subButtonId === "m-plus-3") ||
+      messageContent.toLowerCase().includes("m+3") ||
+      messageContent.toLowerCase().includes("m+ 3") ||
+      uiEvent === "m3-start";
+    
+    if (isM3Mode && auth.userId) {
+      // Initialiser une session M+3 dans Firestore (seulement si pas déjà créée)
+      try {
+        const { createM3Session } = await import("@/lib/firebase/m3-sessions");
+        // Ne créer qu'une seule session par conversation (vérifier si déjà créée via historique)
+        const hasM3SessionInHistory = history.some((msg: any) => 
+          msg.content?.includes("M+3") || msg.metadata?.m3SessionId
+        );
+        
+        if (!hasM3SessionInHistory) {
+          m3SessionId = await createM3Session(auth.userId);
+        }
+        
+        // Injecter le prompt M+3 workflow
+        const { getM3Prompt } = await import("@/lib/assistant/main-button-prompts");
+        const m3Prompt = getM3Prompt();
+        if (m3Prompt) {
+          buttonPromptSection = `\n\n--- MODE WORKFLOW M+3 ---\n\n${m3Prompt}\n\n---\n\n`;
+        }
+      } catch (error) {
+        console.error("Erreur lors de la création de la session M+3:", error);
+        // Continuer même si la session n'a pas pu être créée
+      }
+    }
+    
+    // Alternative : utiliser getSystemPromptForButton si context fourni
+    if (context && (context as any).buttonId && (context as any).subButtonId && !buttonPromptSection) {
+      try {
+        const { getSystemPromptForButton } = await import("@/lib/assistant/main-button-prompts");
+        const buttonPrompt = getSystemPromptForButton(
+          (context as any).buttonId,
+          (context as any).subButtonId
+        );
+        if (buttonPrompt) {
+          buttonPromptSection = `\n\n--- PROMPT MÉTIER (${(context as any).buttonId}/${(context as any).subButtonId}) ---\n\n${buttonPrompt}\n\n---\n\n`;
+          
+          // Si c'est M+3, créer aussi la session
+          if ((context as any).subButtonId === "m-plus-3" && auth.userId && !m3SessionId) {
+            try {
+              const { createM3Session } = await import("@/lib/firebase/m3-sessions");
+              m3SessionId = await createM3Session(auth.userId);
+            } catch (error) {
+              console.error("Erreur lors de la création de la session M+3:", error);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement du prompt métier:", error);
       }
     }
     
