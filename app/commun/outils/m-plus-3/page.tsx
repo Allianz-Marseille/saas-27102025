@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +11,7 @@ import { MarkdownRenderer } from "@/components/assistant/MarkdownRenderer";
 import { QuickReplyButtons } from "@/components/assistant/QuickReplyButtons";
 import { cn } from "@/lib/utils";
 import { getRelativeTime } from "@/lib/utils/date-helpers";
-import { createM3Session, getM3Session, updateM3Session } from "@/lib/firebase/m3-sessions";
+import { createM3Session, getM3Session } from "@/lib/firebase/m3-sessions";
 import { M3Session } from "@/types/m3-session";
 
 interface Message {
@@ -49,31 +49,7 @@ export default function MPlus3BotPage() {
     }
   }, [messages]);
 
-  // Initialiser la session M+3 au chargement
-  useEffect(() => {
-    const initializeM3Session = async () => {
-      if (!user?.uid) return;
-
-      try {
-        const sessionId = await createM3Session(user.uid);
-        setM3SessionId(sessionId);
-        
-        const session = await getM3Session(sessionId);
-        setM3Session(session);
-
-        // Envoyer le message initial pour démarrer le workflow M+3
-        // On envoie un message explicite pour déclencher le prompt M+3
-        handleSendMessage("Démarrer le workflow M+3", "m3-start");
-      } catch (error) {
-        console.error("Erreur lors de l'initialisation de la session M+3:", error);
-        toast.error("Erreur lors de l'initialisation du bot M+3");
-      }
-    };
-
-    initializeM3Session();
-  }, [user?.uid]);
-
-  const handleSendMessage = async (messageText?: string, uiEvent?: string) => {
+  const handleSendMessage = useCallback(async (messageText?: string, uiEvent?: string) => {
     if (!user) {
       toast.error("Vous devez être connecté");
       return;
@@ -168,7 +144,7 @@ export default function MPlus3BotPage() {
                 if (parsed.error) {
                   throw new Error(parsed.error);
                 }
-              } catch (e) {
+              } catch {
                 // Ignorer les erreurs de parsing
               }
             }
@@ -192,7 +168,31 @@ export default function MPlus3BotPage() {
       // Supprimer le message assistant en erreur
       setMessages((prev) => prev.filter((msg) => msg.id !== assistantMessageId));
     }
-  };
+  }, [user, input, messages, m3SessionId]);
+
+  // Initialiser la session M+3 au chargement
+  useEffect(() => {
+    const initializeM3Session = async () => {
+      if (!user?.uid) return;
+
+      try {
+        const sessionId = await createM3Session(user.uid);
+        setM3SessionId(sessionId);
+        
+        const session = await getM3Session(sessionId);
+        setM3Session(session);
+
+        // Envoyer le message initial pour démarrer le workflow M+3
+        // On envoie un message explicite pour déclencher le prompt M+3
+        handleSendMessage("Démarrer le workflow M+3", "m3-start");
+      } catch (error) {
+        console.error("Erreur lors de l'initialisation de la session M+3:", error);
+        toast.error("Erreur lors de l'initialisation du bot M+3");
+      }
+    };
+
+    initializeM3Session();
+  }, [user?.uid, handleSendMessage]);
 
   const updateMessage = (messageId: string, content: string) => {
     setMessages((prev) =>
@@ -206,7 +206,7 @@ export default function MPlus3BotPage() {
       setCopiedMessageId(messageId);
       setTimeout(() => setCopiedMessageId(null), 2000);
       toast.success("Message copié");
-    } catch (error) {
+    } catch {
       toast.error("Erreur lors de la copie");
     }
   };
@@ -283,7 +283,6 @@ export default function MPlus3BotPage() {
                         handleSendMessage(option);
                       }}
                       disabled={isLoading}
-                      structuredResponse={message.structuredResponse}
                     />
                   )}
 
@@ -367,13 +366,18 @@ export default function MPlus3BotPage() {
                 Statut : {m3Session.status} • Créée le {new Date(m3Session.createdAt).toLocaleString("fr-FR")}
               </p>
             </div>
-            {m3Session.outputs && m3Session.outputs.length > 0 && (
+            {m3Session.outputs && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
                   // Afficher les sorties générées
-                  toast.info(`${m3Session.outputs.length} sortie(s) générée(s)`);
+                  const outputsCount = [
+                    m3Session.outputs?.der,
+                    m3Session.outputs?.mail,
+                    m3Session.outputs?.checklist,
+                  ].filter(Boolean).length;
+                  toast.info(`${outputsCount} sortie(s) générée(s)`);
                 }}
               >
                 <Download className="h-4 w-4 mr-2" />
