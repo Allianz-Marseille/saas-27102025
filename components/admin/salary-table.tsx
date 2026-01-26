@@ -595,14 +595,10 @@ export function SalaryTable({
                                 placeholder="0"
                                 value={(() => {
                                   if (displayMode === "annual") {
-                                    const annual = editingSalaries.get(user.id)?.annual ?? ((user.isSimulated 
-                                      ? user.currentMonthlySalary || 0 
-                                      : getUserSalaryForYear(user.id, comparisonYear)) * 12);
+                                    const annual = editingSalaries.get(user.id)?.annual ?? (getUserSalaryForYear(user.id, comparisonYear) * 12);
                                     return annual === 0 ? "" : Math.round(annual * 100) / 100;
                                   } else {
-                                    const monthly = editingSalaries.get(user.id)?.monthly ?? (user.isSimulated 
-                                      ? user.currentMonthlySalary || 0 
-                                      : getUserSalaryForYear(user.id, comparisonYear));
+                                    const monthly = editingSalaries.get(user.id)?.monthly ?? getUserSalaryForYear(user.id, comparisonYear);
                                     return monthly === 0 ? "" : Math.round(monthly * 100) / 100;
                                   }
                                 })()}

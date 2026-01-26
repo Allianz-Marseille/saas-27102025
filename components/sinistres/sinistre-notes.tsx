@@ -65,9 +65,12 @@ export function SinistreNotes({ sinistreId }: SinistreNotesProps) {
   const handleAddNote = async () => {
     if (!newNote.trim() || !userData || !db) return;
 
+    // Variable locale pour que TypeScript comprenne que db n'est pas undefined
+    const firestoreDb = db;
+
     setIsAdding(true);
     try {
-      const notesRef = collection(db, "sinistres", sinistreId, "notes");
+      const notesRef = collection(firestoreDb, "sinistres", sinistreId, "notes");
       const noteDoc = await addDoc(notesRef, {
         sinistreId,
         content: newNote.trim(),
@@ -77,7 +80,7 @@ export function SinistreNotes({ sinistreId }: SinistreNotesProps) {
       });
 
       // Enregistrer dans l'historique
-      const historyRef = collection(db, "sinistres", sinistreId, "history");
+      const historyRef = collection(firestoreDb, "sinistres", sinistreId, "history");
       await addDoc(historyRef, {
         sinistreId,
         type: "note_added",
@@ -102,8 +105,11 @@ export function SinistreNotes({ sinistreId }: SinistreNotesProps) {
   const handleEditNote = async (noteId: string) => {
     if (!editingContent.trim() || !db || !userData) return;
 
+    // Variable locale pour que TypeScript comprenne que db n'est pas undefined
+    const firestoreDb = db;
+
     try {
-      const noteRef = doc(db, "sinistres", sinistreId, "notes", noteId);
+      const noteRef = doc(firestoreDb, "sinistres", sinistreId, "notes", noteId);
       const note = notes.find((n) => n.id === noteId);
       
       await updateDoc(noteRef, {
@@ -112,7 +118,7 @@ export function SinistreNotes({ sinistreId }: SinistreNotesProps) {
       });
 
       // Enregistrer dans l'historique
-      const historyRef = collection(db, "sinistres", sinistreId, "history");
+      const historyRef = collection(firestoreDb, "sinistres", sinistreId, "history");
       await addDoc(historyRef, {
         sinistreId,
         type: "note_updated",
@@ -138,17 +144,20 @@ export function SinistreNotes({ sinistreId }: SinistreNotesProps) {
   const handleDeleteNote = async (noteId: string) => {
     if (!db || !userData) return;
 
+    // Variable locale pour que TypeScript comprenne que db n'est pas undefined
+    const firestoreDb = db;
+
     if (!confirm("Êtes-vous sûr de vouloir supprimer cette note ?")) {
       return;
     }
 
     try {
       const note = notes.find((n) => n.id === noteId);
-      const noteRef = doc(db, "sinistres", sinistreId, "notes", noteId);
+      const noteRef = doc(firestoreDb, "sinistres", sinistreId, "notes", noteId);
       await deleteDoc(noteRef);
 
       // Enregistrer dans l'historique
-      const historyRef = collection(db, "sinistres", sinistreId, "history");
+      const historyRef = collection(firestoreDb, "sinistres", sinistreId, "history");
       await addDoc(historyRef, {
         sinistreId,
         type: "note_deleted",
