@@ -70,6 +70,60 @@ export function SalaryHistoryView({
     return totals;
   }, [users, availableYears, displayMode, history, multiplier]);
 
+  // Fonction pour formater un nombre avec séparateurs de milliers et 2 décimales max
+  const formatNumberWithThousands = (value: number): string => {
+    if (value === 0) return "0";
+    
+    return new Intl.NumberFormat("fr-FR", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+      useGrouping: true,
+    }).format(value);
+  };
+
+  // Calculer la variation entre deux années pour un utilisateur
+  const getVariation = (userId: string, previousYear: number, currentYear: number): { value: number; displayValue: string; showArrow: boolean } | null => {
+    const previousSalary = getSalaryForYear(userId, previousYear);
+    const currentSalary = getSalaryForYear(userId, currentYear);
+
+    const previousDisplay = previousSalary * multiplier;
+    const currentDisplay = currentSalary * multiplier;
+
+    // Ne pas afficher si l'une des deux années est à 0
+    if (previousDisplay === 0 || currentDisplay === 0) {
+      return null;
+    }
+
+    const difference = currentDisplay - previousDisplay;
+    const sign = difference >= 0 ? "+" : "";
+    
+    return {
+      value: difference,
+      displayValue: `${sign}${formatNumberWithThousands(Math.abs(difference))} €`,
+      showArrow: true,
+    };
+  };
+
+  // Calculer la variation totale entre deux années
+  const getTotalVariation = (previousYear: number, currentYear: number): { value: number; displayValue: string; showArrow: boolean } | null => {
+    const totalPrevious = totalsByYear.get(previousYear) || 0;
+    const totalCurrent = totalsByYear.get(currentYear) || 0;
+
+    // Ne pas afficher si l'une des deux années est à 0
+    if (totalPrevious === 0 || totalCurrent === 0) {
+      return null;
+    }
+
+    const difference = totalCurrent - totalPrevious;
+    const sign = difference >= 0 ? "+" : "";
+    
+    return {
+      value: difference,
+      displayValue: `${sign}${formatNumberWithThousands(Math.abs(difference))} €`,
+      showArrow: true,
+    };
+  };
+
 
   return (
     <Card className="border-none shadow-xl">
@@ -90,17 +144,35 @@ export function SalaryHistoryView({
             <TableHeader>
               <TableRow>
                 <TableHead className="sticky left-0 z-10 bg-background">Collaborateur</TableHead>
-                {availableYears.map((year) => (
-                  <TableHead key={year} className="text-center min-w-[150px]">
-                    {year}
-                  </TableHead>
-                ))}
+                {availableYears.map((year, index) => {
+                  const isLast = index === availableYears.length - 1;
+                  const previousYear = index > 0 ? availableYears[index - 1] : null;
+                  
+                  return (
+                    <React.Fragment key={year}>
+                      {previousYear && (
+                        <TableHead className="text-center min-w-[120px]">
+                          <span className="text-xs text-muted-foreground">Variation</span>
+                        </TableHead>
+                      )}
+                      <TableHead className="text-center min-w-[150px]">
+                        {year}
+                      </TableHead>
+                    </React.Fragment>
+                  );
+                })}
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={availableYears.length + 1} className="text-center text-muted-foreground py-8">
+                  <TableCell 
+                    colSpan={
+                      availableYears.length + 
+                      (availableYears.length > 1 ? availableYears.length - 1 : 0) // Colonnes de variation
+                    } 
+                    className="text-center text-muted-foreground py-8"
+                  >
                     Aucun collaborateur trouvé
                   </TableCell>
                 </TableRow>
@@ -117,18 +189,43 @@ export function SalaryHistoryView({
                         )}
                       </div>
                     </TableCell>
-                    {availableYears.map((year) => {
+                    {availableYears.map((year, index) => {
                       const salary = getSalaryForYear(user.id, year);
                       const displaySalary = salary * multiplier;
+                      const previousYear = index > 0 ? availableYears[index - 1] : null;
+                      const variation = previousYear ? getVariation(user.id, previousYear, year) : null;
                       
                       return (
-                        <TableCell key={year} className="text-center">
-                          <span className="font-semibold text-lg">
-                            {displaySalary > 0 ? formatCurrency(displaySalary) : (
-                              <span className="text-muted-foreground text-sm italic">Non défini</span>
-                            )}
-                          </span>
-                        </TableCell>
+                        <React.Fragment key={year}>
+                          {previousYear && (
+                            <TableCell className="text-center">
+                              {variation ? (
+                                <div className="flex items-center justify-center gap-0.5 text-xs">
+                                  <span className="text-muted-foreground">←</span>
+                                  <div className="flex-1 border-t border-dashed border-muted-foreground/50"></div>
+                                  <span className={`font-semibold px-1 whitespace-nowrap ${
+                                    variation.value >= 0 
+                                      ? "text-emerald-600 dark:text-emerald-400" 
+                                      : "text-red-600 dark:text-red-400"
+                                  }`}>
+                                    {variation.displayValue}
+                                  </span>
+                                  <div className="flex-1 border-t border-dashed border-muted-foreground/50"></div>
+                                  <span className="text-muted-foreground">→</span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">-</span>
+                              )}
+                            </TableCell>
+                          )}
+                          <TableCell className="text-center">
+                            <span className="font-semibold text-lg">
+                              {displaySalary > 0 ? formatCurrency(displaySalary) : (
+                                <span className="text-muted-foreground text-sm italic">Non défini</span>
+                              )}
+                            </span>
+                          </TableCell>
+                        </React.Fragment>
                       );
                     })}
                   </TableRow>
@@ -138,15 +235,40 @@ export function SalaryHistoryView({
             <TableFooter>
               <TableRow className="border-t-2 font-bold">
                 <TableCell className="sticky left-0 z-10 bg-background text-lg">TOTAL</TableCell>
-                {availableYears.map((year) => {
+                {availableYears.map((year, index) => {
                   const total = totalsByYear.get(year) || 0;
+                  const previousYear = index > 0 ? availableYears[index - 1] : null;
+                  const totalVariation = previousYear ? getTotalVariation(previousYear, year) : null;
                   
                   return (
-                    <TableCell key={year} className="text-center">
-                      <span className="text-xl font-bold">
-                        {formatCurrency(total)}
-                      </span>
-                    </TableCell>
+                    <React.Fragment key={year}>
+                      {previousYear && (
+                        <TableCell className="text-center">
+                          {totalVariation ? (
+                            <div className="flex items-center justify-center gap-0.5">
+                              <span className="text-muted-foreground">←</span>
+                              <div className="flex-1 border-t border-dashed border-muted-foreground/50"></div>
+                              <span className={`text-base font-bold px-1 whitespace-nowrap ${
+                                totalVariation.value >= 0 
+                                  ? "text-emerald-600 dark:text-emerald-400" 
+                                  : "text-red-600 dark:text-red-400"
+                              }`}>
+                                {totalVariation.displayValue}
+                              </span>
+                              <div className="flex-1 border-t border-dashed border-muted-foreground/50"></div>
+                              <span className="text-muted-foreground">→</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">-</span>
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell className="text-center">
+                        <span className="text-xl font-bold">
+                          {formatCurrency(total)}
+                        </span>
+                      </TableCell>
+                    </React.Fragment>
                   );
                 })}
               </TableRow>
