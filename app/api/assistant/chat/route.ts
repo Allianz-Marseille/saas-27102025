@@ -191,11 +191,7 @@ export async function POST(request: NextRequest) {
       baseKnowledge = loadKnowledgeForContext(undefined, undefined);
     }
 
-    // Construire le contexte complet pour la détection (message actuel + historique récent)
-    const conversationContext = [
-      messageContent,
-      ...history.slice(-3).map((msg: { role: string; content?: string }) => msg.content || "").filter(Boolean)
-    ].join(" ");
+    // Réserve : contexte conversation (messageContent + history.slice(-3)) pour détections futures
 
     // Les connaissances pertinentes sont déjà incluses dans baseKnowledge
     // via loadKnowledgeForContext ou loadSegmentationKnowledge
@@ -597,7 +593,7 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
     const systemPrompt = `${coreKnowledge}${buttonPromptSection}${ocrPromptSection}${fileManagementPrompt}${formattingRules}`;
 
     // Construire le contenu du message utilisateur
-    let userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];
+    const userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];
     
     // Construire le texte du message (incluant le texte des fichiers)
     let messageText = message || "";
@@ -657,9 +653,7 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
       content: userContent.length > 0 ? userContent : message,
     });
 
-    // Enrichir les messages avec les connaissances pertinentes de la base de connaissance (optionnel, car le prompt système est déjà enrichi)
-    const userMessageText = typeof message === "string" ? message : "";
-    // Note: enrichMessagesWithKnowledge n'est plus utilisé car la logique métier est directement dans le system prompt via getSystemPromptForButton
+    // Note: enrichMessagesWithKnowledge n'est plus utilisé — la logique métier est dans le system prompt
     const enrichedMessages = messages;
 
     // Récupérer le paramètre stream depuis le body
@@ -834,7 +828,6 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
       const startTime = Date.now();
       let tokensInput = 0;
       let tokensOutput = 0;
-      let hasError = false;
       let errorMessage: string | undefined;
 
       const stream = new ReadableStream({
@@ -844,8 +837,8 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
             const modelToUse = images && images.length > 0 ? "gpt-4o" : model;
             
             // Gérer les function calls en boucle
-            let currentMessages = [...enrichedMessages];
-            let maxIterations = 5; // Limiter les itérations pour éviter les boucles infinies
+            const currentMessages = [...enrichedMessages];
+            const maxIterations = 5; // Limiter les itérations pour éviter les boucles infinies
             let iteration = 0;
 
             while (iteration < maxIterations) {
@@ -976,7 +969,6 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
               { ip: request.headers.get("x-forwarded-for") || undefined }
             ).catch((err) => console.error("Erreur logging audit:", err));
           } catch (error) {
-            hasError = true;
             errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
             const errorData = `data: ${JSON.stringify({ error: errorMessage })}\n\n`;
             controller.enqueue(encoder.encode(errorData));
@@ -1021,8 +1013,8 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
       const modelToUse = images && images.length > 0 ? "gpt-4o" : model;
       
       // Gérer les function calls en boucle (mode non-streaming)
-      let currentMessages = [...enrichedMessages];
-      let maxIterations = 5;
+      const currentMessages = [...enrichedMessages];
+      const maxIterations = 5;
       let iteration = 0;
 
       while (iteration < maxIterations) {
@@ -1055,17 +1047,16 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
             const functionName = toolCall.function.name;
             const functionArgs = JSON.parse(toolCall.function.arguments || "{}");
             
-            // Ajouter le message assistant avec tool call
+            // Ajouter le message assistant avec tool call (narrowé : on est dans le bloc function)
+            type FunctionToolCall = { id: string; type: "function"; function: { name: string; arguments: string } };
+            const toolCalls = message.tool_calls as FunctionToolCall[];
             currentMessages.push({
               role: "assistant",
               content: null,
-              tool_calls: message.tool_calls.map((tc: any) => ({
+              tool_calls: toolCalls.map((tc) => ({
                 id: tc.id,
-                type: tc.type,
-                function: {
-                  name: tc.function.name,
-                  arguments: tc.function.arguments,
-                },
+                type: "function" as const,
+                function: { name: tc.function.name, arguments: tc.function.arguments },
               })),
             });
 
@@ -1087,10 +1078,10 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
         // Pas de function call, on a la réponse finale
         break;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       clearTimeout(timeoutId);
-      
-      if (error.name === "AbortError") {
+      const err = error as { name?: string };
+      if (err?.name === "AbortError") {
         const duration = Date.now() - startTime;
         // Logger le timeout
         logUsage({

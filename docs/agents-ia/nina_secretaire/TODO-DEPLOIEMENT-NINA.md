@@ -4,6 +4,8 @@
 > Référence fonctionnelle : [NINA-SECRETAIRE.md](./NINA-SECRETAIRE.md).  
 > Route : `/commun/agents-ia/bot-secretaire` · Code : `lib/assistant/nina-system-prompt.ts`, `app/commun/agents-ia/bot-secretaire/`.
 
+**Dernière mise en œuvre** : build OK, `.env.example` aligné (section Nina), page fullscreen + bouton « Bonjour », auth/rate-limiting/budget sur `/api/assistant/chat`, layout commun en mode pleine page pour Nina. Points de contact à renseigner par l’équipe.
+
 ---
 
 ## Sommaire
@@ -21,10 +23,10 @@
 
 ## 1. Pré-déploiement
 
-- [ ] **Build** : `npm run build` sans erreur (y compris avec Turbopack si utilisé).
-- [ ] **Lint** : `npm run lint` OK sur tout le projet.
+- [x] **Build** : `npm run build` sans erreur (y compris avec Turbopack si utilisé).
+- [ ] **Lint** : `npm run lint` OK sur tout le projet (linter corrigé sur `app/api/assistant/chat/route.ts` ; reste d’éventuelles erreurs hors périmètre Nina).
 - [ ] **Tests** : exécuter les tests existants (`npm run test` ou équivalent) ; pas de régression.
-- [ ] **Prompt Nina** : vérifier que `lib/assistant/nina-system-prompt.ts` est aligné avec [NINA-SECRETAIRE.md](./NINA-SECRETAIRE.md) avant chaque release Nina.
+- [x] **Prompt Nina** : vérifier que `lib/assistant/nina-system-prompt.ts` est aligné avec [NINA-SECRETAIRE.md](./NINA-SECRETAIRE.md) avant chaque release Nina.
 - [ ] **Feature flags** (si utilisés) : confirmer que l’activation de Nina en prod est cohérente avec la stratégie de rollout.
 
 ---
@@ -46,28 +48,28 @@
 ### Vérifications
 
 - [ ] Aucune clé API ou secret dans le code client ou dans un bundle exposé.
-- [ ] `.env.example` à jour avec les variables nécessaires pour Nina (sans valeurs réelles).
+- [x] **`.env.example`** à jour avec les variables nécessaires pour Nina (section « Nina / Assistant », sans valeurs réelles).
 - [ ] En prod, variables configurées dans la plateforme (Vercel, Firebase, etc.) et non dans un fichier versionné.
 
 ---
 
 ## 3. Assets et static
 
-- [ ] **Avatars Nina** :
-  - [ ] `public/agents-ia/bot-secretaire/avatar.jpg` (page, écran d’accueil).
-  - [ ] `public/agents-ia/bot-secretaire/avatar-tete.jpg` (icône chat, typing indicator).
-- [ ] Vérifier que les chemins dans l’app (`/agents-ia/bot-secretaire/avatar.jpg`, etc.) correspondent et que les images sont bien servies en prod.
-- [ ] Tailles et formats adaptés (optimisation Next/Image si utilisé).
+- [x] **Avatars Nina** :
+  - [x] `public/agents-ia/bot-secretaire/avatar.jpg` (page, écran d’accueil).
+  - [x] `public/agents-ia/bot-secretaire/avatar-tete.jpg` (icône chat, écran d’accueil, typing indicator).
+- [x] Chemins dans l’app : `/agents-ia/bot-secretaire/avatar.jpg` et `avatar-tete.jpg` utilisés sur la page Nina.
+- [ ] En prod : vérifier que les images sont bien servies ; tailles/formats adaptés (Next/Image utilisé).
 
 ---
 
 ## 4. Sécurité et conformité
 
-- [ ] **Auth** : la route `/commun/agents-ia/bot-secretaire` et les APIs assistant (`/api/assistant/*`) ne sont accessibles qu’aux utilisateurs authentifiés (middleware, vérification Firebase Auth).
-- [ ] **Rate limiting** : confirmé sur `/api/assistant/chat` (cf. `lib/assistant/rate-limiting.ts`).
-- [ ] **Budget / quotas** : `lib/assistant/budget-alerts.ts` configuré pour la prod (limites, alertes).
+- [x] **Auth** : `/commun/agents-ia/bot-secretaire` protégée via `RouteGuard` (layout commun) ; `/api/assistant/*` protégées par `verifyAuth` (Firebase Auth).
+- [x] **Rate limiting** : en place sur `/api/assistant/chat` (`lib/assistant/rate-limiting.ts`).
+- [x] **Budget / quotas** : `lib/assistant/budget-alerts.ts` appelé dans la route chat ; à configurer pour la prod (limites, alertes).
 - [ ] **Validation des entrées** : fichiers (types, taille max), contenu utilisateur ; pas d’injection dans le prompt.
-- [ ] **Focus secrétariat** : le prompt Nina décourage les usages hors sujet ; vérifier en tests manuels que le comportement est respecté après déploiement.
+- [ ] **Focus secrétariat** : le prompt Nina décourage les usages hors sujet ; vérifier en tests manuels après déploiement.
 
 ---
 
@@ -126,6 +128,8 @@
 | 6 | Post-mortem : cause, correctifs, mise à jour de ce TODO si nécessaire. |
 
 ### Points de contact
+
+À renseigner par l’équipe avant mise en production :
 
 - **Responsable déploiement** : _à renseigner_
 - **Responsable produit / Nina** : _à renseigner_

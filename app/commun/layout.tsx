@@ -280,6 +280,16 @@ export default function CommunLayout({
     showNotifications = true;
   }
 
+  // Nina — Bot Secrétaire : pleine page sans sidebar (spec NINA-SECRETAIRE.md)
+  const isNinaFullscreen = pathname === "/commun/agents-ia/bot-secretaire";
+  if (isNinaFullscreen) {
+    return (
+      <RouteGuard requireAuth={true}>
+        <div className="h-screen w-screen overflow-hidden">{children}</div>
+      </RouteGuard>
+    );
+  }
+
   return (
     <RouteGuard requireAuth={true}>
       <div className="flex h-screen overflow-hidden">
