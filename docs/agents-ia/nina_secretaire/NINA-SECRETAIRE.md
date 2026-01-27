@@ -51,6 +51,10 @@
 - [ ] Menu "···" (paramètres, aide, export global).
 - [ ] Petits boutons d'action rapide en fin de réponse si définis.
 - [ ] Ajustements mobile et accessibilité (aria, focus, Escape).
+- [ ] **PDF Mobile** : ouverture du PDF en nouvel onglet sur Mobile (compatibilité iOS).
+- [ ] **Gestion du contexte** : summarization automatique au-delà de 20 messages pour préserver performances et mémoire.
+- [ ] **Raccourci global** : `Alt + N` / `Cmd + N` pour ouvrir Nina depuis tout le SaaS.
+- [ ] **Split screen (zone de brouillon)** : priorité haute backlog — conversation à gauche, éditeur des rédactions à droite.
 
 ---
 
@@ -203,6 +207,7 @@ const response = await openai.chat.completions.create({
 - **Portée** : "Télécharger en PDF" par bulle ; "Exporter la conversation en PDF".
 - **Comportement** : loader "Génération du PDF…", téléchargement `nina-reponse-YYYY-MM-DD-HHmm.pdf` ou `nina-conversation-…`.
 - **Recommandation** : génération **côté client** (`jspdf` + `html2canvas`). Templates : "Brut" et "Officiel" (en-tête, date, "Généré par l'assistante Nina").
+- **UX Mobile** : sur Mobile, la génération du PDF doit forcer l’ouverture dans un **nouvel onglet** (ou nouvel écran) pour garantir la compatibilité, notamment sous iOS (éviter les blocages de téléchargement direct).
 
 ---
 
@@ -213,10 +218,18 @@ const response = await openai.chat.completions.create({
 - Historique / "Nouvelle conversation" si persistance.
 - Ton et personnalité : alignés avec le [Prompt système](#prompt-système) et `nina-system-prompt.ts`.
 
-#### Backlog
+#### Gestion du contexte
 
-- **Zone de brouillon (split screen)** : à gauche la conversation, à droite un éditeur où Nina dépose les rédactions finales → exporter en PDF après édition.
-- **Actions rapides** en fin de réponse : "Transformer en mail", "Faire un tableau récap", "Extraire les dates/RDV", "Résumer", "Corriger ce texte".
+- Si la conversation dépasse **20 messages**, prévoir un **résumé automatique du contexte** (summarization) injecté dans le fil avant les messages récents, pour préserver les performances et la mémoire de Nina (limite de tokens, cohérence des réponses).
+- Seuils et comportement (fenêtre glissante, résumé tous les N messages, etc.) à préciser selon le provider et le coût.
+
+#### Backlog (priorités)
+
+| Priorité | Idée | Description |
+|----------|------|-------------|
+| **Haute** | **Zone de brouillon (split screen)** | À gauche la conversation, à droite un éditeur où Nina dépose les rédactions finales → exporter en PDF après édition. **Priorité haute** du backlog pour transformer le chat en outil d’édition à part entière. |
+| Haute | **Raccourci global** | Implémenter `Alt + N` (Windows/Linux) ou `Cmd + N` (macOS) pour invoquer Nina depuis n’importe où dans le SaaS (ouverture de la page Nina / overlay). |
+| Moyenne | Actions rapides | En fin de réponse : "Transformer en mail", "Faire un tableau récap", "Extraire les dates/RDV", "Résumer", "Corriger ce texte". |
 
 ---
 
