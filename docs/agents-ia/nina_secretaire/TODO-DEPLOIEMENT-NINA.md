@@ -4,7 +4,7 @@
 > Référence fonctionnelle : [NINA-SECRETAIRE.md](./NINA-SECRETAIRE.md).  
 > Route : `/commun/agents-ia/bot-secretaire` · Code : `lib/assistant/nina-system-prompt.ts`, `app/commun/agents-ia/bot-secretaire/`.
 
-**Dernière mise en œuvre** : build OK, `.env.example` aligné (section Nina), page fullscreen + bouton « Bonjour », auth/rate-limiting/budget sur `/api/assistant/chat`, layout commun en mode pleine page pour Nina. Points de contact à renseigner par l’équipe.
+**Dernière mise en œuvre** : build OK, `.env.example` aligné (section Nina), page fullscreen + Phase 2 (conversation, saisie, stream, copier, « Nina écrit… », erreurs + Réessayer), API `context.agent === "nina"` → prompt Nina, déploiement Vercel prod (`npx vercel --prod`), smoke test endpoint OK. Points de contact à renseigner par l’équipe.
 
 ---
 
