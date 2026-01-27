@@ -460,8 +460,8 @@ Tu as accès à plusieurs fonctions pour récupérer des informations sur les en
     // Intégrer le prompt basé sur uiEvent
     let buttonPromptSection = "";
     
-    // Cas unique : uiEvent="start" (bouton "Bonjour" cliqué)
-    if (uiEvent === "start") {
+    // Cas unique : uiEvent="start" (bouton "Bonjour" cliqué). Nina a son propre prompt, pas la liste des 10 rôles.
+    if (uiEvent === "start" && !isNina) {
       const { getStartPrompt } = await import("@/lib/assistant/main-button-prompts");
       const startPrompt = getStartPrompt();
       if (startPrompt) {

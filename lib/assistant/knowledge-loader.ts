@@ -37,65 +37,11 @@ export function loadCoreKnowledge(): string {
 }
 
 /**
- * Charge les packs spécifiques selon le rôle/mode
- * Utilise les fichiers détaillés de process/ et produits/ au lieu des fichiers consolidés
+ * Charge les packs spécifiques selon le rôle/mode.
+ * Les 10 rôles ont été supprimés : seul le core est utilisé.
  */
-export function loadRoleKnowledge(mainButton?: string, subButton?: string): string {
-  const packs: string[] = [];
-
-  // Déterminer quels packs charger selon le rôle
-  switch (mainButton) {
-    case "commercial":
-      // Processus commerciaux : leads, M+3, préterme
-      packs.push(loadKnowledgeFile("process/leads.md"));
-      packs.push(loadKnowledgeFile("process/m-plus-3.md"));
-      packs.push(loadKnowledgeFile("process/preterme-auto.md"));
-      packs.push(loadKnowledgeFile("process/preterme-ird.md"));
-      break;
-
-    case "sinistre":
-      // Gestion des sinistres
-      packs.push(loadKnowledgeFile("process/sinistres.md"));
-      break;
-
-    case "sante":
-      // Assurance santé : produits + sources
-      packs.push(loadKnowledgeFile("produits/assurance-sante.md"));
-      packs.push(loadKnowledgeFile("sources/sante-regles-remboursement.md"));
-      packs.push(loadKnowledgeFile("sources/complementaire-sante-collective.md"));
-      break;
-
-    case "prevoyance":
-      // Prévoyance : produits
-      packs.push(loadKnowledgeFile("produits/prevoyance.md"));
-      break;
-
-    case "secretariat":
-      // Pack secrétariat (à créer si besoin, pour l'instant vide)
-      break;
-
-    case "community-manager":
-      // Pack community (à créer si besoin, pour l'instant vide)
-      break;
-
-    case "avocat":
-      // Pack juridique (à créer si besoin, pour l'instant vide)
-      break;
-
-    case "expert-comptable":
-      // Pack comptable (à créer si besoin, pour l'instant vide)
-      break;
-
-    case "fiscaliste":
-      // Pack fiscalité (à créer si besoin, pour l'instant vide)
-      break;
-
-    default:
-      // Chat libre : uniquement le core
-      break;
-  }
-
-  return packs.filter((content) => content.length > 0).join("\n\n---\n\n");
+export function loadRoleKnowledge(_mainButton?: string, _subButton?: string): string {
+  return "";
 }
 
 /**
