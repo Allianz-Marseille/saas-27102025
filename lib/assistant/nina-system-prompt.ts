@@ -1,7 +1,7 @@
 /**
  * Prompt système pour Nina — Bot Secrétaire (assistante secrétaire de direction).
  * Utilisé par l’API chat Nina quand elle sera branchée.
- * Référence doc : docs/agents-ia/nina_secretaire/PROMPT-SYSTEME-NINA.md
+ * Référence doc : docs/agents-ia/nina_secretaire/NINA-SECRETAIRE.md
  */
 
 export function getNinaSystemPrompt(): string {
