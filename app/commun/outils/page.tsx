@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, ArrowRight, Bot, Building2, FileText, TrendingUp, Sparkles, MessageSquare, FileSearch, Zap } from "lucide-react";
+import { Users, ArrowRight, Building2, FileText, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { motion } from "framer-motion";
@@ -67,20 +67,6 @@ export default function OutilsPage() {
         { icon: TrendingUp, text: "Établissements, filiales et participations" },
       ],
     },
-    {
-      id: "assistant-ia",
-      title: "Assistant IA",
-      description: "Votre assistant intelligent multimodal alimenté par l'IA pour automatiser et optimiser vos tâches quotidiennes.",
-      icon: Bot,
-      href: "/commun/outils/assistant-ia",
-      badge: "IA Avancée",
-      features: [
-        { icon: MessageSquare, text: "Conversations intelligentes et contextuelles" },
-        { icon: FileSearch, text: "Analyse de documents et OCR automatique" },
-        { icon: Sparkles, text: "Génération de contenu et templates" },
-        { icon: Zap, text: "Recherche web et informations en temps réel" },
-      ],
-    },
   ];
 
   return (
@@ -91,15 +77,6 @@ export default function OutilsPage() {
         transition={{ duration: 0.4 }}
         className="mb-8"
       >
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="mb-6"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour
-        </Button>
-
         <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-6">
           Outils
         </h1>

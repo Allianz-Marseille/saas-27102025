@@ -108,7 +108,7 @@ export function QuickActionButtons({ onSelect, onOpenFullAssistant }: QuickActio
   const router = useRouter();
 
   const handleOpenFullAssistant = () => {
-    router.push("/commun/outils/assistant-ia");
+    router.push("/commun/agents-ia");
     if (onOpenFullAssistant) {
       onOpenFullAssistant();
     }
