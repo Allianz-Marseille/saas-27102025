@@ -80,6 +80,20 @@
 - [ ] **API Routes** : `/api/assistant/chat`, `conversations`, `export`, `files/extract`, etc. disponibles et répondant correctement.
 - [ ] **Domaine / SSL** : HTTPS actif ; pas d’appels en HTTP depuis le client vers les APIs.
 
+### 5.1 Déploiement Vercel (procédure)
+
+Le projet utilise `vercel.json` (crons) ; l’app est hébergeable sur Vercel.
+
+1. **Lier le projet** (si pas déjà fait) : `npx vercel link` puis choisir l’équipe et le projet.
+2. **Variables d’environnement** : dans le dashboard Vercel (Settings → Environment Variables), définir au minimum pour Nina :
+   - `OPENAI_API_KEY`
+   - `NEXT_PUBLIC_FIREBASE_*` (toutes les variables client Firebase)
+   - Optionnel : `FIREBASE_PROJECT_ID`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_CLIENT_EMAIL`, `NEXT_PUBLIC_BASE_URL`, `CRON_SECRET`.
+3. **Déployer en production** :
+   - Via Git : push sur la branche connectée (souvent `main`) déclenche le déploiement si l’intégration GitHub est configurée.
+   - En CLI : `npx vercel --prod` (depuis la racine du projet).
+4. **Firebase** : règles Firestore/Storage à déployer séparément : `firebase deploy` (depuis la racine, avec un projet Firebase configuré).
+
 ---
 
 ## 6. Monitoring et observabilité
@@ -97,6 +111,10 @@
   - [ ] Page `/commun/agents-ia` accessible, lien vers Nina OK.
   - [ ] Page `/commun/agents-ia/bot-secretaire` s’affiche (fullscreen ou selon spec), bouton retour OK, avatar visible.
   - [ ] Si le chat Nina est déployé : clic « Bonjour », première réponse, envoi d’un message, pas d’erreur console/réseau.
+  - [ ] **Smoke test automatisé** : `npm run smoke:nina [BASE_URL]`  
+    - Ex. local : `npm run smoke:nina` (serveur sur `http://localhost:3000`).  
+    - Ex. prod : `SMOKE_TEST_BASE_URL=https://xxx.vercel.app npm run smoke:nina`.  
+    - Pour valider la réponse « Nina » au « Bonjour » : définir `SMOKE_TEST_AUTH_TOKEN` (Bearer = Firebase ID token).
 - [ ] **Export PDF** (quand implémenté) : test « Télécharger en PDF » et « Exporter la conversation » ; vérifier compatibilité mobile (ouverture nouvel onglet si applicable).
 - [ ] **Checklist courte** : build OK, env OK, assets OK, auth OK, smoke OK → déploiement validé.
 

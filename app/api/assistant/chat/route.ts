@@ -15,9 +15,10 @@ import { logAction } from "@/lib/assistant/audit";
 import { parseFile } from "@/lib/assistant/file-parsers";
 // import { enrichMessagesWithKnowledge } from "@/lib/assistant/knowledge-loader"; // Plus utilisé, la logique métier est dans le system prompt
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Client OpenAI créé à la demande pour éviter d'exiger OPENAI_API_KEY au build (Vercel).
+function getOpenAIClient(): OpenAI {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+}
 
 /**
  * POST /api/assistant/chat
@@ -43,6 +44,8 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    const openai = getOpenAIClient();
 
     // Récupérer les paramètres depuis le body — ne jamais logger body/message (PII en prod).
     const body = await request.json();
