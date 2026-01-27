@@ -175,23 +175,27 @@ export async function POST(request: NextRequest) {
         messageContent.includes("fiche")
       );
 
-    // Charger la base de connaissances selon le contexte
-    const { loadKnowledgeForContext, loadSegmentationKnowledge } = await import("@/lib/assistant/knowledge-loader");
-    
+    // Contexte Nina (bot secrétaire) : prompt dédié, pas de base agence
+    const isNina = context?.agent === "nina";
     let baseKnowledge: string;
-    if (context && (context.caseType === "client" || context.clientType)) {
-      // Utiliser la segmentation si contexte fourni
-      baseKnowledge = loadSegmentationKnowledge(context as {
-        caseType?: "general" | "client" | null;
-        clientType?: "particulier" | "tns" | "entreprise" | null;
-        csp?: string | null;
-        ageBand?: string | null;
-        companyBand?: { effectifBand: string | null; caBand: string | null } | null;
-        dirigeantStatut?: "tns" | "assimile_salarie" | null;
-      });
+    if (isNina) {
+      const { getNinaSystemPrompt } = await import("@/lib/assistant/nina-system-prompt");
+      baseKnowledge = getNinaSystemPrompt();
     } else {
-      // Sinon, utiliser le chargement classique
-      baseKnowledge = loadKnowledgeForContext(undefined, undefined);
+      // Charger la base de connaissances selon le contexte
+      const { loadKnowledgeForContext, loadSegmentationKnowledge } = await import("@/lib/assistant/knowledge-loader");
+      if (context && (context.caseType === "client" || context.clientType)) {
+        baseKnowledge = loadSegmentationKnowledge(context as {
+          caseType?: "general" | "client" | null;
+          clientType?: "particulier" | "tns" | "entreprise" | null;
+          csp?: string | null;
+          ageBand?: string | null;
+          companyBand?: { effectifBand: string | null; caBand: string | null } | null;
+          dirigeantStatut?: "tns" | "assimile_salarie" | null;
+        });
+      } else {
+        baseKnowledge = loadKnowledgeForContext(undefined, undefined);
+      }
     }
 
     // Réserve : contexte conversation (messageContent + history.slice(-3)) pour détections futures
@@ -200,8 +204,10 @@ export async function POST(request: NextRequest) {
     // via loadKnowledgeForContext ou loadSegmentationKnowledge
     const relevantKnowledge = "";
 
-    // Construire le prompt système avec formatage adapté et connaissances métier
-    const coreKnowledge = `Tu es l'assistant interne de l'agence Allianz Marseille (Nogaro & Boetti).
+    // Construire le prompt système (Nina = prompt dédié, sinon assistant agence)
+    const coreKnowledge = isNina
+      ? baseKnowledge
+      : `Tu es l'assistant interne de l'agence Allianz Marseille (Nogaro & Boetti).
 
 ${baseKnowledge}${relevantKnowledge || ""}
 
@@ -257,7 +263,9 @@ Quand tu donnes une information technique, réglementaire ou juridique, tu DOIS 
 
 Si tu ne connais pas la réponse, dis-le clairement avec un ton professionnel mais accessible.`;
 
-    const formattingRules = isFormalWriting
+    const formattingRules = isNina
+      ? "Utilise le format Markdown pour structurer tes réponses. Reste concis et professionnel."
+      : isFormalWriting
       ? `RÈGLES DE FORMATAGE POUR MAILS ET LETTRES :
 - Adopte un style épuré, direct et efficace
 - Utilise des paragraphes courts et aérés
