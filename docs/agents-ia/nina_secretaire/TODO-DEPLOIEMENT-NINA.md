@@ -1,0 +1,136 @@
+# Todo — Déploiement Nina (Bot Secrétaire)
+
+> Checklist et runbook pour gérer le déploiement de Nina en préproduction et production.  
+> Référence fonctionnelle : [NINA-SECRETAIRE.md](./NINA-SECRETAIRE.md).  
+> Route : `/commun/agents-ia/bot-secretaire` · Code : `lib/assistant/nina-system-prompt.ts`, `app/commun/agents-ia/bot-secretaire/`.
+
+---
+
+## Sommaire
+
+1. [Pré-déploiement](#1-pré-déploiement)
+2. [Variables d’environnement](#2-variables-denvironnement)
+3. [Assets et static](#3-assets-et-static)
+4. [Sécurité et conformité](#4-sécurité-et-conformité)
+5. [Infrastructure et hébergement](#5-infrastructure-et-hébergement)
+6. [Monitoring et observabilité](#6-monitoring-et-observabilité)
+7. [Post-déploiement](#7-post-déploiement)
+8. [Rollback et runbook](#8-rollback-et-runbook)
+
+---
+
+## 1. Pré-déploiement
+
+- [ ] **Build** : `npm run build` sans erreur (y compris avec Turbopack si utilisé).
+- [ ] **Lint** : `npm run lint` OK sur tout le projet.
+- [ ] **Tests** : exécuter les tests existants (`npm run test` ou équivalent) ; pas de régression.
+- [ ] **Prompt Nina** : vérifier que `lib/assistant/nina-system-prompt.ts` est aligné avec [NINA-SECRETAIRE.md](./NINA-SECRETAIRE.md) avant chaque release Nina.
+- [ ] **Feature flags** (si utilisés) : confirmer que l’activation de Nina en prod est cohérente avec la stratégie de rollout.
+
+---
+
+## 2. Variables d’environnement
+
+### Obligatoires pour Nina et l’assistant
+
+- [ ] **`OPENAI_API_KEY`** : définie côté serveur (jamais exposée au client). Utilisée par `/api/assistant/chat` et par l’extraction de fichiers si Nina traite des documents.
+- [ ] **Firebase (client)** : `NEXT_PUBLIC_FIREBASE_*` (apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId).
+- [ ] **Firebase Admin** (si conversations/export persistés) : `FIREBASE_PROJECT_ID`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_CLIENT_EMAIL`.
+
+### Optionnelles selon usage
+
+- [ ] **`NEXT_PUBLIC_BASE_URL`** : URL de base de l’app (ex. pour liens dans les réponses ou webhooks). Fallback sur `Host` si absent.
+- [ ] **`GOOGLE_APPLICATION_CREDENTIALS_JSON`** : si extraction de texte depuis PDF/images (OCR, Document AI).
+- [ ] **`CRON_SECRET`** : si des crons appellent des routes protégées.
+
+### Vérifications
+
+- [ ] Aucune clé API ou secret dans le code client ou dans un bundle exposé.
+- [ ] `.env.example` à jour avec les variables nécessaires pour Nina (sans valeurs réelles).
+- [ ] En prod, variables configurées dans la plateforme (Vercel, Firebase, etc.) et non dans un fichier versionné.
+
+---
+
+## 3. Assets et static
+
+- [ ] **Avatars Nina** :
+  - [ ] `public/agents-ia/bot-secretaire/avatar.jpg` (page, écran d’accueil).
+  - [ ] `public/agents-ia/bot-secretaire/avatar-tete.jpg` (icône chat, typing indicator).
+- [ ] Vérifier que les chemins dans l’app (`/agents-ia/bot-secretaire/avatar.jpg`, etc.) correspondent et que les images sont bien servies en prod.
+- [ ] Tailles et formats adaptés (optimisation Next/Image si utilisé).
+
+---
+
+## 4. Sécurité et conformité
+
+- [ ] **Auth** : la route `/commun/agents-ia/bot-secretaire` et les APIs assistant (`/api/assistant/*`) ne sont accessibles qu’aux utilisateurs authentifiés (middleware, vérification Firebase Auth).
+- [ ] **Rate limiting** : confirmé sur `/api/assistant/chat` (cf. `lib/assistant/rate-limiting.ts`).
+- [ ] **Budget / quotas** : `lib/assistant/budget-alerts.ts` configuré pour la prod (limites, alertes).
+- [ ] **Validation des entrées** : fichiers (types, taille max), contenu utilisateur ; pas d’injection dans le prompt.
+- [ ] **Focus secrétariat** : le prompt Nina décourage les usages hors sujet ; vérifier en tests manuels que le comportement est respecté après déploiement.
+
+---
+
+## 5. Infrastructure et hébergement
+
+- [ ] **Next.js** : déployé sur la cible (Vercel, Firebase Hosting, autre) avec la version Node supportée.
+- [ ] **Firebase** : Firestore, Storage, Auth configurés pour la prod ; règles Firestore/Storage déployées (`firebase deploy` si utilisé).
+- [ ] **API Routes** : `/api/assistant/chat`, `conversations`, `export`, `files/extract`, etc. disponibles et répondant correctement.
+- [ ] **Domaine / SSL** : HTTPS actif ; pas d’appels en HTTP depuis le client vers les APIs.
+
+---
+
+## 6. Monitoring et observabilité
+
+- [ ] **Logs** : erreurs API assistant (et Nina) loguées de façon centralisée (ex. Vercel Logs, Sentry, Cloud Logging).
+- [ ] **Usage** : `lib/assistant/usage-tracking` et `monitoring` opérationnels ; métriques (tokens, appels, erreurs) consultables.
+- [ ] **Audit** : `lib/assistant/audit` utilisé pour les actions sensibles (export, suppression conversation, etc.).
+- [ ] **Alertes** : seuils (quotas, erreurs 5xx) configurés ; canal (email, Slack, etc.) défini.
+
+---
+
+## 7. Post-déploiement
+
+- [ ] **Smoke tests** :
+  - [ ] Page `/commun/agents-ia` accessible, lien vers Nina OK.
+  - [ ] Page `/commun/agents-ia/bot-secretaire` s’affiche (fullscreen ou selon spec), bouton retour OK, avatar visible.
+  - [ ] Si le chat Nina est déployé : clic « Bonjour », première réponse, envoi d’un message, pas d’erreur console/réseau.
+- [ ] **Export PDF** (quand implémenté) : test « Télécharger en PDF » et « Exporter la conversation » ; vérifier compatibilité mobile (ouverture nouvel onglet si applicable).
+- [ ] **Checklist courte** : build OK, env OK, assets OK, auth OK, smoke OK → déploiement validé.
+
+---
+
+## 8. Rollback et runbook
+
+### Avant de rollback
+
+- [ ] Identifier la version / le commit déployé et la cause suspecte (régression Nina, API, infra).
+- [ ] Vérifier logs et métriques (erreurs, latency, usage).
+
+### Procédure de rollback
+
+1. [ ] Revenir au commit/version précédent stable (ex. `git revert` + redéploiement, ou rollback sur la plateforme).
+2. [ ] Redéployer l’app et les éventuelles configs (env, Firebase rules).
+3. [ ] Refaire les smoke tests (page Nina, chat, export si utilisé).
+4. [ ] Confirmer que les utilisateurs accèdent à la version rollback.
+
+### Runbook rapide
+
+| Étape | Action |
+|-------|--------|
+| 1 | Décider du rollback (impact utilisateur, criticité). |
+| 2 | Rollback app (Vercel / Firebase Hosting / autre). |
+| 3 | Vérifier env, Firebase, APIs. |
+| 4 | Smoke tests sur `/commun/agents-ia` et `/commun/agents-ia/bot-secretaire`. |
+| 5 | Communiquer (équipe, users si besoin). |
+| 6 | Post-mortem : cause, correctifs, mise à jour de ce TODO si nécessaire. |
+
+### Points de contact
+
+- **Responsable déploiement** : _à renseigner_
+- **Responsable produit / Nina** : _à renseigner_
+- **Incidents / support** : _à renseigner_
+
+---
+
+*Document vivant : à mettre à jour à chaque évolution du déploiement (outils, env, procédures).*
