@@ -114,7 +114,10 @@ Le projet utilise `vercel.json` (crons) ; l’app est hébergeable sur Vercel.
   - [ ] **Smoke test automatisé** : `npm run smoke:nina [BASE_URL]`  
     - Ex. local : `npm run smoke:nina` (serveur sur `http://localhost:3000`).  
     - Ex. prod : `SMOKE_TEST_BASE_URL=https://xxx.vercel.app npm run smoke:nina`.  
-    - Pour valider la réponse « Nina » au « Bonjour » : définir `SMOKE_TEST_AUTH_TOKEN` (Bearer = Firebase ID token).
+    - Pour valider la réponse « Nina » au « Bonjour » : définir `SMOKE_TEST_AUTH_TOKEN` (Bearer = Firebase ID token).  
+    - **Obtenir un token** : `SMOKE_TEST_EMAIL=... SMOKE_TEST_PASSWORD=... npm run get-firebase-token` (écrit le token sur stdout).  
+      Puis :  
+      `SMOKE_TEST_AUTH_TOKEN=$(SMOKE_TEST_EMAIL=... SMOKE_TEST_PASSWORD=... npm run get-firebase-token 2>/dev/null) SMOKE_TEST_BASE_URL=https://... npm run smoke:nina`
 - [ ] **Export PDF** (quand implémenté) : test « Télécharger en PDF » et « Exporter la conversation » ; vérifier compatibilité mobile (ouverture nouvel onglet si applicable).
 - [ ] **Checklist courte** : build OK, env OK, assets OK, auth OK, smoke OK → déploiement validé.
 
