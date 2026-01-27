@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
       );
 
     // Charger la base de connaissances selon le contexte
-    const { loadKnowledgeForContext, loadSegmentationKnowledge } = await import("@/lib/assistant/knowledge-loader");
+    const { loadKnowledgeForContext, loadSegmentationKnowledge, loadRoleKnowledge } = await import("@/lib/assistant/knowledge-loader");
     
     let baseKnowledge: string;
     if (context && (context.caseType === "client" || context.clientType)) {
@@ -196,11 +196,8 @@ export async function POST(request: NextRequest) {
       ...history.slice(-3).map((msg: { role: string; content?: string }) => msg.content || "").filter(Boolean)
     ].join(" ");
 
-    // Charger les connaissances pertinentes selon le contexte (détection automatique)
-    // Cela inclut les fichiers de processus comme m-plus-3.md, preterme-auto.md, etc.
-    // Augmenté à 5 fichiers pour une meilleure couverture des connaissances
-    const { loadRelevantKnowledge } = await import("@/lib/assistant/knowledge-loader 2");
-    const relevantKnowledge = await loadRelevantKnowledge(conversationContext, 5); // Charger jusqu'à 5 fichiers pertinents
+    // Connaissances additionnelles selon le contexte (charge processus m-plus-3, preterme, etc. en mode libre)
+    const relevantKnowledge = loadRoleKnowledge("commercial", undefined);
 
     // Construire le prompt système avec formatage adapté et connaissances métier
     const coreKnowledge = `Tu es l'assistant interne de l'agence Allianz Marseille (Nogaro & Boetti).
@@ -486,8 +483,8 @@ Tu as accès à plusieurs fonctions pour récupérer des informations sur les en
         }
         
         // Injecter le prompt M+3 workflow
-        const { getM3Prompt } = await import("@/lib/assistant/main-button-prompts");
-        const m3Prompt = getM3Prompt();
+        const { getSystemPromptForButton } = await import("@/lib/assistant/main-button-prompts");
+        const m3Prompt = getSystemPromptForButton("commercial", "m-plus-3");
         if (m3Prompt) {
           buttonPromptSection = `\n\n--- MODE WORKFLOW M+3 ACTIVÉ ---\n\n${m3Prompt}\n\n---\n\n`;
         }

@@ -283,7 +283,6 @@ export default function MPlus3BotPage() {
                         handleSendMessage(option);
                       }}
                       disabled={isLoading}
-                      structuredResponse={message.structuredResponse}
                     />
                   )}
 
@@ -367,13 +366,14 @@ export default function MPlus3BotPage() {
                 Statut : {m3Session.status} • Créée le {new Date(m3Session.createdAt).toLocaleString("fr-FR")}
               </p>
             </div>
-            {m3Session.outputs && m3Session.outputs.length > 0 && (
+            {m3Session.outputs && (m3Session.outputs.der || m3Session.outputs.mail || (m3Session.outputs.checklist?.length ?? 0) > 0) && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  // Afficher les sorties générées
-                  toast.info(`${m3Session.outputs.length} sortie(s) générée(s)`);
+                  const out = m3Session.outputs;
+                  const count = (out?.der ? 1 : 0) + (out?.mail ? 1 : 0) + (out?.checklist?.length ?? 0);
+                  toast.info(`${count} sortie(s) générée(s)`);
                 }}
               >
                 <Download className="h-4 w-4 mr-2" />
