@@ -93,6 +93,8 @@ Après chaque déploiement Nina : vérifier les variables (§ 5.2), puis suivre 
 
 Le projet utilise `vercel.json` (crons) ; l’app est hébergeable sur Vercel.
 
+**À retenir** : le projet est relié à Vercel via Git ; un push sur `origin/main` déclenche automatiquement un déploiement. Pas besoin de redeploy manuel après un commit/push.
+
 1. **Lier le projet** (si pas déjà fait) : `npx vercel link` puis choisir l’équipe et le projet.
 2. **Variables d’environnement** : dans le dashboard Vercel (Settings → Environment Variables), définir au minimum pour Nina :
    - `OPENAI_API_KEY`

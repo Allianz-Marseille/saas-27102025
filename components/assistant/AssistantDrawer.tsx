@@ -139,8 +139,10 @@ export function AssistantDrawer({ isOpen, onClose }: AssistantDrawerProps) {
               </div>
             </div>
 
-        {/* Core Assistant */}
-        <AssistantCore variant="drawer" />
+        {/* Core Assistant — wrapper flex-1 min-h-0 pour que la zone messages soit scrollable */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <AssistantCore variant="drawer" />
+        </div>
       </div>
     </>
   );
