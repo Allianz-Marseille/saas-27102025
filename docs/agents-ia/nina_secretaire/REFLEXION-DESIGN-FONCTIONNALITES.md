@@ -16,6 +16,11 @@
 
 À utiliser pour : avatar à côté des messages de Nina, écran d'accueil du chat, typing indicator, etc.
 
+### Identité visuelle et micro-interactions
+
+- **Forme de l'avatar** : **cercle avec bordure fine** (type "statut en ligne" vert discret) pour humaniser l’interaction ; à privilégier par rapport au carré.
+- **Indicateur "Nina écrit…"** : ne pas se contenter de texte fixe. Prévoir une **animation** : trois points qui défilent ou légère pulsation autour de l’avatar `avatar-tete.jpg`, pour rendre l’attente plus vivante.
+
 ---
 
 ## 1. Cahier des charges (rappels)
@@ -127,6 +132,7 @@ Cohérence avec `AssistantCore` actuel à conserver pour les habitudes utilisate
 - **Formats** : PDF, Word, images (PNG, JPEG, WebP), Excel/CSV si pertinent pour le rôle “secrétaire”.
 - **Limites** : taille max par fichier et par message (ex. 4–5 fichiers, 10 Mo chacun), avec message clair en cas de dépassement.
 - **Aperçu** : petites vignettes sous la zone de saisie avec nom, taille, bouton “supprimer”, comme dans l’assistant actuel.
+- **Drag & drop sur une bulle Nina** (backlog) : glisser un fichier sur une bulle pour lancer *"Peux-tu analyser ce document ?"* sans repasser par la zone de saisie. À valider en termes de découverte utilisateur.
 
 ### 5.2 Coller une capture d’écran
 
@@ -136,19 +142,20 @@ Cohérence avec `AssistantCore` actuel à conserver pour les habitudes utilisate
 
 ---
 
-## 6. Copier une réponse
+## 6. Copier et presse-papier
 
 ### 6.1 Par message
 
 - Chaque bulle “Nina” comporte un **bouton “Copier”** (icône copie) discret au survol ou toujours visible.
 - Clic → copie du **texte brut** de la réponse dans le presse-papier.
+- **Bouton « Nettoyer le texte »** (à côté de « Copier ») : enlève les balises Markdown, formate proprement pour un email, puis copie. Utile pour coller directement dans un client mail ou un document.
 - Feedback : toast “Copié” ou icône temporaire “check”, comme dans l’assistant existant (`copiedMessageId`).
 
 ### 6.2 Périmètre “copier”
 
 - **Option 1** : uniquement le texte de la bulle (sans les boutons d’action, sans le markdown brut).
-- **Option 2** : proposer “Copier le texte” et “Copier en Markdown” selon les usages (emails, docs internes).
-- Pour la v1 : “Copier le texte” (version rendue, sans balises) suffit pour un usage secrétariat courant.
+- **Option 2** : proposer “Copier le texte”, “Nettoyer puis copier” (pour email), et “Copier en Markdown” selon les usages.
+- Pour la v1 : “Copier le texte” + “Nettoyer le texte” couvrent l'usage secrétariat courant. Option “Copier en Markdown” selon les usages.
 
 ### 6.3 Accessibilité
 
@@ -179,7 +186,7 @@ Les deux sont utiles pour un bot secrétaire (note de synthèse vs. compte rendu
 - **Une réponse** : titre court (“Réponse Nina — [date]”), contenu texte (et éventuellement structure des listes / titres), logo ou nom d’agence en en-tête/bas de page si souhaité.
 - **Conversation** : alternance user / Nina, avec horodatage ou date, lisible et sobre (police, marges, pas trop dense).
 
-Techno côté client : lib du type `jspdf` + `html2canvas` ou génération côté serveur (route API dédiée qui reçoit le texte ou l’HTML et renvoie un PDF). À trancher selon perf et complexité de mise en page.
+**Recommandation** : génération **côté client** (`jspdf` + `html2canvas`) pour rapidité et confidentialité (pas de nouveau transit vers un serveur de rendu). Deux templates possibles : **"Brut"** (texte seul) et **"Officiel"** (en-tête propre, date, mention "Généré par l'assistante Nina").
 
 ---
 
@@ -199,7 +206,7 @@ Techno côté client : lib du type `jspdf` + `html2canvas` ou génération côt�
 | **Historique / reprise** | Si on stocke les conversations : reprise au prochain passage sur la page (même session ou persistance), avec possibilité “Nouvelle conversation”. |
 | **Indicateur de statut** | Petit indicateur “En ligne” / “Prête” à côté du nom pour rassurer. |
 | **Ton et personnalité** | Nina “professionnelle et bienveillante” : phrases courtes, formules de politesse adaptées, pas de jargon inutile. À figer dans les prompts (référence `specification-comportement-ia.md` / `main-button-prompts.ts`). |
-| **Actions rapides** | En fin de réponse, boutons du type “Rédiger un mail”, “Résumer”, “Corriger ce texte” si ça correspond aux cas d’usage secrétariat. |
+| **Actions rapides** | En fin de réponse, puces cliquables du type : *« Transformer en mail »*, *« Faire un tableau récapitulatif »*, *« Extraire les dates/RDV »*, "Résumer", "Corriger ce texte" selon les cas d\'usage secrétariat. |
 | **Réglages discrets** | Dans le “···” : préférences (ex. longueur des réponses, ton), lien aide, rappel du rôle de Nina. |
 | **Mobile** | Zone de saisie toujours visible ou sticky en bas ; éviter que le clavier pousse le bouton “Bonjour” hors écran au premier affichage. |
 
@@ -210,6 +217,14 @@ Techno côté client : lib du type `jspdf` + `html2canvas` ou génération côt�
   - Composants UI (Button, Textarea, toasts sonner).
   - Logique de paste d’images, `file-processing`, `image-utils`.
 - Adapter le layout (pas de drawer, page pleine) et ajouter la couche “écran d’accueil + Bonjour” et “export PDF” spécifiques à Nina.
+
+### 8.4 Idées à explorer (backlog)
+
+| Idée | Description |
+|------|-------------|
+| **Zone de brouillon (split screen)** | Option « écran scindé » : à gauche la conversation avec Nina, à droite un éditeur de texte où Nina « dépose » ses rédactions finales. L'utilisateur y modifie avant d'exporter en PDF. Évite de scroller dans de longues bulles pour retrouver la version finale. À placer en Phase 5 ou après validation produit. |
+| **System prompt** | Prompt système défini : `docs/agents-ia/nina_secretaire/PROMPT-SYSTEME-NINA.md` et `lib/assistant/nina-system-prompt.ts` → `getNinaSystemPrompt()`. Ton secrétaire professionnelle, règles d’or (focus secrétariat, réponse au « Bonjour »). |
+
 
 ---
 
@@ -248,11 +263,11 @@ Techno côté client : lib du type `jspdf` + `html2canvas` ou génération côt�
 
 ## 10. Points à trancher en équipe
 
-1. **Route exacte** : garder `/commun/agents-ia/bot-secretaire` ou une URL dédiée type `/nina` ?
-2. **Stockage** : conversation en mémoire navigateur uniquement, ou persistance (Firestore, compte utilisateur) ?
-3. **PDF** : génération côté client (jspdf, etc.) ou API dédiée ?
+1. **Route exacte** : garder `/commun/agents-ia/bot-secretaire` ou une URL dédiée type `/nina` ? **Recommandation** : `/nina` renforce le branding interne si Nina est un agent phare ; raccourci clavier global (ex. `Alt + N`) pour ouvrir Nina depuis tout le SaaS.
+2. **Stockage** : pour un profil secrétaire, la persistance est cruciale (retrouver les rédactions). **V1** : LocalStorage (simple, gratuit). **V2** : base de données pour reprise mobile/desktop.
+3. **PDF** : privilégier génération côté client (jspdf + html2canvas) — cf. § 7.3.
 4. **Rôle métier** : quels prompts et scénarios “secrétaire” en priorité (mails, comptes rendus, rappels, prise de notes) pour la première version ?
-5. **Avatar** : l’icône du chat (bulles, accueil, typing) est `/agents-ia/bot-secretaire/avatar-tete.jpg`. À trancher : forme d’affichage (carré, rond, fond) pour rester aligné avec la charte agents-ia.
+5. **Avatar** : cercle avec bordure fine « statut en ligne » — cf. § Icône du chat Nina. Icône : `/agents-ia/bot-secretaire/avatar-tete.jpg`.
 
 ---
 
