@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowLeft, Loader2, Send, Copy, Check } from "lucide-react";
+import { ArrowLeft, Loader2, Send, Copy, Check, X, ImageIcon, FileText } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,16 @@ import { useAuth } from "@/lib/firebase/use-auth";
 import { toast } from "sonner";
 import { MarkdownRenderer } from "@/components/assistant/MarkdownRenderer";
 import { cn } from "@/lib/utils";
+import {
+  processImageFiles,
+  convertImagesToBase64,
+  type ImageFile,
+} from "@/lib/assistant/image-utils";
+import {
+  processFiles,
+  MAX_FILES_PER_MESSAGE,
+  type ProcessedFile,
+} from "@/lib/assistant/file-processing";
 
 /**
  * Page Nina — Bot Secrétaire (fullscreen).
@@ -29,11 +39,16 @@ export default function BotSecretairePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<ProcessedFile[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const updateMessage = useCallback((messageId: string, content: string) => {
     setMessages((prev) =>
@@ -62,19 +77,26 @@ export default function BotSecretairePage() {
     async (
       textToSend: string,
       uiEvent?: string,
-      options?: { retry?: boolean }
+      options?: { retry?: boolean },
+      attachments?: { images: ImageFile[]; files: ProcessedFile[] }
     ) => {
       if (!user) {
         toast.error("Vous devez être connecté");
         return;
       }
-      if (!textToSend.trim() && !uiEvent) return;
+      const hasAttachments =
+        (attachments?.images?.length ?? 0) > 0 || (attachments?.files?.length ?? 0) > 0;
+      if (!textToSend.trim() && !uiEvent && !hasAttachments) return;
 
       setError(null);
-      if (textToSend.trim() && !options?.retry) {
+      const contentToShow =
+        textToSend.trim() ||
+        (attachments?.images?.length ? "Analyse cette image" : "") ||
+        (attachments?.files?.length ? "Analyse ces fichiers" : "");
+      if (contentToShow && !options?.retry) {
         setMessages((prev) => [
           ...prev,
-          { id: `u-${Date.now()}`, role: "user", content: textToSend.trim() },
+          { id: `u-${Date.now()}`, role: "user", content: contentToShow },
         ]);
         setInput("");
       }
@@ -87,6 +109,25 @@ export default function BotSecretairePage() {
       setIsLoading(true);
 
       try {
+        const imageBase64s = attachments?.images?.length
+          ? await convertImagesToBase64(attachments.images)
+          : [];
+        const filesPayload = attachments?.files?.length
+          ? attachments.files.map((f) => ({
+              name: f.name,
+              type: f.type,
+              content: f.content,
+              data: f.data,
+              error: f.error,
+            }))
+          : undefined;
+
+        const messageForApi =
+          textToSend.trim() ||
+          (imageBase64s.length ? "Analyse cette image" : "") ||
+          (filesPayload?.length ? "Analyse ces fichiers" : "") ||
+          " ";
+
         const response = await fetch("/api/assistant/chat", {
           method: "POST",
           headers: {
@@ -94,7 +135,9 @@ export default function BotSecretairePage() {
             Authorization: `Bearer ${await user.getIdToken()}`,
           },
           body: JSON.stringify({
-            message: textToSend.trim() || " ",
+            message: messageForApi,
+            images: imageBase64s.length ? imageBase64s : undefined,
+            files: filesPayload,
             history: messages.map((m) => ({ role: m.role, content: m.content })),
             context: { agent: "nina" },
             uiEvent: uiEvent ?? undefined,
@@ -156,9 +199,19 @@ export default function BotSecretairePage() {
   }, [sendMessage]);
 
   const handleSubmit = useCallback(() => {
-    if (!input.trim() || isLoading) return;
-    sendMessage(input.trim());
-  }, [input, isLoading, sendMessage]);
+    const hasContent = input.trim() || selectedImages.length > 0 || selectedFiles.length > 0;
+    if (!hasContent || isLoading || isProcessingFiles) return;
+
+    const textToSend =
+      input.trim() ||
+      (selectedImages.length ? "Analyse cette image" : "") ||
+      (selectedFiles.length ? "Analyse ces fichiers" : "");
+    const imgs = [...selectedImages];
+    const fils = [...selectedFiles];
+    setSelectedImages([]);
+    setSelectedFiles([]);
+    sendMessage(textToSend, undefined, undefined, { images: imgs, files: fils });
+  }, [input, selectedImages, selectedFiles, isLoading, isProcessingFiles, sendMessage]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -169,6 +222,121 @@ export default function BotSecretairePage() {
     },
     [handleSubmit]
   );
+
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const imageFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      try {
+        const processed = await processImageFiles(imageFiles);
+        setSelectedImages((prev) => [...prev, ...processed]);
+        toast.success(`${processed.length} image(s) ajoutée(s)`);
+      } catch {
+        toast.error("Erreur lors du traitement des images");
+      }
+    }
+  }, []);
+
+  const handleImageUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
+      try {
+        const processed = await processImageFiles(files);
+        setSelectedImages((prev) => [...prev, ...processed]);
+        toast.success(`${processed.length} image(s) ajoutée(s)`);
+      } catch {
+        toast.error("Erreur lors du traitement des images");
+      }
+      e.target.value = "";
+    },
+    []
+  );
+
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    if (selectedFiles.length + files.length > MAX_FILES_PER_MESSAGE) {
+      toast.error(`Maximum ${MAX_FILES_PER_MESSAGE} fichiers par message.`);
+      return;
+    }
+    setIsProcessingFiles(true);
+    try {
+      const result = await processFiles(files);
+      const toAdd = result.filter((f) => !f.error || f.data);
+      if (toAdd.length > 0) {
+        setSelectedFiles((prev) => [...prev, ...toAdd]);
+        toast.success(`${toAdd.length} fichier(s) ajouté(s)`);
+      }
+      result.filter((f) => f.error && !f.data).forEach((f) => toast.error(`${f.name}: ${f.error}`));
+    } catch {
+      toast.error("Erreur lors du traitement des fichiers");
+    } finally {
+      setIsProcessingFiles(false);
+    }
+    e.target.value = "";
+  }, [selectedFiles.length]);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      const files = Array.from(e.dataTransfer.files || []);
+      if (files.length === 0) return;
+      const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+      const otherFiles = files.filter((f) => !f.type.startsWith("image/"));
+      if (imageFiles.length > 0) {
+        try {
+          const processed = await processImageFiles(imageFiles);
+          setSelectedImages((prev) => [...prev, ...processed]);
+          toast.success(`${processed.length} image(s) ajoutée(s)`);
+        } catch {
+          toast.error("Erreur lors du traitement des images");
+        }
+      }
+      if (otherFiles.length > 0) {
+        if (selectedFiles.length + otherFiles.length > MAX_FILES_PER_MESSAGE) {
+          toast.error(`Maximum ${MAX_FILES_PER_MESSAGE} fichiers par message.`);
+          return;
+        }
+        setIsProcessingFiles(true);
+        try {
+          const result = await processFiles(otherFiles);
+          const toAdd = result.filter((f) => !f.error || f.data);
+          if (toAdd.length > 0) {
+            setSelectedFiles((prev) => [...prev, ...toAdd]);
+            toast.success(`${toAdd.length} fichier(s) ajouté(s)`);
+          }
+        } catch {
+          toast.error("Erreur lors du traitement des fichiers");
+        } finally {
+          setIsProcessingFiles(false);
+        }
+      }
+    },
+    [selectedFiles.length]
+  );
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const removeImage = useCallback((id: string) => {
+    setSelectedImages((prev) => prev.filter((i) => i.id !== id));
+  }, []);
+
+  const removeFile = useCallback((id: string) => {
+    setSelectedFiles((prev) => prev.filter((f) => f.id !== id));
+  }, []);
 
   const handleCopy = useCallback(async (id: string, content: string) => {
     try {
@@ -317,33 +485,123 @@ export default function BotSecretairePage() {
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="shrink-0 border-t border-slate-200 dark:border-slate-800 p-4">
+            <div
+              className="shrink-0 border-t border-slate-200 dark:border-slate-800 p-4"
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
+              {(selectedImages.length > 0 || selectedFiles.length > 0) && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {selectedImages.map((img) => (
+                    <div key={img.id} className="relative group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img.preview}
+                        alt="Aperçu"
+                        className="h-14 w-14 object-cover rounded border border-slate-200 dark:border-slate-700"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-90 hover:opacity-100"
+                        onClick={() => removeImage(img.id)}
+                        aria-label="Retirer l'image"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  {selectedFiles.map((f) => (
+                    <div
+                      key={f.id}
+                      className="flex items-center gap-2 px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 text-sm"
+                    >
+                      <FileText className="h-4 w-4 shrink-0 text-slate-500" />
+                      <span className="truncate max-w-[120px]">{f.name}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0"
+                        onClick={() => removeFile(f.id)}
+                        aria-label="Retirer le fichier"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="flex gap-2">
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  aria-hidden
+                />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  aria-hidden
+                />
                 <Textarea
                   ref={textareaRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
+                  onPaste={handlePaste}
                   placeholder="Tapez votre message ou collez une image (Ctrl+V / Cmd+V)"
-                  disabled={isLoading}
-                  className="min-h-[52px] max-h-[180px] resize-none"
+                  disabled={isLoading || isProcessingFiles}
+                  className="min-h-[52px] max-h-[180px] resize-none flex-1"
                   rows={2}
                 />
-                <Button
-                  onClick={handleSubmit}
-                  disabled={isLoading || !input.trim()}
-                  size="icon"
-                  className="h-[52px] w-[52px] shrink-0 bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Send className="h-5 w-5" />
-                  )}
-                </Button>
+                <div className="flex flex-col gap-1 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9"
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={isLoading || isProcessingFiles}
+                    aria-label="Ajouter une image"
+                  >
+                    <ImageIcon className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isLoading || isProcessingFiles || selectedFiles.length >= MAX_FILES_PER_MESSAGE}
+                    aria-label="Ajouter un fichier"
+                  >
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={
+                      (!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) ||
+                      isLoading ||
+                      isProcessingFiles
+                    }
+                    size="icon"
+                    className="h-9 w-9 bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    {isLoading || isProcessingFiles ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
               <p className="text-xs text-slate-500 mt-1.5">
-                Entrée pour envoyer · Shift+Entrée pour un saut de ligne
+                Entrée pour envoyer · Shift+Entrée pour un saut de ligne · Ctrl+V pour coller une image
               </p>
             </div>
           </>

@@ -4,7 +4,16 @@
 > Référence fonctionnelle : [NINA-SECRETAIRE.md](./NINA-SECRETAIRE.md).  
 > Route : `/commun/agents-ia/bot-secretaire` · Code : `lib/assistant/nina-system-prompt.ts`, `app/commun/agents-ia/bot-secretaire/`.
 
-**Dernière mise en œuvre** : build OK, `.env.example` aligné (section Nina), page fullscreen + Phase 2 (conversation, saisie, stream, copier, « Nina écrit… », erreurs + Réessayer), API `context.agent === "nina"` → prompt Nina, déploiement Vercel prod (`npx vercel --prod`), smoke test endpoint OK. Points de contact à renseigner par l’équipe.
+**Dernière mise en œuvre** : build OK, `.env.example` aligné (section Nina), page fullscreen + Phase 2 (conversation, saisie, stream, copier, collage image Ctrl+V, upload docs, « Nina écrit… », erreurs + Réessayer), API `context.agent === "nina"` → prompt Nina, déploiement Vercel prod (`npx vercel --prod`), smoke test endpoint OK. Points de contact à renseigner par l’équipe.
+
+### Priorités hautes (à traiter en premier)
+
+| Priorité | Action | Où |
+|----------|--------|-----|
+| **1** | Configurer les **variables Vercel** pour Nina (prod) | [§ 5.2 Checklist variables Vercel](#52-checklist-variables-vercel-nina) |
+| **2** | Exécuter les **tests manuels post-déploiement** sur l’URL de prod | [§ 7.1 Tests manuels post-déploiement](#71-tests-manuels-post-déploiement) |
+
+Après chaque déploiement Nina : vérifier les variables (§ 5.2), puis suivre la checklist § 7.1 (accès, Bonjour, envoi, copier, collage image, upload, Réessayer).
 
 ---
 
@@ -94,6 +103,27 @@ Le projet utilise `vercel.json` (crons) ; l’app est hébergeable sur Vercel.
    - En CLI : `npx vercel --prod` (depuis la racine du projet).
 4. **Firebase** : règles Firestore/Storage à déployer séparément : `firebase deploy` (depuis la racine, avec un projet Firebase configuré).
 
+### 5.2 Checklist variables Vercel (Nina)
+
+À configurer dans **Vercel** → **Settings** → **Environment Variables** pour l’environnement **Production** (et Preview si besoin) :
+
+| Variable | Obligatoire pour Nina | Note |
+|----------|------------------------|------|
+| `OPENAI_API_KEY` | Oui | Jamais exposée au client. Requise pour `/api/assistant/chat`. |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | Oui | Auth + accès aux pages protégées. |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Oui | |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Oui | |
+| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Oui | |
+| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Oui | |
+| `NEXT_PUBLIC_FIREBASE_APP_ID` | Oui | |
+| `FIREBASE_PROJECT_ID` | Si persistance conversation/export | Côté serveur uniquement. |
+| `FIREBASE_PRIVATE_KEY` | Si persistance | Côté serveur uniquement. |
+| `FIREBASE_CLIENT_EMAIL` | Si persistance | Côté serveur uniquement. |
+| `NEXT_PUBLIC_BASE_URL` | Optionnel | URL de l’app (liens, webhooks). Fallback sur Host si absent. |
+| `CRON_SECRET` | Si crons | Bearer pour `/api/cron/*`. |
+
+Après ajout/modification de variables : **redéployer** (nouveau déploiement ou « Redeploy » depuis le dashboard).
+
 ---
 
 ## 6. Monitoring et observabilité
@@ -120,6 +150,32 @@ Le projet utilise `vercel.json` (crons) ; l’app est hébergeable sur Vercel.
       `SMOKE_TEST_AUTH_TOKEN=$(SMOKE_TEST_EMAIL=... SMOKE_TEST_PASSWORD=... npm run get-firebase-token 2>/dev/null) SMOKE_TEST_BASE_URL=https://... npm run smoke:nina`
 - [ ] **Export PDF** (quand implémenté) : test « Télécharger en PDF » et « Exporter la conversation » ; vérifier compatibilité mobile (ouverture nouvel onglet si applicable).
 - [ ] **Checklist courte** : build OK, env OK, assets OK, auth OK, smoke OK → déploiement validé.
+
+### 7.1 Tests manuels post-déploiement
+
+À faire **sur l’URL de production** (ex. `https://xxx.vercel.app`) après chaque déploiement Nina :
+
+1. **Accès et navigation**
+   - [ ] Se connecter (login Firebase).
+   - [ ] Aller sur `/commun/agents-ia` : la liste des agents s’affiche, lien « Nina » ou « Bot Secrétaire » visible.
+   - [ ] Cliquer vers Nina : redirection vers `/commun/agents-ia/bot-secretaire`.
+
+2. **Page Nina**
+   - [ ] Page en pleine largeur (pas de sidebar), barre avec « ← Retour » et titre « Nina — Bot Secrétaire ».
+   - [ ] Écran d’accueil : avatar, texte « Je suis Nina… », bouton **Bonjour** visible.
+
+3. **Chat**
+   - [ ] Clic sur **Bonjour** : message « Bonjour ! Je suis Nina… » affiché, zone de saisie en bas.
+   - [ ] Saisir un court message (ex. « Résume-moi ce que tu fais ») et envoyer : réponse de Nina sans erreur console/réseau.
+   - [ ] Vérifier **Copier** sur une réponse Nina : le texte est copié, feedback « Copié » (ou équivalent).
+   - [ ] (Optionnel) Coller une image (Ctrl+V / Cmd+V) dans la zone de saisie : aperçu affiché, envoi possible.
+   - [ ] (Optionnel) Ajouter un fichier via le bouton ou par glisser-déposer : aperçu affiché, envoi possible.
+
+4. **Erreurs**
+   - [ ] En cas d’erreur affichée : clic sur **Réessayer** renvoie le dernier message sans doublon.
+
+5. **Récap**
+   - [ ] Aucune erreur 5xx ou message d’erreur bloquant ; retour, Bonjour, envoi et copier fonctionnent → déploiement Nina validé.
 
 ---
 
