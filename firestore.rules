@@ -144,7 +144,7 @@ service cloud.firestore {
     match /salary_history/{historyId} {
       allow read: if isAdmin(); // Seuls les admins peuvent lire
       allow create: if isAdmin(); // Seuls les admins peuvent créer
-      allow update: if false; // L'historique est immuable une fois créé
+      allow update: if isAdmin(); // Les admins peuvent mettre à jour (pour corriger ou modifier les valeurs)
       allow delete: if isAdmin(); // Seuls les admins peuvent supprimer (nettoyage > 3 ans)
     }
     

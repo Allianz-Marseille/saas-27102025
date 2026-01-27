@@ -1,44 +1,105 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Banknote, TrendingUp, History, Users, Euro } from "lucide-react";
-import { useAuth } from "@/lib/firebase/use-auth";
-import { getCurrentSalaries, getSalaryHistory, getSharedSalaryDraft, saveSharedSalaryDraft, deleteSharedSalaryDraft } from "@/lib/firebase/salaries";
+import { Calendar, CalendarRange, Plus, History, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import type { User, SalaryHistory, SalaryDraft, SimulatedUser } from "@/types";
-import { formatCurrency } from "@/lib/utils";
-import { SalaryTable } from "@/components/admin/salary-table";
+import { 
+  getCurrentSalaries, 
+  getSalaryHistory,
+  validateSalaryIncrease,
+  deleteYearFromHistory
+} from "@/lib/firebase/salaries";
+import { useAuth } from "@/lib/firebase/use-auth";
+import type { User, SalaryHistory } from "@/types";
+import { MultiYearSalaryTable } from "@/components/admin/multi-year-salary-table";
 import { SalaryHistoryView } from "@/components/admin/salary-history-view";
-import { AddSimulatedUserDialog } from "@/components/admin/add-simulated-user-dialog";
 
 type DisplayMode = "monthly" | "annual";
 
-interface SalarySimulation {
-  type: "percentage" | "amount";
-  value: number;
-  newSalary: number;
-}
-
 export default function RemunerationsPage() {
-  const { user, userData } = useAuth();
+  const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [history, setHistory] = useState<SalaryHistory[]>([]);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("monthly");
-  const [simulations, setSimulations] = useState<Map<string, SalarySimulation>>(new Map());
-  const [simulatedUsers, setSimulatedUsers] = useState<Map<string, SimulatedUser>>(new Map());
   const [loading, setLoading] = useState(true);
-  const [draftLoaded, setDraftLoaded] = useState(false);
-  const [hasDraft, setHasDraft] = useState(false);
-  const [savingDraft, setSavingDraft] = useState(false);
-  const [addSimulatedDialogOpen, setAddSimulatedDialogOpen] = useState(false);
+  const [creatingYear, setCreatingYear] = useState(false);
+  const [deletingYear, setDeletingYear] = useState(false);
+
+  // Récupérer toutes les années disponibles depuis l'historique (pour l'onglet Historique)
+  const allAvailableYears = useMemo(() => {
+    const yearsFromHistory = new Set(
+      history.map(h => h.year).filter((year): year is number => typeof year === 'number')
+    );
+    yearsFromHistory.add(2025); // Toujours inclure 2025
+    return Array.from(yearsFromHistory).sort((a, b) => a - b);
+  }, [history]);
+
+  // Pour l'onglet Pilotage : n'afficher que les 2 dernières années
+  const pilotageYears = useMemo(() => {
+    if (allAvailableYears.length === 0) return [2025];
+    if (allAvailableYears.length === 1) return allAvailableYears;
+    // Prendre les 2 dernières années (les plus récentes)
+    return allAvailableYears.slice(-2);
+  }, [allAvailableYears]);
+
+  // Fonction helper pour récupérer le salaire d'un utilisateur pour une année donnée
+  // Prend en compte les brouillons et l'historique validé
+  const getSalaryForYear = (userId: string, year: number): number => {
+    // D'abord vérifier dans le brouillon
+    // Vérifier dans l'historique
+    const exactEntry = history.find(
+      h => h.userId === userId && h.year === year
+    );
+    if (exactEntry) {
+      return exactEntry.monthlySalary;
+    }
+
+    // Chercher la dernière entrée avant cette année
+    const entriesBeforeYear = history
+      .filter(h => h.userId === userId && h.year < year)
+      .sort((a, b) => {
+        const aYear = typeof a.year === 'number' ? a.year : 0;
+        const bYear = typeof b.year === 'number' ? b.year : 0;
+        return bYear - aYear;
+      });
+    
+    if (entriesBeforeYear.length > 0) {
+      return entriesBeforeYear[0].monthlySalary;
+    }
+
+    // Sinon, retourner le salaire actuel de l'utilisateur
+    const userObj = users.find(u => u.id === userId);
+    return userObj?.currentMonthlySalary || 0;
+  };
 
   // Charger les données au montage
   useEffect(() => {
     loadData();
   }, []);
+
+  // Supprimer 2028 si elle existe après le chargement
+  useEffect(() => {
+    const remove2028 = async () => {
+      const has2028 = history.some(h => h.year === 2028);
+      if (has2028) {
+        try {
+          const { deleteYearFromHistory } = await import("@/lib/firebase/salaries");
+          await deleteYearFromHistory(2028);
+          await loadData();
+          toast.success("Année 2028 supprimée");
+        } catch (error) {
+          console.error("Erreur lors de la suppression de 2028:", error);
+        }
+      }
+    };
+    if (history.length > 0) {
+      remove2028();
+    }
+  }, [history]);
 
   const loadData = async () => {
     try {
@@ -49,233 +110,158 @@ export default function RemunerationsPage() {
       ]);
       setUsers(usersData);
       setHistory(historyData);
-
-      // Charger le brouillon partagé si existant
-      await loadDraft();
     } catch (error) {
       console.error("Erreur lors du chargement des données:", error);
-      toast.error("Erreur lors du chargement des données");
     } finally {
       setLoading(false);
     }
   };
 
-  // Charger le brouillon partagé sauvegardé
-  const loadDraft = async () => {
-    try {
-      const draft = await getSharedSalaryDraft();
-      if (draft) {
-        // Convertir le brouillon en simulations
-        const newSimulations = new Map<string, SalarySimulation>();
-        const newSimulatedUsers = new Map<string, SimulatedUser>();
-        
-        draft.items.forEach(item => {
-          newSimulations.set(item.userId, {
-            type: item.type,
-            value: item.value,
-            newSalary: item.newSalary,
-          });
-          
-          // Si c'est un utilisateur simulé, le recréer
-          if (item.isSimulated && item.simulatedUserData) {
-            const simulatedUser: SimulatedUser = {
-              id: item.userId,
-              firstName: item.simulatedUserData.firstName,
-              lastName: item.simulatedUserData.lastName,
-              email: item.simulatedUserData.email,
-              currentMonthlySalary: item.currentSalary,
-              contrat: item.simulatedUserData.contrat,
-              etp: item.simulatedUserData.etp,
-              isSimulated: true,
-            };
-            newSimulatedUsers.set(item.userId, simulatedUser);
-          }
-        });
-        
-        setSimulations(newSimulations);
-        setSimulatedUsers(newSimulatedUsers);
-        setDraftLoaded(true);
-        setHasDraft(true);
-        const updatedBy = draft.lastUpdatedBy ? ` (modifié par ${draft.lastUpdatedBy})` : "";
-        toast.success(`Brouillon partagé chargé (${draft.items.length} augmentation(s) pour ${draft.year})${updatedBy}`);
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement du brouillon:", error);
-      // Ne pas afficher d'erreur si aucun brouillon n'existe
+  const handleCreateNewYear = async () => {
+    if (!user?.uid) {
+      toast.error("Utilisateur non authentifié");
+      return;
     }
-  };
 
-  // Enregistrer le brouillon partagé
-  const handleSaveDraft = async () => {
-    if (!user?.uid || (simulations.size === 0 && simulatedUsers.size === 0)) {
-      toast.error("Aucune simulation ou recrutement à enregistrer");
+    const lastYear = allAvailableYears[allAvailableYears.length - 1];
+    const newYear = lastYear + 1;
+    
+    // Vérifier si l'année existe déjà
+      const yearAlreadyExists = allAvailableYears.includes(newYear);
+    if (yearAlreadyExists) {
+      toast.error(`L'année ${newYear} existe déjà`);
       return;
     }
 
     try {
-      setSavingDraft(true);
+      setCreatingYear(true);
       
-      // Convertir les simulations en items de brouillon
-      const items = Array.from(simulations.entries()).map(([userId, sim]) => {
-        const userObj = users.find(u => u.id === userId);
-        const simulatedUser = simulatedUsers.get(userId);
+      // Créer la nouvelle année en copiant les salaires de l'année précédente
+      // Sauvegarder directement dans l'historique (validé)
+      const promises = users.map(async (userItem) => {
+        const currentSalary = getSalaryForYear(userItem.id, lastYear);
         
-        if (simulatedUser) {
-          // Utilisateur simulé
-          return {
-            userId,
-            type: sim.type,
-            value: sim.value,
-            currentSalary: simulatedUser.currentMonthlySalary,
-            newSalary: sim.newSalary,
-            isSimulated: true,
-            simulatedUserData: {
-              firstName: simulatedUser.firstName,
-              lastName: simulatedUser.lastName,
-              email: simulatedUser.email,
-              contrat: simulatedUser.contrat,
-              etp: simulatedUser.etp,
-            },
-          };
-        } else {
-          // Utilisateur réel
-          return {
-            userId,
-            type: sim.type,
-            value: sim.value,
-            currentSalary: userObj?.currentMonthlySalary || 0,
-            newSalary: sim.newSalary,
-          };
+        if (currentSalary > 0) {
+          // Créer une entrée pour la nouvelle année avec le même salaire
+          await validateSalaryIncrease(
+            userItem.id,
+            currentSalary, // Ancien salaire (identique)
+            currentSalary, // Nouveau salaire (identique, donc pas de changement)
+            newYear,
+            "amount",
+            0, // Pas de changement
+            user.uid
+          );
         }
       });
 
-      await saveSharedSalaryDraft(items, new Date().getFullYear(), user.uid);
-      setHasDraft(true);
-      setDraftLoaded(true);
-      const simulatedCount = Array.from(simulatedUsers.keys()).filter(id => simulations.has(id)).length;
-      toast.success(`Brouillon partagé enregistré (${items.length} augmentation(s)${simulatedCount > 0 ? `, ${simulatedCount} recrutement(s) simulé(s)` : ""})`);
+      await Promise.all(promises);
+
+      // Recharger les données
+      await loadData();
+      
+      toast.success(`Année ${newYear} créée avec succès`);
     } catch (error) {
-      console.error("Erreur lors de l'enregistrement du brouillon:", error);
-      toast.error("Erreur lors de l'enregistrement du brouillon");
+      console.error("Erreur lors de la création de l'année:", error);
+      toast.error("Erreur lors de la création de l'année");
     } finally {
-      setSavingDraft(false);
+      setCreatingYear(false);
     }
   };
 
-  // Supprimer le brouillon partagé
-  const handleDeleteDraft = async () => {
+  const handleSaveSalary = async (yearSalaries: Map<number, Map<string, number>>) => {
+    if (!user?.uid) {
+      toast.error("Utilisateur non authentifié");
+      return;
+    }
+
     try {
-      await deleteSharedSalaryDraft();
-      setHasDraft(false);
-      setDraftLoaded(false);
-      setSimulations(new Map());
-      setSimulatedUsers(new Map());
-      toast.success("Brouillon partagé supprimé");
+      // Sauvegarder directement dans l'historique (validé)
+      const promises: Promise<void>[] = [];
+
+      yearSalaries.forEach((userSalaries, year) => {
+        userSalaries.forEach((newSalary, userId) => {
+          // Vérifier que userId est bien une string
+          if (typeof userId !== 'string') {
+            console.error("userId doit être une string, reçu:", userId, typeof userId);
+            return;
+          }
+          
+          // Pour obtenir le currentSalary, chercher UNIQUEMENT une entrée exacte pour cette année dans l'historique
+          // Si pas trouvé, c'est une nouvelle entrée donc currentSalary = 0
+          // On ne cherche pas dans les années précédentes car chaque année est indépendante
+          const exactEntry = history.find(
+            h => h.userId === userId && h.year === year
+          );
+          
+          const currentSalary = exactEntry ? exactEntry.monthlySalary : 0;
+          
+          // Ne sauvegarder que si la valeur a réellement changé
+          if (newSalary === currentSalary) {
+            console.log(`Pas de changement pour ${userId} en ${year}: ${newSalary}`);
+            return; // Skip cette sauvegarde
+          }
+          
+          const changeAmount = newSalary - currentSalary;
+          
+          console.log(`Sauvegarde ${userId} année ${year}: ${currentSalary} -> ${newSalary}`);
+          
+          promises.push(
+            validateSalaryIncrease(
+              userId,
+              currentSalary,
+              newSalary,
+              year,
+              "amount",
+              changeAmount,
+              user.uid
+            )
+          );
+        });
+      });
+
+      await Promise.all(promises);
+      
+      // Recharger les données
+      await loadData();
+      
+      toast.success("Modifications sauvegardées");
     } catch (error) {
-      console.error("Erreur lors de la suppression du brouillon:", error);
-      toast.error("Erreur lors de la suppression du brouillon");
+      console.error("Erreur lors de la sauvegarde:", error);
+      toast.error("Erreur lors de la sauvegarde");
     }
   };
 
-  // Calculer les totaux
-  const totals = useMemo(() => {
-    // Masse salariale actuelle : vrais utilisateurs + utilisateurs simulés
-    const currentTotal = users.reduce((sum, user) => {
-      return sum + (user.currentMonthlySalary || 0);
-    }, 0) + Array.from(simulatedUsers.values()).reduce((sum, user) => {
-      return sum + user.currentMonthlySalary;
-    }, 0);
-
-    // Masse salariale simulée : vrais utilisateurs avec simulations + utilisateurs simulés avec simulations
-    const simulatedTotal = users.reduce((sum, user) => {
-      const simulation = simulations.get(user.id);
-      if (simulation) {
-        return sum + simulation.newSalary;
-      }
-      return sum + (user.currentMonthlySalary || 0);
-    }, 0) + Array.from(simulatedUsers.values()).reduce((sum, user) => {
-      const simulation = simulations.get(user.id);
-      if (simulation) {
-        return sum + simulation.newSalary;
-      }
-      return sum + user.currentMonthlySalary;
-    }, 0);
-
-    const multiplier = displayMode === "annual" ? 12 : 1;
-
-    return {
-      current: currentTotal * multiplier,
-      simulated: simulatedTotal * multiplier,
-      difference: (simulatedTotal - currentTotal) * multiplier,
-    };
-  }, [users, simulatedUsers, simulations, displayMode]);
-
-  // Mettre à jour une simulation
-  const updateSimulation = (userId: string, type: "percentage" | "amount", value: number) => {
-    const user = users.find(u => u.id === userId);
-    const simulatedUser = simulatedUsers.get(userId);
-    
-    if (!user && !simulatedUser) return;
-
-    const currentSalary = user?.currentMonthlySalary || simulatedUser?.currentMonthlySalary || 0;
-    let newSalary = currentSalary;
-
-    if (type === "percentage") {
-      newSalary = currentSalary * (1 + value / 100);
-    } else {
-      newSalary = currentSalary + value;
+  const handleDeleteLastYear = async () => {
+    if (!user?.uid) {
+      toast.error("Utilisateur non authentifié");
+      return;
     }
 
-    const newSimulations = new Map(simulations);
-    if (value === 0) {
-      newSimulations.delete(userId);
-    } else {
-      newSimulations.set(userId, { type, value, newSalary });
+    if (allAvailableYears.length <= 1) {
+      toast.error("Impossible de supprimer la dernière année (2025)");
+      return;
     }
-    setSimulations(newSimulations);
-  };
 
-  // Ajouter un utilisateur simulé
-  const addSimulatedUser = (userData: Omit<SimulatedUser, "id" | "isSimulated">) => {
-    const id = `simulated-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const simulatedUser: SimulatedUser = {
-      ...userData,
-      id,
-      isSimulated: true,
-    };
+    const lastYear = allAvailableYears[allAvailableYears.length - 1];
     
-    const newSimulatedUsers = new Map(simulatedUsers);
-    newSimulatedUsers.set(id, simulatedUser);
-    setSimulatedUsers(newSimulatedUsers);
-    
-    toast.success(`Recrutement simulé ajouté : ${userData.firstName} ${userData.lastName}`);
-  };
-
-  // Supprimer un utilisateur simulé
-  const removeSimulatedUser = (userId: string) => {
-    const newSimulatedUsers = new Map(simulatedUsers);
-    const user = newSimulatedUsers.get(userId);
-    
-    if (user) {
-      newSimulatedUsers.delete(userId);
-      setSimulatedUsers(newSimulatedUsers);
+    try {
+      setDeletingYear(true);
       
-      // Supprimer aussi la simulation associée si elle existe
-      const newSimulations = new Map(simulations);
-      newSimulations.delete(userId);
-      setSimulations(newSimulations);
+      // Supprimer toutes les entrées de la dernière année
+      await deleteYearFromHistory(lastYear);
       
-      toast.success(`Recrutement simulé supprimé : ${user.firstName} ${user.lastName}`);
+      // Recharger les données
+      await loadData();
+      
+      toast.success(`Année ${lastYear} supprimée avec succès`);
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'année:", error);
+      toast.error("Erreur lors de la suppression de l'année");
+    } finally {
+      setDeletingYear(false);
     }
   };
-
-  // Effacer toutes les simulations
-  const clearSimulations = () => {
-    setSimulations(new Map());
-  };
-
-  // Compter les simulations actives
-  const activeSimulationsCount = simulations.size;
 
   if (loading) {
     return (
@@ -290,142 +276,111 @@ export default function RemunerationsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header avec toggle global */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
-            <Banknote className="h-8 w-8 text-white" />
-          </div>
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              Gestion des Rémunérations
-            </h1>
-            <p className="text-muted-foreground">
-              Visualisez et gérez les rémunérations de vos collaborateurs
-            </p>
+            <h1 className="text-3xl font-bold">Gestion des Rémunérations</h1>
+            <p className="text-muted-foreground">Pilotage des salaires par année</p>
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="border-none shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
-            <CardHeader className="pb-4">
-              <CardDescription className="text-xs font-medium uppercase tracking-wider text-blue-600/70 dark:text-blue-400/70">
-                Collaborateurs
-              </CardDescription>
-              <CardTitle className="flex items-center gap-3 text-4xl font-bold bg-gradient-to-br from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
-                  <Users className="h-6 w-6 text-white" />
-                </div>
-                {users.length + simulatedUsers.size}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-
-          <Card className="border-none shadow-lg bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
-            <CardHeader className="pb-4">
-              <CardDescription className="text-xs font-medium uppercase tracking-wider text-emerald-600/70 dark:text-emerald-400/70">
-                Masse salariale actuelle
-              </CardDescription>
-              <CardTitle className="flex items-center gap-3 text-3xl font-bold bg-gradient-to-br from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg">
-                  <Euro className="h-6 w-6 text-white" />
-                </div>
-                <span className="text-2xl">{formatCurrency(totals.current)}</span>
-              </CardTitle>
-            </CardHeader>
-          </Card>
-
-          <Card className="border-none shadow-lg bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
-            <CardHeader className="pb-4">
-              <CardDescription className="text-xs font-medium uppercase tracking-wider text-violet-600/70 dark:text-violet-400/70">
-                Masse salariale simulée
-              </CardDescription>
-              <CardTitle className="flex items-center gap-3 text-3xl font-bold bg-gradient-to-br from-violet-600 to-purple-600 bg-clip-text text-transparent">
-                <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg">
-                  <TrendingUp className="h-6 w-6 text-white" />
-                </div>
-                <span className="text-2xl">{formatCurrency(totals.simulated)}</span>
-              </CardTitle>
-            </CardHeader>
-          </Card>
-
-          <Card className={`border-none shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] ${
-            totals.difference > 0 
-              ? "bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20" 
-              : "bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-950/20 dark:to-slate-950/20"
-          }`}>
-            <CardHeader className="pb-4">
-              <CardDescription className={`text-xs font-medium uppercase tracking-wider ${
-                totals.difference > 0 
-                  ? "text-amber-600/70 dark:text-amber-400/70" 
-                  : "text-gray-600/70 dark:text-gray-400/70"
-              }`}>
-                Différence
-              </CardDescription>
-              <CardTitle className={`flex items-center gap-3 text-3xl font-bold ${
-                totals.difference > 0 
-                  ? "bg-gradient-to-br from-amber-600 to-orange-600 bg-clip-text text-transparent" 
-                  : "bg-gradient-to-br from-gray-600 to-slate-600 bg-clip-text text-transparent"
-              }`}>
-                <div className={`p-3 rounded-xl shadow-lg ${
-                  totals.difference > 0 
-                    ? "bg-gradient-to-br from-amber-500 to-orange-600" 
-                    : "bg-gradient-to-br from-gray-500 to-slate-600"
+        <div className="flex items-center gap-4">
+          {/* Toggle mensuel/annuel global */}
+          <Card className="border-none shadow-lg">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${
+                  displayMode === "annual"
+                    ? "bg-gradient-to-br from-violet-500 to-purple-600"
+                    : "bg-gradient-to-br from-emerald-500 to-teal-600"
                 }`}>
-                  <TrendingUp className="h-6 w-6 text-white" />
+                  {displayMode === "annual" ? (
+                    <CalendarRange className="h-5 w-5 text-white" />
+                  ) : (
+                    <Calendar className="h-5 w-5 text-white" />
+                  )}
                 </div>
-                <span className="text-2xl">{totals.difference > 0 ? "+" : ""}{formatCurrency(totals.difference)}</span>
-              </CardTitle>
-            </CardHeader>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Affichage
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-medium ${
+                      displayMode === "monthly" ? "text-emerald-600 font-semibold" : "text-muted-foreground"
+                    }`}>
+                      Mensuel
+                    </span>
+                    <Switch
+                      checked={displayMode === "annual"}
+                      onCheckedChange={(checked) => setDisplayMode(checked ? "annual" : "monthly")}
+                    />
+                    <span className={`text-xs font-medium ${
+                      displayMode === "annual" ? "text-violet-600 font-semibold" : "text-muted-foreground"
+                    }`}>
+                      Annuel
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
           </Card>
+
+          {/* Bouton créer nouvelle année */}
+          <Button
+            onClick={handleCreateNewYear}
+            disabled={creatingYear}
+            className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
+          >
+            <Plus className="h-4 w-4" />
+            {creatingYear ? "Création..." : "Créer une nouvelle année"}
+          </Button>
+
+          {/* Bouton supprimer dernière année */}
+          {allAvailableYears.length > 1 && (
+            <Button
+              onClick={handleDeleteLastYear}
+              disabled={deletingYear || creatingYear}
+              variant="destructive"
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {deletingYear ? "Suppression..." : `Supprimer ${allAvailableYears[allAvailableYears.length - 1]}`}
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="table" className="space-y-4">
+      {/* Onglets */}
+      <Tabs defaultValue="pilotage" className="w-full">
         <TabsList>
-          <TabsTrigger value="table" className="gap-2">
-            <Banknote className="h-4 w-4" />
-            Tableau des rémunérations
+          <TabsTrigger value="pilotage" className="gap-2">
+            <Calendar className="h-4 w-4" />
+            Pilotage
           </TabsTrigger>
-          <TabsTrigger value="history" className="gap-2">
+          <TabsTrigger value="historique" className="gap-2">
             <History className="h-4 w-4" />
             Historique
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="table">
-          <SalaryTable
+        <TabsContent value="pilotage" className="mt-6">
+          <MultiYearSalaryTable
             users={users}
-            simulatedUsers={simulatedUsers}
-            simulations={simulations}
+            years={pilotageYears}
             displayMode={displayMode}
-            onDisplayModeChange={setDisplayMode}
-            onSimulationUpdate={updateSimulation}
-            onClearSimulations={clearSimulations}
-            onDataRefresh={loadData}
-            activeSimulationsCount={activeSimulationsCount}
-            currentUserId={user?.uid || ""}
-            hasDraft={hasDraft}
-            onSaveDraft={handleSaveDraft}
-            onDeleteDraft={handleDeleteDraft}
-            savingDraft={savingDraft}
-            onAddSimulatedUser={() => setAddSimulatedDialogOpen(true)}
-            onRemoveSimulatedUser={removeSimulatedUser}
-          />
-          <AddSimulatedUserDialog
-            open={addSimulatedDialogOpen}
-            onOpenChange={setAddSimulatedDialogOpen}
-            onAdd={addSimulatedUser}
+            getSalaryForYear={getSalaryForYear}
+            onSaveSalary={handleSaveSalary}
           />
         </TabsContent>
 
-        <TabsContent value="history">
+        <TabsContent value="historique" className="mt-6">
           <SalaryHistoryView
             history={history}
             users={users}
             onRefresh={loadData}
+            displayMode={displayMode}
+            onDisplayModeChange={setDisplayMode}
           />
         </TabsContent>
       </Tabs>

@@ -1,271 +1,324 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { History, TrendingUp, TrendingDown, ArrowRight, Trash2 } from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
-import { Timestamp } from "firebase/firestore";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
+import { History, Euro, Calendar, CalendarRange } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/utils";
-import { cleanOldSalaryHistory } from "@/lib/firebase/salaries";
-import { toast } from "sonner";
 import type { User, SalaryHistory } from "@/types";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 interface SalaryHistoryViewProps {
   history: SalaryHistory[];
   users: User[];
   onRefresh: () => void;
+  displayMode?: "monthly" | "annual";
+  onDisplayModeChange?: (mode: "monthly" | "annual") => void;
 }
 
-export function SalaryHistoryView({ history, users, onRefresh }: SalaryHistoryViewProps) {
-  const [filterUserId, setFilterUserId] = useState<string>("all");
-  const [filterYear, setFilterYear] = useState<string>("all");
-  const [loading, setLoading] = useState(false);
+export function SalaryHistoryView({ 
+  history, 
+  users, 
+  onRefresh,
+  displayMode = "monthly",
+  onDisplayModeChange
+}: SalaryHistoryViewProps) {
+  const multiplier = displayMode === "annual" ? 12 : 1;
 
-  // Convertir Date | Timestamp en Date
-  const toDate = (value: Date | Timestamp): Date => {
-    if (value instanceof Timestamp) {
-      return value.toDate();
-    }
-    return value;
-  };
-
-  // Obtenir les années disponibles
+  // Obtenir les années disponibles depuis l'historique (uniquement validées)
   const availableYears = useMemo(() => {
-    const years = new Set(history.map(h => h.year));
-    return Array.from(years).sort((a, b) => b - a);
+    const years = new Set(history.map(h => h.year).filter((year): year is number => typeof year === 'number'));
+    years.add(2025); // Toujours inclure 2025
+    return Array.from(years).sort((a, b) => a - b);
   }, [history]);
 
-  // Filtrer l'historique
-  const filteredHistory = useMemo(() => {
-    return history.filter(h => {
-      if (filterUserId !== "all" && h.userId !== filterUserId) return false;
-      if (filterYear !== "all" && h.year !== parseInt(filterYear)) return false;
-      return true;
+  // Fonction helper pour récupérer le salaire validé d'un utilisateur pour une année
+  const getSalaryForYear = (userId: string, year: number): number => {
+    // Chercher une entrée exacte pour cette année
+    const exactEntry = history.find(
+      h => h.userId === userId && h.year === year
+    );
+    if (exactEntry) {
+      return exactEntry.monthlySalary;
+    }
+
+    // Chercher la dernière entrée avant cette année
+    const entriesBeforeYear = history
+      .filter(h => h.userId === userId && h.year < year)
+      .sort((a, b) => {
+        const aYear = typeof a.year === 'number' ? a.year : 0;
+        const bYear = typeof b.year === 'number' ? b.year : 0;
+        return bYear - aYear;
+      });
+    
+    if (entriesBeforeYear.length > 0) {
+      return entriesBeforeYear[0].monthlySalary;
+    }
+
+    // Sinon, retourner le salaire actuel de l'utilisateur
+    const userObj = users.find(u => u.id === userId);
+    return userObj?.currentMonthlySalary || 0;
+  };
+
+  // Calculer les totaux par année
+  const totalsByYear = useMemo(() => {
+    const totals = new Map<number, number>();
+    availableYears.forEach(year => {
+      const total = users.reduce((sum, user) => {
+        const salary = getSalaryForYear(user.id, year);
+        return sum + (salary * multiplier);
+      }, 0);
+      totals.set(year, total);
     });
-  }, [history, filterUserId, filterYear]);
+    return totals;
+  }, [users, availableYears, displayMode, history, multiplier]);
 
-  // Trouver le nom d'un utilisateur
-  const getUserName = (userId: string) => {
-    const user = users.find(u => u.id === userId);
-    if (!user) return "Utilisateur inconnu";
-    if (user.firstName && user.lastName) {
-      return `${user.firstName} ${user.lastName}`;
-    }
-    return user.email.split("@")[0];
+  // Fonction pour formater un nombre avec séparateurs de milliers et 2 décimales max
+  const formatNumberWithThousands = (value: number): string => {
+    if (value === 0) return "0";
+    
+    return new Intl.NumberFormat("fr-FR", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+      useGrouping: true,
+    }).format(value);
   };
 
-  // Nettoyer l'historique ancien
-  const handleCleanOldHistory = async () => {
-    try {
-      setLoading(true);
-      const deletedCount = await cleanOldSalaryHistory();
-      toast.success(`${deletedCount} entrée(s) supprimée(s)`);
-      onRefresh();
-    } catch (error) {
-      console.error("Erreur lors du nettoyage:", error);
-      toast.error("Erreur lors du nettoyage de l'historique");
-    } finally {
-      setLoading(false);
+  // Calculer la variation entre deux années pour un utilisateur
+  const getVariation = (userId: string, previousYear: number, currentYear: number): { value: number; displayValue: string; showArrow: boolean } | null => {
+    const previousSalary = getSalaryForYear(userId, previousYear);
+    const currentSalary = getSalaryForYear(userId, currentYear);
+
+    const previousDisplay = previousSalary * multiplier;
+    const currentDisplay = currentSalary * multiplier;
+
+    // Ne pas afficher si l'une des deux années est à 0
+    if (previousDisplay === 0 || currentDisplay === 0) {
+      return null;
     }
+
+    const difference = currentDisplay - previousDisplay;
+    const sign = difference >= 0 ? "+" : "";
+    
+    return {
+      value: difference,
+      displayValue: `${sign}${formatNumberWithThousands(Math.abs(difference))} €`,
+      showArrow: true,
+    };
   };
 
-  // Obtenir le badge de type de changement
-  const getChangeTypeBadge = (changeType: "initial" | "increase" | "decrease") => {
-    switch (changeType) {
-      case "initial":
-        return <Badge variant="secondary">Initial</Badge>;
-      case "increase":
-        return <Badge className="bg-green-600">Augmentation</Badge>;
-      case "decrease":
-        return <Badge variant="destructive">Diminution</Badge>;
+  // Calculer la variation totale entre deux années
+  const getTotalVariation = (previousYear: number, currentYear: number): { value: number; displayValue: string; showArrow: boolean } | null => {
+    const totalPrevious = totalsByYear.get(previousYear) || 0;
+    const totalCurrent = totalsByYear.get(currentYear) || 0;
+
+    // Ne pas afficher si l'une des deux années est à 0
+    if (totalPrevious === 0 || totalCurrent === 0) {
+      return null;
     }
+
+    const difference = totalCurrent - totalPrevious;
+    const sign = difference >= 0 ? "+" : "";
+    
+    return {
+      value: difference,
+      displayValue: `${sign}${formatNumberWithThousands(Math.abs(difference))} €`,
+      showArrow: true,
+    };
   };
+
 
   return (
-    <Card>
+    <Card className="border-none shadow-xl">
       <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 text-purple-600" />
-              Historique des rémunérations
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2.5 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl shadow-lg">
+                <History className="h-6 w-6 text-white" />
+              </div>
+              <span>Historique des rémunérations</span>
             </CardTitle>
             <CardDescription>
-              Historique des 3 dernières années • {filteredHistory.length} entrée(s)
+              Affichage en lecture seule des rémunérations validées par année
             </CardDescription>
           </div>
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2 text-red-600 hover:text-red-700">
-                <Trash2 className="h-4 w-4" />
-                Nettoyer anciennes données
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Nettoyer l'historique</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Cette action va supprimer toutes les entrées de plus de 3 ans.
-                  Cette opération ne peut pas être annulée.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleCleanOldHistory}
-                  disabled={loading}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  {loading ? "Suppression..." : "Confirmer"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          
+          {/* Toggle mensuel/annuel */}
+          {onDisplayModeChange && (
+            <div className="flex items-center gap-3 bg-background/50 rounded-lg p-3 border">
+              <div className={`p-2 rounded-lg ${
+                displayMode === "annual"
+                  ? "bg-gradient-to-br from-violet-500 to-purple-600"
+                  : "bg-gradient-to-br from-emerald-500 to-teal-600"
+              }`}>
+                {displayMode === "annual" ? (
+                  <CalendarRange className="h-4 w-4 text-white" />
+                ) : (
+                  <Calendar className="h-4 w-4 text-white" />
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Affichage
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-medium ${
+                    displayMode === "monthly" ? "text-emerald-600 font-semibold" : "text-muted-foreground"
+                  }`}>
+                    Mensuel
+                  </span>
+                  <Switch
+                    checked={displayMode === "annual"}
+                    onCheckedChange={(checked) => onDisplayModeChange(checked ? "annual" : "monthly")}
+                  />
+                  <span className={`text-xs font-medium ${
+                    displayMode === "annual" ? "text-violet-600 font-semibold" : "text-muted-foreground"
+                  }`}>
+                    Annuel
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* Filtres */}
-        <div className="flex flex-wrap gap-2">
-          <Select value={filterUserId} onValueChange={setFilterUserId}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Tous les collaborateurs" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les collaborateurs</SelectItem>
-              {users.map(user => (
-                <SelectItem key={user.id} value={user.id}>
-                  {getUserName(user.id)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={filterYear} onValueChange={setFilterYear}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Toutes les années" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes les années</SelectItem>
-              {availableYears.map(year => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Tableau */}
+      <CardContent>
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="min-w-full">
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Année</TableHead>
-                <TableHead>Collaborateur</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-right">Ancien salaire</TableHead>
-                <TableHead className="text-center">
-                  <ArrowRight className="h-4 w-4 mx-auto" />
-                </TableHead>
-                <TableHead className="text-right">Nouveau salaire</TableHead>
-                <TableHead className="text-right">Variation</TableHead>
-                <TableHead>Validé par</TableHead>
+                <TableHead className="sticky left-0 z-10 bg-background">Collaborateur</TableHead>
+                {availableYears.map((year, index) => {
+                  const isLast = index === availableYears.length - 1;
+                  const previousYear = index > 0 ? availableYears[index - 1] : null;
+                  
+                  return (
+                    <React.Fragment key={year}>
+                      {previousYear && (
+                        <TableHead className="text-center min-w-[120px]">
+                          <span className="text-xs text-muted-foreground">Variation</span>
+                        </TableHead>
+                      )}
+                      <TableHead className="text-center min-w-[150px]">
+                        {year}
+                      </TableHead>
+                    </React.Fragment>
+                  );
+                })}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredHistory.length === 0 ? (
+              {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                    Aucun historique trouvé
+                  <TableCell 
+                    colSpan={
+                      availableYears.length + 
+                      (availableYears.length > 1 ? availableYears.length - 1 : 0) // Colonnes de variation
+                    } 
+                    className="text-center text-muted-foreground py-8"
+                  >
+                    Aucun collaborateur trouvé
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredHistory.map((entry) => {
-                  const validatedBy = users.find(u => u.id === entry.validatedBy);
-                  const validatedByName = validatedBy
-                    ? (validatedBy.firstName && validatedBy.lastName
-                        ? `${validatedBy.firstName} ${validatedBy.lastName}`
-                        : validatedBy.email.split("@")[0])
-                    : "Inconnu";
-
-                  return (
-                    <TableRow key={entry.id}>
-                      <TableCell>
-                        {format(toDate(entry.validatedAt), "dd/MM/yyyy HH:mm", { locale: fr })}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{entry.year}</Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {getUserName(entry.userId)}
-                      </TableCell>
-                      <TableCell>
-                        {getChangeTypeBadge(entry.changeType)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {entry.previousMonthlySalary
-                          ? formatCurrency(entry.previousMonthlySalary)
-                          : "-"}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {entry.changeType === "increase" ? (
-                          <TrendingUp className="h-4 w-4 text-green-600 mx-auto" />
-                        ) : entry.changeType === "decrease" ? (
-                          <TrendingDown className="h-4 w-4 text-red-600 mx-auto" />
-                        ) : (
-                          <ArrowRight className="h-4 w-4 text-muted-foreground mx-auto" />
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {formatCurrency(entry.monthlySalary)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {entry.changeAmount !== undefined && entry.changeAmount !== 0 ? (
-                          <div className="flex flex-col items-end">
-                            <span className={entry.changeAmount > 0 ? "text-green-600" : "text-red-600"}>
-                              {entry.changeAmount > 0 ? "+" : ""}
-                              {formatCurrency(entry.changeAmount)}
-                            </span>
-                            {entry.changePercentage !== undefined && (
-                              <span className="text-xs text-muted-foreground">
-                                ({entry.changePercentage > 0 ? "+" : ""}
-                                {entry.changePercentage.toFixed(2)}%)
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {validatedByName}
+                users.map((user) => (
+                  <TableRow key={user.id} className="hover:bg-muted/50 transition-colors">
+                    <TableCell className="sticky left-0 z-10 bg-background">
+                      <div className="flex flex-col">
+                        <span className="font-semibold">
+                          {user.firstName} {user.lastName}
                         </span>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
+                        {user.email && (
+                          <span className="text-xs text-muted-foreground">{user.email}</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    {availableYears.map((year, index) => {
+                      const salary = getSalaryForYear(user.id, year);
+                      const displaySalary = salary * multiplier;
+                      const previousYear = index > 0 ? availableYears[index - 1] : null;
+                      const variation = previousYear ? getVariation(user.id, previousYear, year) : null;
+                      
+                      return (
+                        <React.Fragment key={year}>
+                          {previousYear && (
+                            <TableCell className="text-center">
+                              {variation ? (
+                                <div className="flex items-center justify-center gap-0.5 text-xs">
+                                  <span className="text-muted-foreground">←</span>
+                                  <div className="flex-1 border-t border-dashed border-muted-foreground/50"></div>
+                                  <span className={`font-semibold px-1 whitespace-nowrap ${
+                                    variation.value >= 0 
+                                      ? "text-emerald-600 dark:text-emerald-400" 
+                                      : "text-red-600 dark:text-red-400"
+                                  }`}>
+                                    {variation.displayValue}
+                                  </span>
+                                  <div className="flex-1 border-t border-dashed border-muted-foreground/50"></div>
+                                  <span className="text-muted-foreground">→</span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">-</span>
+                              )}
+                            </TableCell>
+                          )}
+                          <TableCell className="text-center">
+                            <span className="font-semibold text-lg">
+                              {displaySalary > 0 ? formatCurrency(displaySalary) : (
+                                <span className="text-muted-foreground text-sm italic">Non défini</span>
+                              )}
+                            </span>
+                          </TableCell>
+                        </React.Fragment>
+                      );
+                    })}
+                  </TableRow>
+                ))
               )}
             </TableBody>
+            <TableFooter>
+              <TableRow className="border-t-2 font-bold">
+                <TableCell className="sticky left-0 z-10 bg-background text-lg">TOTAL</TableCell>
+                {availableYears.map((year, index) => {
+                  const total = totalsByYear.get(year) || 0;
+                  const previousYear = index > 0 ? availableYears[index - 1] : null;
+                  const totalVariation = previousYear ? getTotalVariation(previousYear, year) : null;
+                  
+                  return (
+                    <React.Fragment key={year}>
+                      {previousYear && (
+                        <TableCell className="text-center">
+                          {totalVariation ? (
+                            <div className="flex items-center justify-center gap-0.5">
+                              <span className="text-muted-foreground">←</span>
+                              <div className="flex-1 border-t border-dashed border-muted-foreground/50"></div>
+                              <span className={`text-base font-bold px-1 whitespace-nowrap ${
+                                totalVariation.value >= 0 
+                                  ? "text-emerald-600 dark:text-emerald-400" 
+                                  : "text-red-600 dark:text-red-400"
+                              }`}>
+                                {totalVariation.displayValue}
+                              </span>
+                              <div className="flex-1 border-t border-dashed border-muted-foreground/50"></div>
+                              <span className="text-muted-foreground">→</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">-</span>
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell className="text-center">
+                        <span className="text-xl font-bold">
+                          {formatCurrency(total)}
+                        </span>
+                      </TableCell>
+                    </React.Fragment>
+                  );
+                })}
+              </TableRow>
+            </TableFooter>
           </Table>
         </div>
       </CardContent>

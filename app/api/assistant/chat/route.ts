@@ -196,11 +196,9 @@ export async function POST(request: NextRequest) {
       ...history.slice(-3).map((msg: { role: string; content?: string }) => msg.content || "").filter(Boolean)
     ].join(" ");
 
-    // Charger les connaissances pertinentes selon le contexte (détection automatique)
-    // Cela inclut les fichiers de processus comme m-plus-3.md, preterme-auto.md, etc.
-    // Augmenté à 5 fichiers pour une meilleure couverture des connaissances
-    const { loadRelevantKnowledge } = await import("@/lib/assistant/knowledge-loader 2");
-    const relevantKnowledge = await loadRelevantKnowledge(conversationContext, 5); // Charger jusqu'à 5 fichiers pertinents
+    // Les connaissances pertinentes sont déjà incluses dans baseKnowledge
+    // via loadKnowledgeForContext ou loadSegmentationKnowledge
+    const relevantKnowledge = "";
 
     // Construire le prompt système avec formatage adapté et connaissances métier
     const coreKnowledge = `Tu es l'assistant interne de l'agence Allianz Marseille (Nogaro & Boetti).
