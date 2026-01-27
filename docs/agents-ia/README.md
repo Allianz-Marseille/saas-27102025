@@ -11,13 +11,13 @@ Ce dossier documente les agents IA de l’agence : rôles, identité visuelle et
 - **Documentation** → **`docs/agents-ia/`** (ce dossier)
   - Fichiers texte qui décrivent chaque agent (rôle, personnalité, mapping vers son image).
   - Ne pas mettre les images dans `docs/` : `docs/` sert à la doc, `public/` à ce qui est servi par l’app.
-  - Ressources visuelles (brouillons, variantes) : sous-dossiers par agent, ex. **`docs/agents-ia/nina_secretaire/`** avec `bot_secretaire_buste.jpg`, `bot_secretaire_tete.jpg`.
+  - Ressources visuelles (brouillons, variantes) : sous-dossiers par agent si besoin ; les visuels servis par l’app restent dans **`public/agents-ia/`**.
 
 ## Convention de nommage
 
 | Slug agent       | Prénom | Rôle (ex.)              | Image                                  | Ressources doc (brouillons)      |
 |------------------|--------|-------------------------|----------------------------------------|----------------------------------|
-| `bot-secretaire` | Nina   | Rédaction, mails, correction | `public/agents-ia/bot-secretaire/avatar.jpg` | `docs/agents-ia/nina_secretaire/` (buste, tête) |
+| `bot-secretaire` | Nina   | Rédaction, mails, correction | `public/agents-ia/bot-secretaire/avatar.jpg` | **Icône du chat** : `/agents-ia/bot-secretaire/avatar-tete.jpg` |
 | `m-plus-3`       | —      | Expert portefeuille M+3 | `public/agents-ia/m-plus-3/avatar.png` | — |
 | `preterme-auto` | —      | Prévention résiliation auto | `public/agents-ia/preterme-auto/avatar.png` | — |
 | *(à compléter)* | —      | …                       | …                                       | — |
