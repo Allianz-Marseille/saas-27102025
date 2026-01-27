@@ -9,6 +9,7 @@ import OpenAI from "openai";
 import { checkRateLimit, determineRequestType } from "@/lib/assistant/rate-limiting";
 import { checkBudgetLimit } from "@/lib/assistant/budget-alerts";
 import { openaiWithRetry } from "@/lib/assistant/retry";
+import { NINA_TIMEOUT } from "@/lib/assistant/config";
 import { logUsage } from "@/lib/assistant/monitoring";
 import { logAction } from "@/lib/assistant/audit";
 import { parseFile } from "@/lib/assistant/file-parsers";
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Récupérer les paramètres depuis le body
+    // Récupérer les paramètres depuis le body — ne jamais logger body/message (PII en prod).
     const body = await request.json();
     const { message, images, files, history = [], model = "gpt-4o", uiEvent, context } = body;
 
@@ -1009,9 +1010,9 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
       });
     }
 
-    // Mode non-streaming (comportement par défaut) avec timeout
+    // Mode non-streaming avec timeout (NINA_TIMEOUT pour analyses de documents lourds)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 secondes
+    const timeoutId = setTimeout(() => controller.abort(), NINA_TIMEOUT);
     const startTime = Date.now();
 
     let completion;
@@ -1103,13 +1104,13 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
           requestType,
           duration,
           success: false,
-          error: "Timeout après 60 secondes",
+          error: `Timeout après ${NINA_TIMEOUT / 1000} secondes`,
         }).catch((err) => console.error("Erreur logging usage:", err));
 
         return NextResponse.json(
           {
             error: "La requête a pris trop de temps. Réessayez.",
-            details: "Timeout après 60 secondes",
+            details: `Timeout après ${NINA_TIMEOUT / 1000} secondes`,
           },
           { status: 408 }
         );

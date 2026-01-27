@@ -62,7 +62,8 @@ export function calculateCost(
 }
 
 /**
- * Log une utilisation de l'API
+ * Log une utilisation de l'API.
+ * Ne jamais y passer de body brut, message ou contenu utilisateur (PII).
  */
 export async function logUsage(data: {
   userId: string;
