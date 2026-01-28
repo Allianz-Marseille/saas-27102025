@@ -23,6 +23,11 @@ const BOT_SECRETAIRE = {
   href: "/commun/agents-ia/bot-secretaire",
   image: "/agents-ia/bot-secretaire/avatar.jpg",
   hoverDescription: "Rédiger, préparer un mail, corriger…",
+  services: [
+    "Rédiger un mail",
+    "Résumer un document",
+    "Corriger un texte",
+  ],
 };
 
 export default function AgentsIAPage() {
@@ -85,6 +90,9 @@ export default function AgentsIAPage() {
                 </Tooltip>
                 <p className="mt-2 text-center text-sm font-medium text-slate-700 group-hover:text-slate-900 dark:text-slate-300 dark:group-hover:text-slate-100">
                   {BOT_SECRETAIRE.firstName} · {BOT_SECRETAIRE.name}
+                </p>
+                <p className="mt-1 text-center text-xs text-slate-500 dark:text-slate-400">
+                  {BOT_SECRETAIRE.services.join(" · ")}
                 </p>
               </Link>
             </div>

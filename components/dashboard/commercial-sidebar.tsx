@@ -18,6 +18,7 @@ interface SidebarItem {
   label: string;
   href: string;
   badge?: string;
+  title?: string;
 }
 
 const menuItems: SidebarItem[] = [
@@ -50,6 +51,7 @@ const menuItems: SidebarItem[] = [
     icon: Bot,
     label: "Agents IA",
     href: "/commun/agents-ia",
+    title: "Nina, assistante secrétaire. Raccourci : Cmd+N (Mac) ou Alt+N pour ouvrir Nina",
   },
   {
     icon: User,
@@ -164,6 +166,7 @@ export function CommercialSidebar() {
               <Button
                 data-href={item.href}
                 variant={isActive ? "default" : "ghost"}
+                title={item.title}
                 className={cn(
                   "w-full justify-start gap-3 transition-all relative",
                   isActive && "bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 hover:from-blue-700 hover:via-purple-700 hover:to-blue-700 text-white shadow-md shadow-blue-500/20",

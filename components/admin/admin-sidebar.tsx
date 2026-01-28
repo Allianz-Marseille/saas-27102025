@@ -55,6 +55,7 @@ const adminNavItems = [
     href: "/commun/agents-ia",
     label: "Agents IA",
     icon: Bot,
+    title: "Nina, assistante secrétaire. Raccourci : Cmd+N (Mac) ou Alt+N pour ouvrir Nina",
   },
   {
     href: "/admin/commissions-agence",
@@ -170,7 +171,7 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
                       isCollapsed && "justify-center px-2"
                     )}
                     onClick={() => router.push(item.href)}
-                    title={isCollapsed ? item.label : undefined}
+                    title={(item as { title?: string }).title ?? (isCollapsed ? item.label : undefined)}
                   >
                     <Icon className="h-5 w-5 shrink-0" />
                     {!isCollapsed && (

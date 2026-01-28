@@ -109,6 +109,7 @@ const healthNavItems = [
     href: "/commun/agents-ia",
     label: "Agents IA",
     icon: Bot,
+    title: "Nina, assistante secrétaire. Raccourci : Cmd+N (Mac) ou Alt+N pour ouvrir Nina",
   },
   {
     href: "/sante-individuelle/profile",
@@ -148,6 +149,7 @@ const healthCollectiveNavItems = [
     href: "/commun/agents-ia",
     label: "Agents IA",
     icon: Bot,
+    title: "Nina, assistante secrétaire. Raccourci : Cmd+N (Mac) ou Alt+N pour ouvrir Nina",
   },
   {
     href: "/sante-collective/profile",
@@ -217,6 +219,19 @@ export default function CommunLayout({
   const pathname = usePathname();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey && e.key === "n") || (e.altKey && e.key === "n")) {
+        e.preventDefault();
+        if (pathname !== "/commun/agents-ia/bot-secretaire") {
+          router.push("/commun/agents-ia/bot-secretaire");
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [pathname, router]);
 
   // Déconnexion automatique après 10 minutes d'inactivité
   useAutoLogout({
@@ -398,7 +413,7 @@ export default function CommunLayout({
                               : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50",
                             isSidebarCollapsed && "justify-center px-2"
                           )}
-                          title={isSidebarCollapsed ? item.label : undefined}
+                          title={(item as { title?: string }).title ?? (isSidebarCollapsed ? item.label : undefined)}
                         >
                           <Icon className="h-5 w-5 shrink-0" />
                           {!isSidebarCollapsed && (

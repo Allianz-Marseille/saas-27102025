@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowLeft, Loader2, Send, Copy, Check, X, ImageIcon, FileText } from "lucide-react";
+import { ArrowLeft, Loader2, Send, Copy, Check, X, ImageIcon, FileText, FileDown } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -26,12 +26,22 @@ import {
   MAX_FILES_PER_MESSAGE,
   type ProcessedFile,
 } from "@/lib/assistant/file-processing";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 /**
  * Page Nina — Bot Secrétaire (fullscreen).
  * Référence : docs/agents-ia/nina_secretaire/NINA-SECRETAIRE.md
  * Route : /commun/agents-ia/bot-secretaire
  */
+
+const SUGGESTIONS_DEMARRAGE = [
+  { label: "Rédiger un mail professionnel", message: "Je voudrais rédiger un mail professionnel" },
+  { label: "Résumer un document", message: "Je voudrais résumer un document" },
+  { label: "Corriger l'orthographe d'un texte", message: "Je voudrais corriger l'orthographe d'un texte" },
+  { label: "Extraire les informations d'un PDF", message: "Je voudrais extraire les informations d'un PDF" },
+  { label: "Comparer des devis", message: "Je voudrais comparer des devis" },
+] as const;
 
 interface Message {
   id: string;
@@ -48,6 +58,8 @@ export default function BotSecretairePage() {
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [pdfExportMessageId, setPdfExportMessageId] = useState<string | null>(null);
+  const [draftContent, setDraftContent] = useState("");
   const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<ProcessedFile[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -55,6 +67,7 @@ export default function BotSecretairePage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfExportRef = useRef<HTMLDivElement>(null);
 
   const updateMessage = useCallback((messageId: string, content: string) => {
     setMessages((prev) =>
@@ -408,17 +421,181 @@ export default function BotSecretairePage() {
     }
   }, []);
 
+  const handleDownloadPdf = useCallback((messageId: string) => {
+    setPdfExportMessageId(messageId);
+  }, []);
+
+  const handleExportConversationPdf = useCallback(async () => {
+    if (messages.length === 0) {
+      toast.error("Aucun message à exporter");
+      return;
+    }
+    try {
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      const lineHeight = 5;
+      let y = margin;
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Conversation Nina — Bot Secrétaire", margin, y);
+      y += lineHeight + 2;
+      pdf.text(
+        new Date().toLocaleDateString("fr-FR", { dateStyle: "long" }),
+        margin,
+        y
+      );
+      y += lineHeight + 4;
+      pdf.setFont("helvetica", "normal");
+      for (const msg of messages) {
+        if (y + lineHeight * 3 > pageHeight - margin) {
+          pdf.addPage();
+          y = margin;
+        }
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(0, 82, 77);
+        pdf.text(msg.role === "user" ? "Utilisateur :" : "Nina :", margin, y);
+        y += lineHeight;
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(0, 0, 0);
+        const lines = pdf.splitTextToSize(msg.content || "", pageWidth - 2 * margin);
+        for (const line of lines) {
+          if (y + lineHeight > pageHeight - margin) {
+            pdf.addPage();
+            y = margin;
+          }
+          pdf.text(line, margin, y);
+          y += lineHeight;
+        }
+        y += lineHeight;
+      }
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(
+        `Généré par Nina — ${new Date().toLocaleDateString("fr-FR", { dateStyle: "medium" })}`,
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: "center" }
+      );
+      const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        const blob = pdf.output("blob");
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank");
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      } else {
+        pdf.save(`nina-conversation-${new Date().toISOString().slice(0, 10)}.pdf`);
+      }
+      toast.success("Conversation exportée en PDF");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erreur lors de l'export");
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (!pdfExportMessageId || !pdfExportRef.current) return;
+    const msg = messages.find((m) => m.id === pdfExportMessageId);
+    if (!msg?.content) {
+      setPdfExportMessageId(null);
+      return;
+    }
+    const run = async () => {
+      await new Promise((r) => setTimeout(r, 100));
+      const el = pdfExportRef.current;
+      if (!el) {
+        setPdfExportMessageId(null);
+        return;
+      }
+      try {
+        const canvas = await html2canvas(el, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#f8fafc",
+        });
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 15;
+        const contentWidth = pageWidth - 2 * margin;
+        const imgWidth = contentWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = margin;
+        pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight + margin;
+          pdf.addPage();
+          pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        pdf.setFontSize(9);
+        pdf.setTextColor(100, 100, 100);
+        const footerY = pageHeight - 10;
+        pdf.text(
+          `Généré par Nina — ${new Date().toLocaleDateString("fr-FR", { dateStyle: "medium" })}`,
+          pageWidth / 2,
+          footerY,
+          { align: "center" }
+        );
+        const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+          const blob = pdf.output("blob");
+          const url = URL.createObjectURL(blob);
+          window.open(url, "_blank");
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+        } else {
+          pdf.save(`nina-reponse-${pdfExportMessageId.slice(0, 8)}.pdf`);
+        }
+        toast.success("PDF généré");
+      } catch (e) {
+        console.error(e);
+        toast.error("Erreur lors de la génération du PDF");
+      } finally {
+        setPdfExportMessageId(null);
+      }
+    };
+    run();
+  }, [pdfExportMessageId, messages]);
+
   return (
     <div className="flex h-screen flex-col bg-background">
-      <header className="flex shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 md:px-6">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/commun/agents-ia" aria-label="Retour aux agents IA">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-        </Button>
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-          Nina — Bot Secrétaire
-        </h1>
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 md:px-6">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/commun/agents-ia" aria-label="Retour aux agents IA">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+            Nina — Bot Secrétaire
+          </h1>
+        </div>
+        {hasStarted && messages.length > 0 && (
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={handleExportConversationPdf}
+                  aria-label="Exporter la conversation en PDF"
+                >
+                  <FileDown className="h-4 w-4" />
+                  <span className="hidden sm:inline">Exporter en PDF</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>Exporter la conversation entière en PDF</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </header>
 
       <main className="flex flex-1 flex-col overflow-hidden">
@@ -446,7 +623,8 @@ export default function BotSecretairePage() {
             </Button>
           </div>
         ) : (
-          <>
+          <div className="flex flex-1 min-h-0">
+            <div className="flex flex-col flex-1 min-w-0">
             <div
               ref={messagesContainerRef}
               className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 space-y-4"
@@ -479,25 +657,88 @@ export default function BotSecretairePage() {
                     )}
                   >
                     {msg.role === "assistant" && msg.content && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-1 right-1 h-7 w-7 opacity-70 hover:opacity-100"
-                        onClick={() => handleCopy(msg.id, msg.content)}
-                        aria-label="Copier la réponse"
-                      >
-                        {copiedMessageId === msg.id ? (
-                          <Check className="h-3.5 w-3.5 text-emerald-500" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )}
-                      </Button>
+                      <div className="absolute top-1 right-1 flex gap-0.5 opacity-70 hover:opacity-100">
+                        <TooltipProvider delayDuration={300}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => handleDownloadPdf(msg.id)}
+                                disabled={pdfExportMessageId !== null}
+                                aria-label="Télécharger en PDF"
+                              >
+                                <FileDown className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left">
+                              <p>Télécharger en PDF</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => handleCopy(msg.id, msg.content)}
+                                aria-label="Copier la réponse"
+                              >
+                                {copiedMessageId === msg.id ? (
+                                  <Check className="h-3.5 w-3.5 text-emerald-500" />
+                                ) : (
+                                  <Copy className="h-3.5 w-3.5" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left">
+                              <p>Copier</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                     )}
                     {msg.role === "user" ? (
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                     ) : (
                       <div className="pr-8">
                         <MarkdownRenderer content={msg.content || ""} />
+                        {msg.content.length > 80 && (
+                          <div className="mt-3 flex flex-wrap gap-1.5 border-t border-slate-200/80 dark:border-slate-600/80 pt-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+                              onClick={() => setDraftContent(msg.content)}
+                              disabled={isLoading}
+                            >
+                              Mettre dans le brouillon
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+                              onClick={() =>
+                                sendMessage("Transforme la réponse précédente en mail professionnel prêt à envoyer.")
+                              }
+                              disabled={isLoading}
+                            >
+                              Transformer en mail
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+                              onClick={() =>
+                                sendMessage("Résume la réponse précédente en 3 points courts.")
+                              }
+                              disabled={isLoading}
+                            >
+                              Résumer en 3 points
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -543,6 +784,29 @@ export default function BotSecretairePage() {
               )}
               <div ref={messagesEndRef} />
             </div>
+
+            {hasStarted &&
+              !isLoading &&
+              messages.some((m) => m.role === "assistant" && m.content.length > 0) && (
+                <div className="shrink-0 border-t border-slate-200 dark:border-slate-800 px-4 py-3">
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+                    Que souhaitez-vous faire ?
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {SUGGESTIONS_DEMARRAGE.map((s) => (
+                      <Button
+                        key={s.label}
+                        variant="outline"
+                        size="sm"
+                        className="h-auto py-1.5 px-3 text-xs font-normal rounded-full border-slate-200 dark:border-slate-700 hover:bg-emerald-50 hover:border-emerald-200 dark:hover:bg-emerald-950/50 dark:hover:border-emerald-800"
+                        onClick={() => sendMessage(s.message)}
+                      >
+                        {s.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             <div
               className="shrink-0 border-t border-slate-200 dark:border-slate-800 p-4"
@@ -703,7 +967,112 @@ export default function BotSecretairePage() {
                 Entrée pour envoyer · Shift+Entrée pour un saut de ligne · Ctrl+V pour coller une image
               </p>
             </div>
-          </>
+            </div>
+
+            <aside className="hidden lg:flex flex-col w-[min(400px,40vw)] shrink-0 border-l border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="shrink-0 border-b border-slate-200 dark:border-slate-800 px-4 py-2">
+                <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Brouillon
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Modifiez puis copiez ou exportez en PDF
+                </p>
+              </div>
+              <div className="flex-1 min-h-0 flex flex-col p-3">
+                <Textarea
+                  value={draftContent}
+                  onChange={(e) => setDraftContent(e.target.value)}
+                  placeholder="Le contenu déposé par Nina apparaît ici…"
+                  className="flex-1 min-h-[120px] resize-none text-sm"
+                />
+                <div className="flex gap-2 mt-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={async () => {
+                      if (!draftContent.trim()) return;
+                      try {
+                        await navigator.clipboard.writeText(draftContent);
+                        toast.success("Brouillon copié");
+                      } catch {
+                        toast.error("Erreur lors de la copie");
+                      }
+                    }}
+                    disabled={!draftContent.trim()}
+                  >
+                    <Copy className="h-3.5 w-3.5 mr-1" />
+                    Copier
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={async () => {
+                      if (!draftContent.trim()) return;
+                      try {
+                        const pdf = new jsPDF("p", "mm", "a4");
+                        const pageWidth = pdf.internal.pageSize.getWidth();
+                        const pageHeight = pdf.internal.pageSize.getHeight();
+                        const margin = 15;
+                        const lineHeight = 6;
+                        let y = margin;
+                        pdf.setFontSize(11);
+                        const lines = pdf.splitTextToSize(draftContent.trim(), pageWidth - 2 * margin);
+                        for (const line of lines) {
+                          if (y + lineHeight > pageHeight - margin) {
+                            pdf.addPage();
+                            y = margin;
+                          }
+                          pdf.text(line, margin, y);
+                          y += lineHeight;
+                        }
+                        pdf.setFontSize(9);
+                        pdf.setTextColor(100, 100, 100);
+                        pdf.text(
+                          `Généré par Nina — ${new Date().toLocaleDateString("fr-FR", { dateStyle: "medium" })}`,
+                          pageWidth / 2,
+                          pageHeight - 10,
+                          { align: "center" }
+                        );
+                        const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+                        if (isMobile) {
+                          const blob = pdf.output("blob");
+                          const url = URL.createObjectURL(blob);
+                          window.open(url, "_blank");
+                          setTimeout(() => URL.revokeObjectURL(url), 5000);
+                        } else {
+                          pdf.save("nina-brouillon.pdf");
+                        }
+                        toast.success("PDF généré");
+                      } catch (e) {
+                        console.error(e);
+                        toast.error("Erreur lors de la génération du PDF");
+                      }
+                    }}
+                    disabled={!draftContent.trim()}
+                  >
+                    <FileDown className="h-3.5 w-3.5 mr-1" />
+                    Télécharger PDF
+                  </Button>
+                </div>
+              </div>
+            </aside>
+
+            {pdfExportMessageId && (() => {
+              const msg = messages.find((m) => m.id === pdfExportMessageId);
+              if (!msg?.content) return null;
+              return (
+                <div
+                  ref={pdfExportRef}
+                  className="fixed left-[-9999px] top-0 w-[210mm] max-w-[210mm] bg-slate-50 dark:bg-slate-900 p-6 prose prose-sm dark:prose-invert"
+                  aria-hidden
+                >
+                  <MarkdownRenderer content={msg.content} />
+                </div>
+              );
+            })()}
+          </div>
         )}
       </main>
     </div>
