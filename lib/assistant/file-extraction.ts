@@ -758,13 +758,15 @@ async function extractTextFromPDFWithMetadata(
 export async function extractTextFromPDFBuffer(
   buffer: Buffer | ArrayBuffer
 ): Promise<string> {
-  const arrayBuffer =
+  const arrayBuffer: ArrayBuffer =
     buffer instanceof ArrayBuffer
       ? buffer
-      : (buffer as Buffer).buffer.slice(
+      : ((
+          buffer as Buffer
+        ).buffer.slice(
           (buffer as Buffer).byteOffset,
           (buffer as Buffer).byteOffset + (buffer as Buffer).byteLength
-        );
+        ) as ArrayBuffer);
   const result = await extractTextFromPDFWithMetadata(arrayBuffer);
   return result.text;
 }
