@@ -119,13 +119,20 @@ export default function BotSecretairePage() {
           ? await convertImagesToBase64(attachments.images)
           : [];
         const filesPayload = attachments?.files?.length
-          ? attachments.files.map((f) => ({
-              name: f.name,
-              type: f.type,
-              content: f.content,
-              data: f.data,
-              error: f.error,
-            }))
+          ? attachments.files.map((f) => {
+              const payload = {
+                name: f.name,
+                type: f.type,
+                content: f.content,
+                data: f.data,
+                error: f.error,
+              };
+              // Log pour diagnostic : vérifier que les PDF ont bien data
+              if (f.name?.toLowerCase().endsWith('.pdf')) {
+                console.log(`[sendMessage] PDF dans payload: ${f.name}, data présent: ${!!f.data}, data length: ${f.data?.length || 0}`);
+              }
+              return payload;
+            })
           : undefined;
 
         const messageForApi =
@@ -293,14 +300,31 @@ export default function BotSecretairePage() {
           setIsProcessingFiles(true);
           try {
             const result = await processFiles(otherFiles);
-            const toAdd = result.filter((f) => !f.error || f.data);
+            // Pour les PDF, on exige que data soit présent (base64) pour parsing serveur
+            const toAdd = result.filter((f) => {
+              const isPdf = f.name?.toLowerCase().endsWith('.pdf');
+              if (isPdf && !f.data) {
+                console.error(`[handleFileChange] PDF ${f.name} n'a pas de data base64, ne sera pas ajouté`);
+                return false;
+              }
+              return !f.error || f.data;
+            });
             if (toAdd.length > 0) {
               setSelectedFiles((prev) => [...prev, ...toAdd]);
               toast.success(`${toAdd.length} fichier(s) ajouté(s)`);
             }
             result
-              .filter((f) => f.error && !f.data)
-              .forEach((f) => toast.error(`${f.name}: ${f.error}`));
+              .filter((f) => {
+                const isPdf = f.name?.toLowerCase().endsWith('.pdf');
+                return f.error && (!f.data || (isPdf && !f.data));
+              })
+              .forEach((f) => {
+                const isPdf = f.name?.toLowerCase().endsWith('.pdf');
+                const msg = isPdf && !f.data
+                  ? `${f.name}: Impossible de préparer le fichier pour l'envoi (conversion base64 échouée)`
+                  : `${f.name}: ${f.error}`;
+                toast.error(msg);
+              });
           } catch {
             toast.error("Erreur lors du traitement des fichiers");
           } finally {
@@ -337,7 +361,15 @@ export default function BotSecretairePage() {
         setIsProcessingFiles(true);
         try {
           const result = await processFiles(otherFiles);
-          const toAdd = result.filter((f) => !f.error || f.data);
+          // Pour les PDF, on exige que data soit présent (base64) pour parsing serveur
+          const toAdd = result.filter((f) => {
+            const isPdf = f.name?.toLowerCase().endsWith('.pdf');
+            if (isPdf && !f.data) {
+              console.error(`[handleDrop] PDF ${f.name} n'a pas de data base64, ne sera pas ajouté`);
+              return false;
+            }
+            return !f.error || f.data;
+          });
           if (toAdd.length > 0) {
             setSelectedFiles((prev) => [...prev, ...toAdd]);
             toast.success(`${toAdd.length} fichier(s) ajouté(s)`);

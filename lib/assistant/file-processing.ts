@@ -426,9 +426,12 @@ export async function processFiles(files: File[]): Promise<ProcessedFile[]> {
           base64Data = btoa(binaryString);
           // Ajouter le préfixe MIME type pour faciliter le parsing côté serveur
           base64Data = `data:${file.type || 'application/octet-stream'};base64,${base64Data}`;
+          console.log(`[processFiles] ${file.name} (${file.type}) converti en base64, taille: ${base64Data.length} caractères`);
         } catch (base64Error) {
-          console.error("Erreur lors de la conversion en base64:", base64Error);
+          console.error(`[processFiles] Erreur lors de la conversion en base64 pour ${file.name}:`, base64Error);
         }
+      } else {
+        console.warn(`[processFiles] ${file.name} n'est pas détecté comme PDF/Excel, pas de conversion base64. Type: ${file.type}, extension: ${file.name.toLowerCase().slice(-4)}`);
       }
       
       processedFiles.push({
