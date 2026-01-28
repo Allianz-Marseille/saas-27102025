@@ -14,6 +14,7 @@
 3. [Prompt système](#prompt-système)
 4. [Design, UI & fonctionnalités](#design-ui--fonctionnalités) (spécifications détaillées)
 5. [Points à trancher](#points-à-trancher-en-équipe)
+6. [Plan d'action appliqué (A→G) et check-list de tests](#plan-daction-appliqué-ag-et-check-list-de-tests)
 
 ---
 
@@ -34,7 +35,8 @@ Vue d’ensemble technique et produit de l’assistante secrétaire : stack, fon
 | **PDF** | `jspdf` + `html2canvas` (génération côté client : réponses, conversation, brouillon) |
 | **Markdown** | `react-markdown`, `remark-gfm`, `rehype-raw` — `MarkdownRenderer` avec code highlight (Prism) |
 | **UX** | Sonner (toasts), `next-themes` (dark mode) |
-| **Config** | `lib/assistant/config` : `NINA_TIMEOUT` (45 s), `ENABLE_NINA_BOT` |
+| **Config** | `lib/assistant/config` : `NINA_TIMEOUT` (45 s), `SUMMARY_WINDOW` (12), `MAX_HISTORY_MESSAGES` (20), `PDF_EXPORT_MAX_CHARS` (50 000), `ENABLE_NINA_BOT` |
+| **Sécurité / masquage** | `lib/assistant/mask-sensitive` : `maskSensitive()` (IBAN, email, tél masqués) avant copie/export si option activée |
 
 **Routes et modules clés :**
 
@@ -61,8 +63,12 @@ Vue d’ensemble technique et produit de l’assistante secrétaire : stack, fon
 | **Gestion d’erreurs** | Affichage erreur + bouton "Réessayer" (renvoi du dernier message user) |
 | **Raccourci global** | `Alt + N` (Windows/Linux) ou `Cmd + Shift + N` (Mac) → navigation vers Nina ; désactivé si focus input/textarea/contenteditable |
 | **Mobile PDF** | Sur Mobile (détection user-agent) : ouverture du PDF dans un nouvel onglet au lieu du téléchargement direct (compatibilité iOS) |
+| **Sources** | En bas des réponses quand des fichiers/images ont été envoyés : noms des fichiers, « pages non détectées » si non dispo |
+| **Contexte >12 messages** | Fenêtre glissante (`SUMMARY_WINDOW` = 12) ; note de troncation dans le prompt ; pas de summarization LLM pour l’instant |
+| **Timeout 45 s** | Stream avec `AbortController` ; si timeout → fallback « [Résultat partiel — la requête a pris trop de temps.] » puis `[DONE]` |
+| **Sécurité / sensibles** | Alerte UI « Évitez de coller mots de passe, RIB ou infos sensibles » ; checkbox « Masquer données sensibles avant copie » + `maskSensitive()` pour copie message et brouillon |
 
-Limites côté API : rate limiting par type de requête, budget mensuel, timeout 45 s pour Nina.
+Limites côté API : rate limiting par type (texte / image / fichier), budget mensuel, timeout 45 s pour Nina.
 
 ---
 
@@ -72,7 +78,8 @@ Limites côté API : rate limiting par type de requête, budget mensuel, timeout
 - **Barre** : Bouton retour (lien vers `/commun/agents-ia`), titre "Nina — Bot Secrétaire", bouton "Exporter en PDF" (affiché une fois la conversation engagée).
 - **Écran d’accueil** : Avatar (`avatar-tete.jpg`) en cercle, texte "Je suis Nina, votre assistante secrétaire.", CTA "Bonjour".
 - **Chat** : Bulles user (droite, fond emerald) / assistant (gauche, fond slate) ; avatar Nina à gauche des réponses ; zone de saisie avec raccourcis affichés (Entrée, Shift+Entrée, Ctrl+V).
-- **Saisie** : `Textarea` auto-focus après "Bonjour" et après envoi ; boutons image, fichier, envoi ; aperçus des pièces jointes avec retrait possible.
+- **Saisie** : `Textarea` auto-focus après "Bonjour" et après envoi ; boutons image, fichier, envoi ; aperçus des pièces jointes avec retrait possible ; alerte « Évitez de coller… » + checkbox « Masquer données sensibles avant copie ».
+- **Sources** : Pour les réponses Nina issues de fichiers envoyés, section « Sources » (noms de fichiers, « pages non détectées ») en bas de la bulle.
 - **Responsive** : Brouillon masqué en dessous de `lg` ; structure verticale préservée sur mobile.
 
 ---
@@ -102,42 +109,44 @@ Les spécifications détaillées (cahier des charges, architecture de la page, P
 
 ### Phase 1 — Page et lancement
 
-- [ ] Page Nina en fullscreen (`/commun/agents-ia/bot-secretaire` ou équivalent).
-- [ ] Barre avec bouton retour + titre "Nina — Bot Secrétaire".
-- [ ] Écran d'accueil : avatar + bouton "Bonjour".
-- [ ] Comportement "Bonjour" : salutation + "Que voulez-vous faire ?" + apparition du chat et focus sur la zone de saisie.
+- [x] Page Nina en fullscreen (`/commun/agents-ia/bot-secretaire`).
+- [x] Barre avec bouton retour + titre "Nina — Bot Secrétaire".
+- [x] Écran d'accueil : avatar + bouton "Bonjour".
+- [x] Comportement "Bonjour" : salutation + "Que souhaitez-vous faire ?" + apparition du chat et focus sur la zone de saisie.
 
 ### Phase 2 — Conversation fluide
 
-- [ ] Zone de saisie avec auto-focus après première réponse et après envoi.
-- [ ] Raccourcis Entrée / Shift+Entrée / Ctrl+V.
-- [ ] Téléversement de documents (bouton + drag & drop).
-- [ ] Coller une capture d'écran (Ctrl+V).
-- [ ] Bouton "Copier" par réponse + feedback "Copié".
+- [x] Zone de saisie avec auto-focus après première réponse et après envoi.
+- [x] Raccourcis Entrée / Shift+Entrée / Ctrl+V.
+- [x] Téléversement de documents (bouton + drag & drop).
+- [x] Coller une capture d'écran (Ctrl+V).
+- [x] Bouton "Copier" par réponse + feedback "Copié".
 
 ### Phase 3 — Export et confort
 
-- [ ] "Télécharger en PDF" par réponse.
-- [ ] "Exporter la conversation en PDF".
-- [ ] Indicateur "Nina écrit…".
-- [ ] Gestion d'erreurs et "Réessayer".
+- [x] "Télécharger en PDF" par réponse.
+- [x] "Exporter la conversation en PDF".
+- [x] Indicateur "Nina écrit…".
+- [x] Gestion d'erreurs et "Réessayer".
 - [ ] Option "Nouvelle conversation" si persistance des échanges.
 
 ### Phase 4 — Finesse
 
 - [ ] Menu "···" (paramètres, aide, export global).
-- [ ] Petits boutons d'action rapide en fin de réponse si définis.
-- [ ] Ajustements mobile et accessibilité (aria, focus, Escape).
-- [ ] **PDF Mobile** : ouverture du PDF en nouvel onglet sur Mobile (compatibilité iOS).
-- [ ] **Gestion du contexte** : summarization automatique au-delà de 20 messages pour préserver performances et mémoire.
-- [ ] **Raccourci global** : `Alt + N` (Windows/Linux) ou `Cmd + Shift + N` (Mac) pour ouvrir Nina depuis tout le SaaS.
-- [ ] **Split screen (zone de brouillon)** : priorité haute backlog — conversation à gauche, éditeur des rédactions à droite.
+- [x] Petits boutons d'action rapide en fin de réponse ("Mettre dans le brouillon", "Transformer en mail", "Résumer en 3 points").
+- [x] Ajustements mobile et accessibilité (aria, focus, tooltips).
+- [x] **PDF Mobile** : ouverture du PDF en nouvel onglet sur Mobile (compatibilité iOS).
+- [x] **Gestion du contexte** : fenêtre glissante 12 messages + note de troncation ; summarization LLM à venir.
+- [x] **Raccourci global** : `Alt + N` (Windows/Linux) ou `Cmd + Shift + N` (Mac) pour ouvrir Nina ; désactivé si focus input/textarea/contenteditable.
+- [x] **Split screen (zone de brouillon)** : conversation à gauche, éditeur brouillon à droite (lg+), copier + PDF brouillon.
 
 ---
 
 ## Prompt système
 
-Ce bloc décrit le **prompt système** injecté dans l’API (OpenAI, Anthropic, Google, etc.) pour définir le comportement de Nina. Ce texte n’est pas affiché à l’utilisateur ; il fixe l’identité, le ton et les règles de l’assistante.
+Le **prompt système** est défini dans `lib/assistant/nina-system-prompt.ts` → `getNinaSystemPrompt()`. Injecté dans l’API (OpenAI, etc.), il n’est pas affiché à l’utilisateur. **Référence de vérité** : le fichier TS.
+
+**Structure actuelle** : STYLE (vouvoiement, ton pro, concision) ; COMPÉTENCES ET MISSIONS ; FORMATS DE SORTIE (Email, Courrier, Compte-rendu, Synthèse, Extraction structurée, Tableau) ; RÈGLES D’OR (questions minimales, non-invention, « Éléments repris », destinataire fidèle, comparaison devis angle A–D avant, hors-sujet, « Bonjour »). Pas de mention de raccourcis clavier dans le prompt.
 
 ### Identité
 
@@ -276,19 +285,16 @@ Spécifications détaillées (cahier des charges, architecture, PDF, contexte). 
 
 ### 6. Copier et presse-papier
 
-- **Par message** : bouton "Copier" (texte brut) et **"Nettoyer le texte"** (sans Markdown, pour email) + feedback "Copié".
+- **Par message** : bouton "Copier" (texte brut) + feedback "Copié". Option **"Masquer données sensibles avant copie"** (checkbox) : `maskSensitive()` masque IBAN, email, téléphone avant copie message ou brouillon.
 - **Accessibilité** : `aria-label="Copier la réponse"`.
 
 ---
 
 ### 7. Générer un fichier PDF
 
-- **Portée** : "Télécharger en PDF" par bulle ; "Exporter la conversation en PDF".
-- **Comportement** : loader "Génération du PDF…", téléchargement `nina-reponse-YYYY-MM-DD-HHmm.pdf` ou `nina-conversation-…`.
-- **Recommandation** : génération **côté client** (`jspdf` + `html2canvas`). Templates : "Brut" et "Officiel" (en-tête, date, "Généré par l'assistante Nina").
-- **UX Mobile** : sur Mobile, la génération du PDF doit forcer l’ouverture dans un **nouvel onglet** (ou nouvel écran) pour garantir la compatibilité, notamment sous iOS (éviter les blocages de téléchargement direct).
-
----
+- **Portée** : "Télécharger en PDF" par bulle ; "Exporter la conversation en PDF" ; PDF du brouillon (panneau droit).
+- **Comportement** : génération **côté client** (`jspdf` + `html2canvas`), export JPEG 0.85 ; container `nina-pdf-export` (A4) ; si réponse > `PDF_EXPORT_MAX_CHARS`, toast "Réponse très longue…". Fichiers `nina-reponse-…` ou `nina-conversation-…`.
+- **UX Mobile** : ouverture dans un **nouvel onglet** (compatibilité iOS).
 
 ### 8. Ergonomie et cohérence
 
@@ -299,8 +305,8 @@ Spécifications détaillées (cahier des charges, architecture, PDF, contexte). 
 
 #### Gestion du contexte
 
-- Si la conversation dépasse **20 messages**, prévoir un **résumé automatique du contexte** (summarization) injecté dans le fil avant les messages récents, pour préserver les performances et la mémoire de Nina (limite de tokens, cohérence des réponses).
-- Seuils et comportement (fenêtre glissante, résumé tous les N messages, etc.) à préciser selon le provider et le coût.
+- **Implémenté** : fenêtre glissante de **12 derniers messages** (`SUMMARY_WINDOW`). Au-delà, l’historique est tronqué ; une note est ajoutée dans le prompt système (« Les échanges précédents ont été tronqués… »).
+- **À venir** : résumé automatique orienté tâches (objectif, contraintes, documents, décisions) remplaçant les anciens messages ; à préciser selon provider et coût.
 
 #### Backlog (priorités)
 
