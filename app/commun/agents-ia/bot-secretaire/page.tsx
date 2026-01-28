@@ -397,7 +397,7 @@ export default function BotSecretairePage() {
                 src="/agents-ia/bot-secretaire/avatar-tete.jpg"
                 alt="Nina, votre assistante secrétaire"
                 fill
-                className="object-cover object-top"
+                className="object-cover object-center"
                 sizes="(max-width: 768px) 128px, 160px"
                 priority
               />
@@ -433,7 +433,7 @@ export default function BotSecretairePage() {
                         src="/agents-ia/bot-secretaire/avatar-tete.jpg"
                         alt="Nina"
                         fill
-                        className="object-cover object-top"
+                        className="object-cover object-center"
                         sizes="40px"
                       />
                     </div>
@@ -478,7 +478,7 @@ export default function BotSecretairePage() {
                       src="/agents-ia/bot-secretaire/avatar-tete.jpg"
                       alt="Nina"
                       fill
-                      className="object-cover object-top"
+                      className="object-cover object-center"
                       sizes="40px"
                     />
                   </div>
