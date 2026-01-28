@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  // Exclure pdf-parse du bundling Next.js (nécessaire pour Vercel)
+  // pdf-parse utilise des binaires natifs qui doivent être chargés à l'exécution
+  serverExternalPackages: ['pdf-parse'],
+
   // Configuration Turbopack (Next.js 16 utilise Turbopack par défaut)
   turbopack: {},
 };
