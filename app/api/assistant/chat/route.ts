@@ -561,6 +561,18 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
       }
     }
     
+    // Instruction claire pour le message d'erreur affiché à l'utilisateur (PDF ou autre fichier non lisible)
+    const hasParseError =
+      parsedFilesContent.includes("ERREUR lors du parsing serveur") ||
+      parsedFilesContent.includes("ERREUR avec le fichier");
+    const errorMessageInstruction = hasParseError
+      ? `
+
+EN CAS D'ERREUR DE LECTURE D'UN FICHIER :
+Le contexte ci‑dessous contient une erreur de lecture pour un fichier. Tu DOIS répondre à l'utilisateur avec ce message (en remplaçant NOM_DU_FICHIER par le nom du fichier indiqué dans l'erreur) :
+« Le fichier NOM_DU_FICHIER n'a pas pu être lu. Vous pouvez réessayer avec un autre document ou vérifier qu'il s'agit d'un PDF valide (max 20 Mo, 5 premières pages pour les documents scannés). Je reste disponible pour vos autres demandes administratives ou rédactionnelles. »`
+      : "";
+
     // Ajouter le prompt de gestion des fichiers
     const fileManagementPrompt = parsedFilesContent ? `
 GESTION DES FICHIERS UPLOADÉS :
@@ -580,12 +592,13 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
 - Excel/CSV : Parsing tableaux
 - PDF : Extraction texte + OCR
 - Documents (DOCX, TXT)
+${errorMessageInstruction}
 
 FICHIERS UPLOADÉS PAR L'UTILISATEUR :
 
 ${parsedFilesContent}
 
-Analyse ces fichiers selon le rôle choisi.
+Analyse ces fichiers selon le rôle choisi. Si une erreur de lecture est indiquée ci‑dessus, utilise le message prévu pour l'utilisateur.
 ` : `
 GESTION DES FICHIERS UPLOADÉS :
 
