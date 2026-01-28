@@ -9,7 +9,7 @@ import OpenAI from "openai";
 import { checkRateLimit, determineRequestType } from "@/lib/assistant/rate-limiting";
 import { checkBudgetLimit } from "@/lib/assistant/budget-alerts";
 import { openaiWithRetry } from "@/lib/assistant/retry";
-import { NINA_TIMEOUT } from "@/lib/assistant/config";
+import { NINA_TIMEOUT, SUMMARY_WINDOW } from "@/lib/assistant/config";
 import { logUsage } from "@/lib/assistant/monitoring";
 import { logAction } from "@/lib/assistant/audit";
 import { parseFile } from "@/lib/assistant/file-parsers";
@@ -531,18 +531,13 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
               const isPdf =
                 file.type === "application/pdf" ||
                 (file.name && file.name.toLowerCase().endsWith(".pdf"));
-              if (isPdf) {
-                console.log(`[chat] PDF reçu: ${file.name}, type=${file.type}, buffer.length=${buffer.length}, base64.length=${base64Data.length}`);
-              }
               const parsedContent = isPdf
                 ? await extractTextFromPDFBuffer(buffer)
                 : await parseFile(buffer, file.name);
               parsedFilesContent += `\n\n--- FICHIER: ${file.name || "Sans nom"} (${file.type || "Type inconnu"}) - Parsé côté serveur ---\n${parsedContent}\n`;
             } catch (parseError) {
               const errMsg = parseError instanceof Error ? parseError.message : "Erreur inconnue";
-              const errStack = parseError instanceof Error ? parseError.stack : undefined;
-              const errCause = parseError instanceof Error ? parseError.cause : undefined;
-              console.error(`Erreur lors du parsing serveur du fichier ${file.name}:`, errMsg, errCause ?? "", errStack ?? "");
+              console.error("Erreur lors du parsing serveur d'un fichier:", errMsg);
               parsedFilesContent += `\n\n--- ERREUR lors du parsing serveur du fichier "${file.name || "Sans nom"}" : ${errMsg} ---\n`;
               if (file.error) {
                 parsedFilesContent += `Erreur parsing client: ${file.error}\n`;
@@ -560,7 +555,7 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
             parsedFilesContent += `Note: Ce fichier n'a pas pu être parsé. Type: ${file.type || "inconnu"}\n`;
           }
         } catch (error) {
-          console.error(`Erreur lors du traitement du fichier ${file.name}:`, error);
+          console.error("Erreur lors du traitement d'un fichier:", error instanceof Error ? error.message : "Erreur inconnue");
           parsedFilesContent += `\n\n--- ERREUR avec le fichier "${file.name || "Sans nom"}" : ${error instanceof Error ? error.message : "Erreur inconnue"} ---\n`;
         }
       }
@@ -625,7 +620,10 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
 - Documents (DOCX, TXT)
 `;
     
-    const systemPrompt = `${coreKnowledge}${buttonPromptSection}${ocrPromptSection}${fileManagementPrompt}${formattingRules}`;
+    let systemPrompt = `${coreKnowledge}${buttonPromptSection}${ocrPromptSection}${fileManagementPrompt}${formattingRules}`;
+    if (isNina && Array.isArray(history) && history.length > SUMMARY_WINDOW) {
+      systemPrompt += `\n\nNote: Les échanges précédents ont été tronqués (fenêtre glissante, ${SUMMARY_WINDOW} derniers messages).`;
+    }
 
     // Construire le contenu du message utilisateur
     const userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];
@@ -676,8 +674,7 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
 
     // Ajouter l'historique de conversation si présent
     if (Array.isArray(history) && history.length > 0) {
-      // Convertir l'historique au format OpenAI (limiter à 20 messages pour éviter la surcharge)
-      const recentHistory = history.slice(-20);
+      const recentHistory = history.slice(-SUMMARY_WINDOW);
       for (const msg of recentHistory) {
         if (msg.role === "user" || msg.role === "assistant") {
           messages.push({
@@ -870,31 +867,47 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
       let tokensInput = 0;
       let tokensOutput = 0;
       let errorMessage: string | undefined;
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), NINA_TIMEOUT);
 
       const stream = new ReadableStream({
         async start(controller) {
           try {
-            // Utiliser gpt-4o si des images sont présentes (support vision)
             const modelToUse = images && images.length > 0 ? "gpt-4o" : model;
-            
-            // Gérer les function calls en boucle
             const currentMessages = [...enrichedMessages];
-            const maxIterations = 5; // Limiter les itérations pour éviter les boucles infinies
+            const maxIterations = 5;
             let iteration = 0;
 
             while (iteration < maxIterations) {
-              const openaiStream = await openaiWithRetry(
-                () =>
-                  openai.chat.completions.create({
-                    model: modelToUse,
-                    messages: currentMessages,
-                    temperature: 0.7,
-                    max_tokens: 2000,
-                    tools: tools.length > 0 ? tools : undefined,
-                    stream: true,
-                  }),
-                { maxRetries: 3, initialDelay: 1000 }
-              );
+              let openaiStream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
+              try {
+                openaiStream = await openaiWithRetry(
+                  () =>
+                    openai.chat.completions.create(
+                      {
+                        model: modelToUse,
+                        messages: currentMessages,
+                        temperature: 0.7,
+                        max_tokens: 2000,
+                        tools: tools.length > 0 ? tools : undefined,
+                        stream: true,
+                      },
+                      { signal: abortController.signal }
+                    ),
+                  { maxRetries: 3, initialDelay: 1000 }
+                );
+              } catch (createErr: unknown) {
+                clearTimeout(timeoutId);
+                const isAbort = (createErr as { name?: string })?.name === "AbortError";
+                if (isAbort) {
+                  const fallback = `\n\n[Résultat partiel — la requête a pris trop de temps.]`;
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: fallback })}\n\n`));
+                  controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                  controller.close();
+                  return;
+                }
+                throw createErr;
+              }
 
               let functionCallName: string | null = null;
               let functionCallArgsText: string = "";
@@ -902,8 +915,9 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
               let hasFunctionCall = false;
               let streamedContent = "";
 
-              for await (const chunk of openaiStream) {
-                const delta = chunk.choices[0]?.delta;
+              try {
+                for await (const chunk of openaiStream) {
+                  const delta = chunk.choices[0]?.delta;
                 
                 // Capturer les tokens si disponibles
                 if (chunk.usage) {
@@ -926,12 +940,23 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
                     functionCallArgsText += toolCall.function.arguments;
                   }
                 } else if (delta?.content) {
-                  // Contenu normal à streamer
                   streamedContent += delta.content;
                   tokensOutput += Math.ceil(delta.content.length / 4);
                   const data = `data: ${JSON.stringify({ content: delta.content })}\n\n`;
                   controller.enqueue(encoder.encode(data));
                 }
+                }
+              } catch (iterErr: unknown) {
+                clearTimeout(timeoutId);
+                const isAbort = (iterErr as { name?: string })?.name === "AbortError";
+                if (isAbort) {
+                  const fallback = `\n\n[Résultat partiel — la requête a pris trop de temps.]`;
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: fallback })}\n\n`));
+                  controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                  controller.close();
+                  return;
+                }
+                throw iterErr;
               }
 
               // Si function call détecté, l'exécuter et continuer
@@ -977,7 +1002,7 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
               break;
             }
 
-            // Fermer le stream proprement
+            clearTimeout(timeoutId);
             controller.enqueue(encoder.encode("data: [DONE]\n\n"));
             controller.close();
 

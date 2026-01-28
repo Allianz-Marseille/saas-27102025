@@ -59,7 +59,7 @@ Vue d’ensemble technique et produit de l’assistante secrétaire : stack, fon
 | **Suggestions de démarrage** | Boutons type "Rédiger un mail professionnel", "Résumer un document", "Corriger l'orthographe", "Extraire les infos d'un PDF", "Comparer des devis" après la première réponse |
 | **Actions rapides** | Par réponse longue : "Mettre dans le brouillon", "Transformer en mail", "Résumer en 3 points" |
 | **Gestion d’erreurs** | Affichage erreur + bouton "Réessayer" (renvoi du dernier message user) |
-| **Raccourci global** | `Cmd + N` (Mac) / `Alt + N` (Windows-Linux) → navigation vers Nina depuis le layout commun |
+| **Raccourci global** | `Alt + N` (Windows/Linux) ou `Cmd + Shift + N` (Mac) → navigation vers Nina ; désactivé si focus input/textarea/contenteditable |
 | **Mobile PDF** | Sur Mobile (détection user-agent) : ouverture du PDF dans un nouvel onglet au lieu du téléchargement direct (compatibilité iOS) |
 
 Limites côté API : rate limiting par type de requête, budget mensuel, timeout 45 s pour Nina.
@@ -130,7 +130,7 @@ Les spécifications détaillées (cahier des charges, architecture de la page, P
 - [ ] Ajustements mobile et accessibilité (aria, focus, Escape).
 - [ ] **PDF Mobile** : ouverture du PDF en nouvel onglet sur Mobile (compatibilité iOS).
 - [ ] **Gestion du contexte** : summarization automatique au-delà de 20 messages pour préserver performances et mémoire.
-- [ ] **Raccourci global** : `Alt + N` / `Cmd + N` pour ouvrir Nina depuis tout le SaaS.
+- [ ] **Raccourci global** : `Alt + N` (Windows/Linux) ou `Cmd + Shift + N` (Mac) pour ouvrir Nina depuis tout le SaaS.
 - [ ] **Split screen (zone de brouillon)** : priorité haute backlog — conversation à gauche, éditeur des rédactions à droite.
 
 ---
@@ -307,7 +307,7 @@ Spécifications détaillées (cahier des charges, architecture, PDF, contexte). 
 | Priorité | Idée | Description |
 |----------|------|-------------|
 | **Haute** | **Zone de brouillon (split screen)** | À gauche la conversation, à droite un éditeur où Nina dépose les rédactions finales → exporter en PDF après édition. **Priorité haute** du backlog pour transformer le chat en outil d’édition à part entière. |
-| Haute | **Raccourci global** | Implémenter `Alt + N` (Windows/Linux) ou `Cmd + N` (macOS) pour invoquer Nina depuis n’importe où dans le SaaS (ouverture de la page Nina / overlay). |
+| Haute | **Raccourci global** | `Alt + N` (Windows/Linux) ou `Cmd + Shift + N` (macOS) pour ouvrir Nina. Désactivé si focus dans input/textarea/contenteditable. |
 | Moyenne | Actions rapides | En fin de réponse : "Transformer en mail", "Faire un tableau récap", "Extraire les dates/RDV", "Résumer", "Corriger ce texte". |
 
 ---
@@ -318,7 +318,41 @@ Spécifications détaillées (cahier des charges, architecture, PDF, contexte). 
 2. **Stockage** : **V1** LocalStorage ; **V2** base pour reprise multi‑appareils.
 3. **PDF** : confirmer génération côté client (jspdf + html2canvas).
 4. **Rôle métier** : quels scénarios secrétaire en priorité (mails, comptes rendus, rappels, prise de notes) pour la v1 ?
-5. **Avatar** : cercle + bordure “statut en ligne” ; icône : `/agents-ia/bot-secretaire/avatar-tete.jpg`.
+5. **Avatar** : cercle + bordure "statut en ligne" ; icône : `/agents-ia/bot-secretaire/avatar-tete.jpg`.
+
+---
+
+## Plan d'action appliqué (A→G) et check-list de tests
+
+### Modifications appliquées
+
+| Id | Thème | Fichiers modifiés | Résumé |
+|----|--------|-------------------|--------|
+| **A** | Raccourci clavier | `layout.tsx`, sidebars, `NINA-SECRETAIRE.md` | `Alt+N` / `Cmd+Shift+N` ; désactivé si focus input/textarea/contenteditable |
+| **B** | Prompt Nina | `nina-system-prompt.ts` | Déjà aligné ; pas de Cmd+N |
+| **C** | PDF | `bot-secretaire/page.tsx`, `config.ts` | JPEG 0.85, `PDF_EXPORT_MAX_CHARS`, alerte longue réponse, mobile nouvel onglet |
+| **D** | Contexte >20 | `config.ts`, `chat/route.ts` | `SUMMARY_WINDOW` = 12 ; fenêtre glissante ; note de troncation |
+| **E** | Sécurité | `chat/route.ts`, page Nina, `mask-sensitive.ts` | Pas de log PII ; alerte sensibles ; "Masquer données sensibles" avant copie |
+| **F** | Timeout | `chat/route.ts` | Stream 45s, AbortController, fallback "[Résultat partiel — …]" |
+| **G** | Sources | `bot-secretaire/page.tsx` | Section "Sources" (fichiers, pages non détectées) en bas de réponse |
+
+### Constantes (`lib/assistant/config.ts`)
+
+`NINA_TIMEOUT` = 45 000 · `SUMMARY_WINDOW` = 12 · `MAX_HISTORY_MESSAGES` = 20 · `PDF_EXPORT_MAX_CHARS` = 50 000
+
+### Check-list de tests manuels (Nina)
+
+1. Raccourci `Alt+N` / `Cmd+Shift+N` ouvre Nina ; inactif si focus dans saisie.
+2. "Bonjour" → salutation + focus saisie.
+3. Chat streamé, "Nina écrit…".
+4. Upload image (bouton / Ctrl+V / drag) et fichiers.
+5. Copier une réponse ; avec "Masquer données sensibles" → masquage.
+6. PDF par message et export conversation ; mobile → nouvel onglet.
+7. Brouillon : "Mettre dans le brouillon", copier, PDF.
+8. Erreur → "Réessayer".
+9. >12 messages → fenêtre glissante.
+10. Timeout (si testable) → fallback partiel.
+11. Envoi avec fichier(s) → "Sources" en bas de réponse.
 
 ---
 

@@ -15,7 +15,9 @@ import {
 import { useAuth } from "@/lib/firebase/use-auth";
 import { toast } from "sonner";
 import { MarkdownRenderer } from "@/components/assistant/MarkdownRenderer";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { maskSensitive } from "@/lib/assistant/mask-sensitive";
 import {
   processImageFiles,
   convertImagesToBase64,
@@ -28,6 +30,7 @@ import {
 } from "@/lib/assistant/file-processing";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { PDF_EXPORT_MAX_CHARS } from "@/lib/assistant/config";
 
 /**
  * Page Nina — Bot Secrétaire (fullscreen).
@@ -43,10 +46,16 @@ const SUGGESTIONS_DEMARRAGE = [
   { label: "Comparer des devis", message: "Je voudrais comparer des devis" },
 ] as const;
 
+interface SourceItem {
+  name: string;
+  pages?: string;
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  sources?: SourceItem[];
 }
 
 export default function BotSecretairePage() {
@@ -62,6 +71,7 @@ export default function BotSecretairePage() {
   const [draftContent, setDraftContent] = useState("");
   const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<ProcessedFile[]>([]);
+  const [maskBeforeCopy, setMaskBeforeCopy] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -121,9 +131,20 @@ export default function BotSecretairePage() {
       }
 
       const assistantId = `a-${Date.now()}`;
+      const sources: SourceItem[] = [];
+      if (attachments?.files?.length) {
+        for (const f of attachments.files) {
+          sources.push({ name: f.name, pages: undefined });
+        }
+      }
+      if (attachments?.images?.length) {
+        for (const img of attachments.images) {
+          sources.push({ name: img.file.name, pages: undefined });
+        }
+      }
       setMessages((prev) => [
         ...prev,
-        { id: assistantId, role: "assistant", content: "" },
+        { id: assistantId, role: "assistant", content: "", sources: sources.length ? sources : undefined },
       ]);
       setIsLoading(true);
 
@@ -132,20 +153,13 @@ export default function BotSecretairePage() {
           ? await convertImagesToBase64(attachments.images)
           : [];
         const filesPayload = attachments?.files?.length
-          ? attachments.files.map((f) => {
-              const payload = {
-                name: f.name,
-                type: f.type,
-                content: f.content,
-                data: f.data,
-                error: f.error,
-              };
-              // Log pour diagnostic : vérifier que les PDF ont bien data
-              if (f.name?.toLowerCase().endsWith('.pdf')) {
-                console.log(`[sendMessage] PDF dans payload: ${f.name}, data présent: ${!!f.data}, data length: ${f.data?.length || 0}`);
-              }
-              return payload;
-            })
+          ? attachments.files.map((f) => ({
+              name: f.name,
+              type: f.type,
+              content: f.content,
+              data: f.data,
+              error: f.error,
+            }))
           : undefined;
 
         const messageForApi =
@@ -410,16 +424,20 @@ export default function BotSecretairePage() {
     setSelectedFiles((prev) => prev.filter((f) => f.id !== id));
   }, []);
 
-  const handleCopy = useCallback(async (id: string, content: string) => {
-    try {
-      await navigator.clipboard.writeText(content);
-      setCopiedMessageId(id);
-      setTimeout(() => setCopiedMessageId(null), 2000);
-      toast.success("Copié");
-    } catch {
-      toast.error("Erreur lors de la copie");
-    }
-  }, []);
+  const handleCopy = useCallback(
+    async (id: string, content: string) => {
+      const toCopy = maskBeforeCopy ? maskSensitive(content) : content;
+      try {
+        await navigator.clipboard.writeText(toCopy);
+        setCopiedMessageId(id);
+        setTimeout(() => setCopiedMessageId(null), 2000);
+        toast.success("Copié");
+      } catch {
+        toast.error("Erreur lors de la copie");
+      }
+    },
+    [maskBeforeCopy]
+  );
 
   const handleDownloadPdf = useCallback((messageId: string) => {
     setPdfExportMessageId(messageId);
@@ -508,6 +526,9 @@ export default function BotSecretairePage() {
         setPdfExportMessageId(null);
         return;
       }
+      if (msg.content.length > PDF_EXPORT_MAX_CHARS) {
+        toast.warning("Réponse très longue, l'export peut prendre quelques secondes.");
+      }
       try {
         const canvas = await html2canvas(el, {
           scale: 2,
@@ -515,7 +536,7 @@ export default function BotSecretairePage() {
           logging: false,
           backgroundColor: "#f8fafc",
         });
-        const imgData = canvas.toDataURL("image/png");
+        const imgData = canvas.toDataURL("image/jpeg", 0.85);
         const pdf = new jsPDF("p", "mm", "a4");
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
@@ -525,12 +546,12 @@ export default function BotSecretairePage() {
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         let heightLeft = imgHeight;
         let position = margin;
-        pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, "JPEG", margin, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
         while (heightLeft > 0) {
           position = heightLeft - imgHeight + margin;
           pdf.addPage();
-          pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight);
+          pdf.addImage(imgData, "JPEG", margin, position, imgWidth, imgHeight);
           heightLeft -= pageHeight;
         }
         pdf.setFontSize(9);
@@ -737,6 +758,19 @@ export default function BotSecretairePage() {
                             >
                               Résumer en 3 points
                             </Button>
+                          </div>
+                        )}
+                        {msg.sources && msg.sources.length > 0 && (
+                          <div className="mt-3 border-t border-slate-200/80 dark:border-slate-600/80 pt-2">
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Sources</p>
+                            <ul className="text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
+                              {msg.sources.map((s, i) => (
+                                <li key={i}>
+                                  {s.name}
+                                  {s.pages != null ? ` — ${s.pages}` : " — pages non détectées"}
+                                </li>
+                              ))}
+                            </ul>
                           </div>
                         )}
                       </div>
@@ -966,6 +1000,19 @@ export default function BotSecretairePage() {
               <p className="text-xs text-slate-500 mt-1.5">
                 Entrée pour envoyer · Shift+Entrée pour un saut de ligne · Ctrl+V pour coller une image
               </p>
+              <p className="text-xs text-amber-600 dark:text-amber-500 mt-1" role="status">
+                Évitez de coller mots de passe, RIB ou infos sensibles.
+              </p>
+              <label className="flex items-center gap-2 mt-1.5 cursor-pointer">
+                <Checkbox
+                  checked={maskBeforeCopy}
+                  onCheckedChange={(v) => setMaskBeforeCopy(v === true)}
+                  aria-label="Masquer données sensibles avant copie"
+                />
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  Masquer données sensibles avant copie
+                </span>
+              </label>
             </div>
             </div>
 
@@ -992,8 +1039,9 @@ export default function BotSecretairePage() {
                     className="flex-1"
                     onClick={async () => {
                       if (!draftContent.trim()) return;
+                      const toCopy = maskBeforeCopy ? maskSensitive(draftContent.trim()) : draftContent.trim();
                       try {
-                        await navigator.clipboard.writeText(draftContent);
+                        await navigator.clipboard.writeText(toCopy);
                         toast.success("Brouillon copié");
                       } catch {
                         toast.error("Erreur lors de la copie");
@@ -1065,7 +1113,7 @@ export default function BotSecretairePage() {
               return (
                 <div
                   ref={pdfExportRef}
-                  className="fixed left-[-9999px] top-0 w-[210mm] max-w-[210mm] bg-slate-50 dark:bg-slate-900 p-6 prose prose-sm dark:prose-invert"
+                  className="nina-pdf-export fixed left-[-9999px] top-0 w-[210mm] max-w-[210mm] bg-slate-50 dark:bg-slate-900 p-6 prose prose-sm dark:prose-invert"
                   aria-hidden
                 >
                   <MarkdownRenderer content={msg.content} />

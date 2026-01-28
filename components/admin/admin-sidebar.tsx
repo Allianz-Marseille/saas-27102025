@@ -55,7 +55,7 @@ const adminNavItems = [
     href: "/commun/agents-ia",
     label: "Agents IA",
     icon: Bot,
-    title: "Nina, assistante secrétaire. Raccourci : Cmd+N (Mac) ou Alt+N pour ouvrir Nina",
+    title: "Nina, assistante secrétaire. Raccourci : Alt+N (Windows/Linux) ou Cmd+Shift+N (Mac)",
   },
   {
     href: "/admin/commissions-agence",

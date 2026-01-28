@@ -51,7 +51,7 @@ const menuItems: SidebarItem[] = [
     icon: Bot,
     label: "Agents IA",
     href: "/commun/agents-ia",
-    title: "Nina, assistante secrétaire. Raccourci : Cmd+N (Mac) ou Alt+N pour ouvrir Nina",
+    title: "Nina, assistante secrétaire. Raccourci : Alt+N (Windows/Linux) ou Cmd+Shift+N (Mac)",
   },
   {
     icon: User,

@@ -109,7 +109,7 @@ const healthNavItems = [
     href: "/commun/agents-ia",
     label: "Agents IA",
     icon: Bot,
-    title: "Nina, assistante secrétaire. Raccourci : Cmd+N (Mac) ou Alt+N pour ouvrir Nina",
+    title: "Nina, assistante secrétaire. Raccourci : Alt+N (Windows/Linux) ou Cmd+Shift+N (Mac)",
   },
   {
     href: "/sante-individuelle/profile",
@@ -149,7 +149,7 @@ const healthCollectiveNavItems = [
     href: "/commun/agents-ia",
     label: "Agents IA",
     icon: Bot,
-    title: "Nina, assistante secrétaire. Raccourci : Cmd+N (Mac) ou Alt+N pour ouvrir Nina",
+    title: "Nina, assistante secrétaire. Raccourci : Alt+N (Windows/Linux) ou Cmd+Shift+N (Mac)",
   },
   {
     href: "/sante-collective/profile",
@@ -222,11 +222,16 @@ export default function CommunLayout({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey && e.key === "n") || (e.altKey && e.key === "n")) {
-        e.preventDefault();
-        if (pathname !== "/commun/agents-ia/bot-secretaire") {
-          router.push("/commun/agents-ia/bot-secretaire");
-        }
+      const isAltN = e.altKey && e.key === "n";
+      const isCmdShiftN = e.metaKey && e.shiftKey && e.key === "n";
+      if (!isAltN && !isCmdShiftN) return;
+      const target = document.activeElement as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      const editable = target?.getAttribute?.("contenteditable") === "true";
+      if (tag === "input" || tag === "textarea" || editable) return;
+      e.preventDefault();
+      if (pathname !== "/commun/agents-ia/bot-secretaire") {
+        router.push("/commun/agents-ia/bot-secretaire");
       }
     };
     window.addEventListener("keydown", handleKeyDown);
