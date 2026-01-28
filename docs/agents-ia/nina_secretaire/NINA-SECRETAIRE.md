@@ -9,10 +9,87 @@
 
 ## Sommaire
 
-1. [Todo — Suivi global](#todo--suivi-global)
-2. [Prompt système](#prompt-système)
-3. [Design, UI & fonctionnalités](#design-ui--fonctionnalités)
-4. [Points à trancher](#points-à-trancher-en-équipe)
+1. [Description de Nina](#description-de-nina) — stack, fonctionnalités, UI, design
+2. [Todo — Suivi global](#todo--suivi-global)
+3. [Prompt système](#prompt-système)
+4. [Design, UI & fonctionnalités](#design-ui--fonctionnalités) (spécifications détaillées)
+5. [Points à trancher](#points-à-trancher-en-équipe)
+
+---
+
+## Description de Nina
+
+Vue d’ensemble technique et produit de l’assistante secrétaire : stack, fonctionnalités, interface et design.
+
+### Stack technique
+
+| Couche | Technologies |
+|--------|--------------|
+| **Framework** | Next.js 16, React 19, TypeScript |
+| **Styling** | Tailwind CSS 4, composants UI (Radix / shadcn) |
+| **Auth** | Firebase Auth (Bearer token sur `/api/assistant/chat`) |
+| **LLM & Vision** | OpenAI API — `gpt-4o` (texte + images), streaming SSE |
+| **Extraction documents** | `lib/assistant/file-extraction` (OpenAI Vision, Google Cloud Vision), `pdf-parse`, `mammoth` (Word) |
+| **Traitement fichiers** | `lib/assistant/file-processing` (validation, base64), `lib/assistant/image-utils` (optimisation, redimensionnement max 2048×2048, WebP/JPEG) |
+| **PDF** | `jspdf` + `html2canvas` (génération côté client : réponses, conversation, brouillon) |
+| **Markdown** | `react-markdown`, `remark-gfm`, `rehype-raw` — `MarkdownRenderer` avec code highlight (Prism) |
+| **UX** | Sonner (toasts), `next-themes` (dark mode) |
+| **Config** | `lib/assistant/config` : `NINA_TIMEOUT` (45 s), `ENABLE_NINA_BOT` |
+
+**Routes et modules clés :**
+
+- Page : `app/commun/agents-ia/bot-secretaire/page.tsx` — route `/commun/agents-ia/bot-secretaire`
+- API : `app/api/assistant/chat/route.ts` — `context.agent === "nina"` ⇒ prompt Nina, pas base agence
+- Prompt : `lib/assistant/nina-system-prompt.ts` → `getNinaSystemPrompt()`
+
+---
+
+### Fonctionnalités
+
+| Fonctionnalité | Description |
+|----------------|-------------|
+| **Lancement "Bonjour"** | Clic sur "Bonjour" → salutation Nina + "Que souhaitez-vous faire ?" + apparition du chat, focus dans la zone de saisie |
+| **Chat streamé** | Réponses en streaming SSE ; indicateur "Nina écrit…" pendant la génération |
+| **Upload images** | Bouton image + `accept="image/*"` ; paste Ctrl+V / Cmd+V ; drag & drop sur la zone de saisie |
+| **Upload documents** | PDF, Word, Excel, TXT, CSV — max 10 fichiers / message, 20 Mo / fichier ; envoyés en base64, extraction côté API |
+| **Copier une réponse** | Bouton "Copier" par bulle Nina ; feedback "Copié" + toast |
+| **PDF par message** | "Télécharger en PDF" sur chaque réponse longue ; génération via `html2canvas` + `jspdf` |
+| **Export conversation** | "Exporter en PDF" dans la barre → fichier `nina-conversation-YYYY-MM-DD.pdf` |
+| **Brouillon (split screen)** | Panneau à droite (lg+) : dépôt du contenu Nina ("Mettre dans le brouillon"), édition, copie, export PDF du brouillon |
+| **Suggestions de démarrage** | Boutons type "Rédiger un mail professionnel", "Résumer un document", "Corriger l'orthographe", "Extraire les infos d'un PDF", "Comparer des devis" après la première réponse |
+| **Actions rapides** | Par réponse longue : "Mettre dans le brouillon", "Transformer en mail", "Résumer en 3 points" |
+| **Gestion d’erreurs** | Affichage erreur + bouton "Réessayer" (renvoi du dernier message user) |
+| **Raccourci global** | `Cmd + N` (Mac) / `Alt + N` (Windows-Linux) → navigation vers Nina depuis le layout commun |
+| **Mobile PDF** | Sur Mobile (détection user-agent) : ouverture du PDF dans un nouvel onglet au lieu du téléchargement direct (compatibilité iOS) |
+
+Limites côté API : rate limiting par type de requête, budget mensuel, timeout 45 s pour Nina.
+
+---
+
+### UI
+
+- **Layout** : Page fullscreen (`min-h-screen`), pas de sidebar. Structure : barre fixe → zone conversation → zone de saisie ; à droite (lg+), panneau "Brouillon".
+- **Barre** : Bouton retour (lien vers `/commun/agents-ia`), titre "Nina — Bot Secrétaire", bouton "Exporter en PDF" (affiché une fois la conversation engagée).
+- **Écran d’accueil** : Avatar (`avatar-tete.jpg`) en cercle, texte "Je suis Nina, votre assistante secrétaire.", CTA "Bonjour".
+- **Chat** : Bulles user (droite, fond emerald) / assistant (gauche, fond slate) ; avatar Nina à gauche des réponses ; zone de saisie avec raccourcis affichés (Entrée, Shift+Entrée, Ctrl+V).
+- **Saisie** : `Textarea` auto-focus après "Bonjour" et après envoi ; boutons image, fichier, envoi ; aperçus des pièces jointes avec retrait possible.
+- **Responsive** : Brouillon masqué en dessous de `lg` ; structure verticale préservée sur mobile.
+
+---
+
+### Design
+
+| Élément | Choix |
+|--------|--------|
+| **Couleur primaire** | Emerald (`emerald-600` / `emerald-700` pour CTA, bouton "Bonjour", bulles user, accents) |
+| **Neutres** | Slate pour fonds, bordures, texte secondaire |
+| **Avatar** | Cercle, bordure `border-emerald-500/30` ; `avatar-tete.jpg` dans le chat et l’écran d’accueil |
+| **Typographie** | Titre `text-xl font-semibold` ; messages `text-sm` ; prose via `MarkdownRenderer` (titres, listes, code) |
+| **Dark mode** | Support via `dark:` (slate-950, slate-800, etc.) et `next-themes` |
+| **Micro-interactions** | "Nina écrit…" avec `Loader2` animé ; feedback copie (icône Check) ; toasts Sonner pour succès / erreur |
+| **Accessibilité** | `aria-label` sur les boutons (Retour, Copier, PDF, Envoyer, etc.) ; tooltips sur les actions |
+
+Les spécifications détaillées (cahier des charges, architecture de la page, PDF, gestion du contexte, backlog) sont dans [Design, UI & fonctionnalités](#design-ui--fonctionnalités).
 
 ---
 
@@ -111,6 +188,8 @@ const response = await openai.chat.completions.create({
 ---
 
 ## Design, UI & fonctionnalités
+
+Spécifications détaillées (cahier des charges, architecture, PDF, contexte). Vue d’ensemble : [Description de Nina](#description-de-nina).
 
 ### Icône du chat Nina
 
