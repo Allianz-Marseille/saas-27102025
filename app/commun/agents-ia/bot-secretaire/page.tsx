@@ -409,7 +409,7 @@ export default function BotSecretairePage() {
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex h-screen flex-col bg-background">
       <header className="flex shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 md:px-6">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/commun/agents-ia" aria-label="Retour aux agents IA">
@@ -570,24 +570,37 @@ export default function BotSecretairePage() {
                       </Button>
                     </div>
                   ))}
-                  {selectedFiles.map((f) => (
-                    <div
-                      key={f.id}
-                      className="flex items-center gap-2 px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 text-sm"
-                    >
-                      <FileText className="h-4 w-4 shrink-0 text-slate-500" />
-                      <span className="truncate max-w-[120px]">{f.name}</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 shrink-0"
-                        onClick={() => removeFile(f.id)}
-                        aria-label="Retirer le fichier"
+                  {selectedFiles.map((f) => {
+                    const isPdf = f.name?.toLowerCase().endsWith(".pdf");
+                    return (
+                      <div
+                        key={f.id}
+                        className="flex items-center gap-2 px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 text-sm"
                       >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
+                        <FileText
+                          className={cn(
+                            "h-4 w-4 shrink-0",
+                            isPdf ? "text-red-600 dark:text-red-400" : "text-slate-500"
+                          )}
+                        />
+                        <span className="truncate max-w-[120px]">{f.name}</span>
+                        {isPdf && (
+                          <span className="text-[10px] font-medium uppercase text-red-600 dark:text-red-400 shrink-0">
+                            PDF
+                          </span>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0"
+                          onClick={() => removeFile(f.id)}
+                          aria-label="Retirer le fichier"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
               <div className="flex gap-2">
