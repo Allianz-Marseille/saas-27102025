@@ -25,3 +25,11 @@ export const NINA_CONFIG = {
 /** Active le bot Nina en UI et logique si la variable d'env est à 'true'. */
 export const ENABLE_NINA_BOT =
   typeof process !== "undefined" && process.env.NEXT_PUBLIC_ENABLE_NINA_BOT === "true";
+
+/** Date limite d'affichage de la modale d'intro Nina (6 fév 00:00 = affichage jusqu'au 5 fév inclus). */
+export const NINA_INTRO_MODAL_END_DATE = new Date("2026-02-06T00:00:00");
+
+/** Indique si la modale d'intro Nina doit encore être proposée (avant le 6 février 2026). */
+export function isNinaIntroModalActive(): boolean {
+  return new Date() < NINA_INTRO_MODAL_END_DATE;
+}

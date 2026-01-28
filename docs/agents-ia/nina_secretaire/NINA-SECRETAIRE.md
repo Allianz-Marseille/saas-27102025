@@ -9,12 +9,51 @@
 
 ## Sommaire
 
+0. [Texte de présentation (modale)](#texte-de-présentation-modale) — contenu pour la modale d’introduction
 1. [Description de Nina](#description-de-nina) — stack, fonctionnalités, UI, design
 2. [Todo — Suivi global](#todo--suivi-global)
 3. [Prompt système](#prompt-système)
 4. [Design, UI & fonctionnalités](#design-ui--fonctionnalités) (spécifications détaillées)
 5. [Points à trancher](#points-à-trancher-en-équipe)
 6. [Plan d'action appliqué (A→G) et check-list de tests](#plan-daction-appliqué-ag-et-check-list-de-tests)
+
+---
+
+## Texte de présentation (modale)
+
+Contenu prêt à intégrer dans une modale de présentation de Nina (titre, accroche, fonctionnalités, CTA).
+
+### Titre
+
+**Nina — Votre assistante secrétaire**
+
+### Accroche (1–2 phrases)
+
+Nina est votre assistante secrétaire intelligente. Elle vous aide au quotidien pour la rédaction, l’analyse de documents et l’organisation de vos tâches administratives — avec un ton professionnel et une réponse immédiate.
+
+### Ce qu’elle fait pour vous
+
+- **Rédaction** : emails professionnels, courriers, comptes rendus et notes de synthèse à partir de vos brouillons.
+- **Correction** : orthographe et amélioration du style de vos textes.
+- **Documents** : résumés de PDF, extraction d’informations à partir de captures d’écran ou de fichiers (Word, Excel, etc.).
+- **Formatage** : mise en forme claire — listes, titres, tableaux — pour des livrables prêts à l’emploi.
+
+### Fonctionnalités de l’interface
+
+- **Chat en direct** : réponses en temps réel (streaming), avec indicateur « Nina écrit… ».
+- **Pièces jointes** : envoi d’images (coller avec Ctrl+V ou Cmd+V), de PDF, Word, Excel, TXT, CSV — jusqu’à 10 fichiers par message.
+- **Copier / exporter** : copie d’une réponse en un clic ; export d’une réponse ou de toute la conversation en PDF.
+- **Brouillon** : panneau dédié pour déposer un texte, l’éditer, le copier ou l’exporter en PDF.
+- **Actions rapides** : « Mettre dans le brouillon », « Transformer en mail », « Résumer en 3 points » sur chaque réponse longue.
+- **Sécurité** : option pour masquer les données sensibles (IBAN, email, téléphone) avant copie ou export.
+
+### CTA suggéré pour la modale
+
+*« Démarrer avec Nina »* ou *« Ouvrir Nina »* — fermeture de la modale + navigation vers `/commun/agents-ia/bot-secretaire` (ou ouverture du chat selon le design).
+
+### Version courte (pour tooltip ou bandeau)
+
+**Nina** — Assistante secrétaire : rédaction, correction, résumés et extraction de documents. Chat streamé, pièces jointes, export PDF et brouillon intégré.
 
 ---
 
