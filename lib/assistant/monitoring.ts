@@ -71,8 +71,8 @@ export async function logUsage(data: {
   tokensInput: number;
   tokensOutput: number;
   model: string;
-  hasImages: boolean;
-  hasFiles: boolean;
+  hasImages?: boolean;
+  hasFiles?: boolean;
   requestType: "text" | "image" | "file";
   duration?: number;
   success: boolean;
@@ -81,10 +81,24 @@ export async function logUsage(data: {
   const cost = calculateCost(data.tokensInput, data.tokensOutput, data.model);
 
   const log: UsageLog = {
-    ...data,
+    userId: data.userId,
+    endpoint: data.endpoint,
+    tokensInput: data.tokensInput,
+    tokensOutput: data.tokensOutput,
+    model: data.model,
+    hasImages: data.hasImages === true,
+    hasFiles: data.hasFiles === true,
+    requestType: data.requestType,
+    success: data.success,
     cost,
     timestamp: new Date(),
   };
+  if (data.duration !== undefined) {
+    log.duration = data.duration;
+  }
+  if (data.error !== undefined) {
+    log.error = data.error;
+  }
 
   await adminDb.collection("assistant_usage_logs").add(log);
 }

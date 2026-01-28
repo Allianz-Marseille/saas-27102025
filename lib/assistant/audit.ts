@@ -46,14 +46,22 @@ export async function logAction(
   metadata: AuditLog["metadata"] = {},
   request?: { ip?: string; userAgent?: string }
 ): Promise<void> {
-  const log: AuditLog = {
+  const metadataClean = Object.fromEntries(
+    Object.entries(metadata).filter(([, v]) => v !== undefined)
+  ) as AuditLog["metadata"];
+
+  const log: Record<string, unknown> = {
     userId,
     timestamp: new Date(),
     action,
-    metadata,
-    ipAddress: request?.ip,
-    userAgent: request?.userAgent,
+    metadata: metadataClean,
   };
+  if (request?.ip !== undefined && request?.ip !== "") {
+    log.ipAddress = request.ip;
+  }
+  if (request?.userAgent !== undefined && request?.userAgent !== "") {
+    log.userAgent = request.userAgent;
+  }
 
   await adminDb.collection("assistant_audit_logs").add(log);
 }
