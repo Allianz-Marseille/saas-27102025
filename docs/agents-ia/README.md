@@ -41,6 +41,17 @@ Ce dossier documente les agents IA de l’agence : rôles, identité visuelle, s
 
 ---
 
+## Bob — Bot Santé & Prévoyance
+
+Bot expert en régimes sociaux, santé et prévoyance pour TNS, salariés, entreprises et seniors. En cours de réflexion et de spécification.
+
+- **Documentation** : [docs/agents-ia/bob_sante/bob_sante.md](bob_sante/bob_sante.md) — description, cibles, thèmes, prompt (ébauche), design, todo, points à trancher.
+- **Stack** : même base que Nina (Next.js, API chat, streaming, extraction docs, PDF, masquage données sensibles).
+- **Fonctionnalités prévues** : chat streamé, pièces jointes (bulletins, attestations, contrats), copier / export PDF, brouillon, actions rapides, raccourci global (`Alt + B` / `Cmd + Shift + B`).
+- **Route prévue** : `/commun/agents-ia/bob-sante`. Code et page à créer.
+
+---
+
 ## Où stocker les visages / photos des agents
 
 - **Images (avatars, visages)** → **`public/agents-ia/`**
@@ -55,6 +66,7 @@ Ce dossier documente les agents IA de l’agence : rôles, identité visuelle, s
 | Slug agent       | Prénom | Rôle (ex.)              | Image                                  |
 |-----------------|--------|--------------------------|----------------------------------------|
 | `bot-secretaire`| Nina   | Rédaction, mails, correction, analyse docs, comparaison devis | `public/agents-ia/bot-secretaire/avatar.jpg`, `avatar-tete.jpg` |
+| `bob-sante`     | Bob    | Régimes sociaux, santé, prévoyance (TNS, salariés, entreprises, seniors) | `public/agents-ia/bob-sante/avatar.jpg`, `avatar-tete.jpg` |
 | `m-plus-3`      | —      | Expert portefeuille M+3 | `public/agents-ia/m-plus-3/avatar.png` |
 | *(à compléter)* | —      | …                       | …                                      |
 
