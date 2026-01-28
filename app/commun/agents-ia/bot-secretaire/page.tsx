@@ -6,6 +6,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { toast } from "sonner";
 import { MarkdownRenderer } from "@/components/assistant/MarkdownRenderer";
@@ -262,29 +268,50 @@ export default function BotSecretairePage() {
     []
   );
 
-  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-    if (selectedFiles.length + files.length > MAX_FILES_PER_MESSAGE) {
-      toast.error(`Maximum ${MAX_FILES_PER_MESSAGE} fichiers par message.`);
-      return;
-    }
-    setIsProcessingFiles(true);
-    try {
-      const result = await processFiles(files);
-      const toAdd = result.filter((f) => !f.error || f.data);
-      if (toAdd.length > 0) {
-        setSelectedFiles((prev) => [...prev, ...toAdd]);
-        toast.success(`${toAdd.length} fichier(s) ajouté(s)`);
+  const handleFileUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
+
+      const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+      const otherFiles = files.filter((f) => !f.type.startsWith("image/"));
+
+      if (imageFiles.length > 0) {
+        try {
+          const processed = await processImageFiles(imageFiles);
+          setSelectedImages((prev) => [...prev, ...processed]);
+          toast.success(`${processed.length} image(s) ajoutée(s)`);
+        } catch {
+          toast.error("Erreur lors du traitement des images");
+        }
       }
-      result.filter((f) => f.error && !f.data).forEach((f) => toast.error(`${f.name}: ${f.error}`));
-    } catch {
-      toast.error("Erreur lors du traitement des fichiers");
-    } finally {
-      setIsProcessingFiles(false);
-    }
-    e.target.value = "";
-  }, [selectedFiles.length]);
+
+      if (otherFiles.length > 0) {
+        if (selectedFiles.length + otherFiles.length > MAX_FILES_PER_MESSAGE) {
+          toast.error(`Maximum ${MAX_FILES_PER_MESSAGE} fichiers par message.`);
+        } else {
+          setIsProcessingFiles(true);
+          try {
+            const result = await processFiles(otherFiles);
+            const toAdd = result.filter((f) => !f.error || f.data);
+            if (toAdd.length > 0) {
+              setSelectedFiles((prev) => [...prev, ...toAdd]);
+              toast.success(`${toAdd.length} fichier(s) ajouté(s)`);
+            }
+            result
+              .filter((f) => f.error && !f.data)
+              .forEach((f) => toast.error(`${f.name}: ${f.error}`));
+          } catch {
+            toast.error("Erreur lors du traitement des fichiers");
+          } finally {
+            setIsProcessingFiles(false);
+          }
+        }
+      }
+      e.target.value = "";
+    },
+    [selectedFiles.length]
+  );
 
   const handleDrop = useCallback(
     async (e: React.DragEvent) => {
@@ -544,7 +571,7 @@ export default function BotSecretairePage() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,image/*"
                   multiple
                   onChange={handleFileUpload}
                   className="hidden"
@@ -562,42 +589,69 @@ export default function BotSecretairePage() {
                   rows={2}
                 />
                 <div className="flex flex-col gap-1 shrink-0">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9"
-                    onClick={() => imageInputRef.current?.click()}
-                    disabled={isLoading || isProcessingFiles}
-                    aria-label="Ajouter une image"
-                  >
-                    <ImageIcon className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isLoading || isProcessingFiles || selectedFiles.length >= MAX_FILES_PER_MESSAGE}
-                    aria-label="Ajouter un fichier"
-                  >
-                    <FileText className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={
-                      (!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) ||
-                      isLoading ||
-                      isProcessingFiles
-                    }
-                    size="icon"
-                    className="h-9 w-9 bg-emerald-600 hover:bg-emerald-700"
-                  >
-                    {isLoading || isProcessingFiles ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-9 w-9"
+                          onClick={() => imageInputRef.current?.click()}
+                          disabled={isLoading || isProcessingFiles}
+                          aria-label="Ajouter une image"
+                        >
+                          <ImageIcon className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>Ajouter une image ou une capture d'écran</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Collez avec Ctrl+V ou Cmd+V</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-9 w-9"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isLoading || isProcessingFiles || selectedFiles.length >= MAX_FILES_PER_MESSAGE}
+                          aria-label="Ajouter un fichier"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>Ajouter un document (PDF, Word, Excel, TXT, CSV)</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Les images envoyées ici sont aussi analysées</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={handleSubmit}
+                          disabled={
+                            (!input.trim() && selectedImages.length === 0 && selectedFiles.length === 0) ||
+                            isLoading ||
+                            isProcessingFiles
+                          }
+                          size="icon"
+                          className="h-9 w-9 bg-emerald-600 hover:bg-emerald-700"
+                          aria-label="Envoyer le message"
+                        >
+                          {isLoading || isProcessingFiles ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>Envoyer le message</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Ou appuyez sur Entrée</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
               <p className="text-xs text-slate-500 mt-1.5">

@@ -751,6 +751,25 @@ async function extractTextFromPDFWithMetadata(
 }
 
 /**
+ * Extrait le texte d'un PDF à partir d'un Buffer ou ArrayBuffer.
+ * Utilise pdf-parse puis fallback OCR (Google Vision) si nécessaire.
+ * À utiliser depuis la route chat pour les PDFs uploadés.
+ */
+export async function extractTextFromPDFBuffer(
+  buffer: Buffer | ArrayBuffer
+): Promise<string> {
+  const arrayBuffer =
+    buffer instanceof ArrayBuffer
+      ? buffer
+      : (buffer as Buffer).buffer.slice(
+          (buffer as Buffer).byteOffset,
+          (buffer as Buffer).byteOffset + (buffer as Buffer).byteLength
+        );
+  const result = await extractTextFromPDFWithMetadata(arrayBuffer);
+  return result.text;
+}
+
+/**
  * Extrait le texte d'un fichier Word (.docx)
  */
 async function extractTextFromWord(arrayBuffer: ArrayBuffer): Promise<string> {

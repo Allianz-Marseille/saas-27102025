@@ -13,6 +13,7 @@ import { NINA_TIMEOUT } from "@/lib/assistant/config";
 import { logUsage } from "@/lib/assistant/monitoring";
 import { logAction } from "@/lib/assistant/audit";
 import { parseFile } from "@/lib/assistant/file-parsers";
+import { extractTextFromPDFBuffer } from "@/lib/assistant/file-extraction";
 // import { enrichMessagesWithKnowledge } from "@/lib/assistant/knowledge-loader"; // Plus utilisé, la logique métier est dans le system prompt
 
 // Client OpenAI créé à la demande pour éviter d'exiger OPENAI_API_KEY au build (Vercel).
@@ -528,7 +529,12 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
               // Convertir base64 en Buffer
               const base64Data = file.data.replace(/^data:.*,/, '');
               const buffer = Buffer.from(base64Data, 'base64');
-              const parsedContent = await parseFile(buffer, file.name);
+              const isPdf =
+                file.type === "application/pdf" ||
+                (file.name && file.name.toLowerCase().endsWith(".pdf"));
+              const parsedContent = isPdf
+                ? await extractTextFromPDFBuffer(buffer)
+                : await parseFile(buffer, file.name);
               parsedFilesContent += `\n\n--- FICHIER: ${file.name || "Sans nom"} (${file.type || "Type inconnu"}) - Parsé côté serveur ---\n${parsedContent}\n`;
             } catch (parseError) {
               console.error(`Erreur lors du parsing serveur du fichier ${file.name}:`, parseError);
@@ -624,15 +630,21 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
       });
     }
 
-    // Ajouter les images si présentes
+    // Ajouter les images si présentes (format dataURL attendu : data:image/...;base64,..., fourni par convertImagesToBase64 côté client)
     if (images && Array.isArray(images) && images.length > 0) {
-      for (const imageBase64 of images) {
-        userContent.push({
-          type: "image_url",
-          image_url: {
-            url: imageBase64,
-          },
-        });
+      for (const imageDataUrl of images) {
+        const url =
+          typeof imageDataUrl === "string" && imageDataUrl.startsWith("data:image/")
+            ? imageDataUrl
+            : typeof imageDataUrl === "string" && imageDataUrl.length > 0
+              ? `data:image/png;base64,${imageDataUrl}`
+              : "";
+        if (url) {
+          userContent.push({
+            type: "image_url",
+            image_url: { url },
+          });
+        }
       }
     }
 
