@@ -10,9 +10,10 @@ const NINA_INTRO_MODAL_DISMISSED_KEY = "nina-intro-modal-dismissed";
 const NINA_PAGE_PATH = "/commun/agents-ia/bot-secretaire";
 
 /**
- * Affiche la modale d'intro Nina dès la connexion (dashboard ou toute page authentifiée),
- * jusqu'au 5 fév 2026, une fois par utilisateur. S'affiche quel que soit le rôle.
- * CTA "Démarrer avec Nina" redirige vers Nina si on n'y est pas.
+ * Affiche la modale d'intro Nina à chaque connexion (session) jusqu'au 5 fév 2026.
+ * Utilise sessionStorage : une fois fermée, elle ne réapparaît pas dans la même session ;
+ * à la prochaine connexion (nouvelle session), elle s'affiche à nouveau.
+ * S'affiche quel que soit le rôle. CTA "Démarrer avec Nina" redirige vers Nina si on n'y est pas.
  */
 export function NinaIntroModalWrapper() {
   const [showIntroModal, setShowIntroModal] = useState(false);
@@ -24,7 +25,7 @@ export function NinaIntroModalWrapper() {
     if (typeof window === "undefined" || !user) return;
     if (
       isNinaIntroModalActive() &&
-      !localStorage.getItem(NINA_INTRO_MODAL_DISMISSED_KEY)
+      !sessionStorage.getItem(NINA_INTRO_MODAL_DISMISSED_KEY)
     ) {
       setShowIntroModal(true);
     }
@@ -32,7 +33,7 @@ export function NinaIntroModalWrapper() {
 
   const handleCloseIntroModal = useCallback(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem(NINA_INTRO_MODAL_DISMISSED_KEY, "true");
+      sessionStorage.setItem(NINA_INTRO_MODAL_DISMISSED_KEY, "true");
     }
     setShowIntroModal(false);
   }, []);
