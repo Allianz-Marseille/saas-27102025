@@ -30,6 +30,12 @@ export function NinaIntroModal({ open, onClose, onCtaClick }: NinaIntroModalProp
         className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
         aria-describedby="nina-intro-description"
       >
+        <div
+          className="rounded-lg border-2 border-amber-400 bg-gradient-to-r from-amber-300 via-yellow-300 to-lime-300 px-4 py-2.5 text-center font-bold text-amber-950 shadow-[0_0_12px_rgba(250,204,21,0.5)] dark:border-amber-500 dark:from-amber-400 dark:via-yellow-400 dark:to-lime-400 dark:text-amber-950 dark:shadow-[0_0_14px_rgba(251,191,36,0.6)]"
+          role="alert"
+        >
+          Attention — Nouveau
+        </div>
         <DialogHeader className="flex flex-row items-start gap-3 sm:flex-row">
           <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-emerald-500/30">
             <Image
