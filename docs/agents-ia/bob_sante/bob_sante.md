@@ -1,9 +1,9 @@
 # Bob — Assistant agence Santé & Prévoyance
 
-> Document de référence unique pour Bob : prompt système, design, UI, fonctionnalités et suivi.  
-> **Bob est l'assistant agence** : à la fois **commercial** (arguments pour rassurer le client, faciliter la vente) et **technique** (régimes sociaux, régime de la sécurité sociale, SSI, mutuelle, prévoyance). Il **source à chaque fois que possible**.  
-> Lieu : `docs/agents-ia/bob_sante/`  
-> Visuels : `public/agents-ia/bob-sante/avatar.jpg` (page), `avatar-tete.jpg` (icône chat).  
+> Document de référence unique pour Bob : prompt système, design, UI, fonctionnalités et suivi.
+> **Bob est l'assistant agence** : à la fois **commercial** (arguments pour rassurer le client, faciliter la vente) et **technique** (régimes sociaux, régime de la sécurité sociale, SSI, mutuelle, prévoyance). Il **source à chaque fois que possible**.
+> Lieu : `docs/agents-ia/bob_sante/`
+> Visuels : `public/agents-ia/bob-sante/avatar.jpg` (page), `avatar-tete.jpg` (icône chat).
 > Code : `lib/assistant/bob-system-prompt.ts` → `getBobSystemPrompt()` (à créer).
 
 ---
@@ -14,12 +14,18 @@
 1. [Description de Bob](#description-de-bob) — stack, fonctionnalités, UI, design
 2. [Cibles et cas d'usage](#cibles-et-cas-dusage) — TNS, salariés, entreprises, seniors
 3. [Thèmes à couvrir](#thèmes-à-couvrir) — régimes sociaux, santé, prévoyance
-4. [Enrichir les connaissances de Bob](#enrichir-les-connaissances-de-bob) — bases de connaissances, RAG, contenus à ajouter
-5. [Todo — Suivi global](#todo--suivi-global)
-6. [Prompt système (ébauche)](#prompt-système-ébauche)
-7. [Design, UI & fonctionnalités](#design-ui--fonctionnalités) (spécifications détaillées)
-8. [Points à trancher](#points-à-trancher-en-équipe)
-9. [Plan d'action et check-list de tests](#plan-daction-et-check-list-de-tests)
+4. [Guide d'extraction IJ et Frais Généraux (BNC, BIC, IS)](#guide-dextraction-ij-et-frais-généraux-bnc-bic-is) — où piocher les chiffres par régime TNS
+5. [Guide DUE (Décision Unilatérale de l'Employeur)](#guide-due-décision-unilatérale-de-lemployeur) — structure, procédure de validation, canevas
+6. [Le Cœur de Bob (synthèse des règles d'analyse)](#le-cœur-de-bob-synthèse-des-règles-danalyse) — priorités d'analyse, formules IJ, logique DUE, prochaines étapes
+7. [Améliorer Bob (niveau supérieur)](#améliorer-bob-niveau-supérieur) — intelligence métier, proactivité commerciale, UX, fiabilité, simulateur RAC
+8. [Architecture de la Base de Connaissances Bob](#architecture-de-la-base-de-connaissances-bob) — 6 piliers, organisation des fichiers
+9. [Enrichissement avec Allianz.fr (prompt Cursor)](#enrichissement-avec-allianzfr-prompt-cursor) — prompt pour Cursor, recherche web, liens devis
+10. [Enrichir les connaissances de Bob](#enrichir-les-connaissances-de-bob) — bases de connaissances, RAG, contenus à ajouter
+11. [Todo — Suivi global](#todo--suivi-global)
+12. [Prompt système (ébauche)](#prompt-système-ébauche)
+13. [Design, UI & fonctionnalités](#design-ui--fonctionnalités) (spécifications détaillées)
+14. [Points à trancher](#points-à-trancher-en-équipe)
+15. [Plan d'action et check-list de tests](#plan-daction-et-check-list-de-tests)
 
 ---
 
@@ -40,7 +46,7 @@ Bob est l'assistant agence dédié à la santé et à la prévoyance. Il aide le
 - **Commercial** : arguments pour rassurer un client, réponses aux objections, angles de vente adaptés au profil (TNS, salarié, entreprise, senior), facilitation de la vente.
 - **Technique** : référence aux régimes sociaux (URSSAF, ex-RSI), au régime de la sécurité sociale, à la SSI (Sécurité sociale des indépendants), aux cotisations, à la mutuelle et à la prévoyance (Loi Madelin, ANI, conventions collectives, garanties minimales).
 - **Lecture 2035 (bilan TNS)** : Bob peut lire et analyser une **2035** (bilan et compte de résultat d'un TNS au régime réel) pour aider à déterminer les **indemnités journalières** (IJ) du TNS et ses **frais généraux** — éléments utiles pour dimensionner la prévoyance et rassurer le client.
-- **Rédaction DUE (Décision Unilatérale d'un Chef d'Entreprise)** : Bob aide à **rédiger une DUE** pour la **mise en place d'un contrat groupe** (santé, prévoyance, etc.) — structure du document, mentions obligatoires, cadre juridique ; le conseiller adapte au contexte client et fait valider en interne si besoin.
+- **Rédaction DUE (Décision Unilatérale de l'Employeur)** : Bob aide à **rédiger une DUE** pour la **mise en place d'un contrat groupe** (santé, prévoyance, retraite) — structure type, mentions obligatoires (catégories objectives, 50 % employeur min, cas de dispense, portabilité), procédure de validation (CSE, décharge individuelle, preuves URSSAF) ; le conseiller adapte au contexte client et fait valider en interne si besoin.
 - **Sourçage** : à chaque fois que possible, Bob cite la source (fiche, base de connaissances, texte de référence) ; les sources sont affichées en bas de la réponse.
 - **Publics** : aide adaptée pour accompagner des clients ou prospects TNS, salariés, entreprises et seniors.
 
@@ -144,9 +150,9 @@ Bob aide le **conseiller agence** à préparer un échange ou une vente pour un 
 
 | Profil client / prospect | Exemples de questions ou tâches pour le conseiller |
 |--------------------------|----------------------------------------------------|
-| **TNS** | Arguments pour rassurer sur la prévoyance obligatoire, différences régime général / SSI, cotisations URSSAF, choix mutuelle TNS, bases et assiettes. **Lecture 2035 (bilan TNS)** : analyse du document pour aider à déterminer les **indemnités journalières** (IJ) et les **frais généraux** du TNS — dimensionnement prévoyance, rassurance client. |
+| **TNS** | Arguments pour rassurer sur la prévoyance obligatoire, différences régime général / SSI, cotisations URSSAF, choix mutuelle TNS, bases et assiettes. **Analyse par « costume juridique »** : **Auto-entrepreneur** (attestation CA, abattement), **EI BNC/BIC** (2035, 2031/2033), **Société IS** (2065/2033) — détermination **IJ** et **frais généraux** pour dimensionner la prévoyance, rassurance client. |
 | **Salarié** | Expliquer la fiche de paie (lignes santé, prévoyance), mutuelle d'entreprise, prévoyance collective, attestation de droits, reste à charge — avec sources. |
-| **Entreprise** | Contrats collectifs (prévoyance, mutuelle), obligations légales, garanties minimales (ANI, convention collective), arguments pour faciliter la vente. **Rédaction DUE** (Décision Unilatérale d'un Chef d'Entreprise) pour **mise en place d'un contrat groupe** (santé, prévoyance, etc.) — structure, mentions obligatoires, cadre juridique. |
+| **Entreprise** | Contrats collectifs (prévoyance, mutuelle), obligations légales, garanties minimales (ANI, convention collective), arguments pour faciliter la vente. **Rédaction DUE** (Décision Unilatérale de l'Employeur) pour **mise en place d'un contrat groupe** (santé, prévoyance, retraite) — structure type, procédure de validation (CSE, décharge, preuves URSSAF). |
 | **Senior** | Retraite et prévoyance, maintien des garanties, complémentaire santé retraite, reste à charge, points de vigilance pour rassurer le client. |
 
 ---
@@ -156,20 +162,384 @@ Bob aide le **conseiller agence** à préparer un échange ou une vente pour un 
 - **Régimes sociaux** : URSSAF, ex-RSI, régime de la **sécurité sociale**, **SSI** (Sécurité sociale des indépendants), cotisations maladie / vieillesse / famille, bases de calcul, différences TNS vs salarié.
 - **Santé** : mutuelle (individuelle / collective), tiers payant, remboursements, niveaux de garantie, attestation de droits, bulletin de salaire (lignes santé).
 - **Prévoyance** : incapacité, invalidité, décès, contrats collectifs vs individuels, garanties minimales (Loi Madelin pour TNS, ANI, convention collective pour salariés), comparaison de garanties.
-- **Documents TNS** : **2035** (bilan et compte de résultat des entreprises au régime réel) — lecture et analyse pour aider à déterminer les **indemnités journalières** (IJ) du TNS et ses **frais généraux** (éléments clés pour dimensionner la prévoyance et conseiller le client).
-- **DUE (Décision Unilatérale d'un Chef d'Entreprise)** : rédaction d'une **DUE** pour **mise en place d'un contrat groupe** (santé, prévoyance, etc.) — structure du document, mentions obligatoires, cadre juridique (effectifs, obligation ou non de négociation, ANI, convention collective).
+- **Documents TNS** : selon le **« costume juridique »** du client — **Auto-entrepreneur** (attestation CA, abattement 34 % / 50 % / 71 %, pas de liasse) ; **EI au Réel** BNC (2035, CP + BT, lignes 14–21) ou BIC (2031/2033) ; **Société IS** (2065/2033, rémunération dirigeant, charges 2033-B). Lecture et analyse pour **indemnités journalières** (IJ) et **frais généraux** — voir [Guide d'extraction IJ et Frais Généraux (BNC, BIC, IS)](#guide-dextraction-ij-et-frais-généraux-bnc-bic-is) (dont le tableau « Cheat Sheet »).
+- **DUE (Décision Unilatérale de l'Employeur)** : rédaction d'une **DUE** pour **mise en place d'un contrat groupe** (santé, prévoyance, retraite) — structure type (Identification, Bénéficiaires catégories objectives, Garanties panier minimal/contrat responsable, Financement 50 % employeur min, Cas de dispense, Portabilité), procédure de validation (information CSE, décharge individuelle, preuves URSSAF). Document juridique à rédiger avec précision pour éviter tout redressement URSSAF. Voir [Guide DUE](#guide-due-décision-unilatérale-de-lemployeur).
 
 Bob fait référence à ces thèmes pour **sourcer** ses réponses (fiches, base de connaissances, textes réglementaires) à chaque fois que possible.
 
 ---
 
+## Guide d'extraction IJ et Frais Généraux (BNC, BIC, IS)
+
+Pour que Bob soit ultra-performant, il doit savoir exactement **quel document regarder** selon le **« costume » juridique** du client. Voici la grille de lecture universelle à intégrer dans son moteur d'analyse.
+
+---
+
+### 1. L'Auto-entrepreneur (Micro-entreprise)
+
+C'est le cas le plus simple, car **il n'y a pas de liasse fiscale** (pas de bilan/compte de résultat).
+
+- **Document à demander :** Attestations URSSAF (mensuelles ou trimestrielles) ou Avis d'imposition.
+- **Revenu pour les IJ :** On applique un **abattement forfaitaire** sur le Chiffre d'Affaires (CA).
+  - 71 % pour la vente (BIC).
+  - 50 % pour les prestations de services (BIC).
+  - 34 % pour les professions libérales (BNC).
+- **Frais Généraux :** Inexistants fiscalement (forfaitaires). On conseille souvent une **IJ plus haute** pour compenser.
+
+---
+
+### 2. L'Entreprise Individuelle (EI) au Réel
+
+Ici, l'entreprise et le dirigeant ne font qu'un. La liasse dépend de la nature de l'activité.
+
+#### Cas A : Profession Libérale (BNC) — Liasse 2035
+
+- **Revenu (IJ) :** Somme du **Bénéfice** (Case **CP**) + **Cotisations sociales** (Case **BT**).
+- **Frais Généraux :** Tableau **2035-B**. Additionner : loyers (ligne 14), charges sociales de l'équipe (ligne 19), petits matériels (ligne 11).
+
+#### Cas B : Artisan / Commerçant (BIC) — Liasse 2031 + 2033
+
+- **Revenu (IJ) :** **Résultat fiscal** (2031, case 1) + **Cotisations sociales** (2033-D, case 380).
+- **Frais Généraux :** **Compte de résultat simplifié (2033-B)**. Cibler les « Charges externes » (Lignes 218 à 230) : loyers, assurances, honoraires.
+
+---
+
+### 3. La Société (EURL, SARL, SASU, SAS)
+
+C'est une personne morale à l'Impôt sur les Sociétés (IS). Le dirigeant est soit TNS (Gérant majoritaire), soit Assimilé-Salarié (Président de SAS).
+
+- **Document à demander :** Liasse **2065** + annexes **2033**.
+- **Revenu (IJ) :** Ne pas regarder le bénéfice de la société (il appartient à l'entreprise). **Chercher la rémunération réelle :** dans la liasse **2033-D**, « Rémunérations nettes versées aux associés/dirigeants ». *Note Bob :* Vérifier si le client se verse des **dividendes** (souvent non couverts par les contrats de prévoyance standard).
+- **Frais Généraux :** Analyser la **2033-B** — ce sont les charges que la société doit continuer de payer même si le patron est absent, pour que l'entreprise ne coule pas.
+
+---
+
+### Synthèse : le « Cheat Sheet » de Bob
+
+| Profil | Liasse | Case « Revenu » | Case « Frais Fixes » |
+|--------|--------|-----------------|----------------------|
+| **Libéral (EI)** | **2035** | CP + BT | Lignes 14 à 21 (2035-B) |
+| **Commerçant (EI)** | **2031 / 2033** | 1 (2031) + 380 (2033-D) | Lignes 218 à 230 (2033-B) |
+| **Société (IS)** | **2065 / 2033** | Rémunération dirigeant (2033-D) | Charges externes (2033-B) |
+| **Auto-entrepreneur** | **Attestation CA** | CA − Abattement (34 % / 50 % / 71 %) | N/A |
+
+---
+
+### Exemples de demandes au conseiller
+
+1. *« Bob, analyse cette 2035 et calcule-moi l'assiette pour une IJ de 100 €/jour. »*
+2. *« Bob, à partir de cette 2033-B, liste-moi les frais généraux que je dois couvrir en cas d'arrêt de travail. »*
+
+Ce guide doit être intégré à la base de connaissances Bob (ex. `docs/knowledge/bob/2035-bilan-tns.md` ou fiche dédiée « grille par costume juridique ») pour que Bob sache quel document regarder et où extraire les chiffres selon le profil (Auto-entrepreneur, EI BNC/BIC, Société IS).
+
+---
+
+## Guide DUE (Décision Unilatérale de l'Employeur)
+
+La rédaction d'une **DUE (Décision Unilatérale de l'Employeur)** est une procédure formelle qui permet au chef d'entreprise de mettre en place une protection sociale complémentaire (santé, prévoyance, retraite) sans passer par un accord collectif ou une ratification par référendum.
+
+C'est un document juridique qui doit être **précis** pour éviter tout redressement URSSAF (remise en cause des exonérations de charges).
+
+### 1. La structure type d'une DUE
+
+Pour être valable, une DUE doit obligatoirement comporter les mentions suivantes :
+
+#### A. Identification et Objet
+
+- **L'entreprise** : Nom, SIRET, adresse.
+- **L'objet** : Préciser s'il s'agit de la mise en place d'un régime de frais de santé (mutuelle) ou de prévoyance.
+- **La date d'effet** : Date à laquelle le contrat entre en vigueur.
+
+#### B. Les Bénéficiaires (Catégories objectives)
+
+Le régime doit être **collectif et obligatoire**.
+
+- On définit les bénéficiaires par « catégories objectives » (ex. « l'ensemble du personnel » ou « les cadres » vs « les non-cadres » selon les critères de la convention collective ou du décret de 2012).
+- **Interdiction** : On ne peut pas désigner des personnes par leur nom.
+
+#### C. Les Garanties
+
+- Détailler les prestations (souvent en renvoyant vers la notice d'information de l'assureur annexée à la DUE).
+- Préciser le respect du **« Panier de soins minimal »** (Loi ANI) et du **« Contrat responsable »**.
+
+#### D. Le Financement (La cotisation)
+
+- Indiquer la répartition : l'employeur doit financer au moins **50 %** de la cotisation santé.
+- Préciser le mode de calcul (ex. % du plafond de la Sécu, montant fixe, % du salaire).
+- Mentionner l'évolution ultérieure de la cotisation (qui peut être révisée par l'assureur).
+
+#### E. Les Cas de dispense
+
+C'est un point critique. La DUE doit lister les **dispenses de plein droit** (ex. salariés déjà couverts par la mutuelle du conjoint, CDD de moins de 3 mois, etc.) que le salarié peut faire valoir pour ne pas adhérer.
+
+#### F. Le Maintien des garanties (Portabilité)
+
+Rappel de l'obligation de maintenir les garanties en cas de rupture du contrat de travail (sous conditions de l'indemnisation chômage).
+
+---
+
+### 2. La procédure de validation (crucial pour l'URSSAF)
+
+La rédaction ne suffit pas, il faut **prouver que la DUE a été communiquée** :
+
+1. **Information du CSE** : Le Comité Social et Économique (s'il existe) doit être informé et consulté avant la mise en place.
+2. **Information individuelle** : Chaque salarié doit recevoir un exemplaire de la DUE contre **décharge** (signature d'une liste d'émargement ou récépissé de remise en main propre).
+
+*Conseil de Bob :* Garder précieusement ces preuves de remise. En cas de contrôle URSSAF, l'absence de preuve de remise individuelle peut annuler les exonérations fiscales et sociales.
+
+---
+
+### 3. Modèle de canevas (synthèse pour Bob)
+
+Structure type d'un projet de texte pour le conseiller :
+
+- **DÉCISION UNILATÉRALE DE L'EMPLOYEUR**
+- **1. PRÉAMBULE** : Rappel de la volonté de l'entreprise d'améliorer la protection sociale.
+- **2. COLLÈGE BÉNÉFICIAIRE** : « Le présent régime s'applique à l'ensemble des salariés de la société… »
+- **3. CARACTÈRE OBLIGATOIRE** : « L'adhésion est obligatoire, sauf cas de dispenses suivants… »
+- **4. COTISATIONS** : « Le financement est assuré par une cotisation mensuelle de X €, répartie à 50 % employeur / 50 % salarié. »
+- **5. PRESTATIONS** : « Les garanties sont détaillées dans la notice d'information jointe… »
+- **6. DURÉE ET MODIFICATION** : « La présente décision est prise pour une durée indéterminée… »
+
+---
+
+### Exemples de demandes au conseiller
+
+- *« Bob, prépare-moi un projet de DUE pour une entreprise de 10 salariés (non-cadres) avec une prise en charge à 60 %. »*
+- *« Bob, vérifie si cette clause de dispense dans ma DUE est conforme au décret de 2012. »*
+
+Ce guide doit être intégré à la base de connaissances Bob (ex. `docs/knowledge/bob/due-contrat-groupe.md`) pour que Bob sache structurer une DUE et rappeler la procédure de validation (CSE, décharge individuelle, preuves URSSAF).
+
+---
+
+## Le Cœur de Bob (synthèse des règles d'analyse)
+
+Avec les éléments des guides ci-dessus, Bob devient une véritable machine de guerre pour le conseiller agence. Voici le **« Cœur de Bob »** — le résumé des règles d'or à injecter dans son prompt — et les prochaines étapes de déploiement.
+
+### 1. Identifier le « costume juridique »
+
+Dès qu'un document est téléversé, Bob doit chercher :
+
+- **Numéro de formulaire** (2035, 2031, 2033, 2065).
+- **Nom de l'entreprise et Code NAF** (pour les conventions collectives).
+- **Catégorie de revenu** (BNC, BIC, IS ou Micro).
+
+### 2. Formules de calcul des IJ (assiette)
+
+| Profil | Formule / source |
+|--------|-------------------|
+| **BNC (EI)** | Bénéfice (Case **CP** 2035-B) + Cotisations sociales (Case **BT** 2035-B). |
+| **BIC (EI)** | Résultat fiscal (2031, case 1) + Cotisations sociales (2033-D, case 380). |
+| **Société (IS)** | Rémunération nette du dirigeant (2033-D « Rémunérations nettes versées aux associés » ou 12 bulletins de salaire). |
+| **Micro-entreprise** | CA − Abattement forfaitaire (34 % BNC / 50 % prestations BIC / 71 % vente BIC). Pas de liasse fiscale. |
+
+### 3. Logique de rédaction DUE
+
+- **Vérifier le collège** : Cadre / Non-Cadre / Ensemble du personnel (catégories objectives, pas de noms).
+- **Vérifier le taux de financement** : minimum **50 % employeur** pour la santé.
+- **Lister les dispenses d'ordre public** : l'omission est un risque URSSAF (ex. mutuelle du conjoint, CDD &lt; 3 mois).
+
+---
+
+### Prochaines étapes de déploiement
+
+| Étape | Action | Statut |
+|-------|--------|--------|
+| **1. Prompt système** | Finaliser `lib/assistant/bob-system-prompt.ts` avec les formules et règles ci-dessus. | À faire |
+| **2. Knowledge Base** | Intégrer les fiches « Grille de lecture liasse » et « Modèle DUE » dans `docs/knowledge/bob/`. | À faire |
+| **3. Interface** | Créer la page fullscreen avec le bouton « Bonjour » et le split-screen Brouillon. | À faire |
+| **4. Tests** | Upload de vraies liasses 2035/2033 anonymisées pour vérifier l'extraction. | À faire |
+
+---
+
+### Conseil « wit » pour Bob : côté détective
+
+Donner à Bob un petit côté **« détective »**. S'il voit une liasse fiscale avec un **bénéfice très bas** mais des **frais de déplacement ou frais généraux élevés**, il doit pouvoir suggérer au conseiller :
+
+*« Attention, le bénéfice est faible pour le calcul des IJ, mais les frais généraux sont élevés. Il serait pertinent de proposer une garantie "Frais Fixes" renforcée pour protéger la structure pendant l'arrêt du client. »*
+
+Cette règle peut être intégrée dans le prompt système (règle d'or « vigilance bénéfice / frais généraux »).
+
+---
+
+## Améliorer Bob (niveau supérieur)
+
+Pour transformer Bob d'un simple « outil de chat » en un **véritable collaborateur expert**, l'améliorer sur quatre axes : l'**intelligence métier** (le cerveau), l'**expérience utilisateur** (le confort), la **proactivité commerciale** (le muscle) et la **fiabilité** (la sécurité). Plus une idée de feature unique : le **simulateur de reste à charge (RAC)**.
+
+### 1. Améliorer l'intelligence métier (RAG et analyse)
+
+Actuellement, Bob lit des fichiers. Pour qu'il devienne expert, il doit **interpréter** :
+
+- **Mapping fiscal précis** : Injecter dans sa base de connaissances un **dictionnaire des cases fiscales**. S'il voit une 2035, il doit savoir que la case **BT** n'est pas juste un chiffre, mais l'endroit où sont « cachées » les charges Madelin à réintégrer pour le calcul du revenu réel.
+- **Connexion aux CCN (conventions collectives)** : Point complexe en prévoyance. Si Bob peut consulter une base simplifiée des CCN (ex. BTP, SYNTEC, HCR), il pourra dire : *« Attention, pour ce client en CCN HCR, le maintien de salaire est obligatoire dès 1 an d'ancienneté, ce qui change le besoin de franchise du contrat de prévoyance. »*
+- **Bibliothèque de clauses DUE** : Créer un répertoire de clauses spécifiques (ex. clause pour les salariés à temps partiel, clause pour les apprentis) que Bob peut piocher pour personnaliser la DUE.
+
+---
+
+### 2. Proactivité commerciale (cross-selling)
+
+Un bon assistant ne se contente pas de répondre, il **suggère**.
+
+- **Détection d'opportunités** : Si le conseiller demande une analyse de mutuelle, Bob doit vérifier dans le document s'il y a des garanties prévoyance. S'il n'y en a pas, ajouter un bandeau type : *« Conseil de Bob : Je remarque que ce client n'a aucune garantie "Invalidité" mentionnée. C'est le moment idéal pour proposer un bilan prévoyance. »*
+- **Réponses aux objections en temps réel** : Action rapide **« Bob, aide-moi à conclure »** — Bob génère alors 3 arguments de clôture basés sur les points faibles détectés dans le dossier actuel du client.
+
+---
+
+### 3. L'expérience utilisateur (UX et UI)
+
+- **Mode « Bilan Flash »** : Bouton « Générer le tableau de synthèse ». Bob crée un tableau Markdown (prêt à être copié dans le brouillon) avec 3 colonnes : **Situation actuelle / Risques détectés / Solution préconisée**.
+- **Calculatrice intégrée** : Puisque Bob a les chiffres de la liasse, afficher : *« Basé sur le bénéfice de 45 k€, je préconise une IJ de 123 €/jour pour couvrir 100 % des revenus + charges. »*
+- **Vision multi-docs** : Permettre à Bob de croiser les données. S'il a le bulletin de salaire ET le contrat de mutuelle actuel, il peut détecter si la part employeur sur le bulletin est conforme au contrat.
+
+---
+
+### 4. Fiabilité et guardrails (sécurité)
+
+- **Vérification de version** : La réglementation change (ex. plafond de la Sécurité sociale — PASS). Bob doit toujours afficher en bas de ses calculs : *« Calcul basé sur le PASS 2024 (X €). Source : URSSAF. »*
+- **Détection de qualité d'image** : Si l'utilisateur envoie une photo floue d'une 2035, Bob doit répondre immédiatement : *« La photo est trop sombre pour lire les cases BT et CP avec certitude. Peux-tu en reprendre une ? »* au lieu de risquer une erreur de lecture.
+- **Anonymisation automatique** : Améliorer la fonction de masquage pour détecter aussi les noms de famille ou les noms d'entreprises si le conseiller veut exporter un exemple pour un collègue sans trahir la confidentialité.
+
+---
+
+### 5. Idée de feature unique : le simulateur de reste à charge (RAC)
+
+C'est le nerf de la guerre en santé.
+
+1. Le conseiller téléverse un devis dentaire ou optique.
+2. Bob lit le devis + la grille de garanties de la mutuelle du client.
+3. Bob calcule : **Prix du devis − Remboursement Sécu − Remboursement Mutuelle = Reste à charge réel pour le client.**
+
+---
+
+### Priorisation (à trancher en équipe)
+
+Sur quel aspect mettre le paquet en premier ?
+
+| Option | Focus |
+|--------|--------|
+| **1. Précision technique** | Analyse de liasses chirurgicale (mapping fiscal, CCN, clauses DUE). |
+| **2. Aide à la vente** | Arguments, DUE, détection d'opportunités, « aide-moi à conclure ». |
+| **3. Automatisation** | Générer des synthèses PDF en un clic, tableau Bilan Flash, calculatrice intégrée. |
+
+---
+
+## Architecture de la Base de Connaissances Bob
+
+Synthèse structurée de la base de connaissances de **Bob**. Cette architecture transforme Bob en un assistant hybride, capable de jongler entre l'analyse technique (liasses fiscales, retraite collective) et l'appui commercial.
+
+### Les 6 piliers (tiroirs métier)
+
+La base est divisée en « tiroirs métier » thématiques stockés dans `docs/knowledge/bob/`.
+
+#### 1. Pilier Fiscal et Statuts (Le Décodeur)
+
+- **Dictionnaire des liasses** : Cartographie des cases pour l'extraction automatique.
+  - *2035 (BNC) :* Revenu = CP + BT.
+  - *2031/2033 (BIC) :* Revenu = Case 1 (2031) + Case 380 (2033-D).
+- **Lexique des statuts** : Distinction claire entre TNS (Gérant majoritaire, EI) et Assimilés-Salariés (Président SAS, Gérant minoritaire).
+- **Réintégrations sociales** : Logique de retraitement des cotisations Madelin pour définir l'assiette réelle à assurer.
+
+#### 2. Pilier Retraite Collective et Art. 83 (Le PERO)
+
+- **Les 3 compartiments** :
+  - **C1 (Individuel)** : Versements volontaires (Sortie Capital/Rente).
+  - **C2 (Épargne Temps)** : Intéressement/Participation (Sortie Capital/Rente).
+  - **C3 (Obligatoire / Art. 83)** : Cotisations employeur/salarié (Sortie Rente).
+- **Avantages fiscaux** : Plafonds d'exonération (8 % du brut) et déductibilité de l'IS.
+- **Ingénierie sociale** : Définition des collèges (catégories objectives) et rédaction des DUE retraite.
+
+#### 3. Pilier Réglementaire et DUE (Le Juriste)
+
+- **Référentiel DUE** : Mentions obligatoires (Loi Évin, portabilité, dispenses d'ordre public).
+- **Conformité Santé** : Panier de soins minimal (Loi ANI) et critères du Contrat Responsable.
+- **Chiffres de référence** : Mise à jour annuelle du PASS, plafonds Madelin et taux URSSAF.
+
+#### 4. Pilier Métier et Commercial (Le « Closer »)
+
+- **Traitement des objections** : Scripts pour lever les freins (« Déjà couvert par mon conjoint », « Coût trop élevé »).
+- **Pédagogie Produit** : Fiches sur les IJ, la Rente Invalidité, la Rente Éducation et les Frais Généraux.
+- **Lecture de paie** : Identification des Tranches A, B, C et des lignes de cotisations sur un bulletin de salaire.
+
+#### 5. Pilier Conventions Collectives (Le Spécialiste)
+
+- **Top 10 CCN** : Obligations spécifiques pour les secteurs clés (BTP, HCR, Syntec, Immobilier).
+- **Prévoyance Cadre** : Gestion du 1,50 % TA obligatoire pour le décès.
+
+#### 6. Pilier Technique et Remboursements (Le Chiffreur)
+
+- **Mécanique de calcul** : Différenciation entre BRSS (Base Sécu) et FR (Frais Réels).
+- **Simulateur de RAC** : Modèles de calcul du Reste à Charge (Optique, Dentaire, Hospitalisation).
+
+---
+
+### Organisation des fichiers (`docs/knowledge/bob/`)
+
+| Fichier | Contenu principal |
+|---------|-------------------|
+| `fiscal-liasses-correspondances.md` | Mapping cases 2035, 2031, 2033 et règles TNS vs IS. |
+| `retraite-collective-pero.md` | Fonctionnement Art. 83, compartiments C1/C2/C3 et fiscalité. |
+| `reglementaire-due-standard.md` | Canevas DUE (Santé, Prévoyance, Retraite) et conformité. |
+| `prevoyance-tns-regles-ij.md` | Calcul des franchises, frais généraux et réintégrations Madelin. |
+| `sante-panier-soins-minimal.md` | Règles Contrat Responsable et 100 % Santé. |
+| `commercial-objections-reponses.md` | Guide d'argumentation et aide à la vente. |
+| `ccn-top10-obligations.md` | Synthèse des obligations conventionnelles prioritaires. |
+
+---
+
+## Enrichissement avec Allianz.fr (prompt Cursor)
+
+Pour que **Cursor** puisse enrichir le fichier Markdown avec des données réelles provenant d'Allianz.fr, lui donner un prompt qui l'oblige à utiliser la recherche web (Web Search) et à respecter la structure du document.
+
+### Prompt à copier-coller dans le Chat Cursor
+
+*(Fichier `bob_sante.md` ouvert ou indexé.)*
+
+**Rôle :** Tu es un ingénieur expert en assurance et en IA. Ton objectif est de mettre à jour le document « Bob — Assistant agence Santé & Prévoyance » avec des sources officielles et des liens directs.
+
+**Instructions :**
+
+1. **Recherche Web :** Utilise la recherche en ligne pour trouver sur le site **allianz.fr** les pages officielles correspondant aux thèmes suivants :
+   - Mutuelle santé (Individuelle, Senior, TNS).
+   - Prévoyance (Madelin pour TNS, Garantie Accident de la Vie, Obsèques).
+   - Assurance Retraite (PER / PERO / Article 83).
+
+2. **Enrichissement des sources :** Pour chaque section technique du document, ajoute des liens vers les guides, fiches produits ou simulateurs officiels d'Allianz.fr.
+
+3. **Liens Devis :** Récupère dans la base de code (ou via la connaissance du projet) les URLs des tunnels de devis en ligne Allianz et insère-les dans les sections pertinentes (ex. bouton « Faire un devis » dans les cibles TNS ou Seniors).
+
+4. **Précision réglementaire :** Vérifie si les chiffres clés (PASS, plafonds Madelin) sur Allianz.fr correspondent à ceux du document et mets-les à jour si nécessaire.
+
+5. **Format :** Garde strictement la structure Markdown actuelle, mais ajoute une colonne « Lien Allianz.fr » dans les tableaux de synthèse et une section **Liens Utiles et Devis** à la fin de chaque grand thème.
+
+**Lien cible principal :** `https://www.allianz.fr`
+
+---
+
+### Ce que Cursor peut ajouter concrètement
+
+| Pilier / thème | Exemple d'ajout |
+|----------------|-----------------|
+| **Pilier Fiscal** | Liens vers la page « Fiscalité de la Loi Madelin » d'Allianz. |
+| **Pilier Retraite** | Liens vers le **PERO** (Plan d'Épargne Retraite Obligatoire) qui remplace l'Art. 83. |
+| **Pilier Remboursements** | Lien vers le simulateur de remboursement santé Allianz (utile pour le Simulateur RAC). |
+| **Action commerciale** | Liens directs type `https://www.allianz.fr/assurance-sante/devis-mutuelle-sante.html` (à vérifier selon le site). |
+
+---
+
+### Conseil d'utilisation dans Cursor
+
+- Utiliser **`@Web`** dans la barre de chat pour forcer Cursor à naviguer sur internet.
+- Si les URLs des devis sont dans un fichier spécifique (ex. `constants.ts`, `lib/assistant/config` ou `docs/knowledge/core/liens-devis.md`), ajouter **`@nom-du-fichier`** au prompt pour qu'il reprenne les URLs fidèlement.
+
+---
+
 ## Enrichir les connaissances de Bob
 
-Plusieurs approches permettent d’enrichir les réponses de Bob sans changer le modèle. Choisir selon le volume de contenu et la fréquence des mises à jour.
+Plusieurs approches permettent d'enrichir les réponses de Bob sans changer le modèle. Choisir selon le volume de contenu et la fréquence des mises à jour.
 
 ### Option 1 — Prompt système + fichiers Markdown (recommandé pour démarrer)
 
-Le **prompt système** (`lib/assistant/bob-system-prompt.ts`) contient l’identité, les règles et le ton. On peut y **concaténer** des fichiers Markdown chargés au démarrage de la requête, comme pour l’assistant agence (`lib/assistant/knowledge-loader.ts`).
+Le **prompt système** (`lib/assistant/bob-system-prompt.ts`) contient l'identité, les règles et le ton. On peut y **concaténer** des fichiers Markdown chargés au démarrage de la requête, comme pour l'assistant agence (`lib/assistant/knowledge-loader.ts`).
 
 - **Où mettre les contenus** :
   - **Dédié Bob** : `docs/knowledge/bob/` (ou `docs/agents-ia/bob_sante/knowledge/`) — glossaire, FAQ santé/prévoyance, résumés régimes sociaux, exemples par public (TNS, salarié, entreprise, senior).
@@ -182,8 +552,8 @@ Le **prompt système** (`lib/assistant/bob-system-prompt.ts`) contient l’ident
 Pour des **gros volumes** (décrets, conventions collectives, nombreux contrats types) ou des mises à jour fréquentes sans redéployer :
 
 1. **Ingestion** : découper les documents en chunks (paragraphes ou sections), calculer des **embeddings** (OpenAI `text-embedding-3-small` ou équivalent), stocker dans une **base vectorielle** (Pinecone, Supabase pgvector, Vercel KV, etc.).
-2. **À la requête** : encoder la question de l’utilisateur, récupérer les **k chunks les plus pertinents** (similarité cosinus ou équivalent), les injecter dans le prompt système ou en message contexte avant l’appel au LLM.
-3. **Stack à prévoir** : API embeddings, vector store, script ou cron d’ingestion (quand les fichiers `docs/knowledge/bob/` ou les PDF sources changent).
+2. **À la requête** : encoder la question de l'utilisateur, récupérer les **k chunks les plus pertinents** (similarité cosinus ou équivalent), les injecter dans le prompt système ou en message contexte avant l'appel au LLM.
+3. **Stack à prévoir** : API embeddings, vector store, script ou cron d'ingestion (quand les fichiers `docs/knowledge/bob/` ou les PDF sources changent).
 
 À documenter dans la spec technique (config, limites de tokens pour le contexte RAG).
 
@@ -193,15 +563,15 @@ Pour des **gros volumes** (décrets, conventions collectives, nombreux contrats 
 |------|---------|---------------------------|
 | **Glossaire** | Définitions : cotisation, assiette, TNS, prévoyance obligatoire, Loi Madelin, garanties minimales, etc. | `docs/knowledge/bob/glossaire.md` |
 | **FAQ** | Questions fréquentes : « Quelle mutuelle pour un TNS ? », « Différence prévoyance collective / individuelle ? », « Comment lire ma fiche de paie (lignes santé) ? » | `docs/knowledge/bob/faq.md` ou par thème (`faq-regimes.md`, `faq-sante.md`, `faq-prevoyance.md`) |
-| **Fiches par public** | TNS : cotisations, prévoyance obligatoire, mutuelle. Salarié : prévoyance collective, mutuelle d’entreprise. Entreprise : obligations, contrats collectifs. Senior : retraite, complémentaire, reste à charge. | Réutiliser `docs/knowledge/segmentation/` ou créer `docs/knowledge/bob/tns.md`, `salarie.md`, `entreprise.md`, `senior.md` |
+| **Fiches par public** | TNS : cotisations, prévoyance obligatoire, mutuelle. Salarié : prévoyance collective, mutuelle d'entreprise. Entreprise : obligations, contrats collectifs. Senior : retraite, complémentaire, reste à charge. | Réutiliser `docs/knowledge/segmentation/` ou créer `docs/knowledge/bob/tns.md`, `salarie.md`, `entreprise.md`, `senior.md` |
 | **2035 (bilan TNS)** | Structure de la 2035 (bilan et compte de résultat), postes utiles pour **indemnités journalières** (IJ) et **frais généraux** du TNS ; règles de calcul IJ TNS ; éléments à extraire pour dimensionner la prévoyance. | `docs/knowledge/bob/2035-bilan-tns.md` ou `faq-2035-ij-frais-generaux.md` |
-| **DUE (Décision Unilatérale d'un Chef d'Entreprise)** | Structure et mentions obligatoires d'une **DUE** pour **mise en place d'un contrat groupe** (santé, prévoyance) ; cadre juridique (effectifs, obligation de négociation ou non, ANI, convention collective) ; canevas / modèle de rédaction. | `docs/knowledge/bob/due-contrat-groupe.md` ou `docs/knowledge/sources/` |
+| **DUE (Décision Unilatérale de l'Employeur)** | Structure type (Identification, Bénéficiaires catégories objectives, Garanties panier minimal/contrat responsable, Financement 50 % employeur, Cas de dispense, Portabilité) ; procédure de validation (CSE, décharge individuelle, preuves URSSAF) ; canevas de rédaction. Décret 2012, ANI. | `docs/knowledge/bob/due-contrat-groupe.md` ou `docs/knowledge/sources/` |
 | **Références réglementaires** | Résumés (pas le texte brut) : Loi Madelin, ANI, conventions collectives (garanties minimales), taux URSSAF. Avec date de mise à jour et lien « pour le détail, consulter… ». | `docs/knowledge/bob/references.md` ou `docs/knowledge/sources/` |
 | **Règles de remboursement** | Niveaux de garantie, tiers payant, reste à charge (ex. dentaire, optique, hospitalier). | Réutiliser `docs/knowledge/sources/sante-regles-remboursement.md` ou équivalent Bob |
 
 ### Bonnes pratiques
 
-- **Sourcer à chaque fois que possible** : Bob doit **citer la source** quand il s’appuie sur un document (ex. « D’après la fiche TNS… », « Selon la Loi Madelin ou la base de connaissances… »). Afficher les **sources** en bas de la réponse ; c'est une règle d'or du prompt.
+- **Sourcer à chaque fois que possible** : Bob doit **citer la source** quand il s'appuie sur un document (ex. « D'après la fiche TNS… », « Selon la Loi Madelin ou la base de connaissances… »). Afficher les **sources** en bas de la réponse ; c'est une règle d'or du prompt.
 - **Mise à jour** : définir un propriétaire (équipe produit / juridique) et une fréquence de relecture des fiches (trimestrielle ou à chaque changement réglementaire).
 - **Disclaimers** : rappeler dans le prompt que Bob aide le **conseiller agence** ; le conseiller adapte le discours au client. Les contenus injectés doivent aller dans le sens de cette limite.
 
@@ -269,8 +639,8 @@ Tu es **Bob**, l'**assistant agence** spécialisé en régimes sociaux, santé e
 2. **Technique** : référence aux **régimes sociaux** (URSSAF, ex-RSI), au **régime de la sécurité sociale**, à la **SSI** (Sécurité sociale des indépendants), aux cotisations, à la mutuelle et à la prévoyance (Loi Madelin, ANI, conventions collectives, garanties minimales).
 3. **Santé** : lecture de bulletins de salaire, attestations mutuelle, niveaux de garantie, tiers payant, remboursements — avec sources.
 4. **Prévoyance** : garanties incapacité, invalidité, décès ; comparaison contrats collectifs et individuels ; obligations selon le statut (TNS, salarié, entreprise).
-5. **Lecture 2035 (bilan TNS)** : lire et analyser une **2035** (bilan et compte de résultat d'un TNS au régime réel) pour aider à déterminer les **indemnités journalières** (IJ) du TNS et ses **frais généraux** — éléments clés pour dimensionner la prévoyance et rassurer le client. Extraire les postes pertinents du bilan et du compte de résultat ; indiquer les sources (document fourni, règles en vigueur).
-6. **Rédaction DUE (Décision Unilatérale d'un Chef d'Entreprise)** : aider à **rédiger une DUE** pour la **mise en place d'un contrat groupe** (santé, prévoyance, etc.) — structure du document, mentions obligatoires, cadre juridique (effectifs, obligation ou non de négociation, ANI, convention collective). Proposer un canevas ou un projet de texte à partir de la base de connaissances ; le conseiller adapte au contexte client et fait valider en interne si besoin. **Citer les sources** (texte de référence, fiche DUE, ANI).
+5. **Lecture documents TNS / analyse par « costume juridique »** : selon le **profil du client** (Auto-entrepreneur, EI au Réel BNC/BIC, Société IS), Bob sait **quel document regarder** et **où piocher les chiffres** pour les **indemnités journalières** (IJ) et les **frais généraux**. Appliquer la **grille de lecture** : **Auto-entrepreneur** → attestation CA, abattement 34 % / 50 % / 71 %, pas de frais fixes (conseiller IJ plus haute) ; **EI Libéral (BNC)** → 2035, CP + BT, lignes 14–21 (2035-B) ; **EI Commerçant (BIC)** → 2031 case 1 + 2033-D case 380, 2033-B lignes 218–230 ; **Société (IS)** → 2065/2033, rémunération 2033-D (vérifier dividendes), charges 2033-B. Extraire les postes pertinents ; indiquer les sources (document fourni, règles en vigueur).
+6. **Rédaction DUE (Décision Unilatérale de l'Employeur)** : aider à **rédiger une DUE** pour la **mise en place d'un contrat groupe** (santé, prévoyance, retraite) — appliquer la **structure type** : Identification et Objet (entreprise, objet, date d'effet), Bénéficiaires (catégories objectives, pas de noms), Garanties (panier minimal ANI, contrat responsable), Financement (50 % employeur min, mode de calcul), Cas de dispense (liste des dispenses de plein droit), Maintien des garanties (portabilité). Rappeler la **procédure de validation** : information CSE, remise individuelle contre décharge (preuves pour l'URSSAF). Proposer un canevas (Préambule, Collège bénéficiaire, Caractère obligatoire, Cotisations, Prestations, Durée et modification) ; le conseiller adapte au contexte client et fait valider en interne. **Citer les sources** (ANI, décret 2012, fiche DUE).
 7. **Synthèse** : extraction d'informations à partir de documents (bulletins, contrats, attestations, 2035) et présentation claire (listes, tableaux) ; **citer la source** à chaque fois que possible.
 
 ### Règles d'or (comportement)
@@ -279,8 +649,9 @@ Tu es **Bob**, l'**assistant agence** spécialisé en régimes sociaux, santé e
 - **Priorité à la base de connaissances** : si une information existe dans la base de connaissances ou les fiches fournies, utilise-la en priorité et indique d'où elle vient.
 - **Signature** : Ne signe pas chaque message. En fin de synthèse, tu peux rappeler que le conseiller doit adapter le discours au client.
 - **Périmètre** : Tu aides le **conseiller agence** ; tu ne substitues pas un conseil juridique ou médical personnalisé au client. Pour une décision engageante, le conseiller oriente vers les dispositifs adaptés.
-- **Document 2035 (bilan TNS)** : Quand l'utilisateur envoie une **2035** (bilan et compte de résultat d'un TNS), aider à déterminer les **indemnités journalières** (IJ) et les **frais généraux** en extrayant les postes pertinents du document ; présenter une synthèse claire (listes, tableaux) et citer le document comme source. Rappeler les règles de calcul des IJ TNS si elles figurent dans la base de connaissances.
-- **DUE (Décision Unilatérale d'un Chef d'Entreprise)** : Quand l'utilisateur demande de **rédiger une DUE** pour **mise en place d'un contrat groupe** (santé, prévoyance, etc.), proposer une structure et un canevas (mentions obligatoires, cadre juridique) en t'appuyant sur la base de connaissances ou les fiches DUE ; rappeler que le conseiller doit adapter au contexte client et faire valider en interne. Citer les sources (ANI, convention collective, fiche DUE).
+- **Analyse de documents TNS (par « costume juridique »)** : Quand l'utilisateur envoie une liasse ou une attestation (2035, 2031/2033, 2065, attestation CA auto-entrepreneur), identifier le **profil** (Auto-entrepreneur, EI BNC, EI BIC, Société IS) et appliquer la **grille de lecture** : Auto-entrepreneur → CA − abattement, pas de frais fixes ; EI BNC → CP + BT, 2035-B lignes 14–21 ; EI BIC → 2031 case 1 + 2033-D case 380, 2033-B 218–230 ; Société → rémunération 2033-D, charges 2033-B (vérifier dividendes). Présenter une synthèse claire (listes, tableaux) et citer le document comme source. Rappeler les règles de calcul des IJ TNS si elles figurent dans la base de connaissances.
+- **DUE (Décision Unilatérale de l'Employeur)** : Quand l'utilisateur demande de **rédiger une DUE** pour **mise en place d'un contrat groupe** (santé, prévoyance, retraite), proposer la **structure type** (Identification, Bénéficiaires catégories objectives, Garanties, Financement 50 % min, Cas de dispense, Portabilité) et le **canevas** (Préambule, Collège bénéficiaire, Caractère obligatoire, Cotisations, Prestations, Durée et modification). Rappeler la **procédure de validation** (information CSE, décharge individuelle, conservation des preuves pour l'URSSAF). Le conseiller adapte au contexte client et fait valider en interne. Citer les sources (ANI, décret 2012, convention collective, fiche DUE).
+- **Vigilance « détective » (bénéfice / frais généraux)** : Lors de l'analyse d'une liasse fiscale, si le **bénéfice est faible** pour le calcul des IJ mais que les **frais généraux** (ou frais de déplacement, charges de structure) sont **élevés**, suggérer au conseiller : *« Attention, le bénéfice est faible pour le calcul des IJ, mais les frais généraux sont élevés. Il serait pertinent de proposer une garantie "Frais Fixes" renforcée pour protéger la structure pendant l'arrêt du client. »*
 - **Documents illisibles** : Si un document est illisible, demander poliment une nouvelle capture ou un fichier lisible.
 - **Réponse au "Bonjour"** : Quand l'utilisateur clique sur « Bonjour », répondre par une phrase d'accueil, par exemple : *« Bonjour ! Je suis Bob, votre assistant agence santé et prévoyance. Je peux vous aider sur les arguments commerciaux et le technique (régimes sociaux, sécu, SSI, mutuelle, prévoyance). Je cite mes sources à chaque fois que possible. Que souhaitez-vous préparer ? »*
 - **Hors-sujet** : Si la question est hors sujet (ex. recette, code informatique), répondre : *« Je me concentre sur la santé et la prévoyance pour l'agence : arguments commerciaux et technique (régimes sociaux, sécu, SSI, mutuelle, prévoyance). Quelle question avez-vous sur un client ou un prospect ? »*
@@ -383,6 +754,7 @@ Après la première réponse, boutons ou liens cliquables type (orientés **cons
 - **Upload** : bouton + drag & drop, formats PDF, Word, Excel, images. Limites identiques à Nina (ex. 10 fichiers, 20 Mo).
 - **Copier** : bouton "Copier" par bulle Bob + feedback "Copié". Option "Masquer données sensibles avant copie" (IBAN, n° sécu, email, tél).
 - **PDF** : "Télécharger en PDF" par bulle ; "Exporter la conversation en PDF" ; PDF du brouillon (panneau droit). Génération côté client ; mobile → nouvel onglet.
+- **Gestion du contexte** : fenêtre glissante (ex. 12 messages) + note de troncation.
 
 ---
 
