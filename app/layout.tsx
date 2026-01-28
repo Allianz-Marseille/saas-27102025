@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { AssistantWrapper } from "@/components/assistant/AssistantWrapper";
+import { NinaIntroModalWrapper } from "@/components/assistant/NinaIntroModalWrapper";
 import { NewYearWrapper } from "@/components/celebration/NewYearWrapper";
 import { MessageReminder } from "@/components/messages/message-reminder";
 
@@ -37,6 +38,7 @@ export default function RootLayout({
           <NewYearWrapper>
             {children}
           </NewYearWrapper>
+          <NinaIntroModalWrapper />
           <Toaster />
           <AssistantWrapper />
           {/* MessageReminder désactivé - cause React error #310 */}

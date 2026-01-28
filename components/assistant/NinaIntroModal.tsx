@@ -10,14 +10,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { DialogClose } from "@/components/ui/dialog";
 
 interface NinaIntroModalProps {
   open: boolean;
   onClose: () => void;
+  /** Appelé après onClose quand l'utilisateur clique sur "Démarrer avec Nina" (ex. navigation vers Nina). */
+  onCtaClick?: () => void;
 }
 
-export function NinaIntroModal({ open, onClose }: NinaIntroModalProps) {
+export function NinaIntroModal({ open, onClose, onCtaClick }: NinaIntroModalProps) {
   return (
     <Dialog
       open={open}
@@ -143,14 +144,16 @@ export function NinaIntroModal({ open, onClose }: NinaIntroModalProps) {
         </div>
 
         <DialogFooter>
-          <DialogClose asChild>
-            <Button
-              className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700"
-              aria-label="Démarrer avec Nina"
-            >
-              Démarrer avec Nina
-            </Button>
-          </DialogClose>
+          <Button
+            onClick={() => {
+              onClose();
+              onCtaClick?.();
+            }}
+            className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+            aria-label="Démarrer avec Nina"
+          >
+            Démarrer avec Nina
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

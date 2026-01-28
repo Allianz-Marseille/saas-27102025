@@ -30,8 +30,7 @@ import {
 } from "@/lib/assistant/file-processing";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { PDF_EXPORT_MAX_CHARS, isNinaIntroModalActive } from "@/lib/assistant/config";
-import { NinaIntroModal } from "@/components/assistant/NinaIntroModal";
+import { PDF_EXPORT_MAX_CHARS } from "@/lib/assistant/config";
 
 /**
  * Page Nina — Bot Secrétaire (fullscreen).
@@ -73,7 +72,6 @@ export default function BotSecretairePage() {
   const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<ProcessedFile[]>([]);
   const [maskBeforeCopy, setMaskBeforeCopy] = useState(false);
-  const [showIntroModal, setShowIntroModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -103,20 +101,6 @@ export default function BotSecretairePage() {
       textareaRef.current.focus();
     }
   }, [hasStarted, isLoading]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (isNinaIntroModalActive() && !localStorage.getItem("nina-intro-modal-dismissed")) {
-      setShowIntroModal(true);
-    }
-  }, []);
-
-  const handleCloseIntroModal = useCallback(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("nina-intro-modal-dismissed", "true");
-    }
-    setShowIntroModal(false);
-  }, []);
 
   const sendMessage = useCallback(
     async (
@@ -1139,7 +1123,6 @@ export default function BotSecretairePage() {
           </div>
         )}
       </main>
-      <NinaIntroModal open={showIntroModal} onClose={handleCloseIntroModal} />
     </div>
   );
 }
