@@ -526,19 +526,24 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
           // Si le fichier a des données brutes (base64) mais pas de contenu, parser côté serveur
           else if (file.data && typeof file.data === "string") {
             try {
-              // Convertir base64 en Buffer
               const base64Data = file.data.replace(/^data:.*,/, '');
               const buffer = Buffer.from(base64Data, 'base64');
               const isPdf =
                 file.type === "application/pdf" ||
                 (file.name && file.name.toLowerCase().endsWith(".pdf"));
+              if (isPdf) {
+                console.log(`[chat] PDF reçu: ${file.name}, type=${file.type}, buffer.length=${buffer.length}, base64.length=${base64Data.length}`);
+              }
               const parsedContent = isPdf
                 ? await extractTextFromPDFBuffer(buffer)
                 : await parseFile(buffer, file.name);
               parsedFilesContent += `\n\n--- FICHIER: ${file.name || "Sans nom"} (${file.type || "Type inconnu"}) - Parsé côté serveur ---\n${parsedContent}\n`;
             } catch (parseError) {
-              console.error(`Erreur lors du parsing serveur du fichier ${file.name}:`, parseError);
-              parsedFilesContent += `\n\n--- ERREUR lors du parsing serveur du fichier "${file.name || "Sans nom"}" : ${parseError instanceof Error ? parseError.message : "Erreur inconnue"} ---\n`;
+              const errMsg = parseError instanceof Error ? parseError.message : "Erreur inconnue";
+              const errStack = parseError instanceof Error ? parseError.stack : undefined;
+              const errCause = parseError instanceof Error ? parseError.cause : undefined;
+              console.error(`Erreur lors du parsing serveur du fichier ${file.name}:`, errMsg, errCause ?? "", errStack ?? "");
+              parsedFilesContent += `\n\n--- ERREUR lors du parsing serveur du fichier "${file.name || "Sans nom"}" : ${errMsg} ---\n`;
               if (file.error) {
                 parsedFilesContent += `Erreur parsing client: ${file.error}\n`;
               }
