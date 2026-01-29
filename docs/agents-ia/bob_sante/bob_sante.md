@@ -4,7 +4,9 @@
 > **Bob est l'assistant agence** : à la fois **commercial** (arguments pour rassurer le client, faciliter la vente) et **technique** (régimes sociaux, régime de la sécurité sociale, SSI, mutuelle, prévoyance). Il **source à chaque fois que possible**.
 > Lieu : `docs/agents-ia/bob_sante/`
 > Visuels : `public/agents-ia/bot-sante/` — **`bob_rit.png`** (page d'accueil avec bouton « Bonjour »), **`bob_reflechit.png`** (dans le chat : bulles, en-tête, indicateur « Bob écrit… »).
-> Code : `lib/assistant/bob-system-prompt.ts` → `getBobSystemPrompt()` (à créer).
+> Code : `lib/assistant/bob-system-prompt.ts` → `getBobSystemPrompt()`.
+
+**Statut projet : Terminé & Prêt pour Production.** Base de connaissances complète (Vagues 1 à 3) + fiches d'enrichissement (conformité DUE, CCN, panier soins, objections, FAQ). `loadBobKnowledge()` charge l'ensemble des fiches `.md` de `docs/knowledge/bob/` (limite 28k caractères). Reste : tests manuels, maintenance annuelle (PASS, plafonds), liens Allianz.fr optionnels.
 
 ---
 
@@ -217,7 +219,7 @@ Passer d'une situation « client TNS marié, 2 enfants » à une recommandation 
 
 ### Fiche outil Bob
 
-À intégrer en base de connaissances : *« Audit conseiller — Questions clés situation civile et activité → garanties (rente conjoint, rente éducation, capital décès) »* avec ce tableau et les liens vers [Expertise Fiscale 360°](#expertise-fiscale-360°-entrée--sortie) et [Régimes obligatoires & CCN](#régimes-obligatoires--ccn).
+La fiche **`audit-diagnostic-conseiller.md`** est intégrée en base de connaissances (`docs/knowledge/bob/`) : questionnement stratégique (situation civile, enfants, conjoint, patrimoine, activité), diagnostic matrimonial (PACS sans testament → clause bénéficiaire nominative ; concubinage → capital décès ; enfants mineurs → rente éducation), transformation situation → garanties, diagnostic activité & revenus. Le prompt système Bob inclut la règle : pour un client TNS, vérifier si la situation familiale a été abordée et proposer les garanties adéquates (rente conjoint, rente éducation, capital décès). Voir aussi [Expertise Fiscale 360°](#expertise-fiscale-360°-entrée--sortie) et [Régimes obligatoires & CCN](#régimes-obligatoires--ccn).
 
 ---
 
@@ -477,10 +479,10 @@ Dès qu'un document est téléversé, Bob doit chercher :
 
 | Étape | Action | Statut |
 |-------|--------|--------|
-| **1. Prompt système** | Finaliser `lib/assistant/bob-system-prompt.ts` avec les formules et règles ci-dessus. | À faire |
-| **2. Knowledge Base** | Intégrer les fiches « Grille de lecture liasse » et « Modèle DUE » dans `docs/knowledge/bob/`. | À faire |
-| **3. Interface** | Créer la page fullscreen avec le bouton « Bonjour » et le split-screen Brouillon. | À faire |
-| **4. Tests** | Upload de vraies liasses 2035/2033 anonymisées pour vérifier l'extraction. | À faire |
+| **1. Prompt système** | `lib/assistant/bob-system-prompt.ts` : formules IJ, DUE, 1,50 % TA cadres, preuve remise individuelle, audit TNS. | Fait |
+| **2. Knowledge Base** | Socle (Vagues 1–3) + enrichissement : fiscal-liasses, 2035-bilan-tns, prevoyance-tns-regles-ij, due-contrat-groupe, retraite-collective-pero, regimes-obligatoires-ccn, audit-diagnostic-conseiller, fiscalite-entree-sortie-prevoyance, glossaire, references, reglementaire-due-standard, ccn-top10-obligations, sante-panier-soins-minimal, commercial-objections-reponses, faq. **Terminé.** | Fait |
+| **3. Interface** | Page fullscreen, « Bonjour », split-screen Brouillon. | Fait |
+| **4. Tests** | Upload liasses 2035/2033 ; scénarios complexes ; questions pièges ; test « 100 % Santé » pour senior. | À faire |
 
 ---
 
