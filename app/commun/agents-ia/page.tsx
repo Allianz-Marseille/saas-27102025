@@ -20,11 +20,23 @@ import {
 } from "@/components/ui/tooltip";
 import { ENABLE_BOB_BOT } from "@/lib/assistant/config";
 
-const BOT_SECRETAIRE = {
+type BotCardConfig = {
+  name: string;
+  firstName: string;
+  href: string;
+  image: string;
+  /** Image affichée au survol (sourire, plan rapproché…) pour rendre le bot vivant */
+  imageHover?: string;
+  hoverDescription: string;
+  services: string[];
+};
+
+const BOT_SECRETAIRE: BotCardConfig = {
   name: "Bot Secrétaire",
   firstName: "Nina",
   href: "/commun/agents-ia/bot-secretaire",
   image: "/agents-ia/bot-secretaire/avatar.jpg",
+  imageHover: "/agents-ia/bot-secretaire/avatar-tete.jpg",
   hoverDescription: "Rédiger, préparer un mail, corriger…",
   services: [
     "Rédiger un mail",
@@ -33,11 +45,12 @@ const BOT_SECRETAIRE = {
   ],
 };
 
-const BOB_SANTE = {
+const BOB_SANTE: BotCardConfig = {
   name: "Assistant agence Santé & Prévoyance",
   firstName: "Bob",
   href: "/commun/agents-ia/bob-sante",
   image: "/agents-ia/bot-sante/bob_rit.png",
+  imageHover: "/agents-ia/bot-sante/bob_sourit.png",
   hoverDescription: "Arguments commerciaux et technique (régimes sociaux, sécu, SSI, mutuelle, prévoyance). Sourçage systématique.",
   services: [
     "Analyser une 2035",
@@ -95,86 +108,64 @@ export default function AgentsIAPage() {
         <CardContent>
           <TooltipProvider>
             <div className="flex flex-wrap gap-6">
-              <Link
-                href={BOT_SECRETAIRE.href}
-                className="group block w-[min(100%,theme(spacing.40))] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-xl"
-                aria-label={`Ouvrir ${BOT_SECRETAIRE.firstName}, ${BOT_SECRETAIRE.name}`}
-              >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="cursor-pointer">
-                      <div className="relative aspect-square w-full max-w-40 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50">
-                        <Image
-                          src={BOT_SECRETAIRE.image}
-                          alt={BOT_SECRETAIRE.name}
-                          fill
-                          className="object-cover object-top"
-                          sizes="(max-width: 768px) 128px, 160px"
-                        />
-                      </div>
-                      <p className="mt-2 text-center text-sm font-medium text-slate-700 group-hover:text-slate-900 dark:text-slate-300 dark:group-hover:text-slate-100">
-                        {BOT_SECRETAIRE.firstName} · {BOT_SECRETAIRE.name}
-                      </p>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="bottom"
-                    className="max-w-xs text-center"
+              {[BOT_SECRETAIRE, ...(ENABLE_BOB_BOT ? [BOB_SANTE] : [])].map(
+                (bot) => (
+                  <Link
+                    key={bot.href}
+                    href={bot.href}
+                    className="group block w-[min(100%,theme(spacing.40))] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-xl"
+                    aria-label={`Ouvrir ${bot.firstName}, ${bot.name}`}
                   >
-                    <span className="font-medium">
-                      {BOT_SECRETAIRE.firstName} — {BOT_SECRETAIRE.name}
-                    </span>
-                    <br />
-                    <span className="text-muted-foreground text-xs">
-                      {BOT_SECRETAIRE.hoverDescription}
-                    </span>
-                    <p className="mt-2 pt-2 border-t border-border text-xs font-medium">
-                      {BOT_SECRETAIRE.services.join(" · ")}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </Link>
-
-              {ENABLE_BOB_BOT && (
-                <Link
-                  href={BOB_SANTE.href}
-                  className="group block w-[min(100%,theme(spacing.40))] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-xl"
-                  aria-label={`Ouvrir ${BOB_SANTE.firstName}, ${BOB_SANTE.name}`}
-                >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="cursor-pointer">
-                        <div className="relative aspect-square w-full max-w-40 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50">
-                          <Image
-                            src={BOB_SANTE.image}
-                            alt={BOB_SANTE.name}
-                            fill
-                            className="object-cover object-top"
-                            sizes="(max-width: 768px) 128px, 160px"
-                          />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="cursor-pointer">
+                          <div
+                            className="relative aspect-square w-full max-w-40 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-all duration-300 ease-out group-hover:shadow-lg group-hover:-translate-y-1.5 dark:border-slate-700 dark:bg-slate-800/50"
+                            style={{ willChange: "transform" }}
+                          >
+                            <div className="absolute inset-0 transition-transform duration-300 ease-out group-hover:scale-105">
+                              <Image
+                                src={bot.image}
+                                alt={bot.name}
+                                fill
+                                className="object-cover object-top"
+                                sizes="(max-width: 768px) 128px, 160px"
+                              />
+                              {bot.imageHover && (
+                                <Image
+                                  src={bot.imageHover}
+                                  alt=""
+                                  aria-hidden
+                                  fill
+                                  className="absolute inset-0 object-cover object-top opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100"
+                                  sizes="(max-width: 768px) 128px, 160px"
+                                />
+                              )}
+                            </div>
+                          </div>
+                          <p className="mt-2 text-center text-sm font-medium text-slate-700 transition-colors duration-200 group-hover:text-slate-900 dark:text-slate-300 dark:group-hover:text-slate-100">
+                            {bot.firstName} · {bot.name}
+                          </p>
                         </div>
-                        <p className="mt-2 text-center text-sm font-medium text-slate-700 group-hover:text-slate-900 dark:text-slate-300 dark:group-hover:text-slate-100">
-                          {BOB_SANTE.firstName} · {BOB_SANTE.name}
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="bottom"
+                        className="max-w-xs text-center"
+                      >
+                        <span className="font-medium">
+                          {bot.firstName} — {bot.name}
+                        </span>
+                        <br />
+                        <span className="text-muted-foreground text-xs">
+                          {bot.hoverDescription}
+                        </span>
+                        <p className="mt-2 pt-2 border-t border-border text-xs font-medium">
+                          {bot.services.join(" · ")}
                         </p>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      side="bottom"
-                      className="max-w-xs text-center"
-                    >
-                      <span className="font-medium">
-                        {BOB_SANTE.firstName} — {BOB_SANTE.name}
-                      </span>
-                      <br />
-                      <span className="text-muted-foreground text-xs">
-                        {BOB_SANTE.hoverDescription}
-                      </span>
-                      <p className="mt-2 pt-2 border-t border-border text-xs font-medium">
-                        {BOB_SANTE.services.join(" · ")}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </Link>
+                      </TooltipContent>
+                    </Tooltip>
+                  </Link>
+                )
               )}
             </div>
           </TooltipProvider>
