@@ -39,7 +39,33 @@ Cursor peut réaliser tout ce qui suit **sans attendre** de contenu, décision o
 
 À faire **de ton côté** (ou en équipe) après ou en parallèle du bloc 1. Sans ça, la finalisation (bloc 3) ne peut pas être complète.
 
-### 2.1 Base de connaissances — Fiches à créer ou compléter
+---
+
+### Ce qui a été fait (bloc 2)
+
+| # | Tâche | Commentaire |
+|---|--------|-------------|
+| 2.1 | **Base de connaissances** | Toutes les fiches listées ci‑dessous sont créées dans `docs/knowledge/bob/` (+ `liens-devis-allianz.md`). |
+| 2.4 | **Enrichissement Allianz.fr** | Liens Allianz.fr dans `references.md`, `liens-devis-allianz.md`, renvois dans `prevoyance-tns-regles-ij.md` et `regimes-obligatoires-ccn.md`. |
+| 2.5 | **URLs tunnels de devis** | Liste complète dans `liens-devis-allianz.md` avec code agence H91358 (auto, habitation, santé, pro, etc.). |
+
+---
+
+### Ce qui reste à faire (bloc 2) — à faire avant de lancer la partie 3
+
+| # | Tâche | À faire |
+|---|--------|--------|
+| **2.2** | **Variable Vercel** | Ajouter / compléter dans le projet Vercel : `ENABLE_BOB_BOT` ou `NEXT_PUBLIC_ENABLE_BOB_BOT` (et si besoin `BOB_TIMEOUT`, `OPENAI_API_KEY`). |
+| **2.3** | **Documents de test** | Préparer des liasses 2035 / 2033 anonymisées (ou attestations CA, bulletins) pour tester l’upload et l’analyse par Bob. |
+| **2.6** | **Chiffres réglementaires** | Une fois par an : vérifier PASS et Madelin (URSSAF, Allianz) et mettre à jour `docs/knowledge/bob/` et `references.md`. |
+| **2.7** | **Points à trancher en équipe** | Route finale, disclaimers, public cible, couleur primaire, stockage (voir détail ci‑dessous). |
+| **2.8** | **Tests manuels** | Après mise en place : raccourci, Bonjour, chat, upload, copier, export PDF, brouillon, suggestions, recentrage ; remonter bugs à Cursor. |
+
+**Quand tu confirmes que ces points sont faits (ou que tu as les infos pour 2.2, 2.7, 2.8), on lance la partie 3.**
+
+---
+
+### 2.1 Base de connaissances — Fiches à créer ou compléter — ✅ Fait
 
 Dossier : **`docs/knowledge/bob/`**
 
@@ -67,38 +93,38 @@ Tu peux réutiliser ou dupliquer `docs/knowledge/sources/sante-regles-remboursem
 
 ---
 
-### 2.2 Variable Vercel
+### 2.2 Variable Vercel — ⬜ À faire
 
 - Dans le projet Vercel : ajouter ou compléter **`ENABLE_BOB_BOT`** (et si besoin `BOB_TIMEOUT`, `OPENAI_API_KEY`).
 - Si l’affichage de Bob dépend du front : **`NEXT_PUBLIC_ENABLE_BOB_BOT`**.
 
 ---
 
-### 2.3 Documents de test
+### 2.3 Documents de test — ⬜ À faire
 
 - Préparer des **liasses 2035 / 2033 anonymisées** (ou attestations CA, bulletins) pour tester l’upload et l’analyse par Bob.
 
 ---
 
-### 2.4 Enrichissement Allianz.fr
+### 2.4 Enrichissement Allianz.fr — ✅ Fait
 
-- Utiliser le **prompt Cursor** de `bob_sante.md` § *Enrichissement avec Allianz.fr* : recherche sur Allianz.fr, ajout des liens utiles / devis dans la base de connaissances ou les fiches.
-
----
-
-### 2.5 URLs des tunnels de devis
-
-- Vérifier ou compléter les **URLs** dans le projet (`constants.ts`, `lib/assistant/config`, etc.) et **les communiquer** à Cursor pour insertion dans les sections pertinentes (prompt, fiches, modale).
+- Liens Allianz.fr dans `references.md`, `liens-devis-allianz.md`, renvois dans 2 fiches. (Prompt Cursor déjà utilisé.)
 
 ---
 
-### 2.6 Chiffres réglementaires (PASS, Madelin)
+### 2.5 URLs des tunnels de devis — ✅ Fait
+
+- Liste complète dans `docs/knowledge/bob/liens-devis-allianz.md` (code agence H91358). Bob charge cette fiche via `loadBobKnowledge()`.
+
+---
+
+### 2.6 Chiffres réglementaires (PASS, Madelin) — ⬜ À faire (annuel)
 
 - **Une fois par an** (ou à chaque changement) : vérifier les plafonds PASS et Madelin (URSSAF, Allianz) et **mettre à jour** `docs/knowledge/bob/` et `references.md`.
 
 ---
 
-### 2.7 Points à trancher en équipe
+### 2.7 Points à trancher en équipe — ⬜ À faire
 
 - Route : `/commun/agents-ia/bob-sante` ou `/bob` ? Raccourci **Alt+B** / **Cmd+Shift+B** confirmé ?
 - Où afficher les **disclaimers** juridiques (modale, bandeau, en bas des réponses) ?
@@ -110,16 +136,18 @@ Dès que c’est décidé, tu transmets à Cursor pour la finalisation (bloc 3).
 
 ---
 
-### 2.8 Tests manuels (après que le code soit en place)
+### 2.8 Tests manuels — ⬜ À faire (après mise en place du code)
 
 - Vérifier : raccourci, « Bonjour », chat streamé, upload image/fichiers, copier avec masquage sensibles, export PDF, brouillon, suggestions de démarrage, recentrage hors-sujet.  
 Voir [TODO.md § 14](./TODO.md#14-check-list-de-tests-manuels). Remonter à Cursor les bugs ou ajustements.
 
 ---
 
-## 3. Finalisation par Cursor (une fois que tu as apporté ce que tu dois faire)
+## 3. Finalisation par Cursor — à lancer quand tu confirmes que le bloc 2 est prêt
 
-Une fois que tu as fait les actions du **bloc 2** (au moins les éléments nécessaires), Cursor peut :
+**Déclencheur :** tu confirmes que les points « Ce qui reste à faire » (2.2, 2.3, 2.6, 2.7, 2.8) sont faits ou que tu as les infos nécessaires → on lance la partie 3.
+
+Une fois que c’est le cas, Cursor peut :
 
 | # | Tâche de finalisation | Déclencheur (ce que tu as fourni) |
 |---|------------------------|-----------------------------------|
@@ -130,7 +158,7 @@ Une fois que tu as fait les actions du **bloc 2** (au moins les éléments néce
 | 5 | **Corrections après tes tests manuels** | Tu remontes bugs ou souhaits (UX, accessibilité, wording) → Cursor corrige et ajuste. |
 | 6 | **(Optionnel) RAG** | Si tu veux passer à un RAG (embeddings, vector store) : Cursor documente ou implémente la spec technique une fois que la base de connaissances est stabilisée. |
 
-**En résumé** : la finalisation par Cursor dépend de ce que tu auras livré (fiches, URLs, décisions, retours de tests). Dès que c’est prêt, tu peux demander : « Finalise Bob avec [URLs / décisions / retours tests] ».
+**En résumé** : la finalisation par Cursor dépend de ce que tu auras livré (fiches, URLs, décisions, retours de tests). Dès que c’est prêt, tu confirmes et on lance la partie 3 (ex. : « C’est fait, on lance la partie 3 » ou « Finalise Bob avec [décisions / retours tests] »).
 
 ---
 
