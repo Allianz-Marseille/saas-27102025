@@ -102,14 +102,19 @@ export default function AgentsIAPage() {
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="relative aspect-square w-full max-w-40 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50">
-                      <Image
-                        src={BOT_SECRETAIRE.image}
-                        alt={BOT_SECRETAIRE.name}
-                        fill
-                        className="object-cover object-top"
-                        sizes="(max-width: 768px) 128px, 160px"
-                      />
+                    <div className="cursor-pointer">
+                      <div className="relative aspect-square w-full max-w-40 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50">
+                        <Image
+                          src={BOT_SECRETAIRE.image}
+                          alt={BOT_SECRETAIRE.name}
+                          fill
+                          className="object-cover object-top"
+                          sizes="(max-width: 768px) 128px, 160px"
+                        />
+                      </div>
+                      <p className="mt-2 text-center text-sm font-medium text-slate-700 group-hover:text-slate-900 dark:text-slate-300 dark:group-hover:text-slate-100">
+                        {BOT_SECRETAIRE.firstName} · {BOT_SECRETAIRE.name}
+                      </p>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent
@@ -120,15 +125,14 @@ export default function AgentsIAPage() {
                       {BOT_SECRETAIRE.firstName} — {BOT_SECRETAIRE.name}
                     </span>
                     <br />
-                    {BOT_SECRETAIRE.hoverDescription}
+                    <span className="text-muted-foreground text-xs">
+                      {BOT_SECRETAIRE.hoverDescription}
+                    </span>
+                    <p className="mt-2 pt-2 border-t border-border text-xs font-medium">
+                      {BOT_SECRETAIRE.services.join(" · ")}
+                    </p>
                   </TooltipContent>
                 </Tooltip>
-                <p className="mt-2 text-center text-sm font-medium text-slate-700 group-hover:text-slate-900 dark:text-slate-300 dark:group-hover:text-slate-100">
-                  {BOT_SECRETAIRE.firstName} · {BOT_SECRETAIRE.name}
-                </p>
-                <p className="mt-1 min-h-[2.5rem] text-center text-xs text-slate-500 dark:text-slate-400">
-                  {BOT_SECRETAIRE.services.join(" · ")}
-                </p>
               </Link>
 
               {ENABLE_BOB_BOT && (
@@ -139,14 +143,19 @@ export default function AgentsIAPage() {
                 >
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="relative aspect-square w-full max-w-40 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50">
-                        <Image
-                          src={BOB_SANTE.image}
-                          alt={BOB_SANTE.name}
-                          fill
-                          className="object-cover object-top"
-                          sizes="(max-width: 768px) 128px, 160px"
-                        />
+                      <div className="cursor-pointer">
+                        <div className="relative aspect-square w-full max-w-40 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50">
+                          <Image
+                            src={BOB_SANTE.image}
+                            alt={BOB_SANTE.name}
+                            fill
+                            className="object-cover object-top"
+                            sizes="(max-width: 768px) 128px, 160px"
+                          />
+                        </div>
+                        <p className="mt-2 text-center text-sm font-medium text-slate-700 group-hover:text-slate-900 dark:text-slate-300 dark:group-hover:text-slate-100">
+                          {BOB_SANTE.firstName} · {BOB_SANTE.name}
+                        </p>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent
@@ -157,15 +166,14 @@ export default function AgentsIAPage() {
                         {BOB_SANTE.firstName} — {BOB_SANTE.name}
                       </span>
                       <br />
-                      {BOB_SANTE.hoverDescription}
+                      <span className="text-muted-foreground text-xs">
+                        {BOB_SANTE.hoverDescription}
+                      </span>
+                      <p className="mt-2 pt-2 border-t border-border text-xs font-medium">
+                        {BOB_SANTE.services.join(" · ")}
+                      </p>
                     </TooltipContent>
                   </Tooltip>
-                  <p className="mt-2 text-center text-sm font-medium text-slate-700 group-hover:text-slate-900 dark:text-slate-300 dark:group-hover:text-slate-100">
-                    {BOB_SANTE.firstName} · {BOB_SANTE.name}
-                  </p>
-                  <p className="mt-1 min-h-[2.5rem] text-center text-xs text-slate-500 dark:text-slate-400">
-                    {BOB_SANTE.services.join(" · ")}
-                  </p>
                 </Link>
               )}
             </div>
