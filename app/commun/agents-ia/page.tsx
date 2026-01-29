@@ -40,8 +40,9 @@ const BOB_SANTE = {
   image: "/agents-ia/bot-sante/bob_rit.png",
   hoverDescription: "Arguments commerciaux et technique (régimes sociaux, sécu, SSI, mutuelle, prévoyance). Sourçage systématique.",
   services: [
-    "DUE, 2035, IJ et frais généraux",
-    "Arguments TNS, garanties, fiche de paie",
+    "Analyser une 2035",
+    "Rédiger une DUE",
+    "Arguments santé & prévoyance",
   ],
 };
 
@@ -96,12 +97,12 @@ export default function AgentsIAPage() {
             <div className="flex flex-wrap gap-6">
               <Link
                 href={BOT_SECRETAIRE.href}
-                className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-xl"
+                className="group block w-[min(100%,theme(spacing.40))] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-xl"
                 aria-label={`Ouvrir ${BOT_SECRETAIRE.firstName}, ${BOT_SECRETAIRE.name}`}
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="relative h-32 w-32 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50 md:h-40 md:w-40">
+                    <div className="relative aspect-square w-full max-w-40 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50">
                       <Image
                         src={BOT_SECRETAIRE.image}
                         alt={BOT_SECRETAIRE.name}
@@ -125,7 +126,7 @@ export default function AgentsIAPage() {
                 <p className="mt-2 text-center text-sm font-medium text-slate-700 group-hover:text-slate-900 dark:text-slate-300 dark:group-hover:text-slate-100">
                   {BOT_SECRETAIRE.firstName} · {BOT_SECRETAIRE.name}
                 </p>
-                <p className="mt-1 text-center text-xs text-slate-500 dark:text-slate-400">
+                <p className="mt-1 min-h-[2.5rem] text-center text-xs text-slate-500 dark:text-slate-400">
                   {BOT_SECRETAIRE.services.join(" · ")}
                 </p>
               </Link>
@@ -133,17 +134,17 @@ export default function AgentsIAPage() {
               {ENABLE_BOB_BOT && (
                 <Link
                   href={BOB_SANTE.href}
-                  className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-xl"
+                  className="group block w-[min(100%,theme(spacing.40))] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-xl"
                   aria-label={`Ouvrir ${BOB_SANTE.firstName}, ${BOB_SANTE.name}`}
                 >
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="relative h-32 w-32 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50 md:h-40 md:w-40">
+                      <div className="relative aspect-square w-full max-w-40 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50">
                         <Image
                           src={BOB_SANTE.image}
                           alt={BOB_SANTE.name}
                           fill
-                          className="object-cover object-center"
+                          className="object-cover object-top"
                           sizes="(max-width: 768px) 128px, 160px"
                         />
                       </div>
@@ -162,7 +163,7 @@ export default function AgentsIAPage() {
                   <p className="mt-2 text-center text-sm font-medium text-slate-700 group-hover:text-slate-900 dark:text-slate-300 dark:group-hover:text-slate-100">
                     {BOB_SANTE.firstName} · {BOB_SANTE.name}
                   </p>
-                  <p className="mt-1 text-center text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-1 min-h-[2.5rem] text-center text-xs text-slate-500 dark:text-slate-400">
                     {BOB_SANTE.services.join(" · ")}
                   </p>
                 </Link>
