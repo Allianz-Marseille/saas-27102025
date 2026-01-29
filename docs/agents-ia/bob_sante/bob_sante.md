@@ -717,16 +717,41 @@ Pour des **gros volumes** (décrets, conventions collectives, nombreux contrats 
 
 ## Todo — Suivi global
 
+### État des lieux (à mettre à jour au fil de l’avancement)
+
+| | Statut |
+|---|--------|
+| **Ce qui a été fait** | *Renseigner ici au fur et à mesure : ex. « Page Bob créée », « Prompt système finalisé », « Brouillon split screen en place ».* |
+| **Ce qui reste à faire** | *Renseigner ici : ex. « Base de connaissances à compléter », « Variable Vercel ENABLE_BOB_BOT », « Tests avec liasses 2035 ».* |
+
+---
+
+### À FAIRE PAR VOUS (actions manuelles)
+
+Ces actions ne peuvent pas être faites par le code seul. **Cochez quand c’est fait** et notez la date si besoin.
+
+| # | Action | Détail | Coche |
+|---|--------|--------|:-----:|
+| 1 | **Variable Vercel** | Dans le projet Vercel, ajouter/compléter la variable d’environnement **`ENABLE_BOB_BOT`** (et éventuellement `BOB_TIMEOUT`, `OPENAI_API_KEY` si pas déjà présentes). | [ ] |
+| 2 | **Base de connaissances** | Créer ou compléter le dossier **`docs/knowledge/bob/`** avec les fiches listées dans [Architecture de la Base de Connaissances Bob](#architecture-de-la-base-de-connaissances-bob) (ex. `2035-bilan-tns.md`, `due-contrat-groupe.md`, `regimes-obligatoires-ccn.md`, etc.). | [ ] |
+| 3 | **Télécharger / préparer des documents de test** | Préparer des **liasses 2035 / 2033 anonymisées** (ou attestations CA, bulletins) pour les tests d’upload et d’analyse Bob. | [ ] |
+| 4 | **Enrichissement Allianz.fr** | Utiliser le [prompt Cursor dédié](#enrichissement-avec-allianzfr-prompt-cursor) pour faire rechercher sur Allianz.fr et ajouter les liens utiles / devis dans le doc ou la base de connaissances. | [ ] |
+| 5 | **URLs des tunnels de devis** | Si les URLs des devis (mutuelle, prévoyance) sont dans un fichier du projet (`constants.ts`, `lib/assistant/config`, etc.), **vérifier ou compléter** ces URLs et les indiquer à Cursor pour insertion dans les sections pertinentes. | [ ] |
+| 6 | **Chiffres réglementaires (PASS, Madelin)** | Vérifier une fois par an (ou à chaque changement) les **plafonds PASS** et **Madelin** sur URSSAF / Allianz et mettre à jour la base de connaissances Bob. | [ ] |
+| 7 | **Points à trancher en équipe** | Valider les [Points à trancher](#points-à-trancher-en-équipe) : route exacte, couleur primaire, disclaimers, public prioritaire, stockage V1/V2. | [ ] |
+
+---
+
 ### Prompt & config
 
-- [ ] Créer `lib/assistant/bob-system-prompt.ts` et aligner avec l'ébauche ci-dessous.
+- [ ] Créer `lib/assistant/bob-system-prompt.ts` et aligner avec l’ébauche ci-dessous.
 - [ ] Tester réponse au "Bonjour" et focus santé / prévoyance (hors-sujet).
 
 ### Phase 1 — Page et lancement
 
 - [ ] Page Bob en fullscreen (`/commun/agents-ia/bob-sante`).
 - [ ] Barre avec bouton retour + titre "Bob — Assistant agence Santé & Prévoyance".
-- [ ] Écran d'accueil : image `bob_rit.png` + bouton "Bonjour".
+- [ ] Écran d’accueil : image `bob_rit.png` + bouton "Bonjour".
 - [ ] Comportement "Bonjour" : salutation + "Que souhaitez-vous savoir ?" + apparition du chat et focus sur la zone de saisie.
 
 ### Phase 2 — Conversation fluide
@@ -734,7 +759,7 @@ Pour des **gros volumes** (décrets, conventions collectives, nombreux contrats 
 - [ ] Zone de saisie avec auto-focus après première réponse et après envoi.
 - [ ] Raccourcis Entrée / Shift+Entrée / Ctrl+V.
 - [ ] Téléversement de documents (bouton + drag & drop) — bulletins, attestations, contrats.
-- [ ] Coller une capture d'écran (Ctrl+V).
+- [ ] Coller une capture d’écran (Ctrl+V).
 - [ ] Bouton "Copier" par réponse + feedback "Copié".
 
 ### Phase 3 — Export et confort
@@ -742,7 +767,7 @@ Pour des **gros volumes** (décrets, conventions collectives, nombreux contrats 
 - [ ] "Télécharger en PDF" par réponse.
 - [ ] "Exporter la conversation en PDF".
 - [ ] Indicateur "Bob écrit…".
-- [ ] Gestion d'erreurs et "Réessayer".
+- [ ] Gestion d’erreurs et "Réessayer".
 - [ ] Option "Nouvelle conversation" si persistance des échanges.
 
 ### Phase 4 — Finesse
@@ -754,6 +779,26 @@ Pour des **gros volumes** (décrets, conventions collectives, nombreux contrats 
 - [ ] Gestion du contexte : fenêtre glissante (ex. 12 messages) + note de troncation.
 - [ ] Raccourci global : `Alt + B` / `Cmd + Shift + B` pour ouvrir Bob.
 - [ ] Split screen (zone de brouillon) : conversation à gauche, brouillon à droite (lg+), copier + PDF brouillon.
+
+### Base de connaissances (intégration)
+
+- [ ] Créer le dossier `docs/knowledge/bob/` s’il n’existe pas.
+- [ ] Intégrer la grille de lecture liasse (2035, 2031/2033, 2065) et le « Cheat Sheet » — ex. `docs/knowledge/bob/2035-bilan-tns.md` ou fiche dédiée.
+- [ ] Intégrer le guide DUE (structure, procédure de validation, canevas) — ex. `docs/knowledge/bob/due-contrat-groupe.md`.
+- [ ] Intégrer Audit & Diagnostic (questions clés → garanties), Expertise Fiscale 360°, Régimes obligatoires & CCN (5 points de vigilance).
+
+### Tests (check-list)
+
+- [ ] Raccourci `Alt+B` / `Cmd+Shift+B` ouvre Bob ; inactif si focus dans saisie.
+- [ ] "Bonjour" → salutation + focus saisie.
+- [ ] Chat streamé, "Bob écrit…".
+- [ ] Upload image et fichiers (bulletin, attestation, contrat, 2035).
+- [ ] Copier une réponse ; avec "Masquer données sensibles" → masquage effectif.
+- [ ] PDF par message et export conversation ; mobile → nouvel onglet.
+- [ ] Brouillon : "Mettre dans le brouillon", copier, PDF.
+- [ ] Erreur → "Réessayer".
+- [ ] Suggestions de démarrage : clic → question envoyée et réponse pertinente.
+- [ ] Hors-sujet → Bob recentre sur santé / prévoyance.
 
 ---
 
