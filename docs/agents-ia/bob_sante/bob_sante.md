@@ -13,19 +13,22 @@
 0. [Texte de présentation (modale)](#texte-de-présentation-modale) — contenu pour la modale d'introduction
 1. [Description de Bob](#description-de-bob) — stack, fonctionnalités, UI, design
 2. [Cibles et cas d'usage](#cibles-et-cas-dusage) — TNS, salariés, entreprises, seniors
-3. [Thèmes à couvrir](#thèmes-à-couvrir) — régimes sociaux, santé, prévoyance
-4. [Guide d'extraction IJ et Frais Généraux (BNC, BIC, IS)](#guide-dextraction-ij-et-frais-généraux-bnc-bic-is) — où piocher les chiffres par régime TNS
-5. [Guide DUE (Décision Unilatérale de l'Employeur)](#guide-due-décision-unilatérale-de-lemployeur) — structure, procédure de validation, canevas
-6. [Le Cœur de Bob (synthèse des règles d'analyse)](#le-cœur-de-bob-synthèse-des-règles-danalyse) — priorités d'analyse, formules IJ, logique DUE, prochaines étapes
-7. [Améliorer Bob (niveau supérieur)](#améliorer-bob-niveau-supérieur) — intelligence métier, proactivité commerciale, UX, fiabilité, simulateur RAC
-8. [Architecture de la Base de Connaissances Bob](#architecture-de-la-base-de-connaissances-bob) — 6 piliers, organisation des fichiers
-9. [Enrichissement avec Allianz.fr (prompt Cursor)](#enrichissement-avec-allianzfr-prompt-cursor) — prompt pour Cursor, recherche web, liens devis
-10. [Enrichir les connaissances de Bob](#enrichir-les-connaissances-de-bob) — bases de connaissances, RAG, contenus à ajouter
-11. [Todo — Suivi global](#todo--suivi-global)
-12. [Prompt système (ébauche)](#prompt-système-ébauche)
-13. [Design, UI & fonctionnalités](#design-ui--fonctionnalités) (spécifications détaillées)
-14. [Points à trancher](#points-à-trancher-en-équipe)
-15. [Plan d'action et check-list de tests](#plan-daction-et-check-list-de-tests)
+3. [Thèmes à couvrir](#thèmes-à-couvrir) — régimes sociaux, santé, prévoyance, PERO
+4. [Audit & Diagnostic (méthodologie conseiller)](#audit--diagnostic-méthodologie-conseiller) — questions clés, situation civile, risque métier → garanties
+5. [Guide d'extraction IJ et Frais Généraux (BNC, BIC, IS)](#guide-dextraction-ij-et-frais-généraux-bnc-bic-is) — où piocher les chiffres par régime TNS
+6. [Expertise Fiscale 360° (entrée / sortie)](#expertise-fiscale-360°-entrée--sortie) — déductibilité, fiscalité des prestations (IJ, rentes, capital décès)
+7. [Guide DUE (Décision Unilatérale de l'Employeur)](#guide-due-décision-unilatérale-de-lemployeur) — structure, procédure de validation, canevas, DUE retraite/PERO
+8. [Régimes obligatoires & CCN](#régimes-obligatoires--ccn) — socles de base (Sécu, caisses libérales), 5 points de vigilance CCN
+9. [Le Cœur de Bob (synthèse des règles d'analyse)](#le-cœur-de-bob-synthèse-des-règles-danalyse) — priorités d'analyse, formules IJ, logique DUE, prochaines étapes
+10. [Améliorer Bob (niveau supérieur)](#améliorer-bob-niveau-supérieur) — intelligence métier, proactivité commerciale, UX, fiabilité, simulateur RAC
+11. [Architecture de la Base de Connaissances Bob](#architecture-de-la-base-de-connaissances-bob) — 6 piliers, organisation des fichiers
+12. [Enrichissement avec Allianz.fr (prompt Cursor)](#enrichissement-avec-allianzfr-prompt-cursor) — prompt pour Cursor, recherche web, liens devis
+13. [Enrichir les connaissances de Bob](#enrichir-les-connaissances-de-bob) — bases de connaissances, RAG, contenus à ajouter
+14. [Todo — Suivi global](#todo--suivi-global)
+15. [Prompt système (ébauche)](#prompt-système-ébauche)
+16. [Design, UI & fonctionnalités](#design-ui--fonctionnalités) (spécifications détaillées)
+17. [Points à trancher](#points-à-trancher-en-équipe)
+18. [Plan d'action et check-list de tests](#plan-daction-et-check-list-de-tests)
 
 ---
 
@@ -164,8 +167,57 @@ Bob aide le **conseiller agence** à préparer un échange ou une vente pour un 
 - **Prévoyance** : incapacité, invalidité, décès, contrats collectifs vs individuels, garanties minimales (Loi Madelin pour TNS, ANI, convention collective pour salariés), comparaison de garanties.
 - **Documents TNS** : selon le **« costume juridique »** du client — **Auto-entrepreneur** (attestation CA, abattement 34 % / 50 % / 71 %, pas de liasse) ; **EI au Réel** BNC (2035, CP + BT, lignes 14–21) ou BIC (2031/2033) ; **Société IS** (2065/2033, rémunération dirigeant, charges 2033-B). Lecture et analyse pour **indemnités journalières** (IJ) et **frais généraux** — voir [Guide d'extraction IJ et Frais Généraux (BNC, BIC, IS)](#guide-dextraction-ij-et-frais-généraux-bnc-bic-is) (dont le tableau « Cheat Sheet »).
 - **DUE (Décision Unilatérale de l'Employeur)** : rédaction d'une **DUE** pour **mise en place d'un contrat groupe** (santé, prévoyance, retraite) — structure type (Identification, Bénéficiaires catégories objectives, Garanties panier minimal/contrat responsable, Financement 50 % employeur min, Cas de dispense, Portabilité), procédure de validation (information CSE, décharge individuelle, preuves URSSAF). Document juridique à rédiger avec précision pour éviter tout redressement URSSAF. Voir [Guide DUE](#guide-due-décision-unilatérale-de-lemployeur).
+- **PERO & retraite collective** : **PERO** (Plan d'épargne retraite obligatoire), ex-Article 83 — compartiments C1/C2/C3, DUE retraite, fiscalité employeur/salarié. Voir [Guide DUE](#guide-due-décision-unilatérale-de-lemployeur) et [Régimes obligatoires & CCN](#régimes-obligatoires--ccn).
 
 Bob fait référence à ces thèmes pour **sourcer** ses réponses (fiches, base de connaissances, textes réglementaires) à chaque fois que possible.
+
+---
+
+## Audit & Diagnostic (méthodologie conseiller)
+
+Bob aide le conseiller à **structurer un diagnostic** pour transformer la situation du client en **préconisation de garanties**. Méthodologie en fiches outils : situation civile + activité/risque métier → garanties cibles (rente conjoint, rente éducation, capital décès).
+
+### Objectif
+
+Passer d'une situation « client TNS marié, 2 enfants » à une recommandation claire : **quelle rente conjoint**, **quelle rente éducation**, **quel capital décès**, et **pourquoi**.
+
+### Questions clés que Bob doit poser (ou faire poser par le conseiller)
+
+#### 1. Situation civile et familiale
+
+| Thème | Questions clés | Impact sur les garanties |
+|-------|----------------|---------------------------|
+| **Statut matrimonial** | Marié, pacsé, concubinage ? Testament / donation au dernier vivant ? | **Capital décès** : désignation du bénéficiaire (conjoint, enfants, héritiers). En **PACS sans testament**, le conjoint pacsé n'est pas héritier réservataire — risque de dilution du capital décès entre héritiers légaux. La prévoyance (capital décès) peut pallier en désignant explicitement le bénéficiaire. |
+| **Enfants** | Nombre, âge, à charge ? | **Rente éducation** : durée et montant à prévoir jusqu'à majorité (ou fin d'études). Nombre d'enfants = multiplication des besoins. |
+| **Conjoint** | Activité du conjoint, revenus du foyer ? | **Rente conjoint** : niveau de vie à maintenir si le client décède ou est en invalidité. Conjoint sans revenu = rente conjoint prioritaire. |
+| **Patrimoine / succession** | Testament, assurance-vie, SCI ? | Éviter doublons ; coordonner capital décès prévoyance et clause bénéficiaire assurance-vie. |
+
+#### 2. Activité et risque métier
+
+| Thème | Questions clés | Impact sur les garanties |
+|-------|----------------|---------------------------|
+| **Secteur / NAF** | Convention collective applicable ? | CCN impose souvent un **socle minimal** (ex. prévoyance cadre 1,50 % TA, maintien de salaire). Bob doit rappeler les obligations pour ne pas sous-dimensionner. |
+| **Risque métier** | Travail physique, exposition (BTP, transport, santé) ? | **Invalidité / PTIA** : franchise et durée à adapter. Risque élevé → garantir plus tôt (franchise courte) et renforcer rente invalidité. |
+| **Revenus et assiette** | 2035 / 2033 / bulletin ? | Voir [Guide d'extraction IJ](#guide-dextraction-ij-et-frais-généraux-bnc-bic-is) : **IJ** et **frais généraux** pour dimensionner incapacité et rente. |
+| **Structure** | EI, EURL, SASU, auto-entrepreneur ? | Déterminer le **costume juridique** pour savoir quel document analyser et quelle fiscalité (Madelin vs collectif). |
+
+#### 3. De la situation vers les garanties
+
+| Besoin | Garantie type | Point de vigilance |
+|--------|----------------|-------------------|
+| **Protéger le conjoint** | Rente conjoint (décès, voire invalidité) | Montant = niveau de vie à maintenir. Vérifier clause bénéficiaire et régime matrimonial. |
+| **Protéger les enfants** | Rente éducation | Jusqu'à 18 ans (ou 21–25 ans si études). Capital décès peut aussi être versé au conjoint pour les enfants. |
+| **Couverture décès / obsèques** | Capital décès | Désignation du bénéficiaire (conjoint, enfants, héritiers). En PACS sans testament, **insister sur la clause de désignation** du contrat pour éviter la succession légale. |
+| **Remplacer le revenu en arrêt** | IJ (incapacité) | Assiette = revenu réel (CP+BT, 2033-D, etc.) + frais généraux à couvrir. |
+| **Sécuriser en invalidité** | Rente invalidité | Souvent sous-estimée. Adapter au risque métier et à la durée potentielle. |
+
+### Diagnostic matrimonial (exemple PACS)
+
+*Pourquoi un TNS pacsé sans testament est en danger sur sa succession :* en l'absence de testament, la succession est réglée par la loi (héritiers réservataires = enfants, parents). Le **conjoint pacsé n'est pas héritier réservataire**. Le capital décès prévoyance, s'il est versé aux « héritiers » ou non désigné, peut donc échapper au conjoint. **Bob doit rappeler au conseiller** : vérifier la **clause bénéficiaire** du contrat (désignation nominative du conjoint et/ou des enfants) et, si besoin, orienter vers un notaire pour un testament ou une donation au dernier vivant.
+
+### Fiche outil Bob
+
+À intégrer en base de connaissances : *« Audit conseiller — Questions clés situation civile et activité → garanties (rente conjoint, rente éducation, capital décès) »* avec ce tableau et les liens vers [Expertise Fiscale 360°](#expertise-fiscale-360°-entrée--sortie) et [Régimes obligatoires & CCN](#régimes-obligatoires--ccn).
 
 ---
 
@@ -231,6 +283,42 @@ C'est une personne morale à l'Impôt sur les Sociétés (IS). Le dirigeant est 
 2. *« Bob, à partir de cette 2033-B, liste-moi les frais généraux que je dois couvrir en cas d'arrêt de travail. »*
 
 Ce guide doit être intégré à la base de connaissances Bob (ex. `docs/knowledge/bob/2035-bilan-tns.md` ou fiche dédiée « grille par costume juridique ») pour que Bob sache quel document regarder et où extraire les chiffres selon le profil (Auto-entrepreneur, EI BNC/BIC, Société IS).
+
+---
+
+## Expertise Fiscale 360° (entrée / sortie)
+
+Bob doit maîtriser la **fiscalité à l'entrée** (déductibilité des cotisations) et **à la sortie** (fiscalité des prestations perçues). Synthèse pour le conseiller.
+
+### 1. L'entrée : déductibilité des cotisations
+
+| Statut | Règle de déductibilité | Plafonds / remarques |
+|--------|------------------------|----------------------|
+| **TNS (Loi Madelin)** | Cotisations **déductibles** du revenu imposable (santé + prévoyance). | Plafonds : santé/prévoyance (ex. 3,75 % du revenu professionnel + 7 % du PASS, dans la limite de 3 % de 8 PASS) ; garantie chômage (ex. 1,875 % du revenu ou 2,5 % du PASS). Mise à jour annuelle (PASS). *Source : Loi Madelin, URSSAF.* |
+| **Salarié (contrat collectif)** | **Part employeur** : exonérée de charges sociales et d'impôt pour le salarié. **Part salarié** : souvent déductible du revenu imposable (prévention, selon dispositif). | 50 % employeur min. pour la santé (ANI). Part salarié prévoyance : selon accord/DUE. |
+| **Entreprise (DUE / accord)** | Cotisations employeur **déductibles** de l'IS (ou du résultat pour l'IR). Cotisations salarié selon régime. | Conformité DUE obligatoire pour conserver les exonérations URSSAF. |
+
+*Conseil Bob :* Si le client (TNS) déduit ses cotisations Madelin, lui rappeler que **les prestations versées (IJ, rentes) seront en principe imposables** — voir sortie ci-dessous.
+
+### 2. La sortie : fiscalité des prestations perçues
+
+| Prestation | Règle fiscale | Remarque pour le conseiller |
+|------------|---------------|------------------------------|
+| **Indemnités journalières (IJ)** | **Si cotisations déductibles (Madelin)** : IJ **imposables** (revenu de remplacement). **Si cotisations non déductibles** : IJ souvent **exonérées** (ou régime spécifique). | Toujours préciser au client : *« Vous avez déduit vos cotisations → les IJ seront imposables. »* Inversement, absence de déduction → IJ souvent exonérées. *Source : Code général des impôts, Loi Madelin.* |
+| **Rente invalidité** | Souvent **imposable** comme revenu de remplacement (même logique que les IJ si cotisations déductibles). | Vérifier le régime du contrat (Madelin vs collectif) et l'année de souscription. |
+| **Rente éducation** | Versée aux enfants (bénéficiaires) : régime spécifique ; souvent **exonérée** ou imposable au nom des enfants selon montant. | Rappeler la vocation de la rente : maintenir le niveau de vie des enfants. |
+| **Capital décès** | **Bénéficiaire désigné (personne physique)** : en principe **exonéré d'impôt sur le revenu** (capital versé au décès). **Succession** : selon clause bénéficiaire (hors succession vs dans la succession). | Insister sur la **clause de désignation** : éviter « héritiers » ou « succession » si l'on veut protéger le conjoint (ex. PACS) ; désigner nominativement le conjoint et/ou les enfants. *Source : CGI, régimes des assurances.* |
+
+### 3. Tableau récapitulatif (fiche outil Bob)
+
+| | Entrée (cotisations) | Sortie (prestations) |
+|---|------------------------|----------------------|
+| **TNS Madelin** | Déductible (plafonds) | IJ et rentes **imposables** si déduction. Capital décès exonéré pour le bénéficiaire. |
+| **Salarié (collectif)** | Part employeur exonérée ; part salarié selon accord | IJ / rentes selon régime du contrat (souvent imposables si part salarié déductible). Capital décès exonéré. |
+
+*Source : base de connaissances Bob — fiscalité prévoyance. Mise à jour annuelle recommandée (PASS, plafonds Madelin).*
+
+**Lien Allianz.fr (prévoyance, guides) :** [La prévoyance en 10 questions — Allianz](https://espaceclient.allianz.fr/pmt/guide/dossier/dossiers/b_prevoyance.html)
 
 ---
 
@@ -309,6 +397,50 @@ Structure type d'un projet de texte pour le conseiller :
 - *« Bob, vérifie si cette clause de dispense dans ma DUE est conforme au décret de 2012. »*
 
 Ce guide doit être intégré à la base de connaissances Bob (ex. `docs/knowledge/bob/due-contrat-groupe.md`) pour que Bob sache structurer une DUE et rappeler la procédure de validation (CSE, décharge individuelle, preuves URSSAF).
+
+#### DUE retraite / PERO (Article 83)
+
+Pour la **mise en place d'un PERO** (Plan d'épargne retraite obligatoire, ex-Article 83), une **DUE retraite** ou un accord collectif est nécessaire. Bob doit rappeler :
+
+- **Compartiments** : C1 (individuel), C2 (épargne temps — intéressement/participation), C3 (obligatoire — cotisations employeur/salarié).
+- **Collège** : catégories objectives (ex. cadres / non-cadres / ensemble du personnel) — pas de désignation nominative.
+- **Fiscalité** : cotisations employeur déductibles de l'IS ; exonération de charges dans certaines limites ; forfait social 20 % sur certaines cotisations. Sortie en capital ou rente à la retraite.
+- **Liens** : [PERO / Article 83 — Service-public](https://www.service-public.fr/particuliers/vosdroits/F34982), [Allianz — Prévoyance](https://espaceclient.allianz.fr/pmt/guide/dossier/dossiers/b_prevoyance.html).
+
+---
+
+## Régimes obligatoires & CCN
+
+Bob doit savoir que la **prévoyance complémentaire** s'appuie sur les **socles de base** versés par la Sécurité sociale (CPAM) ou les caisses des professions libérales (CARMF, CIPAV, etc.). La prévoyance **complète** ces régimes obligatoires ; elle ne les remplace pas.
+
+### 1. Socles de base (régimes obligatoires)
+
+| Régime | Organisme(s) | Prestations de base (ex.) |
+|--------|--------------|----------------------------|
+| **Régime général (salariés)** | CPAM (CNAM) | IJ maladie, pension invalidité, capital décès (forfait), rente veuvage. |
+| **SSI / ex-RSI (TNS)** | URSSAF, caisses SSI | IJ maladie (après délai), pension invalidité, capital décès (forfait). |
+| **Professions libérales** | CARMF, CIPAV, CNAVPL, etc. | Selon caisse : IJ, invalidité, décès. |
+| **Agricole** | MSA | IJ, invalidité, décès. |
+
+*Conseil Bob :* Pour un TNS, rappeler que la **Loi Madelin** permet de compléter ces socles par une prévoyance **déductible** (voir [Expertise Fiscale 360°](#expertise-fiscale-360°-entrée--sortie)). Pour un salarié, la **convention collective** ou l'**ANI** impose souvent un socle minimal (mutuelle 50 % employeur, prévoyance selon CCN).
+
+### 2. CCN (Conventions collectives) — 5 points de vigilance
+
+Bob doit intégrer les **5 points de vigilance** suivants sur les CCN pour éviter les erreurs et les contentieux :
+
+| # | Point de vigilance | Explication | Action conseiller |
+|---|--------------------|-------------|-------------------|
+| **1** | **Prévoyance cadre 1,50 % TA** | Convention collective nationale des **cadres** (14 mars 1947) : l'employeur doit participer à la prévoyance à hauteur de **1,50 % de la tranche A** du salaire des cadres. Au minimum **0,76 %** affecté à la **garantie décès**, le reste pour autres garanties (incapacité, invalidité). | Vérifier que le contrat respecte ce minimum ; en dessous = risque de contentieux. |
+| **2** | **Maintien de salaire obligatoire** | Certaines CCN (ex. BTP, HCR, Syntec) imposent un **maintien de salaire** en cas d'arrêt (ex. dès 1 an d'ancienneté). La prévoyance doit couvrir ce maintien ; la **franchise** du contrat doit être cohérente avec la durée de maintien. | Adapter la franchise (ex. 0 jour si maintien dès J1) et le plafond de maintien. |
+| **3** | **Clause de désignation vs recommandation** | En prévoyance collective, le **bénéficiaire du capital décès** peut être **désigné** par le salarié (clause de désignation) ou **recommandé** (employeur recommande, le salarié valide). En cas de **recommandation**, le capital peut être versé aux héritiers si le salarié n'a pas désigné. | Insister sur la **désignation nominative** (conjoint, enfants) pour éviter la succession légale (risque pour conjoint pacsé). |
+| **4** | **Catégories objectives (collège)** | La DUE ou l'accord doit définir les bénéficiaires par **catégories objectives** (cadres / non-cadres / ensemble), pas par nom. **Interdiction** de nommer des individus. | Vérifier la conformité de la DUE ; rappeler le décret 2012 et les dispenses de plein droit. |
+| **5** | **Secteurs à prévoyance obligatoire** | Plusieurs CCN imposent une **prévoyance obligatoire** (BTP, travaux publics, sport, etc.). En l'absence de règle légale générale, c'est la **CCN applicable** qui fixe le caractère obligatoire et les modalités. | Identifier la CCN (Code NAF, activité) et vérifier les obligations minimales (garanties, taux, collèges). |
+
+### 3. Fiche outil Bob
+
+À intégrer en base de connaissances : *« Régimes obligatoires & CCN — socles Sécu / caisses libérales, 5 points vigilance CCN (1,50 % TA cadres, maintien de salaire, clause désignation, catégories objectives, secteurs obligatoires) »*.
+
+**Lien Allianz.fr (prévoyance salariés) :** [Salariés : prestations — Allianz](https://espaceclient.allianz.fr/pmt/guide/Prevoyance.STANDARD/Salaries___prestations_17.html)
 
 ---
 
@@ -517,12 +649,15 @@ Pour que **Cursor** puisse enrichir le fichier Markdown avec des données réell
 
 ### Ce que Cursor peut ajouter concrètement
 
-| Pilier / thème | Exemple d'ajout |
-|----------------|-----------------|
-| **Pilier Fiscal** | Liens vers la page « Fiscalité de la Loi Madelin » d'Allianz. |
-| **Pilier Retraite** | Liens vers le **PERO** (Plan d'Épargne Retraite Obligatoire) qui remplace l'Art. 83. |
-| **Pilier Remboursements** | Lien vers le simulateur de remboursement santé Allianz (utile pour le Simulateur RAC). |
-| **Action commerciale** | Liens directs type `https://www.allianz.fr/assurance-sante/devis-mutuelle-sante.html` (à vérifier selon le site). |
+| Pilier / thème | Exemple d'ajout | Lien Allianz.fr (ex.) |
+|----------------|-----------------|------------------------|
+| **Audit & Diagnostic** | Fiche « Questions clés situation civile et activité → garanties ». | Guide prévoyance TNS / gérants : [La prévoyance en 10 questions](https://espaceclient.allianz.fr/pmt/guide/dossier/dossiers/b_prevoyance.html). |
+| **Expertise Fiscale 360°** | Tableau entrée (déductibilité Madelin / parts patronales) et sortie (IJ, rentes, capital décès). | Idem + fiches fiscalité Madelin (à vérifier sur allianz.fr). |
+| **Régimes obligatoires & CCN** | 5 points vigilance (1,50 % TA cadres, maintien de salaire, clause désignation, catégories, secteurs). | [Salariés : prestations](https://espaceclient.allianz.fr/pmt/guide/Prevoyance.STANDARD/Salaries___prestations_17.html). |
+| **Pilier Fiscal** | Liens vers la page « Fiscalité de la Loi Madelin » d'Allianz. | [allianz.fr](https://www.allianz.fr) — rubrique prévoyance TNS. |
+| **Pilier Retraite / PERO** | Liens vers le **PERO** (Plan d'Épargne Retraite Obligatoire) qui remplace l'Art. 83. | [allianz.fr](https://www.allianz.fr) — PER / PERO. |
+| **Pilier Remboursements** | Lien vers le simulateur de remboursement santé Allianz (utile pour le Simulateur RAC). | À vérifier sur allianz.fr. |
+| **Action commerciale** | Liens directs tunnels de devis (mutuelle, prévoyance). | `https://www.allianz.fr/assurance-sante/` (à vérifier selon le site). |
 
 ---
 
@@ -565,7 +700,10 @@ Pour des **gros volumes** (décrets, conventions collectives, nombreux contrats 
 | **FAQ** | Questions fréquentes : « Quelle mutuelle pour un TNS ? », « Différence prévoyance collective / individuelle ? », « Comment lire ma fiche de paie (lignes santé) ? » | `docs/knowledge/bob/faq.md` ou par thème (`faq-regimes.md`, `faq-sante.md`, `faq-prevoyance.md`) |
 | **Fiches par public** | TNS : cotisations, prévoyance obligatoire, mutuelle. Salarié : prévoyance collective, mutuelle d'entreprise. Entreprise : obligations, contrats collectifs. Senior : retraite, complémentaire, reste à charge. | Réutiliser `docs/knowledge/segmentation/` ou créer `docs/knowledge/bob/tns.md`, `salarie.md`, `entreprise.md`, `senior.md` |
 | **2035 (bilan TNS)** | Structure de la 2035 (bilan et compte de résultat), postes utiles pour **indemnités journalières** (IJ) et **frais généraux** du TNS ; règles de calcul IJ TNS ; éléments à extraire pour dimensionner la prévoyance. | `docs/knowledge/bob/2035-bilan-tns.md` ou `faq-2035-ij-frais-generaux.md` |
-| **DUE (Décision Unilatérale de l'Employeur)** | Structure type (Identification, Bénéficiaires catégories objectives, Garanties panier minimal/contrat responsable, Financement 50 % employeur, Cas de dispense, Portabilité) ; procédure de validation (CSE, décharge individuelle, preuves URSSAF) ; canevas de rédaction. Décret 2012, ANI. | `docs/knowledge/bob/due-contrat-groupe.md` ou `docs/knowledge/sources/` |
+| **Audit & Diagnostic** | Méthodologie conseiller : questions clés (situation civile, activité, risque métier) → garanties (rente conjoint, rente éducation, capital décès). Diagnostic matrimonial (PACS sans testament, clause bénéficiaire). | `docs/knowledge/bob/audit-diagnostic-conseiller.md` |
+| **Expertise Fiscale 360°** | Entrée : déductibilité (Madelin TNS, parts patronales salariés). Sortie : fiscalité IJ, rentes invalidité, capital décès selon bénéficiaire. Tableau récap. | `docs/knowledge/bob/fiscalite-entree-sortie-prevoyance.md` |
+| **Régimes obligatoires & CCN** | Socles Sécu / caisses libérales (CPAM, CARMF, CIPAV). 5 points vigilance CCN : 1,50 % TA cadres, maintien de salaire, clause désignation vs recommandation, catégories objectives, secteurs obligatoires. | `docs/knowledge/bob/regimes-obligatoires-ccn.md` |
+| **DUE (Décision Unilatérale de l'Employeur)** | Structure type (Identification, Bénéficiaires catégories objectives, Garanties panier minimal/contrat responsable, Financement 50 % employeur, Cas de dispense, Portabilité) ; procédure de validation (CSE, décharge individuelle, preuves URSSAF) ; canevas de rédaction ; DUE retraite/PERO. Décret 2012, ANI. | `docs/knowledge/bob/due-contrat-groupe.md` ou `docs/knowledge/sources/` |
 | **Références réglementaires** | Résumés (pas le texte brut) : Loi Madelin, ANI, conventions collectives (garanties minimales), taux URSSAF. Avec date de mise à jour et lien « pour le détail, consulter… ». | `docs/knowledge/bob/references.md` ou `docs/knowledge/sources/` |
 | **Règles de remboursement** | Niveaux de garantie, tiers payant, reste à charge (ex. dentaire, optique, hospitalier). | Réutiliser `docs/knowledge/sources/sante-regles-remboursement.md` ou équivalent Bob |
 
@@ -642,6 +780,9 @@ Tu es **Bob**, l'**assistant agence** spécialisé en régimes sociaux, santé e
 5. **Lecture documents TNS / analyse par « costume juridique »** : selon le **profil du client** (Auto-entrepreneur, EI au Réel BNC/BIC, Société IS), Bob sait **quel document regarder** et **où piocher les chiffres** pour les **indemnités journalières** (IJ) et les **frais généraux**. Appliquer la **grille de lecture** : **Auto-entrepreneur** → attestation CA, abattement 34 % / 50 % / 71 %, pas de frais fixes (conseiller IJ plus haute) ; **EI Libéral (BNC)** → 2035, CP + BT, lignes 14–21 (2035-B) ; **EI Commerçant (BIC)** → 2031 case 1 + 2033-D case 380, 2033-B lignes 218–230 ; **Société (IS)** → 2065/2033, rémunération 2033-D (vérifier dividendes), charges 2033-B. Extraire les postes pertinents ; indiquer les sources (document fourni, règles en vigueur).
 6. **Rédaction DUE (Décision Unilatérale de l'Employeur)** : aider à **rédiger une DUE** pour la **mise en place d'un contrat groupe** (santé, prévoyance, retraite) — appliquer la **structure type** : Identification et Objet (entreprise, objet, date d'effet), Bénéficiaires (catégories objectives, pas de noms), Garanties (panier minimal ANI, contrat responsable), Financement (50 % employeur min, mode de calcul), Cas de dispense (liste des dispenses de plein droit), Maintien des garanties (portabilité). Rappeler la **procédure de validation** : information CSE, remise individuelle contre décharge (preuves pour l'URSSAF). Proposer un canevas (Préambule, Collège bénéficiaire, Caractère obligatoire, Cotisations, Prestations, Durée et modification) ; le conseiller adapte au contexte client et fait valider en interne. **Citer les sources** (ANI, décret 2012, fiche DUE).
 7. **Synthèse** : extraction d'informations à partir de documents (bulletins, contrats, attestations, 2035) et présentation claire (listes, tableaux) ; **citer la source** à chaque fois que possible.
+8. **Audit & Diagnostic** : s'appuyer sur la méthodologie conseiller (questions clés situation civile et activité → garanties : rente conjoint, rente éducation, capital décès). Rappeler le diagnostic matrimonial (PACS sans testament, clause bénéficiaire capital décès).
+9. **Expertise Fiscale 360°** : distinguer **entrée** (déductibilité Madelin TNS, parts patronales salariés) et **sortie** (fiscalité IJ, rentes, capital décès). Si cotisations déductibles → prestations souvent imposables.
+10. **Régimes obligatoires & CCN** : rappeler que la prévoyance complète les socles Sécu / caisses libérales ; intégrer les 5 points vigilance CCN (1,50 % TA cadres, maintien de salaire, clause désignation, catégories objectives, secteurs obligatoires).
 
 ### Règles d'or (comportement)
 
