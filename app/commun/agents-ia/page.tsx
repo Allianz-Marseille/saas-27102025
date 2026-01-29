@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Bot } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -16,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ENABLE_BOB_BOT } from "@/lib/assistant/config";
 
 const BOT_SECRETAIRE = {
   name: "Bot Secrétaire",
@@ -30,7 +33,39 @@ const BOT_SECRETAIRE = {
   ],
 };
 
+const BOB_SANTE = {
+  name: "Assistant agence Santé & Prévoyance",
+  firstName: "Bob",
+  href: "/commun/agents-ia/bob-sante",
+  image: "/agents-ia/bot-sante/bob_rit.png",
+  hoverDescription: "Arguments commerciaux et technique (régimes sociaux, sécu, SSI, mutuelle, prévoyance). Sourçage systématique.",
+  services: [
+    "DUE, 2035, IJ et frais généraux",
+    "Arguments TNS, garanties, fiche de paie",
+  ],
+};
+
 export default function AgentsIAPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isInputFocused =
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA" ||
+        (document.activeElement as HTMLElement)?.isContentEditable;
+      if (isInputFocused) return;
+      const isAltB = e.altKey && e.key.toLowerCase() === "b";
+      const isCmdShiftB = (e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "b";
+      if (ENABLE_BOB_BOT && (isAltB || isCmdShiftB)) {
+        e.preventDefault();
+        router.push(BOB_SANTE.href);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [router]);
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex items-center gap-3">
@@ -53,8 +88,7 @@ export default function AgentsIAPage() {
             Espace Agents IA
           </CardTitle>
           <CardDescription>
-            Cliquez sur un agent pour ouvrir sa page. Les fonctionnalités seront
-            enrichies progressivement.
+            Cliquez sur un agent pour ouvrir sa page. Raccourci Bob : Alt+B (Windows/Linux) ou Cmd+Shift+B (Mac).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -95,6 +129,44 @@ export default function AgentsIAPage() {
                   {BOT_SECRETAIRE.services.join(" · ")}
                 </p>
               </Link>
+
+              {ENABLE_BOB_BOT && (
+                <Link
+                  href={BOB_SANTE.href}
+                  className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-xl"
+                  aria-label={`Ouvrir ${BOB_SANTE.firstName}, ${BOB_SANTE.name}`}
+                >
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative h-32 w-32 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50 md:h-40 md:w-40">
+                        <Image
+                          src={BOB_SANTE.image}
+                          alt={BOB_SANTE.name}
+                          fill
+                          className="object-cover object-center"
+                          sizes="(max-width: 768px) 128px, 160px"
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="bottom"
+                      className="max-w-xs text-center"
+                    >
+                      <span className="font-medium">
+                        {BOB_SANTE.firstName} — {BOB_SANTE.name}
+                      </span>
+                      <br />
+                      {BOB_SANTE.hoverDescription}
+                    </TooltipContent>
+                  </Tooltip>
+                  <p className="mt-2 text-center text-sm font-medium text-slate-700 group-hover:text-slate-900 dark:text-slate-300 dark:group-hover:text-slate-100">
+                    {BOB_SANTE.firstName} · {BOB_SANTE.name}
+                  </p>
+                  <p className="mt-1 text-center text-xs text-slate-500 dark:text-slate-400">
+                    {BOB_SANTE.services.join(" · ")}
+                  </p>
+                </Link>
+              )}
             </div>
           </TooltipProvider>
         </CardContent>

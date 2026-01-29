@@ -9,7 +9,7 @@ import OpenAI from "openai";
 import { checkRateLimit, determineRequestType } from "@/lib/assistant/rate-limiting";
 import { checkBudgetLimit } from "@/lib/assistant/budget-alerts";
 import { openaiWithRetry } from "@/lib/assistant/retry";
-import { NINA_TIMEOUT, SUMMARY_WINDOW } from "@/lib/assistant/config";
+import { NINA_TIMEOUT, BOB_TIMEOUT, SUMMARY_WINDOW } from "@/lib/assistant/config";
 import { logUsage } from "@/lib/assistant/monitoring";
 import { logAction } from "@/lib/assistant/audit";
 import { parseFile } from "@/lib/assistant/file-parsers";
@@ -176,12 +176,16 @@ export async function POST(request: NextRequest) {
         messageContent.includes("fiche")
       );
 
-    // Contexte Nina (bot secrétaire) : prompt dédié, pas de base agence
+    // Contexte Nina (bot secrétaire) ou Bob (santé & prévoyance) : prompt dédié
     const isNina = context?.agent === "nina";
+    const isBob = context?.agent === "bob";
     let baseKnowledge: string;
     if (isNina) {
       const { getNinaSystemPrompt } = await import("@/lib/assistant/nina-system-prompt");
       baseKnowledge = getNinaSystemPrompt();
+    } else if (isBob) {
+      const { getBobSystemPrompt } = await import("@/lib/assistant/bob-system-prompt");
+      baseKnowledge = getBobSystemPrompt();
     } else {
       // Charger la base de connaissances selon le contexte
       const { loadKnowledgeForContext, loadSegmentationKnowledge } = await import("@/lib/assistant/knowledge-loader");
@@ -205,8 +209,8 @@ export async function POST(request: NextRequest) {
     // via loadKnowledgeForContext ou loadSegmentationKnowledge
     const relevantKnowledge = "";
 
-    // Construire le prompt système (Nina = prompt dédié, sinon assistant agence)
-    const coreKnowledge = isNina
+    // Construire le prompt système (Nina / Bob = prompt dédié, sinon assistant agence)
+    const coreKnowledge = isNina || isBob
       ? baseKnowledge
       : `Tu es l'assistant interne de l'agence Allianz Marseille (Nogaro & Boetti).
 
@@ -264,7 +268,7 @@ Quand tu donnes une information technique, réglementaire ou juridique, tu DOIS 
 
 Si tu ne connais pas la réponse, dis-le clairement avec un ton professionnel mais accessible.`;
 
-    const formattingRules = isNina
+    const formattingRules = isNina || isBob
       ? "Utilise le format Markdown pour structurer tes réponses. Reste concis et professionnel."
       : isFormalWriting
       ? `RÈGLES DE FORMATAGE POUR MAILS ET LETTRES :
@@ -461,8 +465,8 @@ Tu as accès à plusieurs fonctions pour récupérer des informations sur les en
     // Intégrer le prompt basé sur uiEvent
     let buttonPromptSection = "";
     
-    // Cas unique : uiEvent="start" (bouton "Bonjour" cliqué). Nina a son propre prompt, pas la liste des 10 rôles.
-    if (uiEvent === "start" && !isNina) {
+    // Cas unique : uiEvent="start" (bouton "Bonjour" cliqué). Nina/Bob ont leur propre prompt.
+    if (uiEvent === "start" && !isNina && !isBob) {
       const { getStartPrompt } = await import("@/lib/assistant/main-button-prompts");
       const startPrompt = getStartPrompt();
       if (startPrompt) {
@@ -621,9 +625,11 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
 `;
     
     let systemPrompt = `${coreKnowledge}${buttonPromptSection}${ocrPromptSection}${fileManagementPrompt}${formattingRules}`;
-    if (isNina && Array.isArray(history) && history.length > SUMMARY_WINDOW) {
+    if ((isNina || isBob) && Array.isArray(history) && history.length > SUMMARY_WINDOW) {
       systemPrompt += `\n\nNote: Les échanges précédents ont été tronqués (fenêtre glissante, ${SUMMARY_WINDOW} derniers messages).`;
     }
+
+    const chatTimeout = isBob ? BOB_TIMEOUT : NINA_TIMEOUT;
 
     // Construire le contenu du message utilisateur
     const userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];
@@ -868,7 +874,7 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
       let tokensOutput = 0;
       let errorMessage: string | undefined;
       const abortController = new AbortController();
-      const timeoutId = setTimeout(() => abortController.abort(), NINA_TIMEOUT);
+      const timeoutId = setTimeout(() => abortController.abort(), chatTimeout);
 
       const stream = new ReadableStream({
         async start(controller) {
@@ -1068,9 +1074,9 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
       });
     }
 
-    // Mode non-streaming avec timeout (NINA_TIMEOUT pour analyses de documents lourds)
+    // Mode non-streaming avec timeout (NINA_TIMEOUT / BOB_TIMEOUT selon l'agent)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), NINA_TIMEOUT);
+    const timeoutId = setTimeout(() => controller.abort(), chatTimeout);
     const startTime = Date.now();
 
     let completion;
@@ -1161,13 +1167,13 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
           requestType,
           duration,
           success: false,
-          error: `Timeout après ${NINA_TIMEOUT / 1000} secondes`,
+          error: `Timeout après ${chatTimeout / 1000} secondes`,
         }).catch((err) => console.error("Erreur logging usage:", err));
 
         return NextResponse.json(
           {
             error: "La requête a pris trop de temps. Réessayez.",
-            details: `Timeout après ${NINA_TIMEOUT / 1000} secondes`,
+            details: `Timeout après ${chatTimeout / 1000} secondes`,
           },
           { status: 408 }
         );
