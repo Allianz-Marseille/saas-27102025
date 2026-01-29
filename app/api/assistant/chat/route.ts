@@ -185,7 +185,11 @@ export async function POST(request: NextRequest) {
       baseKnowledge = getNinaSystemPrompt();
     } else if (isBob) {
       const { getBobSystemPrompt } = await import("@/lib/assistant/bob-system-prompt");
-      baseKnowledge = getBobSystemPrompt();
+      const { loadBobKnowledge } = await import("@/lib/assistant/knowledge-loader");
+      const bobKnowledge = loadBobKnowledge();
+      baseKnowledge = bobKnowledge
+        ? getBobSystemPrompt() + "\n\n---\n\n" + bobKnowledge
+        : getBobSystemPrompt();
     } else {
       // Charger la base de connaissances selon le contexte
       const { loadKnowledgeForContext, loadSegmentationKnowledge } = await import("@/lib/assistant/knowledge-loader");

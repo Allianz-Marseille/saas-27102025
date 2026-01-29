@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowLeft, Loader2, Send, Copy, Check, X, ImageIcon, FileText, FileDown } from "lucide-react";
+import { ArrowLeft, Loader2, Send, Copy, Check, X, ImageIcon, FileText, FileDown, MoreVertical, MessageSquarePlus } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,11 @@ import {
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { PDF_EXPORT_MAX_CHARS } from "@/lib/assistant/config";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 /**
  * Page Bob — Assistant agence Santé & Prévoyance (fullscreen).
@@ -78,6 +83,7 @@ export default function BobSantePage() {
   const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<ProcessedFile[]>([]);
   const [maskBeforeCopy, setMaskBeforeCopy] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -518,6 +524,15 @@ export default function BobSantePage() {
     }
   }, [messages]);
 
+  const handleNewConversation = useCallback(() => {
+    setMessages([]);
+    setHasStarted(true);
+    setError(null);
+    setDraftContent("");
+    setMenuOpen(false);
+    toast.success("Nouvelle conversation");
+  }, []);
+
   useEffect(() => {
     if (!pdfExportMessageId || !pdfExportRef.current) return;
     const msg = messages.find((m) => m.id === pdfExportMessageId);
@@ -602,26 +617,66 @@ export default function BobSantePage() {
             Bob — Assistant agence Santé & Prévoyance
           </h1>
         </div>
-        {hasStarted && messages.length > 0 && (
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
+        {hasStarted && (
+          <div className="flex items-center gap-2">
+            {messages.length > 0 && (
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={handleExportConversationPdf}
+                      aria-label="Exporter la conversation en PDF"
+                    >
+                      <FileDown className="h-4 w-4" />
+                      <span className="hidden sm:inline">Exporter en PDF</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Exporter la conversation entière en PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+              <PopoverTrigger asChild>
                 <Button
                   variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  aria-label="Menu options"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-2" align="end">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-2 font-normal"
                   size="sm"
-                  className="gap-1.5"
-                  onClick={handleExportConversationPdf}
-                  aria-label="Exporter la conversation en PDF"
+                  onClick={() => {
+                    handleExportConversationPdf();
+                    setMenuOpen(false);
+                  }}
+                  disabled={messages.length === 0}
                 >
                   <FileDown className="h-4 w-4" />
-                  <span className="hidden sm:inline">Exporter en PDF</span>
+                  Exporter la conversation en PDF
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p>Exporter la conversation entière en PDF</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-2 font-normal"
+                  size="sm"
+                  onClick={handleNewConversation}
+                >
+                  <MessageSquarePlus className="h-4 w-4" />
+                  Nouvelle conversation
+                </Button>
+              </PopoverContent>
+            </Popover>
+          </div>
         )}
       </header>
 

@@ -37,6 +37,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { ENABLE_BOB_BOT } from "@/lib/assistant/config";
 
 // Navigation items pour chaque rôle
 const commercialNavItems = [
@@ -222,16 +223,30 @@ export default function CommunLayout({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isAltN = e.altKey && e.key === "n";
-      const isCmdShiftN = e.metaKey && e.shiftKey && e.key === "n";
-      if (!isAltN && !isCmdShiftN) return;
       const target = document.activeElement as HTMLElement | null;
       const tag = target?.tagName?.toLowerCase();
       const editable = target?.getAttribute?.("contenteditable") === "true";
       if (tag === "input" || tag === "textarea" || editable) return;
-      e.preventDefault();
-      if (pathname !== "/commun/agents-ia/bot-secretaire") {
-        router.push("/commun/agents-ia/bot-secretaire");
+
+      const isAltN = e.altKey && e.key.toLowerCase() === "n";
+      const isCmdShiftN = (e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "n";
+      if (isAltN || isCmdShiftN) {
+        e.preventDefault();
+        if (pathname !== "/commun/agents-ia/bot-secretaire") {
+          router.push("/commun/agents-ia/bot-secretaire");
+        }
+        return;
+      }
+
+      if (ENABLE_BOB_BOT) {
+        const isAltB = e.altKey && e.key.toLowerCase() === "b";
+        const isCmdShiftB = (e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "b";
+        if (isAltB || isCmdShiftB) {
+          e.preventDefault();
+          if (pathname !== "/commun/agents-ia/bob-sante") {
+            router.push("/commun/agents-ia/bob-sante");
+          }
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);

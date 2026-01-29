@@ -173,3 +173,42 @@ export function loadSegmentationKnowledge(context: SegmentationContext): string 
 
   return core;
 }
+
+/** Limite de caractères pour la base Bob (éviter dépassement contexte) */
+const BOB_KNOWLEDGE_MAX_CHARS = 28_000;
+
+/**
+ * Charge la base de connaissances Bob depuis docs/knowledge/bob/.
+ * Concatène tous les .md du dossier avec une limite de taille.
+ * Retourne une chaîne vide si le dossier n'existe pas ou est vide.
+ */
+export function loadBobKnowledge(): string {
+  try {
+    const bobDir = path.join(process.cwd(), "docs", "knowledge", "bob");
+    if (!fs.existsSync(bobDir) || !fs.statSync(bobDir).isDirectory()) {
+      return "";
+    }
+    const entries = fs.readdirSync(bobDir, { withFileTypes: true });
+    const files = entries
+      .filter((e) => e.isFile() && e.name.toLowerCase().endsWith(".md"))
+      .map((e) => e.name)
+      .sort();
+    if (files.length === 0) return "";
+
+    const parts: string[] = [];
+    let total = 0;
+    for (const file of files) {
+      if (total >= BOB_KNOWLEDGE_MAX_CHARS) break;
+      const filePath = path.join(bobDir, file);
+      const content = fs.readFileSync(filePath, "utf-8");
+      const remaining = BOB_KNOWLEDGE_MAX_CHARS - total;
+      const toAdd = content.length <= remaining ? content : content.slice(0, remaining) + "\n\n[... tronqué]";
+      parts.push(toAdd);
+      total += toAdd.length;
+    }
+    return parts.join("\n\n---\n\n");
+  } catch (error) {
+    console.error("Erreur chargement base Bob:", error);
+    return "";
+  }
+}
