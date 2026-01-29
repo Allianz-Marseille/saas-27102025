@@ -3,7 +3,7 @@
 > Document de référence unique pour Bob : prompt système, design, UI, fonctionnalités et suivi.
 > **Bob est l'assistant agence** : à la fois **commercial** (arguments pour rassurer le client, faciliter la vente) et **technique** (régimes sociaux, régime de la sécurité sociale, SSI, mutuelle, prévoyance). Il **source à chaque fois que possible**.
 > Lieu : `docs/agents-ia/bob_sante/`
-> Visuels : `public/agents-ia/bob-sante/avatar.jpg` (page), `avatar-tete.jpg` (icône chat).
+> Visuels : `public/agents-ia/bot-sante/` — **`bob_rit.png`** (page d'accueil avec bouton « Bonjour »), **`bob_reflechit.png`** (dans le chat : bulles, en-tête, indicateur « Bob écrit… »).
 > Code : `lib/assistant/bob-system-prompt.ts` → `getBobSystemPrompt()` (à créer).
 
 ---
@@ -123,8 +123,8 @@ Bob est **l'assistant agence** spécialisé santé et prévoyance : il aide les 
 
 - **Layout** : Page fullscreen (`min-h-screen`), pas de sidebar. Structure : barre fixe → zone conversation → zone de saisie ; à droite (lg+), panneau "Brouillon".
 - **Barre** : Bouton retour (lien vers `/commun/agents-ia`), titre "Bob — Assistant agence Santé & Prévoyance", bouton "Exporter en PDF" (affiché une fois la conversation engagée).
-- **Écran d'accueil** : Avatar (`avatar-tete.jpg`) en cercle, texte "Je suis Bob, votre assistant agence santé et prévoyance. Arguments commerciaux et technique, avec sources.", CTA "Bonjour".
-- **Chat** : Bulles user (droite, couleur primaire Bob) / assistant (gauche, fond slate) ; avatar Bob à gauche des réponses ; zone de saisie avec raccourcis affichés (Entrée, Shift+Entrée, Ctrl+V).
+- **Écran d'accueil** : Image **`bob_rit.png`** (cercle, bordure discrète), texte "Je suis Bob, votre assistant agence santé et prévoyance. Arguments commerciaux et technique, avec sources.", CTA "Bonjour".
+- **Chat** : Bulles user (droite, couleur primaire Bob) / assistant (gauche, fond slate) ; image **`bob_reflechit.png`** à gauche des réponses Bob ; zone de saisie avec raccourcis affichés (Entrée, Shift+Entrée, Ctrl+V).
 - **Saisie** : `Textarea` auto-focus après "Bonjour" et après envoi ; boutons image, fichier, envoi ; aperçus des pièces jointes avec retrait possible ; alerte sensibles + checkbox masquage.
 - **Responsive** : Brouillon masqué en dessous de `lg` ; structure verticale préservée sur mobile.
 
@@ -136,7 +136,7 @@ Bob est **l'assistant agence** spécialisé santé et prévoyance : il aide les 
 |--------|--------|
 | **Couleur primaire** | À définir : bleu santé / teal (ex. `teal-600` / `teal-700`) pour CTA, bouton "Bonjour", bulles user, accents — à trancher en équipe |
 | **Neutres** | Slate pour fonds, bordures, texte secondaire |
-| **Avatar** | Cercle, bordure discrète ; `avatar-tete.jpg` dans le chat et l'écran d'accueil — `public/agents-ia/bob-sante/avatar-tete.jpg` |
+| **Visuels Bob** | **Accueil** : `bob_rit.png` (page + bouton « Bonjour »). **Chat** : `bob_reflechit.png` (bulles, en-tête, « Bob écrit… »). Dossier : `public/agents-ia/bot-sante/`. Cercle, bordure discrète. |
 | **Typographie** | Titre `text-xl font-semibold` ; messages `text-sm` ; prose via `MarkdownRenderer` |
 | **Dark mode** | Support via `dark:` et `next-themes` |
 | **Micro-interactions** | "Bob écrit…" avec loader animé ; feedback copie (icône Check) ; toasts Sonner |
@@ -588,7 +588,7 @@ Pour des **gros volumes** (décrets, conventions collectives, nombreux contrats 
 
 - [ ] Page Bob en fullscreen (`/commun/agents-ia/bob-sante`).
 - [ ] Barre avec bouton retour + titre "Bob — Assistant agence Santé & Prévoyance".
-- [ ] Écran d'accueil : avatar + bouton "Bonjour".
+- [ ] Écran d'accueil : image `bob_rit.png` + bouton "Bonjour".
 - [ ] Comportement "Bonjour" : salutation + "Que souhaitez-vous savoir ?" + apparition du chat et focus sur la zone de saisie.
 
 ### Phase 2 — Conversation fluide
@@ -676,13 +676,14 @@ const response = await openai.chat.completions.create({
 
 Spécifications détaillées (cahier des charges, architecture, PDF). Même structure que Nina ; adaptations libellés et suggestions.
 
-### Icône du chat Bob
+### Visuels Bob (accueil vs chat)
 
-**Dans le chat (bulles Bob, en-tête, indicateur "Bob écrit…")**, utiliser l'icône **`/agents-ia/bob-sante/avatar-tete.jpg`**.
+Les images sont dans **`public/agents-ia/bot-sante/`**. En front, les URLs sont relatives à `public/` :
 
-| Contexte            | URL dans l'app                    |
-|---------------------|------------------------------------|
-| Icône du chat Bob   | `/agents-ia/bob-sante/avatar-tete.jpg` |
+| Contexte | Fichier | URL dans l'app |
+|----------|---------|----------------|
+| **Page d'accueil** (avatar + bouton « Bonjour ») | `bob_rit.png` | `/agents-ia/bot-sante/bob_rit.png` |
+| **Chat** (bulles Bob, en-tête, indicateur « Bob écrit… ») | `bob_reflechit.png` | `/agents-ia/bot-sante/bob_reflechit.png` |
 
 ---
 
@@ -710,7 +711,7 @@ Même structure que Nina :
 │ [← Retour]    Bob — Assistant agence Santé & Prévoyance  [···]   │  ← Barre fixe
 ├─────────────────────────────────────────────────────────────────┤
 │   Zone conversation (messages, bulles, pièces jointes)          │
-│   — Écran d'accueil : avatar + "Bonjour"                         │
+│   — Écran d'accueil : bob_rit.png + "Bonjour"                     │
 │   — Ou fil de messages (scroll)                                  │
 ├─────────────────────────────────────────────────────────────────┤
 │  [📎 Doc] [🖼 Image]  │  Zone de saisie (auto-focus)             │
@@ -724,7 +725,7 @@ Même structure que Nina :
 
 ### 3. Écran d'accueil et bouton "Bonjour"
 
-- **État initial** : avatar `avatar-tete.jpg`, texte "Je suis Bob, votre assistant agence santé et prévoyance. Arguments commerciaux et technique, avec sources.", CTA **"Bonjour"**.
+- **État initial** : image **`bob_rit.png`**, texte "Je suis Bob, votre assistant agence santé et prévoyance. Arguments commerciaux et technique, avec sources.", CTA **"Bonjour"**.
 - **Au clic** : message user optionnel "Bonjour", réponse Bob (salutation + "Que souhaitez-vous savoir ?"), zone de saisie visible, **focus automatique** dans le champ.
 - **Suite** : dès un échange, écran d'accueil remplacé par le fil de messages.
 
@@ -775,7 +776,7 @@ Après la première réponse, boutons ou liens cliquables type (orientés **cons
 2. **Route exacte** : `/commun/agents-ia/bob-sante` ou `/bob` ? Raccourci global `Alt + B` / `Cmd + Shift + B` ?
 3. **Périmètre juridique** : disclaimers à afficher (ex. "Bob aide le conseiller à préparer l'échange ; le conseiller adapte le discours au client"). Où les intégrer (modale, bandeau, en bas des réponses) ?
 4. **Public cible prioritaire** (clients/prospects) : TNS d'abord, ou salariés, ou entreprises ? Impact sur les suggestions de démarrage et le ton.
-5. **Avatar** : cercle + bordure ; choix de la couleur primaire (bleu santé / teal / autre).
+5. **Visuels** : accueil = `bob_rit.png`, chat = `bob_reflechit.png` (dossier `public/agents-ia/bot-sante/`). Cercle + bordure ; choix de la couleur primaire (bleu santé / teal / autre).
 6. **Stockage** : V1 LocalStorage ; V2 base pour reprise multi-appareils (comme Nina).
 
 ---
