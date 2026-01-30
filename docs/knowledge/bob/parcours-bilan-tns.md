@@ -1,127 +1,103 @@
 # Parcours type — Bilan prévoyance TNS
 
-Parcours guidé pour réaliser un bilan prévoyance d'un Travailleur Non Salarié (TNS). Le bot pose les questions au fur et à mesure ; l'utilisateur répond ; le bot enchaîne avec la ou les questions suivantes.
+Le bilan TNS se fait **par étape**, dans cet ordre. Quand l'utilisateur envoie « Je souhaite faire un bilan prévoyance pour un TNS. Peux-tu me guider étape par étape ? », répondre par une brève intro puis **poser immédiatement la première question** (étape 1 — nom et prénom).
 
-Quand l'utilisateur envoie le message d'amorce : « Je souhaite faire un bilan prévoyance pour un TNS. Peux-tu me guider étape par étape ? », répondre par une brève intro puis **poser immédiatement la première question** (étape 1.1).
+**Ordre des étapes :** 1) Nom et prénom de l'assuré — 2) Situation matrimoniale — 3) Enfants à charge (si oui, âges) — 4) Activité — 5) Revenu annuel — 6) Frais professionnels annuels — 7) Droits existants (régime général + caisse obligatoire) — 8) Conseil prévoyance à mettre en place.
 
-**Nota :** Le bilan peut se faire **sans documents financiers** : l'utilisateur peut indiquer uniquement les **grandes masses** (revenu, bénéfice, cotisations, CA). Les liasses (2035, 2031, 2033) sont optionnelles ; calculer et recommander à partir des montants communiqués.
+**Nota :** Bilan faisable sans documents ; grandes masses (revenu annuel, frais pro) suffisent.
 
-## Principe (5 étapes)
+## Base de connaissances à utiliser (obligatoire)
 
-1. **Collecte d'informations** — Situation familiale, profession, revenu (documents à collecter).
-2. **Analyse des documents financiers** — Calcul du revenu à assurer (BNC, BIC, auto-entrepreneur).
-3. **Évaluation des besoins** — IJ, capital décès, rente éducation, rente conjoint.
-4. **Vérification des obligations** — Plafonds Madelin, conventions collectives si applicable.
-5. **Synthèse et recommandation** — Solutions adaptées aux besoins et au budget.
+À chaque étape, s'appuyer sur les fiches suivantes (chargées avec ce parcours dans la base Bob) :
 
----
+- **Étape 4 (Activité)** : **regimes-obligatoires-tns** — § 4 Synthèse par profession et § 2 (caisses CNAVPL) ou § 1 (SSI) pour identifier la caisse obligatoire (Carpimko, CARMF, CIPAV, SSI, etc.).
+- **Étape 5 (Revenu)** : prevoyance-tns-regles-ij, 2035-bilan-tns, fiscal-liasses-correspondances — formules IJ (CP+BT, 2031+380, abattement auto-entrepreneur).
+- **Étape 6 (Frais pro)** : prevoyance-tns-regles-ij § 4, 2035-bilan-tns — règle détective (Frais Fixes si bénéfice faible + frais élevés).
+- **Étape 7 (Droits existants)** : **regimes-obligatoires-tns** — § 1 SSI (IJ 1/730e RAAM, délai carence 3 j, invalidité ~30 %/50 %, décès ~20 % PASS, réversion 54 %) si artisan/commerçant ; § 2 ou § 3 (caisses libérales) si profession libérale. Citer la source (« Selon la fiche régimes obligatoires TNS… »).
+- **Étape 8 (Conseil)** : regimes-obligatoires-tns, prevoyance-tns-regles-ij, audit-diagnostic-conseiller, regulatory-figures (Madelin), liens-devis-allianz.
 
-## Étape 1 — Collecte d'informations
+## Éléments à sourcer (obligatoire)
 
-### 1.1 Situation familiale
+Bob **cite explicitement la source** pour tout élément pris en compte issu de la base de connaissances. Formulation : « Selon la fiche [nom]… », « Référence : [fiche] », ou en fin de bloc : « *Source : regimes-obligatoires-tns.* »
 
-**Bot :** « Pour commencer, quelle est la situation familiale du TNS ? Marié, pacsé ou concubin ? Nombre d'enfants (et âges si pertinent) ? »
+| Élément | Fiche à citer | Étape |
+|---------|---------------|-------|
+| Caisse obligatoire (CARPIMKO, CARMF, CIPAV, SSI…) | regimes-obligatoires-tns | 4, 7 |
+| Prestations SSI (IJ 1/730e RAAM, délai carence 3 j, invalidité ~30 %/50 %, décès ~20 % PASS, réversion 54 %) | regimes-obligatoires-tns § 1 | 7 |
+| Prestations caisses libérales | regimes-obligatoires-tns § 2 ou § 3 | 7 |
+| Formule IJ BNC (CP+BT), BIC (2031+380), abattement auto-entrepreneur | prevoyance-tns-regles-ij, 2035-bilan-tns, fiscal-liasses-correspondances | 5 |
+| Règle détective / Frais Fixes | prevoyance-tns-regles-ij § 4, 2035-bilan-tns | 6 |
+| Plafonds Madelin | regulatory-figures, prevoyance-tns-regles-ij § 3 | 8 |
+| Rente éducation, rente conjoint, clause bénéficiaire (PACS/concubin) | audit-diagnostic-conseiller | 2, 8 |
+| Liens devis Allianz | liens-devis-allianz | 8 |
 
-**Suite :** remercier, résumer si besoin, puis enchaîner avec 1.2.
+À la fin des réponses utilisant chiffres, formules ou prestations réglementaires : indiquer au moins une source (ex. « *Sources : regimes-obligatoires-tns, prevoyance-tns-regles-ij.* »).
 
-### 1.2 Profession et activité
+## Régimes connus par Bob
 
-**Bot :** « Quelle est la nature de l'activité ? Profession libérale (BNC), artisan ou commerçant (BIC), autre ? Si vous le connaissez : code NAF ou intitulé de la profession. »
-
-**Suite :** remercier, préciser le régime (BNC / BIC / micro), puis enchaîner avec 1.3.
-
-### 1.3 Revenu — documents ou grandes masses
-
-**Bot :** « Pour déterminer le revenu à assurer, vous pouvez soit m'envoyer les documents (liasses, attestation), soit **simplement me donner les grandes masses** — pas besoin des documents si vous avez les chiffres. Libéral (BNC) : bénéfice (CP) et cotisations (BT). BIC : résultat fiscal (2031 case 1) et cotisations (ex. 2033-D case 380). Auto-entrepreneur : CA et régime (BNC/BIC, prestations/ventes) pour l'abattement (34 % / 50 % / 71 %). Indiquez les montants ou envoyez les documents si vous préférez. »
-
-**Suite :** Si grandes masses fournies → calculer revenu IJ, rappeler la formule, enchaîner vers 2.4 ou 3. Si documents annoncés ou envoyés → proposer étape 2 (upload ou dictée des montants). Si rien pour l'instant → rappeler quelles grandes masses sont nécessaires, proposer de continuer plus tard ou d'avancer sur les besoins (étape 3) avec ordres de grandeur.
-
----
-
-## Étape 2 — Revenu à assurer (documents ou grandes masses)
-
-(À engager dès que l'utilisateur a des **chiffres** ou des **documents**. Le bilan se fait aussi bien avec les grandes masses seules qu'avec les liasses.)
-
-### 2.1 Libéral (BNC)
-
-**Bot :** « Pour un libéral (BNC), revenu IJ = Bénéfice (CP) + Cotisations sociales (BT). Donnez-moi ces deux montants (grandes masses) ou envoyez la 2035 si vous l'avez. »
-
-**Suite :** calculer le revenu IJ, rappeler la formule, enchaîner vers 2.4 ou 3.
-
-### 2.2 Commerçant / artisan (BIC)
-
-**Bot :** « Pour un BIC, revenu IJ = Résultat fiscal (2031 case 1) + Cotisations sociales (2033-D case 380). Indiquez ces deux montants (grandes masses) ou envoyez les documents. »
-
-**Suite :** calculer si possible, rappeler la formule, enchaîner vers 2.4 ou 3.
-
-### 2.3 Auto-entrepreneur
-
-**Bot :** « Pour un auto-entrepreneur : Revenu après abattement = CA − abattement (34 % BNC, 50 % BIC prestations, 71 % BIC ventes). Quel est le CA et le régime (BNC ou BIC, prestations ou ventes) ? Les grandes masses suffisent. »
-
-**Suite :** calculer le revenu net, rappeler la formule, enchaîner vers 2.4 ou 3.
-
-### 2.4 Synthèse revenu à assurer
-
-**Bot :** « Le revenu à assurer pour les IJ est donc de X €. Souhaitez-vous qu'on passe à l'évaluation des besoins en prévoyance (IJ, capital décès, rentes) ? »
-
-**Suite :** si oui → étape 3.
+- **Régime obligatoire (caisse de la profession)** : Carpimko (infirmiers libéraux, kinés, etc.), CARMF (médecins), CIPAV (architectes, experts-comptables, etc.), CAVEC, CNAVPL… Indiquer les prestations de base (IJ, invalidité, décès) de la caisse selon l'activité.
+- **Régime général / SSI** : Bob connaît le régime général (salariés, CPAM) et la SSI (TNS artisans/commerçants). Toujours indiquer les **droits existants** (régime général ou SSI + caisse obligatoire) avant de conseiller la prévoyance complémentaire.
 
 ---
 
-## Étape 3 — Évaluation des besoins en prévoyance
+## Étape 1 — Nom et prénom
 
-### 3.1 Indemnités Journalières (IJ)
+**Bot :** « Pour commencer, quel est le nom et le prénom de l'assuré ? »
 
-**Bot :** « Les IJ compensent la perte de revenu en cas d'arrêt de travail. On part du revenu à assurer établi. Avez-vous une idée du niveau de garantie souhaité (ex. 90 % du revenu, franchise 30 jours) ? Des contrats existants à prendre en compte ? »
+**Suite :** remercier, enchaîner étape 2.
 
-**Suite :** résumer la cible IJ, puis enchaîner 3.2.
+## Étape 2 — Situation matrimoniale
 
-### 3.2 Capital décès
+**Bot :** « Quelle est la situation matrimoniale ? Marié(e), pacsé(e), concubin(e), célibataire, divorcé(e), veuf(ve) ? »
 
-**Bot :** « Le capital décès protège les ayants droit en cas de décès. Souhaitez-vous couvrir les dettes, le train de vie du foyer, un capital cible ? Conjoint et/ou enfants à protéger ? »
+**Suite :** remercier ; si PACS/concubin, rappeler clause bénéficiaire nominative. Enchaîner étape 3.
 
-**Suite :** résumer, puis 3.3.
+## Étape 3 — Enfants à charge
 
-### 3.3 Rente éducation / rente conjoint
+**Bot :** « Y a-t-il des enfants à charge ? Si oui, combien et quels âges ? »
 
-**Bot :** « Pour les enfants mineurs : souhaitez-vous prévoir une rente éducation ? Pour le conjoint : dépend-il financièrement du TNS ? Si oui, souhaitez-vous une rente conjoint ? »
+**Suite :** remercier, noter les âges (rente éducation si mineurs). Enchaîner étape 4.
 
-**Suite :** résumer les besoins, puis proposer étape 4.
+## Étape 4 — Activité
 
----
+**Bot :** « Quelle est l'activité du TNS ? Profession (ex. médecin, infirmier libéral, artisan, commerçant). Régime fiscal si connu : BNC, BIC, micro. NAF ou intitulé si pertinent. »
 
-## Étape 4 — Vérification des obligations réglementaires
+**Suite :** remercier, préciser régime (BNC/BIC/micro) et **identifier la caisse obligatoire** en s'appuyant sur **regimes-obligatoires-tns** (§ 4 Synthèse par profession, § 2 caisses CNAVPL ou § 1 SSI) — ex. Carpimko infirmier, CARMF médecin, CIPAV architecte, SSI artisan. Enchaîner étape 5.
 
-### 4.1 Plafonds Loi Madelin
+## Étape 5 — Revenu annuel
 
-**Bot :** « Les cotisations prévoyance TNS peuvent être déductibles (Loi Madelin, plafonds annuels). Souhaitez-vous que je vous rappelle les plafonds en vigueur et les conditions de déductibilité ? »
+**Bot :** « Quel est le revenu annuel à retenir ? Grandes masses suffisent. BNC : bénéfice (CP) + cotisations (BT). BIC : résultat fiscal (2031 case 1) + cotisations (2033-D case 380). Auto-entrepreneur : CA et régime pour abattement (34 % / 50 % / 71 %). Indiquez le montant ou envoyez les documents. »
 
-**Suite :** si oui, donner les éléments (référence regulatory-figures et fiches bob). Puis 4.2.
+**Suite :** calculer si besoin le revenu à assurer pour les IJ, rappeler la formule. Enchaîner étape 6.
 
-### 4.2 Conventions collectives
+## Étape 6 — Frais professionnels annuels
 
-**Bot :** « Le TNS est-il concerné par une convention collective imposant des niveaux de prévoyance ? Si oui, laquelle ? »
+**Bot :** « Quels sont les frais professionnels annuels (frais généraux) ? Utile pour évaluer une garantie Frais Fixes si les frais sont élevés par rapport au bénéfice. »
 
-**Suite :** noter si applicable, rappeler les 5 points de vigilance CCN si pertinent (fiche regimes-obligatoires-ccn), puis proposer étape 5.
+**Suite :** remercier ; si frais élevés et bénéfice faible → alerte règle détective (Frais Fixes). Enchaîner étape 7.
 
----
+## Étape 7 — Droits existants (régime général + caisse obligatoire)
 
-## Étape 5 — Synthèse et recommandation
+**Bot :** S'appuyer sur **regimes-obligatoires-tns** : si artisan/commerçant → § 1 SSI (IJ 1/730e RAAM, délai carence 3 j, franchise 7/14/30 j, invalidité ~30 %/50 %, décès ~20 % PASS, réversion 54 %) ; si libéral → § 2 ou § 3 (prestations caisse identifiée). Citer la source. « Voici les droits existants pour [Nom] : [SSI ou régime général + caisse obligatoire]. Souhaitez-vous le détail ou qu'on enchaîne sur la prévoyance ? »
 
-**Bot :** « Voici une synthèse du bilan prévoyance TNS : Situation (famille, activité, régime). Revenu à assurer : X €. Besoins identifiés : IJ, capital décès, rente éducation, rente conjoint (selon réponses). Contraintes : Madelin, CCN si applicable. Je vous recommande de [propositions adaptées]. Souhaitez-vous un résumé pour votre expert ou un devis (tunnels Allianz) ? »
+**Suite :** si demandé, détailler à partir de regimes-obligatoires-tns ; puis proposer étape 8.
 
-**Suite :** proposer export PDF, résumé en 3 points, ou lien vers devis (fiche liens-devis-allianz).
+## Étape 8 — Conseil prévoyance à mettre en place
+
+**Bot :** « Recommandations prévoyance : IJ (compléter/anticiper la caisse ; niveau adapté au revenu ; franchise), Capital décès (ayants droit ; clause bénéficiaire si PACS/concubin), Rente éducation (si enfants mineurs), Rente conjoint (si conjoint dépendant), Frais Fixes (si frais pro élevés), Loi Madelin (plafonds). Souhaitez-vous un résumé, un export PDF ou un lien devis ? »
+
+**Suite :** proposer export PDF, résumé, lien devis (fiche liens-devis-allianz).
 
 ---
 
 ## Règles pour le bot (parcours bilan TNS)
 
-- **Rappel d'étape** : si l'utilisateur demande « Où en est-on ? », « On en est où ? », « Récap » ou équivalent, résumer l'étape en cours, les infos déjà collectées (situation familiale, profession, revenu, besoins partiels) et proposer la prochaine question.
-- **Bilan sans documents** : le bilan peut se faire **uniquement avec les grandes masses** (revenu, bénéfice, cotisations, CA). Ne pas exiger les liasses ; proposer systématiquement l'option « donnez-moi les chiffres clés ».
-- **Une ou deux questions à la fois** : ne pas surcharger ; laisser l'utilisateur répondre avant d'enchaîner.
-- **Résumer** brièvement les réponses avant de passer à la suite (situation familiale, revenu calculé, besoins).
-- **Proposer** explicitement la suite (« Souhaitez-vous qu'on passe à… ? ») pour garder le guidage.
-- **S'appuyer** sur les fiches bob (formules IJ, Madelin, CCN, audit-diagnostic-conseiller) pour les chiffres et les règles.
-- **Upload** : si l'utilisateur envoie une 2035, 2031, 2033 ou attestation CA, les analyser comme dans le cœur Bob (formules IJ, alerte Frais Fixes si pertinent). Les documents restent **optionnels**.
+- **Ordre strict** : 1 Nom/prénom → 2 Situation matrimoniale → 3 Enfants à charge → 4 Activité → 5 Revenu annuel → 6 Frais pro → 7 Droits existants (régime général + caisse obligatoire) → 8 Conseil prévoyance.
+- **Régime obligatoire** : identifier la caisse (Carpimko, CARMF, CIPAV…) selon l'activité ; indiquer les droits de base.
+- **Droits existants** : toujours indiquer régime général (ou SSI) + caisse obligatoire avant de conseiller la prévoyance.
+- **Rappel d'étape** : « Où en est-on ? » → résumer l'étape en cours, les infos collectées (nom, situation, enfants, activité, revenu, frais), proposer la prochaine question.
+- **Base de connaissances** : à chaque étape, utiliser les fiches du tableau « Base de connaissances à utiliser » — **regimes-obligatoires-tns** obligatoire pour étapes 4 et 7. Autres fiches : prevoyance-tns-regles-ij, 2035-bilan-tns, audit-diagnostic-conseiller, regulatory-figures, liens-devis-allianz.
+- **Sourcer les éléments pris en compte** : pour tout élément issu d'une fiche (caisse obligatoire, prestations SSI/caisses, formules IJ, Madelin, Frais Fixes, rentes/clause bénéficiaire, liens devis), **citer explicitement la source** — ex. « Selon la fiche régimes obligatoires TNS… », « Référence : prevoyance-tns-regles-ij », ou en fin de réponse « *Sources : regimes-obligatoires-tns, prevoyance-tns-regles-ij.* » Voir le tableau « Éléments à sourcer ».
+- **Bilan sans documents** : grandes masses suffisent. Une ou deux questions à la fois. Résumer, proposer la suite. Upload optionnel.
 
-Références : prevoyance-tns-regles-ij, 2035-bilan-tns, fiscal-liasses-correspondances, audit-diagnostic-conseiller, regimes-obligatoires-ccn, liens-devis-allianz.
+Références : **regimes-obligatoires-tns** (inventaire TNS par profession), regimes-obligatoires-ccn, prevoyance-tns-regles-ij, 2035-bilan-tns, audit-diagnostic-conseiller, liens-devis-allianz.

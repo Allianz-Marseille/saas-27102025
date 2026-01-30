@@ -17,7 +17,8 @@ Fichiers à créer (voir `docs/agents-ia/bob_sante/TODO.md` § 11) :
 - `due-contrat-groupe.md`
 - `audit-diagnostic-conseiller.md`
 - `fiscalite-entree-sortie-prevoyance.md`
-- `regimes-obligatoires-ccn.md`
+- `regimes-obligatoires-ccn.md` (CCN, salariés)
+- `regimes-obligatoires-tns.md` (inventaire TNS : SSI, CARMF, CARPIMKO, CIPAV, CAVEC, CPRN, CNBF, etc.)
 - `glossaire.md`
 - `faq.md` (ou faq par thème)
 - `references.md`

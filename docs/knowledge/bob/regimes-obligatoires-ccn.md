@@ -1,9 +1,12 @@
 ## 1. Socles des Régimes Obligatoires (RO)
+
+**Inventaire complet TNS (SSI + caisses libérales) :** voir la fiche **`regimes-obligatoires-tns.md`** (CARMF, CARPIMKO, CIPAV, CAVEC, CPRN, CNBF, etc.).
+
 | Régime | Organisme | IJ Base | Invalidité / Décès |
 |:---|:---|:---|:---|
 | **Salarié** | CPAM | 50% du salaire journalier | Rente selon taux / Faible capital |
 | **TNS (Artisan/Com.)** | SSI | Basé sur le revenu moyen | Pension minime |
-| **Libéral** | CARMF, CIPAV... | Selon la caisse (souvent franchise longue) | Capital décès souvent insuffisant |
+| **Libéral** | CARMF, CARPIMKO, CIPAV, CAVEC… | Selon la caisse (souvent franchise longue) | Capital décès souvent insuffisant |
 
 ## 2. Les 5 Points de Vigilance CCN
 1. **Prévoyance Cadre (1,50% TA)** : Obligation conventionnelle de 1947. L'employeur doit verser 1,50% de la tranche A en priorité au décès. Sinon, il doit rembourser le capital aux héritiers.
