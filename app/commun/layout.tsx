@@ -15,7 +15,8 @@ import {
   isAdmin, 
   isCommercial, 
   isCommercialSanteIndividuel, 
-  isCommercialSanteCollective 
+  isCommercialSanteCollective,
+  isGestionnaireSinistre
 } from "@/lib/utils/roles";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { CommercialSidebar } from "@/components/dashboard/commercial-sidebar";
@@ -31,7 +32,8 @@ import {
   LayoutDashboard,
   BarChart3,
   Wrench,
-  Bot
+  Bot,
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -56,6 +58,11 @@ const commercialNavItems = [
     icon: Coins,
     label: "Commissions",
     href: "/dashboard/commissions",
+  },
+  {
+    icon: Zap,
+    label: "Boost",
+    href: "/commun/boost",
   },
   {
     icon: Workflow,
@@ -97,6 +104,11 @@ const healthNavItems = [
     icon: BarChart3,
   },
   {
+    href: "/commun/boost",
+    label: "Boost",
+    icon: Zap,
+  },
+  {
     href: "/commun/process",
     label: "Process",
     icon: Workflow,
@@ -135,6 +147,11 @@ const healthCollectiveNavItems = [
     href: "/sante-collective/comparaison",
     label: "Comparaison",
     icon: BarChart3,
+  },
+  {
+    href: "/commun/boost",
+    label: "Boost",
+    icon: Zap,
   },
   {
     href: "/commun/process",
@@ -185,6 +202,11 @@ const adminNavItems = [
     href: "/admin/sinistre",
     label: "Sinistre",
     icon: FileText,
+  },
+  {
+    href: "/commun/boost",
+    label: "Boost",
+    icon: Zap,
   },
   {
     href: "/commun/process",
@@ -289,6 +311,7 @@ export default function CommunLayout({
   const isCommercialUser = isCommercial(userData);
   const isHealthIndividuelUser = isCommercialSanteIndividuel(userData);
   const isHealthCollectiveUser = isCommercialSanteCollective(userData);
+  const isGestionnaireSinistreUser = isGestionnaireSinistre(userData);
 
   // Déterminer le variant pour les menus
   let variant: "admin" | "commercial" | "health" = "commercial";
@@ -308,11 +331,11 @@ export default function CommunLayout({
     variant = "health";
     navItems = healthCollectiveNavItems;
     title = "Processus";
-  } else if (isCommercialUser) {
+  } else if (isCommercialUser || isGestionnaireSinistreUser) {
     variant = "commercial";
     navItems = commercialNavItems;
     title = "Processus";
-    showNotifications = true;
+    showNotifications = isCommercialUser;
   }
 
   // Nina — Bot Secrétaire : pleine page sans sidebar (spec NINA-SECRETAIRE.md)
@@ -336,7 +359,7 @@ export default function CommunLayout({
             onCollapsedChange={setIsSidebarCollapsed}
           />
         )}
-        {isCommercialUser && !isAdminUser && (
+        {(isCommercialUser || isGestionnaireSinistreUser) && !isAdminUser && (
           <CommercialSidebar />
         )}
         {(isHealthIndividuelUser || isHealthCollectiveUser) && !isAdminUser && (
@@ -541,7 +564,7 @@ export default function CommunLayout({
           "pt-16 lg:pt-0",
           // Marges pour la sidebar desktop
           isAdminUser && (isSidebarCollapsed ? "lg:ml-16" : "lg:ml-64"),
-          isCommercialUser && !isAdminUser && "lg:ml-64",
+          (isCommercialUser || isGestionnaireSinistreUser) && !isAdminUser && "lg:ml-64",
           (isHealthIndividuelUser || isHealthCollectiveUser) && !isAdminUser && (isSidebarCollapsed ? "lg:ml-16" : "lg:ml-64")
         )}>
           <div className="w-full py-6">

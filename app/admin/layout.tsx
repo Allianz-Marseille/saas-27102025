@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
-import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote } from "lucide-react";
+import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote, Zap } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { MobileMenu } from "@/components/navigation/mobile-menu";
 import { ResponsiveHeader } from "@/components/navigation/responsive-header";
@@ -43,6 +43,11 @@ const adminNavItems = [
     href: "/admin/sinistre",
     label: "Sinistre",
     icon: AlertTriangle,
+  },
+  {
+    href: "/admin/boost",
+    label: "Boost",
+    icon: Zap,
   },
   {
     href: "/commun/process",

@@ -177,6 +177,19 @@ service cloud.firestore {
       // Note: Les conversations partagées sont gérées via l'API qui vérifie les permissions côté serveur
     }
     
+    // Boosts collection (avis clients - Google, etc.)
+    // Accès pour tous les rôles : CDC, Santé Indiv, Santé Coll, Gestionnaire Sinistre, Admin
+    match /boosts/{boostId} {
+      // Lecture : tous les authentifiés (leaderboard visible par tous les collaborateurs)
+      allow read: if isAuthenticated();
+      
+      // Création : utilisateur crée son propre boost
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      
+      // Modification/Suppression : non prévues en v1 (déclarations immuables)
+      allow update, delete: if false;
+    }
+    
     // Sinistres collection
     // Gestion des sinistres - accès pour Admin, Gestionnaire Sinistre et CDC Commercial
     match /sinistres/{sinistreId} {

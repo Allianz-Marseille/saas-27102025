@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, FileText, User, LogOut, ChevronLeft, Coins, Workflow, Wrench, Bot } from "lucide-react";
+import { Home, FileText, User, LogOut, ChevronLeft, Coins, Workflow, Wrench, Bot, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { NotificationCenter } from "@/components/dashboard/notification-center";
@@ -36,6 +36,11 @@ const menuItems: SidebarItem[] = [
     icon: Coins,
     label: "Commissions",
     href: "/dashboard/commissions",
+  },
+  {
+    icon: Zap,
+    label: "Boost",
+    href: "/commun/boost",
   },
   {
     icon: Workflow,

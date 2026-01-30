@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, FileText, User, Coins, Workflow, Wrench } from "lucide-react";
+import { Home, FileText, User, Coins, Workflow, Wrench, Zap } from "lucide-react";
 import { CommercialSidebar } from "@/components/dashboard/commercial-sidebar";
 import { MobileMenu } from "@/components/navigation/mobile-menu";
 import { ResponsiveHeader } from "@/components/navigation/responsive-header";
@@ -30,6 +30,11 @@ const commercialNavItems = [
     icon: Coins,
     label: "Commissions",
     href: "/dashboard/commissions",
+  },
+  {
+    icon: Zap,
+    label: "Boost",
+    href: "/commun/boost",
   },
   {
     icon: Workflow,

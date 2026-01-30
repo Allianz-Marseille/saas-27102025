@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { WeatherCard } from "@/components/admin/weather-card";
 import { motion } from "framer-motion";
-import { Sparkles, User, Users, Heart, Building2, AlertTriangle, Construction, TrendingUp, FileText, DollarSign } from "lucide-react";
+import { Sparkles, User, Users, Heart, Building2, AlertTriangle, Construction, TrendingUp, FileText, DollarSign, Zap } from "lucide-react";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { MonthSelector } from "@/components/dashboard/month-selector";
 import { format } from "date-fns";
@@ -23,6 +23,7 @@ import { calculateHealthKPI } from "@/lib/utils/health-kpi";
 import { calculateHealthCollectiveKPI } from "@/lib/utils/health-collective-kpi";
 import { toast } from "sonner";
 import type { KPI, HealthKPI, HealthAct, HealthCollectiveAct, HealthCollectiveKPI } from "@/types";
+import { getBoostsByMonth } from "@/lib/firebase/boosts";
 
 interface RoleSectionProps {
   title: string;
@@ -733,7 +734,105 @@ export default function AdminHome() {
           color="text-orange-600"
           underConstruction
         />
+
+        <BoostSection selectedMonth={selectedMonth} />
       </div>
     </div>
+  );
+}
+
+function BoostSection({ selectedMonth }: { selectedMonth: string }) {
+  const [nbBoosts, setNbBoosts] = useState(0);
+  const [totalRemuneration, setTotalRemuneration] = useState(0);
+  const [nbCollaborateurs, setNbCollaborateurs] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoading(true);
+    getBoostsByMonth(selectedMonth)
+      .then((boosts) => {
+        if (cancelled) return;
+        setNbBoosts(boosts.length);
+        setTotalRemuneration(boosts.reduce((sum, b) => sum + b.remuneration, 0));
+        setNbCollaborateurs(new Set(boosts.map((b) => b.userId)).size);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setNbBoosts(0);
+          setTotalRemuneration(0);
+          setNbCollaborateurs(0);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedMonth]);
+
+  return (
+    <Card className="border-0 shadow-lg">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Zap className="h-5 w-5 text-amber-500" />
+          Boost
+        </CardTitle>
+        <CardDescription>
+          Avis clients et rémunérations — tous les collaborateurs
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/30 border-amber-200 dark:border-amber-800">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mb-1">Nb boosts</p>
+                      <p className="text-2xl font-bold">{nbBoosts}</p>
+                    </div>
+                    <Zap className="h-8 w-8 text-amber-600 dark:text-amber-400 opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950/30 dark:to-yellow-900/30 border-yellow-200 dark:border-yellow-800">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-1">Rémunération totale</p>
+                      <p className="text-2xl font-bold">{formatCurrency(totalRemuneration)}</p>
+                    </div>
+                    <DollarSign className="h-8 w-8 text-yellow-600 dark:text-yellow-400 opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/30 dark:to-orange-900/30 border-orange-200 dark:border-orange-800">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-orange-600 dark:text-orange-400 mb-1">Collaborateurs</p>
+                      <p className="text-2xl font-bold">{nbCollaborateurs}</p>
+                    </div>
+                    <Users className="h-8 w-8 text-orange-600 dark:text-orange-400 opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="text-center">
+              <Button asChild variant="outline" className="gap-2">
+                <Link href="/admin/boost">Voir le détail complet →</Link>
+              </Button>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
