@@ -53,3 +53,4 @@ serviceAccountKey.json
 # Google Cloud credentials
 gen-lang-client-*.json
 saas-agence-ocr-*.json
+firebase-debug*.log
