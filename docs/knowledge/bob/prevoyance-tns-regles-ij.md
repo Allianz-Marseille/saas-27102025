@@ -5,11 +5,13 @@
 
 ## 2. Réintégrations Madelin — Revenu réel à assurer
 
+**Important :** Le **BNC** (bénéfice des professions libérales) et le **résultat fiscal BIC** sont **déjà nets des charges** (chiffre d’affaires − charges = bénéfice). Si l’assuré déclare « 80 000 € de BNC », ces 80 000 € sont déjà le bénéfice — on ne soustrait pas les « frais professionnels » pour recalculer un bénéfice net. Les « frais professionnels » (étape 6 du parcours bilan) servent uniquement à évaluer la garantie Frais Fixes (charges qui continuent en cas d’arrêt), pas à recalculer le revenu à assurer.
+
 Pour obtenir l’**assiette réelle** (revenu avant prévoyance) à couvrir par les IJ :
 
-- **2035 (BNC) :** Revenu IJ = **CP + BT** (BT = cotisations personnelles déjà dans la liasse ; les cotisations Madelin sont déductibles donc à réintégrer pour le calcul du revenu « brut » à protéger).
-- **2033 (BIC) :** Revenu IJ = Résultat 2031 case 1 + **2033-D case 380** (cotisations sociales).
-- **Formule synthétique :** Revenu réel = Revenu fiscal du document + Cotisations sociales personnelles (BT ou 380). Ce revenu réel sert de base au dimensionnement de l’IJ journalière.
+- **2035 (BNC) :** Revenu IJ = **CP + BT** (CP = bénéfice déjà net des charges ; BT = cotisations personnelles déjà dans la liasse ; les cotisations Madelin sont déductibles donc à réintégrer pour le calcul du revenu « brut » à protéger).
+- **2033 (BIC) :** Revenu IJ = Résultat 2031 case 1 + **2033-D case 380** (résultat déjà net des charges + cotisations sociales).
+- **Formule synthétique :** Revenu réel = Revenu fiscal du document (bénéfice/résultat déjà net) + Cotisations sociales personnelles (BT ou 380). Ce revenu réel sert de base au dimensionnement de l’IJ journalière.
 
 ## 3. Plafonds Loi Madelin (prévoyance / santé TNS)
 

@@ -126,29 +126,32 @@ Le bot répond par une brève intro puis **pose la première question** (étape 
 
 ## Étape 5 — Revenu annuel
 
+**Logique BNC/BIC :** Le **BNC** (bénéfice des professions libérales) et le **résultat BIC** sont **déjà nets des charges** (CA − charges = bénéfice). Si l’assuré déclare « 80 000 € de BNC », ces 80 000 € sont déjà le **bénéfice** — on ne soustrait pas les frais professionnels pour « recalculer » un bénéfice net. Pour les IJ : revenu à assurer = **bénéfice (CP) + cotisations (BT)** en BNC ; **résultat 2031 case 1 + cotisations 2033-D case 380** en BIC.
+
 **Bot :**  
-« Quel est le **revenu annuel** à retenir ?  
-Vous pouvez donner les **grandes masses** — pas besoin des documents si vous avez les chiffres.  
-- **Libéral (BNC)** : bénéfice (CP) + cotisations sociales (BT) — ex. depuis une 2035.  
-- **Commerçant / artisan (BIC)** : résultat fiscal (2031 case 1) + cotisations sociales (ex. 2033-D case 380).  
-- **Auto-entrepreneur** : CA et régime (BNC ou BIC, prestations ou ventes) pour appliquer l’abattement (34 % / 50 % / 71 %).  
-Indiquez le montant ou envoyez les documents si vous préférez. »
+« Quel est le **revenu annuel** à retenir pour les IJ ?  
+- **Libéral (BNC)** : le **bénéfice** (CP) — déjà net des charges — + cotisations sociales (BT), ex. depuis une 2035.  
+- **Commerçant / artisan (BIC)** : le **résultat fiscal** (2031 case 1) — déjà net des charges — + cotisations (ex. 2033-D case 380).  
+- **Auto-entrepreneur** : CA et régime pour appliquer l’abattement (34 % / 50 % / 71 %) ; le revenu après abattement est alors utilisé.  
+Indiquez le montant (bénéfice + cotisations si vous les avez) ou envoyez les documents. »
 
-**Utilisateur :** répond avec les chiffres (ex. « Bénéfice 55 000 €, cotisations 22 000 € → revenu à assurer 77 000 € ») ou envoie les documents.
+**Utilisateur :** répond (ex. « BNC 80 000 €, cotisations 30 000 € → revenu à assurer 110 000 € » ou « Bénéfice 55 000 €, cotisations 22 000 € »).
 
-**Bot (suite) :** calcule si besoin le revenu à assurer pour les IJ, rappelle la formule, puis enchaîne avec l’étape 6.
+**Bot (suite) :** calcule si besoin le revenu à assurer pour les IJ (CP+BT ou 2031+380), rappelle que le BNC/BIC est déjà net des charges. **Ne jamais** soustraire les frais professionnels de l’étape 6 du revenu de l’étape 5. Puis enchaîne avec l’étape 6.
 
 ---
 
 ## Étape 6 — Frais professionnels annuels
 
+**Logique :** Les **frais professionnels** (frais généraux) sont les **charges qui continuent en cas d’arrêt de travail** (loyer, assurances, honoraires, charges d’équipe, etc.). Ils **ne sont pas soustraits du revenu de l’étape 5** : le BNC/BIC est déjà le bénéfice net (CA − charges). L’étape 6 sert **uniquement** à évaluer si une garantie **Frais Fixes** est pertinente — quand les frais sont élevés par rapport au bénéfice, l’activité reste fragile en cas d’arrêt.
+
 **Bot :**  
-« Quels sont les **frais professionnels annuels** (ou frais généraux) ?  
-Ce chiffre permet d’évaluer si une garantie **Frais Fixes** (ou renforcement) est pertinente — notamment quand les frais sont élevés par rapport au bénéfice. »
+« Quels sont les **frais professionnels annuels** (frais généraux qui continuent en cas d’arrêt : loyer, assurances, charges, etc.) ?  
+Ce chiffre sert à évaluer si une garantie **Frais Fixes** est pertinente — pas à recalculer le bénéfice (le BNC/BIC est déjà net des charges). »
 
 **Utilisateur :** répond (ex. 24 000 € ; ou « pas de détail pour l’instant »).
 
-**Bot (suite) :** remercie. Si frais élevés et bénéfice faible → rappeler la **règle détective** (alerte garantie Frais Fixes). Puis passer à l’étape 7 (droits existants).
+**Bot (suite) :** remercie. Si frais élevés par rapport au **bénéfice** (déjà connu à l’étape 5) → rappeler la **règle détective** (alerte garantie Frais Fixes). **Ne jamais** écrire « revenu − frais = bénéfice net » : le bénéfice est celui de l’étape 5. Puis passer à l’étape 7.
 
 ---
 
@@ -197,6 +200,7 @@ Souhaitez-vous un résumé pour votre expert, un export PDF de la conversation o
 - **Proposer** explicitement la suite (« Souhaitez-vous qu’on passe à… ? »).
 - **S’appuyer sur la base de connaissances** : à chaque étape concernée, utiliser les fiches indiquées dans le tableau « Base de connaissances à utiliser dans le parcours » — en particulier **`regimes-obligatoires-tns.md`** pour l’étape 4 (identification caisse) et l’étape 7 (droits existants SSI / caisses libérales). Autres fiches : formules IJ, Madelin (`regulatory-figures`, prevoyance-tns-regles-ij), audit-diagnostic-conseiller, regimes-obligatoires-ccn.
 - **Sourcer les éléments pris en compte** : pour tout élément issu d’une fiche (caisse obligatoire, prestations SSI/caisses libérales, formules IJ, plafonds Madelin, règle Frais Fixes, rentes/clause bénéficiaire, liens devis), **citer explicitement la source** — ex. « Selon la fiche régimes obligatoires TNS… », « Référence : prevoyance-tns-regles-ij », ou en fin de réponse « *Sources : regimes-obligatoires-tns, prevoyance-tns-regles-ij.* » Voir le tableau « Éléments à sourcer » ci-dessus.
+- **Logique BNC/BIC** : le **bénéfice** (BNC) ou le **résultat fiscal** (BIC) est **déjà net des charges** (CA − charges). Ne **jamais** soustraire les frais professionnels de l’étape 6 du « revenu » pour obtenir un « bénéfice net » : si l’assuré donne 80 000 € de BNC, c’est déjà le bénéfice. Les frais de l’étape 6 servent uniquement à évaluer la garantie Frais Fixes (charges qui continuent en cas d’arrêt).
 - **Upload** : si l’utilisateur envoie une 2035, 2031, 2033 ou attestation CA, les analyser (formules IJ, alerte Frais Fixes si pertinent). Les documents restent **optionnels**.
 
 ---
