@@ -67,6 +67,11 @@ const menuItems: SidebarItem[] = [
 
 const gestionnaireSinistreMenuItems: SidebarItem[] = [
   {
+    icon: Home,
+    label: "Dashboard",
+    href: "/dashboard",
+  },
+  {
     icon: Zap,
     label: "Boost",
     href: "/commun/boost",

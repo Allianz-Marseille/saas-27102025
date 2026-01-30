@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Workflow, Users, FileText, Target, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/lib/firebase/use-auth";
-import { isCommercial, isAdmin } from "@/lib/utils/roles";
 
 export type ProcessTag = "commercial" | "sante-individuel" | "sante-collective" | "vie-agence" | "sinistre";
 
@@ -85,31 +83,15 @@ const tagColors: Record<ProcessTag, string> = {
 
 export default function ProcessPage() {
   const router = useRouter();
-  const { userData } = useAuth();
   const [selectedTag, setSelectedTag] = useState<ProcessTag | "all">("all");
   
   // Toujours afficher tous les tags disponibles pour le filtre
-  // Même s'ils ne sont pas encore utilisés, ils seront nécessaires pour les futurs processus
   const availableTagsForFilter: ProcessTag[] = ["commercial", "sante-individuel", "sante-collective", "vie-agence", "sinistre"];
-  
-  // Filtrer les processus selon le rôle de l'utilisateur
-  const roleFilteredProcesses = (() => {
-    // Admin voit tous les processus
-    if (isAdmin(userData)) {
-      return processes;
-    }
-    
-    // Commercial CDC voit uniquement les processus avec tag "commercial"
-    if (isCommercial(userData)) {
-      return processes.filter(process => process.tags.includes("commercial"));
-    }
-    
-    // Pour les autres rôles, on peut ajouter la logique ici si nécessaire
-    // Pour l'instant, on retourne un tableau vide pour les autres rôles
-    return [];
-  })();
-  
-  // Filtrer ensuite selon le tag sélectionné
+
+  // Les processus sont visibles par tous les rôles (admin, commercial, gestionnaire sinistre, etc.)
+  const roleFilteredProcesses = processes;
+
+  // Filtrer selon le tag sélectionné
   const filteredProcesses = selectedTag === "all"
     ? roleFilteredProcesses
     : roleFilteredProcesses.filter(process => 

@@ -56,6 +56,12 @@ const commercialNavItems = [
 
 const gestionnaireSinistreNavItems = [
   {
+    icon: Home,
+    label: "Dashboard",
+    href: "/dashboard",
+    exact: true,
+  },
+  {
     icon: Zap,
     label: "Boost",
     href: "/commun/boost",
