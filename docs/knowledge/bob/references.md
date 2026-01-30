@@ -18,7 +18,7 @@
 
 **Liste complète des devis et formulaires (code agence H91358) :** voir `liens-devis-allianz.md`. Utiliser ces liens avec le code agence dans toutes les réponses proposant un devis.
 
-## Chiffres Clés 2026 (À citer)
-* **PASS 2026** : [Vérifier valeur réelle annuelle] € (Base pivot).
-* **Plafond Madelin Prévoyance** : 3,75 % du revenu imposable + 7 % du PASS (Max 3 % de 8 PASS).
+## Chiffres clés (PASS, Madelin)
+Les chiffres réglementaires (PASS, plafond Madelin prévoyance) sont **chargés dynamiquement** depuis `lib/assistant/regulatory-figures.ts`. Bob les reçoit à chaque requête. Mise à jour annuelle : modifier ce fichier (PASS_ANNUEL, PASS_YEAR) ; les sources officielles (URSSAF, Service-public) y sont documentées.
+
 * **Minima Santé (ANI)** : Hospitalisation (100%), Dentaire (125% BRSS), Optique (forfait bisannuel).

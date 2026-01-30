@@ -195,10 +195,13 @@ export async function POST(request: NextRequest) {
     } else if (isBob) {
       const { getBobSystemPrompt } = await import("@/lib/assistant/bob-system-prompt");
       const { loadBobKnowledge } = await import("@/lib/assistant/knowledge-loader");
+      const { getRegulatoryFiguresBlock } = await import("@/lib/assistant/regulatory-figures");
       const bobKnowledge = loadBobKnowledge();
-      baseKnowledge = bobKnowledge
+      const regulatoryBlock = getRegulatoryFiguresBlock();
+      const bobBase = bobKnowledge
         ? getBobSystemPrompt() + "\n\n---\n\n" + bobKnowledge
         : getBobSystemPrompt();
+      baseKnowledge = bobBase + "\n\n---\n\n" + regulatoryBlock;
     } else {
       // Charger la base de connaissances selon le contexte
       const { loadKnowledgeForContext, loadSegmentationKnowledge } = await import("@/lib/assistant/knowledge-loader");

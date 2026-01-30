@@ -52,16 +52,13 @@ Cursor peut réaliser tout ce qui suit **sans attendre** de contenu, décision o
 | 2.3 | **Documents de test** | Exemples anonymisés dans `docs/agents-ia/bob_sante/documents-de-test/` (2035 BNC, 2033 BIC, 2033 IS, attestation CA auto). |
 | 2.8 | **Tests manuels** | Scénario upload 2033 BIC + analyse IJ + alerte Frais Fixes validé (grille de lecture, règle détective). Reste optionnel : raccourci, Bonjour, copier, export PDF, brouillon, suggestions, recentrage. |
 | 2.7 | **Points à trancher en équipe** | Décisions prises : route actuelle conservée (+ redirection `/bob` si besoin), disclaimers en bandeau haut + lien Mentions légales, public prioritaire TNS puis salariés/entreprises, couleur teal conservée, stockage V1 LocalStorage (V2 base = évolution ultérieure). Raccourci Alt+B / Cmd+Shift+B confirmé. |
+| 2.6 | **Chiffres réglementaires** | Source unique dynamique : `lib/assistant/regulatory-figures.ts` (PASS, Madelin, URLs URSSAF/Service-public). Bob charge le bloc à chaque requête. Mise à jour annuelle = éditer ce fichier (PASS_ANNUEL, PASS_YEAR). |
 
 ---
 
-### Ce qui reste à faire (bloc 2) — à faire avant de lancer la partie 3
+### Ce qui reste à faire (bloc 2)
 
-| # | Tâche | À faire |
-|---|--------|--------|
-| **2.6** | **Chiffres réglementaires** | Une fois par an : vérifier PASS et Madelin (URSSAF, Allianz) et mettre à jour `docs/knowledge/bob/` et `references.md`. (Peut attendre ; ne bloque pas la partie 3.) |
-
-**Bloc 2 prêt pour la partie 3.** Il ne reste que 2.6 (annuel, à faire quand tu veux). Tu peux lancer la partie 3 dès maintenant : « On lance la partie 3 » ou « Finalise Bob avec les décisions 2.7 ».
+Aucun point bloquant. Mise à jour annuelle optionnelle : éditer `lib/assistant/regulatory-figures.ts` (PASS, année) — voir § 2.6 ci-dessous.
 
 ---
 
@@ -129,9 +126,11 @@ Tu peux réutiliser ou dupliquer `docs/knowledge/sources/sante-regles-remboursem
 
 ---
 
-### 2.6 Chiffres réglementaires (PASS, Madelin) — ⬜ À faire (annuel)
+### 2.6 Chiffres réglementaires (PASS, Madelin) — ✅ Source unique dynamique
 
-- **Une fois par an** (ou à chaque changement) : vérifier les plafonds PASS et Madelin (URSSAF, Allianz) et **mettre à jour** `docs/knowledge/bob/` et `references.md`.
+- **Source unique :** `lib/assistant/regulatory-figures.ts` — PASS, année, formule Madelin, URLs officielles (URSSAF, Service-public). Bob charge ce bloc à chaque requête.
+- **Mise à jour annuelle :** modifier dans ce fichier `PASS_ANNUEL` et `PASS_YEAR` (et les URLs dans `REGULATORY_SOURCES` si besoin). Plus besoin de toucher aux fiches markdown pour les chiffres.
+- **Référence :** [URSSAF — Plafonds](https://www.urssaf.fr/accueil/outils-documentation/taux-baremes/plafonds-securite-sociale.html), [Service-public — PASS](https://www.service-public.fr/particuliers/actualites/A15386).
 
 ---
 
@@ -195,5 +194,5 @@ Une fois que c’est le cas, Cursor peut :
 | Priorité | # | Action |
 |----------|---|--------|
 | 1 | **Partie 3** | **Lancer la finalisation par Cursor** : dire **« On lance la partie 3 »** ou **« Finalise Bob avec les décisions 2.7 »** → Cursor applique les décisions (bandeau disclaimer, redirection `/bob` si demandée), sans toucher au stockage ni à la couleur. |
-| 2 | **2.6** | **Chiffres réglementaires** (annuel) : quand tu veux, vérifier PASS et Madelin (URSSAF, Allianz) et mettre à jour `docs/knowledge/bob/` et `references.md`. Ne bloque pas la partie 3. |
+| 2 | **2.6 (annuel)** | Mise à jour PASS/Madelin : éditer **un seul fichier** `lib/assistant/regulatory-figures.ts` (PASS_ANNUEL, PASS_YEAR). Les sources officielles (URSSAF, Service-public) y sont documentées. |
 | 3 | **2.8 (optionnel)** | Compléter les tests manuels (raccourci, Bonjour, copier, export PDF, brouillon, suggestions, recentrage) et remonter tout bug à Cursor. |
