@@ -25,14 +25,14 @@ interface EditHealthCollectiveActDialogProps {
   onSuccess?: () => void;
 }
 
-const HEALTH_COLLECTIVE_ACT_KINDS: HealthCollectiveActKind[] = [
+// Exclut COLL_ADHESION_RENFORT (100%) sauf si l'acte édité en a déjà un (rétrocompatibilité)
+const HEALTH_COLLECTIVE_ACT_KINDS_BASE: HealthCollectiveActKind[] = [
   "IND_AN_SANTE",
   "IND_AN_PREVOYANCE",
   "IND_AN_RETRAITE",
   "COLL_AN_SANTE",
   "COLL_AN_PREVOYANCE",
   "COLL_AN_RETRAITE",
-  "COLL_ADHESION_RENFORT",
   "REVISION",
   "ADHESION_RENFORT",
   "COURTAGE_TO_ALLIANZ",
@@ -263,7 +263,11 @@ export function EditHealthCollectiveActDialog({ open, onOpenChange, act, onSucce
                 <SelectValue placeholder="Sélectionnez un type d'acte" />
               </SelectTrigger>
               <SelectContent>
-                {HEALTH_COLLECTIVE_ACT_KINDS.map((actKind) => (
+                {(
+                  act.kind === "COLL_ADHESION_RENFORT"
+                    ? [...HEALTH_COLLECTIVE_ACT_KINDS_BASE, "COLL_ADHESION_RENFORT"]
+                    : HEALTH_COLLECTIVE_ACT_KINDS_BASE
+                ).map((actKind) => (
                   <SelectItem key={actKind} value={actKind}>
                     {getHealthCollectiveActKindLabel(actKind)}
                   </SelectItem>

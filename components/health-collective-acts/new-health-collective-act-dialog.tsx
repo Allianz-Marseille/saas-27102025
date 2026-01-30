@@ -24,6 +24,7 @@ interface NewHealthCollectiveActDialogProps {
   onSuccess: () => void;
 }
 
+// Exclut COLL_ADHESION_RENFORT (100%) : doublon avec ADHESION_RENFORT (50%)
 const HEALTH_COLLECTIVE_ACT_KINDS: HealthCollectiveActKind[] = [
   "IND_AN_SANTE",
   "IND_AN_PREVOYANCE",
@@ -31,7 +32,6 @@ const HEALTH_COLLECTIVE_ACT_KINDS: HealthCollectiveActKind[] = [
   "COLL_AN_SANTE",
   "COLL_AN_PREVOYANCE",
   "COLL_AN_RETRAITE",
-  "COLL_ADHESION_RENFORT",
   "REVISION",
   "ADHESION_RENFORT",
   "COURTAGE_TO_ALLIANZ",
