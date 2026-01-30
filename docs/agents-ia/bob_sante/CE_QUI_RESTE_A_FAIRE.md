@@ -47,7 +47,9 @@ Cursor peut réaliser tout ce qui suit **sans attendre** de contenu, décision o
 |---|--------|-------------|
 | 2.1 | **Base de connaissances** | Toutes les fiches listées ci‑dessous sont créées dans `docs/knowledge/bob/` (+ `liens-devis-allianz.md`). |
 | 2.4 | **Enrichissement Allianz.fr** | Liens Allianz.fr dans `references.md`, `liens-devis-allianz.md`, renvois dans `prevoyance-tns-regles-ij.md` et `regimes-obligatoires-ccn.md`. |
+| 2.2 | **Variable Vercel** | `NEXT_PUBLIC_ENABLE_BOB_BOT=true` ajoutée dans le projet Vercel (saas-allianz-marseille). |
 | 2.5 | **URLs tunnels de devis** | Liste complète dans `liens-devis-allianz.md` avec code agence H91358 (auto, habitation, santé, pro, etc.). |
+| 2.3 | **Documents de test** | Exemples anonymisés dans `docs/agents-ia/bob_sante/documents-de-test/` (2035 BNC, 2033 BIC, 2033 IS, attestation CA auto). |
 
 ---
 
@@ -55,13 +57,11 @@ Cursor peut réaliser tout ce qui suit **sans attendre** de contenu, décision o
 
 | # | Tâche | À faire |
 |---|--------|--------|
-| **2.2** | **Variable Vercel** | Ajouter / compléter dans le projet Vercel : `ENABLE_BOB_BOT` ou `NEXT_PUBLIC_ENABLE_BOB_BOT` (et si besoin `BOB_TIMEOUT`, `OPENAI_API_KEY`). |
-| **2.3** | **Documents de test** | Préparer des liasses 2035 / 2033 anonymisées (ou attestations CA, bulletins) pour tester l’upload et l’analyse par Bob. |
 | **2.6** | **Chiffres réglementaires** | Une fois par an : vérifier PASS et Madelin (URSSAF, Allianz) et mettre à jour `docs/knowledge/bob/` et `references.md`. |
 | **2.7** | **Points à trancher en équipe** | Route finale, disclaimers, public cible, couleur primaire, stockage (voir détail ci‑dessous). |
 | **2.8** | **Tests manuels** | Après mise en place : raccourci, Bonjour, chat, upload, copier, export PDF, brouillon, suggestions, recentrage ; remonter bugs à Cursor. |
 
-**Quand tu confirmes que ces points sont faits (ou que tu as les infos pour 2.2, 2.7, 2.8), on lance la partie 3.**
+**Quand tu confirmes que ces points sont faits (ou que tu as les infos pour 2.7, 2.8), on lance la partie 3.**
 
 ---
 
@@ -93,16 +93,27 @@ Tu peux réutiliser ou dupliquer `docs/knowledge/sources/sante-regles-remboursem
 
 ---
 
-### 2.2 Variable Vercel — ⬜ À faire
+### 2.2 Variable Vercel — ✅ Fait
 
 - Dans le projet Vercel : ajouter ou compléter **`ENABLE_BOB_BOT`** (et si besoin `BOB_TIMEOUT`, `OPENAI_API_KEY`).
 - Si l’affichage de Bob dépend du front : **`NEXT_PUBLIC_ENABLE_BOB_BOT`**.
 
+**Comment faire (Vercel) :**
+
+1. Ouvre ton projet sur [vercel.com](https://vercel.com) → **Settings** → **Environment Variables**.
+2. Ajoute une variable :
+   - **Name :** `NEXT_PUBLIC_ENABLE_BOB_BOT`
+   - **Value :** `true` (pour activer Bob en prod)
+   - **Environments :** coche Production (et Preview / Development si tu veux Bob aussi en preview).
+3. **Redéploie** le projet (Deployments → ⋮ sur le dernier déploiement → Redeploy), car les variables `NEXT_PUBLIC_*` sont injectées au build.
+
+*`OPENAI_API_KEY` est normalement déjà présente pour l'assistant/Nina. `BOB_TIMEOUT` est fixé à 60 s dans le code ; pas besoin de variable tant que tu ne changes pas.*
+
 ---
 
-### 2.3 Documents de test — ⬜ À faire
+### 2.3 Documents de test — ✅ Fait
 
-- Préparer des **liasses 2035 / 2033 anonymisées** (ou attestations CA, bulletins) pour tester l’upload et l’analyse par Bob.
+- Des **exemples anonymisés** sont dans `docs/agents-ia/bob_sante/documents-de-test/` : 2035 BNC, 2033 BIC, 2033 IS, attestation CA auto-entrepreneur. Voir le README du dossier pour tester l'upload et l'analyse par Bob. Tu peux ajouter des liasses réelles anonymisées si besoin.
 
 ---
 

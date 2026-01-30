@@ -1,0 +1,24 @@
+DOCUMENT DE TEST — Attestation CA Auto-entrepreneur — Données fictives, anonymisées
+===================================================================================
+
+ATTESTATION DE CHIFFRE D'AFFAIRES
+Régime micro-entrepreneur (ex-auto-entrepreneur)
+Période : janvier – décembre 2024
+
+--- Chiffre d'affaires (CA) ---
+CA brut annuel (toutes activités) ................ 32 000 €
+
+--- Abattement forfaitaire ---
+Activité déclarée : prestations de services (BIC)
+Taux d'abattement applicable ...................... 50 %
+CA après abattement (base de calcul cotisations) .. 16 000 €
+
+--- Revenu pour calcul des indemnités journalières ---
+En micro-entrepreneur : pas de « frais fixes » détaillés.
+Assiette IJ = CA après abattement (ou CA brut selon contrat).
+Conseiller : proposer une base IJ suffisante (souvent CA après abattement ou forfait conseiller), car pas de poste « frais généraux » à couvrir.
+
+--- Notes ---
+Pas de liasse 2035 / 2033 pour un auto-entrepreneur. Cette attestation remplace les déclarations de revenus pour le régime micro.
+
+Document fourni à titre de test pour Bob. Ne pas utiliser pour une déclaration réelle.

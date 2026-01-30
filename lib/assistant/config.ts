@@ -9,6 +9,9 @@ export const NINA_TIMEOUT = 45000;
 /** Fenêtre glissante : nombre de messages d'historique envoyés à l'API (au-delà, troncation). */
 export const SUMMARY_WINDOW = 12;
 
+/** Taille max du contexte documentaire (PDF/fichiers) conservé pour la conversation (caractères). */
+export const DOCUMENT_CONTEXT_MAX_CHARS = 80_000;
+
 /** Historique max (compat) — préférer SUMMARY_WINDOW pour la troncation. */
 export const MAX_HISTORY_MESSAGES = 20;
 

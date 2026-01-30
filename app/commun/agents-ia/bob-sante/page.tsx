@@ -84,6 +84,7 @@ export default function BobSantePage() {
   const [selectedFiles, setSelectedFiles] = useState<ProcessedFile[]>([]);
   const [maskBeforeCopy, setMaskBeforeCopy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [documentContext, setDocumentContext] = useState<{ name: string; content: string }[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -191,6 +192,7 @@ export default function BobSantePage() {
             images: imageBase64s.length ? imageBase64s : undefined,
             files: filesPayload,
             history: messages.map((m) => ({ role: m.role, content: m.content })),
+            documentContext: documentContext.length ? documentContext : undefined,
             context: { agent: "bob" },
             uiEvent: uiEvent ?? undefined,
             stream: true,
@@ -219,8 +221,15 @@ export default function BobSantePage() {
               const raw = line.slice(6);
               if (raw === "[DONE]") break;
               try {
-                const parsed = JSON.parse(raw) as { content?: string; error?: string };
+                const parsed = JSON.parse(raw) as {
+                  content?: string;
+                  error?: string;
+                  documentContext?: { name: string; content: string }[];
+                };
                 if (parsed.error) throw new Error(parsed.error);
+                if (parsed.documentContext?.length) {
+                  setDocumentContext((prev) => [...prev, ...parsed.documentContext!]);
+                }
                 if (parsed.content) {
                   accumulated += parsed.content;
                   updateMessage(assistantId, accumulated);
@@ -242,7 +251,7 @@ export default function BobSantePage() {
         setIsLoading(false);
       }
     },
-    [user, messages, updateMessage]
+    [user, messages, updateMessage, documentContext]
   );
 
   const handleBonjour = useCallback(() => {
@@ -526,6 +535,7 @@ export default function BobSantePage() {
 
   const handleNewConversation = useCallback(() => {
     setMessages([]);
+    setDocumentContext([]);
     setHasStarted(true);
     setError(null);
     setDraftContent("");

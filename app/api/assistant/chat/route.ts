@@ -9,7 +9,7 @@ import OpenAI from "openai";
 import { checkRateLimit, determineRequestType } from "@/lib/assistant/rate-limiting";
 import { checkBudgetLimit } from "@/lib/assistant/budget-alerts";
 import { openaiWithRetry } from "@/lib/assistant/retry";
-import { NINA_TIMEOUT, BOB_TIMEOUT, SUMMARY_WINDOW } from "@/lib/assistant/config";
+import { NINA_TIMEOUT, BOB_TIMEOUT, SUMMARY_WINDOW, DOCUMENT_CONTEXT_MAX_CHARS } from "@/lib/assistant/config";
 import { logUsage } from "@/lib/assistant/monitoring";
 import { logAction } from "@/lib/assistant/audit";
 import { parseFile } from "@/lib/assistant/file-parsers";
@@ -50,7 +50,16 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les paramètres depuis le body — ne jamais logger body/message (PII en prod).
     const body = await request.json();
-    const { message, images, files, history = [], model = "gpt-4o", uiEvent, context } = body;
+    const {
+      message,
+      images,
+      files,
+      history = [],
+      model = "gpt-4o",
+      uiEvent,
+      context,
+      documentContext: documentContextFromClient = [],
+    } = body;
 
     // Le message peut être vide si seulement des images ou fichiers sont envoyés
     if (!message && (!images || images.length === 0) && (!files || files.length === 0)) {
@@ -522,15 +531,18 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
 ---\n\n`;
     }
     
-    // Parser les fichiers uploadés si présents
+    // Parser les fichiers uploadés si présents + construire le contexte documentaire pour les réponses suivantes
     let parsedFilesContent = "";
+    const documentContextFromCurrentRequest: { name: string; content: string }[] = [];
     if (files && Array.isArray(files) && files.length > 0) {
       for (const file of files) {
         try {
+          const fileName = file.name || "Sans nom";
           // Si le fichier a déjà un contenu parsé (parsing réussi côté client), l'utiliser
           if (file.content && typeof file.content === "string" && file.content.trim()) {
-            parsedFilesContent += `\n\n--- FICHIER: ${file.name || "Sans nom"} (${file.type || "Type inconnu"}) ---\n${file.content}\n`;
-          } 
+            parsedFilesContent += `\n\n--- FICHIER: ${fileName} (${file.type || "Type inconnu"}) ---\n${file.content}\n`;
+            documentContextFromCurrentRequest.push({ name: fileName, content: file.content });
+          }
           // Si le fichier a des données brutes (base64) mais pas de contenu, parser côté serveur
           else if (file.data && typeof file.data === "string") {
             try {
@@ -542,11 +554,12 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
               const parsedContent = isPdf
                 ? await extractTextFromPDFBuffer(buffer)
                 : await parseFile(buffer, file.name);
-              parsedFilesContent += `\n\n--- FICHIER: ${file.name || "Sans nom"} (${file.type || "Type inconnu"}) - Parsé côté serveur ---\n${parsedContent}\n`;
+              parsedFilesContent += `\n\n--- FICHIER: ${fileName} (${file.type || "Type inconnu"}) - Parsé côté serveur ---\n${parsedContent}\n`;
+              documentContextFromCurrentRequest.push({ name: fileName, content: parsedContent });
             } catch (parseError) {
               const errMsg = parseError instanceof Error ? parseError.message : "Erreur inconnue";
               console.error("Erreur lors du parsing serveur d'un fichier:", errMsg);
-              parsedFilesContent += `\n\n--- ERREUR lors du parsing serveur du fichier "${file.name || "Sans nom"}" : ${errMsg} ---\n`;
+              parsedFilesContent += `\n\n--- ERREUR lors du parsing serveur du fichier "${fileName}" : ${errMsg} ---\n`;
               if (file.error) {
                 parsedFilesContent += `Erreur parsing client: ${file.error}\n`;
               }
@@ -554,18 +567,42 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
           }
           // Si le fichier a une erreur de parsing côté client et pas de données brutes, noter l'erreur
           else if (file.error) {
-            parsedFilesContent += `\n\n--- ERREUR avec le fichier "${file.name || "Sans nom"}" : ${file.error} ---\n`;
+            parsedFilesContent += `\n\n--- ERREUR avec le fichier "${fileName}" : ${file.error} ---\n`;
             parsedFilesContent += `Note: Le parsing de ce fichier a échoué côté client et aucune donnée brute n'est disponible pour parsing serveur.\n`;
           }
           // Si le fichier n'a ni contenu ni erreur ni données, c'est qu'il n'a pas été traité
           else {
-            parsedFilesContent += `\n\n--- FICHIER: ${file.name || "Sans nom"} (${file.type || "Type inconnu"}) ---\n`;
+            parsedFilesContent += `\n\n--- FICHIER: ${fileName} (${file.type || "Type inconnu"}) ---\n`;
             parsedFilesContent += `Note: Ce fichier n'a pas pu être parsé. Type: ${file.type || "inconnu"}\n`;
           }
         } catch (error) {
           console.error("Erreur lors du traitement d'un fichier:", error instanceof Error ? error.message : "Erreur inconnue");
           parsedFilesContent += `\n\n--- ERREUR avec le fichier "${file.name || "Sans nom"}" : ${error instanceof Error ? error.message : "Erreur inconnue"} ---\n`;
         }
+      }
+    }
+
+    // Section "documents partagés précédemment" pour que le bot garde le contexte des PDF/fichiers après plusieurs échanges
+    let persistedDocumentSection = "";
+    if (Array.isArray(documentContextFromClient) && documentContextFromClient.length > 0) {
+      let totalChars = 0;
+      const parts: string[] = [];
+      for (const doc of documentContextFromClient) {
+        if (!doc || typeof (doc as { content?: string }).content !== "string") continue;
+        const d = doc as { name?: string; content: string };
+        const name = d.name || "Document";
+        const content = d.content;
+        const part = `\n--- Document: ${name} ---\n${content}`;
+        if (totalChars + part.length > DOCUMENT_CONTEXT_MAX_CHARS) break;
+        parts.push(part);
+        totalChars += part.length;
+      }
+      if (parts.length > 0) {
+        persistedDocumentSection = `
+
+DOCUMENTS PARTAGÉS PRÉCÉDEMMENT DANS CETTE CONVERSATION (référence pour répondre aux questions sur ces documents) :
+${parts.join("")}
+`;
       }
     }
     
@@ -628,7 +665,7 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
 - Documents (DOCX, TXT)
 `;
     
-    let systemPrompt = `${coreKnowledge}${buttonPromptSection}${ocrPromptSection}${fileManagementPrompt}${formattingRules}`;
+    let systemPrompt = `${coreKnowledge}${buttonPromptSection}${ocrPromptSection}${persistedDocumentSection}${fileManagementPrompt}${formattingRules}`;
     if ((isNina || isBob) && Array.isArray(history) && history.length > SUMMARY_WINDOW) {
       systemPrompt += `\n\nNote: Les échanges précédents ont été tronqués (fenêtre glissante, ${SUMMARY_WINDOW} derniers messages).`;
     }
@@ -883,6 +920,12 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
       const stream = new ReadableStream({
         async start(controller) {
           try {
+            // Envoyer d'abord le contexte documentaire (PDF/fichiers) pour que le client le conserve en conversation
+            if (documentContextFromCurrentRequest.length > 0) {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ documentContext: documentContextFromCurrentRequest })}\n\n`)
+              );
+            }
             const modelToUse = images && images.length > 0 ? "gpt-4o" : model;
             const currentMessages = [...enrichedMessages];
             const maxIterations = 5;

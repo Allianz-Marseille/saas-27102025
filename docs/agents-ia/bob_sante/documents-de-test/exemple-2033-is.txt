@@ -1,0 +1,24 @@
+DOCUMENT DE TEST — 2065 / 2033 Société IS (Gérant majoritaire) — Données fictives, anonymisées
+==============================================================================================
+
+Formulaire 2065 — Déclaration des résultats (Société soumise à l'IS)
+Exercice : 2024
+
+Formulaire 2033-D — Rémunérations et assimilés
+Rémunérations nettes versées aux associés (gérant) .... 45 000 €
+Case 380 (si applicable cotisations) ................. 11 200 €
+
+--- Revenu à retenir pour assiette IJ ---
+Ne pas utiliser le bénéfice de la société.
+Revenu = rémunération nette du dirigeant (2033-D) ..... 45 000 €
+(Vérifier dividendes : souvent exclus des contrats prévoyance.)
+
+--- Annexe 2033-B — Charges externes (frais généraux société) ---
+Lignes 218 à 230 — Charges externes ................... 28 000 €
+
+--- Notes ---
+Société à l'IS. Gérant majoritaire rémunéré.
+Dividendes : non pris en compte pour IJ (à confirmer selon contrat).
+Vigilance : si le dirigeant se paie surtout en dividendes, alerter sur le manque de couverture en cas d'arrêt.
+
+Document fourni à titre de test pour Bob. Ne pas utiliser pour une déclaration réelle.
