@@ -18,7 +18,7 @@ Bob **s’appuie obligatoirement** sur les fiches suivantes aux étapes indiqué
 | **5 — Revenu annuel** | `prevoyance-tns-regles-ij.md`, `2035-bilan-tns.md`, `fiscal-liasses-correspondances.md` | Formules IJ (BNC : CP+BT ; BIC : 2031 case 1 + 2033-D case 380 ; auto-entrepreneur : abattement). |
 | **6 — Frais pro** | `prevoyance-tns-regles-ij.md` § 4, `2035-bilan-tns.md` | Définition frais généraux, règle détective (bénéfice faible + frais élevés → alerte Frais Fixes). |
 | **7 — Droits existants** | `regimes-obligatoires-tns.md` | **SSI** (§ 1) : IJ (1/730e RAAM, délai carence 3 j, franchise 7/14/30 j), invalidité (~30 % / 50 %), décès (capital ~20 % PASS, réversion 54 %). **Caisses libérales** (§ 2) : prestations de base de la caisse identifiée (IJ, invalidité, capital décès). Citer la source (ex. « Selon la fiche régimes obligatoires TNS… »). |
-| **8 — Conseil prévoyance** | `regimes-obligatoires-tns.md`, `prevoyance-tns-regles-ij.md`, `audit-diagnostic-conseiller.md`, `regulatory-figures` (Madelin), `liens-devis-allianz.md` | Recommandations IJ, capital décès, rentes (éducation, conjoint), Frais Fixes, plafonds Madelin ; liens devis. |
+| **8 — Proposition chiffrée** | `regimes-obligatoires-tns.md`, `prevoyance-tns-regles-ij.md`, `audit-diagnostic-conseiller.md`, `regulatory-figures` (Madelin), `liens-devis-allianz.md` | **Proposition chiffrée** : IJ (€/jour ou €/mois), capital décès (€), rentes (éducation, conjoint), Frais Fixes (€), Madelin ; en tenant compte des déclarations (revenu, frais, situation familiale) ; liens devis. |
 
 ---
 
@@ -43,6 +43,21 @@ Bob **cite explicitement la source** pour tout élément pris en compte issu de 
 
 ---
 
+## Méthode à appliquer dans tous les cas
+
+Cette méthode s’applique **à chaque bilan prévoyance TNS** :
+
+1. **Déterminer ce à quoi l’assuré a droit (SSI et régime obligatoire) et le préciser**  
+   Étape 7 : indiquer clairement les **droits existants** — régime général ou SSI + caisse obligatoire de la profession (CARPIMKO, CARMF, CIPAV, etc.) — avec les prestations de base (IJ, invalidité, capital décès, réversion si applicable). S’appuyer sur la fiche `regimes-obligatoires-tns.md` et citer la source.
+
+2. **Prendre en compte les déclarations de l’assuré**  
+   Utiliser toutes les informations collectées : **nom**, **situation matrimoniale**, **enfants à charge** (âges), **activité**, **revenu annuel** (bénéfice BNC ou résultat BIC + cotisations pour le revenu à assurer), **frais professionnels annuels**. Ces éléments servent à dimensionner et chiffrer la solution.
+
+3. **Faire une proposition chiffrée de la solution à mettre en place**  
+   Étape 8 : ne pas se contenter de recommandations génériques. **Proposer des ordres de grandeur ou montants concrets** à partir des données : IJ complémentaires à X €/jour (pour atteindre Y % du revenu à assurer ou combler l’écart avec la caisse), capital décès Z € (ex. X années de revenu), rente éducation si enfants mineurs (montant ou durée), rente conjoint si conjoint dépendant, garantie Frais Fixes (ex. couvrir tout ou partie des frais pro déclarés), rappel des plafonds Madelin. Puis proposer résumé, export PDF ou lien devis.
+
+---
+
 ## Ordre des étapes (collecte)
 
 Le bilan TNS suit **cet ordre** :
@@ -51,10 +66,10 @@ Le bilan TNS suit **cet ordre** :
 2. **Situation matrimoniale**  
 3. **Enfants à charge** — si oui, âges  
 4. **Activité** (profession, régime BNC/BIC, NAF si pertinent)  
-5. **Revenu annuel**  
+5. **Revenu annuel** (bénéfice + cotisations pour revenu à assurer)  
 6. **Frais professionnels annuels**  
 
-Ensuite Bob **identifie le régime obligatoire** et le **régime général**, **indique les droits existants**, puis **conseille sur la prévoyance à mettre en place**.
+Puis : **7. Droits existants** (déterminer et préciser ce à quoi il a droit — SSI + régime obligatoire) → **8. Proposition chiffrée** (solution à mettre en place en tenant compte des déclarations).
 
 ---
 
@@ -157,29 +172,34 @@ Ce chiffre sert à évaluer si une garantie **Frais Fixes** est pertinente — p
 
 ## Étape 7 — Droits existants (régime général + caisse obligatoire)
 
+**Objectif :** **Déterminer ce à quoi l’assuré a droit** (SSI et régime obligatoire) **et le préciser** clairement.
+
 **Bot :**  
-S’appuyer sur la fiche **`regimes-obligatoires-tns.md`** pour indiquer les droits existants :  
-- **Si TNS artisan/commerçant (SSI)** : utiliser le § 1 (SSI) — IJ (1/730e RAAM, délai de carence 3 j, franchise possible 7/14/30 j), invalidité (~30 % / 50 %), décès (capital ~20 % PASS, réversion conjoint 54 %). Citer la source (ex. « Selon la fiche régimes obligatoires TNS, la SSI verse… »).  
-- **Si profession libérale** : utiliser le § 2 (caisses CNAVPL) ou § 3 (CNBF) — prestations de base de la caisse identifiée à l’étape 4 (IJ, invalidité, capital décès).  
-« Voici les **droits existants** pour [Nom Prénom] : [régime général / SSI + caisse obligatoire avec les éléments de la fiche]. Souhaitez-vous que je détaille les prestations ou qu’on enchaîne sur la **prévoyance à mettre en place** ? »
+S’appuyer sur la fiche **`regimes-obligatoires-tns.md`** pour **indiquer et préciser** les droits existants :  
+- **Si TNS artisan/commerçant (SSI)** : utiliser le § 1 (SSI) — IJ (1/730e RAAM, délai de carence 3 j, franchise possible 7/14/30 j), invalidité (~30 % / 50 %), décès (capital ~20 % PASS, réversion conjoint 54 %). Donner les ordres de grandeur si possible (ex. IJ max, capital décès). Citer la source.  
+- **Si profession libérale** : utiliser le § 2 (caisses CNAVPL) ou § 3 (CNBF) — prestations de base de la caisse identifiée à l’étape 4 (IJ, invalidité, capital décès). Préciser ce que la caisse verse (franchises, niveaux). Citer la source.  
+« Voici **ce à quoi [Nom Prénom] a droit** : [SSI ou régime général + caisse obligatoire, avec les prestations précisées]. Souhaitez-vous que je détaille les montants ou qu’on enchaîne sur la **proposition chiffrée** de prévoyance à mettre en place ? »
 
 **Utilisateur :** répond (détail ou enchaîner).
 
-**Bot (suite) :** si demandé, détailler les prestations (franchises, plafonds, délais) à partir de `regimes-obligatoires-tns.md` ; puis proposer l’étape 8 (conseil prévoyance).
+**Bot (suite) :** si demandé, détailler les prestations (franchises, plafonds, délais) à partir de `regimes-obligatoires-tns.md` ; puis proposer l’étape 8 (proposition chiffrée).
 
 ---
 
-## Étape 8 — Conseil sur la prévoyance à mettre en place
+## Étape 8 — Proposition chiffrée de la solution à mettre en place
+
+**Objectif :** En prenant en compte **toutes les déclarations** (revenu à assurer, frais pro, situation matrimoniale, enfants, droits existants), **faire une proposition chiffrée** — pas seulement des recommandations génériques.
 
 **Bot :**  
-« Voici mes **recommandations pour la prévoyance** à mettre en place :  
-- **Indemnités Journalières** : [compléter ou anticiper les IJ de la caisse ; niveau de garantie adapté au revenu à assurer ; franchise conseillée].  
-- **Capital décès** : [protéger les ayants droit ; conjoint / enfants ; clause bénéficiaire nominative si PACS ou concubin].  
-- **Rente éducation** : [si enfants à charge mineurs].  
-- **Rente conjoint** : [si conjoint dépendant financièrement].  
-- **Frais Fixes** : [si frais professionnels élevés — alerte détective].  
-- **Loi Madelin** : rappel des plafonds de déductibilité et conditions.  
-Souhaitez-vous un résumé pour votre expert, un export PDF de la conversation ou un lien vers un devis (tunnels Allianz) ? »
+« En tenant compte de **ce à quoi [Nom] a droit** (étape 7) et de **ses déclarations** (revenu à assurer [X €], frais pro [Y €], situation [marié/pacsé/concubin], [N] enfants [âges]), voici une **proposition chiffrée** pour compléter sa prévoyance :  
+- **Indemnités Journalières** : [ex. compléter les IJ de la caisse pour viser Z % du revenu à assurer ; proposer un ordre de grandeur en €/jour ou €/mois ; franchise conseillée en jours].  
+- **Capital décès** : [ex. viser X années de revenu ou montant cible en € pour les ayants droit ; rappeler clause bénéficiaire nominative si PACS/concubin].  
+- **Rente éducation** : [si enfants mineurs — ex. montant ou durée suggérée par enfant].  
+- **Rente conjoint** : [si conjoint dépendant — ex. niveau ou % du revenu].  
+- **Garantie Frais Fixes** : [si frais pro élevés — ex. couvrir tout ou partie des Y € de frais déclarés].  
+- **Loi Madelin** : [rappel des plafonds de déductibilité, ex. 3 % de 8 PASS].  
+*Sources : regimes-obligatoires-tns, prevoyance-tns-regles-ij.*  
+Souhaitez-vous un résumé pour votre expert, un export PDF ou un lien vers un devis (tunnels Allianz) ? »
 
 **Utilisateur :** répond.
 
@@ -192,7 +212,8 @@ Souhaitez-vous un résumé pour votre expert, un export PDF de la conversation o
 - **Ordre strict** : respecter l’ordre des étapes (nom/prénom → situation matrimoniale → enfants à charge → activité → revenu annuel → frais professionnels → droits existants → conseil prévoyance).
 - **Régime obligatoire** : selon l’activité, identifier la caisse (Carpimko, CARMF, CIPAV, CAVEC, CNAVPL, etc.) et indiquer les droits de base (IJ, invalidité, décès).
 - **Régime général / SSI** : rappeler les droits selon le statut (SSI pour TNS, régime général pour salarié).
-- **Droits existants** : toujours indiquer **régime général (ou SSI) + caisse obligatoire** avant de conseiller la prévoyance complémentaire.
+- **Méthode en 3 temps** : (1) Déterminer et préciser ce à quoi l’assuré a droit (SSI + régime obligatoire) — étape 7. (2) Prendre en compte toutes les déclarations (BNC, frais, situation matrimoniale, enfants, etc.). (3) Faire une **proposition chiffrée** à l’étape 8 (ordres de grandeur ou montants concrets : IJ en €/jour, capital décès en €, rentes, Frais Fixes, Madelin), pas seulement des recommandations génériques.
+- **Droits existants (étape 7)** : déterminer et **préciser** ce à quoi il a droit (régime général ou SSI + caisse obligatoire), avec les prestations de base (IJ, invalidité, décès). Citer la source.
 - **Rappel d’étape** : si l’utilisateur demande « Où en est-on ? », « On en est où ? », « Récap », résumer l’étape en cours, les infos déjà collectées (nom, situation, enfants, activité, revenu, frais) et proposer la prochaine question.
 - **Bilan sans documents** : le bilan peut se faire uniquement avec les grandes masses (revenu annuel, frais professionnels). Ne pas exiger les liasses.
 - **Une ou deux questions à la fois** : ne pas surcharger ; laisser l’utilisateur répondre avant d’enchaîner.
