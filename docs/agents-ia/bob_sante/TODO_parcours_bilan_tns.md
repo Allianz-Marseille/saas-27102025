@@ -15,7 +15,7 @@ Référence : [parcours_bilan_tns.md](./parcours_bilan_tns.md) — Scénarios : 
 | 5 | **Règle prompt Bob** | `bob-system-prompt.ts` : règle « Bilan prévoyance TNS (parcours guidé) » + option grandes masses sans documents. |
 | 6 | **Rappel d’étape** | Si l’utilisateur demande « Où en est-on ? » / « Récap », Bob résume l’étape en cours, les infos collectées et propose la prochaine question (parcours + knowledge + prompt). |
 | 7 | **Scénarios de test** | [scenarios-test-parcours-bilan-tns.md](./scenarios-test-parcours-bilan-tns.md) : 5 scénarios (BNC, BIC, auto-entrepreneur, rappel d’étape, upload) + checklist régression. |
-| 8 | **Liens CE_QUI_RESTE_A_FAIRE / TODO** | Lien vers parcours et TODO ajouté dans [CE_QUI_RESTE_A_FAIRE.md](./CE_QUI_RESTE_A_FAIRE.md) et [TODO.md](./TODO.md). |
+| 8 | **Liens CE_QUI_RESTE_A_FAIRE** | Lien vers parcours et suivi dans [CE_QUI_RESTE_A_FAIRE.md](./CE_QUI_RESTE_A_FAIRE.md). |
 
 ---
 

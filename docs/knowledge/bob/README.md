@@ -1,24 +1,33 @@
 # Base de connaissances Bob — Assistant agence Santé & Prévoyance
 
-Ce dossier contient les fiches métier injectées (ou à injecter) dans le prompt Bob.
+Ce dossier contient les fiches métier injectées dans le prompt Bob (prévoyance TNS, bilan, régimes obligatoires, méthodologie conseil).
 
-Référence : `docs/agents-ia/bob_sante/bob_sante.md` § Architecture de la Base de Connaissances Bob.
+**Référence :** `docs/agents-ia/bob_sante/bob_sante.md` § Architecture de la Base de Connaissances Bob.
 
-Fichiers à créer (voir `docs/agents-ia/bob_sante/TODO.md` § 11) :
+---
 
-- `fiscal-liasses-correspondances.md`
-- `retraite-collective-pero.md`
-- `reglementaire-due-standard.md`
-- `prevoyance-tns-regles-ij.md`
-- `sante-panier-soins-minimal.md`
-- `commercial-objections-reponses.md`
-- `ccn-top10-obligations.md`
-- `2035-bilan-tns.md`
-- `due-contrat-groupe.md`
-- `audit-diagnostic-conseiller.md`
-- `fiscalite-entree-sortie-prevoyance.md`
-- `regimes-obligatoires-ccn.md` (CCN, salariés)
-- `regimes-obligatoires-tns.md` (inventaire TNS : SSI, CARMF, CARPIMKO, CIPAV, CAVEC, CPRN, CNBF, etc.)
-- `glossaire.md`
-- `faq.md` (ou faq par thème)
-- `references.md`
+## Source de vérité et conventions
+
+**Document central :** **`00-SOURCE-DE-VERITE.md`**
+
+Ce document définit :
+
+- **Où se trouve la vérité** pour chaque type d’information (chiffres réglementaires, prestations par caisse, parcours, etc.).
+- **Les règles** pour garder la base cohérente : ne pas dupliquer le PASS dans les .md, une fiche = un thème, convention de citation des fiches.
+- **L’inventaire** des fiches chargées (`docs/knowledge/bob/` + `docs/knowledge/bob/ro/`).
+- **La maintenance** recommandée (annuelle PASS, nouveau régime, etc.).
+
+**Chiffres réglementaires (PASS, Madelin) :** source unique = **`lib/assistant/regulatory-figures.ts`**. Mise à jour annuelle : modifier ce fichier uniquement ; ne pas recopier les valeurs dans les fiches .md.
+
+**Fiches par caisse (RO) :** `docs/knowledge/bob/ro/[caisse].md` (ssi, carmf, carpimko, carcdsf, cavec, cipav, cnbf, cavp, carpv). Référence à citer : `ro/[caisse].md`.
+
+---
+
+## Chargement par Bob
+
+- **Fonction :** `loadBobKnowledge()` dans `lib/assistant/knowledge-loader.ts`.
+- **Dossiers :** `docs/knowledge/bob/` puis `docs/knowledge/bob/ro/`.
+- **Limite :** 28 000 caractères au total (troncature possible sur les derniers fichiers).
+- **Chiffres à jour :** le bloc `getRegulatoryFiguresBlock()` (depuis `regulatory-figures.ts`) est injecté dans le prompt à chaque requête Bob.
+
+Pour l’inventaire détaillé des fiches et leur rôle, voir **`00-SOURCE-DE-VERITE.md`** § 3.

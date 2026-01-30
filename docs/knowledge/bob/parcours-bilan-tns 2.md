@@ -12,27 +12,28 @@ Le bilan TNS se fait **par étape**, dans cet ordre. Quand l'utilisateur envoie 
 
 À chaque étape, s'appuyer sur les fiches suivantes (chargées avec ce parcours dans la base Bob) :
 
-- **Étape 4 (Activité)** : **regimes-obligatoires-tns** — § 4 Synthèse par profession et § 2 (caisses CNAVPL) ou § 1 (SSI) pour identifier la caisse obligatoire ; dès que le métier est identifié, utiliser la fiche **ro/[caisse].md** correspondante (ex. ssi.md, carmf.md, carpimko.md, cipav.md).
+- **Étape 4 (Activité)** : **regimes-obligatoires-tns** — § 4 Synthèse par profession et § 2 (caisses CNAVPL) ou § 1 (SSI) pour identifier la caisse obligatoire (Carpimko, CARMF, CIPAV, SSI, etc.).
 - **Étape 5 (Revenu)** : prevoyance-tns-regles-ij, 2035-bilan-tns, fiscal-liasses-correspondances — formules IJ (CP+BT, 2031+380, abattement auto-entrepreneur).
 - **Étape 6 (Frais pro)** : prevoyance-tns-regles-ij § 4, 2035-bilan-tns — règle détective (Frais Fixes si bénéfice faible + frais élevés).
-- **Étape 7 (Droits existants)** : **ro/[caisse].md** — utiliser la fiche de la caisse identifiée à l’étape 4 (ex. ssi.md, carmf.md, carpimko.md) pour les prestations de base (IJ, invalidité, décès). Afficher un **tableau comparatif « Droits actuels » vs « Besoin réel »** et chiffrer le gap. Citer en fin de diagnostic : *« Sources : ro/[caisse].md »*.
-- **Étape 8 (Proposition chiffrée)** : **ro/[caisse].md**, regimes-obligatoires-tns, prevoyance-tns-regles-ij, audit-diagnostic-conseiller, regulatory-figures (Madelin), liens-devis-allianz. **Faire une proposition chiffrée** (IJ en €/jour ou €/mois, capital décès en €, rentes, Frais Fixes, Madelin) en tenant compte des déclarations (revenu, frais, situation familiale).
+- **Étape 7 (Droits existants)** : **regimes-obligatoires-tns** — § 1 SSI (IJ 1/730e RAAM, délai carence 3 j, invalidité ~30 %/50 %, décès ~20 % PASS, réversion 54 %) si artisan/commerçant ; § 2 ou § 3 (caisses libérales) si profession libérale. Citer la source (« Selon la fiche régimes obligatoires TNS… »).
+- **Étape 8 (Proposition chiffrée)** : regimes-obligatoires-tns, prevoyance-tns-regles-ij, audit-diagnostic-conseiller, regulatory-figures (Madelin), liens-devis-allianz. **Faire une proposition chiffrée** (IJ en €/jour ou €/mois, capital décès en €, rentes, Frais Fixes, Madelin) en tenant compte des déclarations (revenu, frais, situation familiale).
 
 ## Éléments à sourcer (obligatoire)
 
-Bob **cite explicitement la source** pour tout élément pris en compte issu de la base de connaissances. Formulation : « Selon la fiche [nom]… », « Référence : [fiche] », ou en fin de bloc : *« Sources : ro/[caisse].md »* pour le diagnostic (étape 7).
+Bob **cite explicitement la source** pour tout élément pris en compte issu de la base de connaissances. Formulation : « Selon la fiche [nom]… », « Référence : [fiche] », ou en fin de bloc : « *Source : regimes-obligatoires-tns.* »
 
 | Élément | Fiche à citer | Étape |
 |---------|---------------|-------|
-| Caisse obligatoire (CARPIMKO, CARMF, CIPAV, SSI…) | regimes-obligatoires-tns, ro/[caisse].md | 4, 7 |
-| Prestations par caisse (IJ, invalidité, capital décès, réversion) | **ro/[caisse].md** (ex. ssi.md, carmf.md, carpimko.md) | 7 — chaque diagnostic doit se terminer par *« Sources : ro/[caisse].md »* |
+| Caisse obligatoire (CARPIMKO, CARMF, CIPAV, SSI…) | regimes-obligatoires-tns | 4, 7 |
+| Prestations SSI (IJ 1/730e RAAM, délai carence 3 j, invalidité ~30 %/50 %, décès ~20 % PASS, réversion 54 %) | regimes-obligatoires-tns § 1 | 7 |
+| Prestations caisses libérales | regimes-obligatoires-tns § 2 ou § 3 | 7 |
 | Formule IJ BNC (CP+BT), BIC (2031+380), abattement auto-entrepreneur | prevoyance-tns-regles-ij, 2035-bilan-tns, fiscal-liasses-correspondances | 5 |
 | Règle détective / Frais Fixes | prevoyance-tns-regles-ij § 4, 2035-bilan-tns | 6 |
 | Plafonds Madelin | regulatory-figures, prevoyance-tns-regles-ij § 3 | 8 |
 | Rente éducation, rente conjoint, clause bénéficiaire (PACS/concubin) | audit-diagnostic-conseiller | 2, 8 |
 | Liens devis Allianz | liens-devis-allianz | 8 |
 
-À la fin des réponses utilisant chiffres, formules ou prestations réglementaires : indiquer au moins une source. **En fin de diagnostic (étape 7)** : *« Sources : ro/[caisse].md »*.
+À la fin des réponses utilisant chiffres, formules ou prestations réglementaires : indiquer au moins une source (ex. « *Sources : regimes-obligatoires-tns, prevoyance-tns-regles-ij.* »).
 
 ## Régimes connus par Bob
 
@@ -63,7 +64,7 @@ Bob **cite explicitement la source** pour tout élément pris en compte issu de 
 
 **Bot :** « Quelle est l'activité du TNS ? Profession (ex. médecin, infirmier libéral, artisan, commerçant). Régime fiscal si connu : BNC, BIC, micro. NAF ou intitulé si pertinent. »
 
-**Suite :** remercier, préciser régime (BNC/BIC/micro) et **identifier la caisse obligatoire** en s'appuyant sur regimes-obligatoires-tns (§ 4) puis sur la fiche **ro/[caisse].md** correspondante (ex. carpimko.md infirmier, carmf.md médecin, cipav.md architecte, ssi.md artisan). Enchaîner étape 5.
+**Suite :** remercier, préciser régime (BNC/BIC/micro) et **identifier la caisse obligatoire** en s'appuyant sur **regimes-obligatoires-tns** (§ 4 Synthèse par profession, § 2 caisses CNAVPL ou § 1 SSI) — ex. Carpimko infirmier, CARMF médecin, CIPAV architecte, SSI artisan. Enchaîner étape 5.
 
 ## Étape 5 — Revenu annuel
 
@@ -85,7 +86,7 @@ Bob **cite explicitement la source** pour tout élément pris en compte issu de 
 
 **Objectif :** **Déterminer ce à quoi l'assuré a droit** (SSI et régime obligatoire) et **le préciser** clairement.
 
-**Bot :** S'appuyer sur la fiche **ro/[caisse].md** de la caisse identifiée à l'étape 4 (ex. ssi.md, carmf.md, carpimko.md) pour indiquer les prestations de base (IJ, invalidité, décès). Afficher un **tableau comparatif « Droits actuels » vs « Besoin réel »** et chiffrer le gap (carence journalière et annuelle). Terminer par : *« Sources : ro/[caisse].md »*. « Voici **ce à quoi [Nom] a droit** : [prestations précisées]. Souhaitez-vous le détail ou qu'on enchaîne sur la **proposition chiffrée** ? »
+**Bot :** S'appuyer sur **regimes-obligatoires-tns** : si artisan/commerçant → § 1 SSI (IJ 1/730e RAAM, délai carence 3 j, franchise 7/14/30 j, invalidité ~30 %/50 %, décès ~20 % PASS, réversion 54 %) ; si libéral → § 2 ou § 3 (prestations caisse identifiée). Donner ordres de grandeur si possible. Citer la source. « Voici **ce à quoi [Nom] a droit** : [SSI ou régime général + caisse obligatoire, prestations précisées]. Souhaitez-vous le détail ou qu'on enchaîne sur la **proposition chiffrée** ? »
 
 **Suite :** si demandé, détailler ; puis proposer étape 8.
 
@@ -93,7 +94,7 @@ Bob **cite explicitement la source** pour tout élément pris en compte issu de 
 
 **Objectif :** En prenant en compte **toutes les déclarations** (revenu à assurer, frais pro, situation matrimoniale, enfants, droits existants), **faire une proposition chiffrée** — pas seulement des recommandations génériques.
 
-**Bot :** « En tenant compte de **ce à quoi [Nom] a droit** (étape 7) et de **ses déclarations** (revenu à assurer X €, frais pro Y €, situation [marié/pacsé/concubin], N enfants [âges]), voici une **proposition chiffrée** : IJ complémentaires [ex. viser Z % du revenu ; ordre de grandeur €/jour ou €/mois ; franchise conseillée], Capital décès [ex. X années de revenu ou montant € ; clause bénéficiaire si PACS/concubin], Rente éducation [si enfants mineurs — montant ou durée], Rente conjoint [si conjoint dépendant — niveau], Garantie Frais Fixes [si frais élevés — ex. couvrir tout ou partie des Y €], Loi Madelin (plafonds). *Sources : ro/[caisse].md, prevoyance-tns-regles-ij.* Souhaitez-vous un résumé, un export PDF ou un lien devis ? »
+**Bot :** « En tenant compte de **ce à quoi [Nom] a droit** (étape 7) et de **ses déclarations** (revenu à assurer X €, frais pro Y €, situation [marié/pacsé/concubin], N enfants [âges]), voici une **proposition chiffrée** : IJ complémentaires [ex. viser Z % du revenu ; ordre de grandeur €/jour ou €/mois ; franchise conseillée], Capital décès [ex. X années de revenu ou montant € ; clause bénéficiaire si PACS/concubin], Rente éducation [si enfants mineurs — montant ou durée], Rente conjoint [si conjoint dépendant — niveau], Garantie Frais Fixes [si frais élevés — ex. couvrir tout ou partie des Y €], Loi Madelin (plafonds). *Sources : regimes-obligatoires-tns, prevoyance-tns-regles-ij.* Souhaitez-vous un résumé, un export PDF ou un lien devis ? »
 
 **Suite :** proposer export PDF, résumé, lien devis (fiche liens-devis-allianz).
 
@@ -105,9 +106,9 @@ Bob **cite explicitement la source** pour tout élément pris en compte issu de 
 - **Méthode en 3 temps** : (1) Déterminer et préciser ce à quoi l'assuré a droit (SSI + régime obligatoire) — étape 7. (2) Prendre en compte toutes les déclarations (BNC, frais, situation matrimoniale, enfants). (3) Faire une **proposition chiffrée** à l'étape 8 (ordres de grandeur ou montants concrets : IJ €/jour, capital décès €, rentes, Frais Fixes, Madelin), pas seulement des recommandations génériques.
 - **Droits existants (étape 7)** : déterminer et **préciser** ce à quoi il a droit (SSI + caisse obligatoire), avec prestations de base. Citer la source.
 - **Rappel d'étape** : « Où en est-on ? » → résumer l'étape en cours, les infos collectées (nom, situation, enfants, activité, revenu, frais), proposer la prochaine question.
-- **Base de connaissances** : à chaque étape, utiliser les fiches du tableau « Base de connaissances à utiliser ». Dès que le métier est identifié (étape 4), utiliser la fiche **ro/[caisse].md** correspondante pour les étapes 7 et 8. Autres fiches : regimes-obligatoires-tns (inventaire), prevoyance-tns-regles-ij, 2035-bilan-tns, audit-diagnostic-conseiller, regulatory-figures, liens-devis-allianz.
-- **Sourcer les éléments pris en compte** : pour tout élément issu d'une fiche (caisse obligatoire, prestations par caisse, formules IJ, Madelin, Frais Fixes, rentes/clause bénéficiaire, liens devis), **citer explicitement la source**. En fin de diagnostic (étape 7) : *« Sources : ro/[caisse].md »*. Voir le tableau « Éléments à sourcer ».
+- **Base de connaissances** : à chaque étape, utiliser les fiches du tableau « Base de connaissances à utiliser » — **regimes-obligatoires-tns** obligatoire pour étapes 4 et 7. Autres fiches : prevoyance-tns-regles-ij, 2035-bilan-tns, audit-diagnostic-conseiller, regulatory-figures, liens-devis-allianz.
+- **Sourcer les éléments pris en compte** : pour tout élément issu d'une fiche (caisse obligatoire, prestations SSI/caisses, formules IJ, Madelin, Frais Fixes, rentes/clause bénéficiaire, liens devis), **citer explicitement la source** — ex. « Selon la fiche régimes obligatoires TNS… », « Référence : prevoyance-tns-regles-ij », ou en fin de réponse « *Sources : regimes-obligatoires-tns, prevoyance-tns-regles-ij.* » Voir le tableau « Éléments à sourcer ».
 - **Logique BNC/BIC** : le bénéfice (BNC) ou résultat fiscal (BIC) est **déjà net des charges**. Ne **jamais** soustraire les frais de l'étape 6 du revenu pour obtenir un « bénéfice net » (ex. si 80 000 € de BNC, c'est déjà le bénéfice). Les frais de l'étape 6 servent uniquement à évaluer la garantie Frais Fixes.
 - **Bilan sans documents** : grandes masses suffisent. Une ou deux questions à la fois. Résumer, proposer la suite. Upload optionnel.
 
-Références : **ro/[caisse].md** (prestations par caisse), **regimes-obligatoires-tns** (inventaire TNS par profession), regimes-obligatoires-ccn, prevoyance-tns-regles-ij, 2035-bilan-tns, audit-diagnostic-conseiller, liens-devis-allianz.
+Références : **regimes-obligatoires-tns** (inventaire TNS par profession), regimes-obligatoires-ccn, prevoyance-tns-regles-ij, 2035-bilan-tns, audit-diagnostic-conseiller, liens-devis-allianz.

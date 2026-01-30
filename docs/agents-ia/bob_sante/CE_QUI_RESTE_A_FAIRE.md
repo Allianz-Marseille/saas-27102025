@@ -2,7 +2,7 @@
 
 Répartition en **3 étapes** : Cursor tout de suite → toi → Cursor en finalisation.
 
-Références : [bob_sante.md](./bob_sante.md), [TODO.md](./TODO.md).  
+Références : [bob_sante.md](./bob_sante.md).  
 **Parcours Bilan prévoyance TNS :** [parcours_bilan_tns.md](./parcours_bilan_tns.md), [TODO parcours](./TODO_parcours_bilan_tns.md), [scénarios de test](./scenarios-test-parcours-bilan-tns.md).
 
 ---
@@ -26,7 +26,7 @@ Cursor peut réaliser tout ce qui suit **sans attendre** de contenu, décision o
 | 8 | **Menu ··· et actions rapides** | Menu « ··· » (export, nouvelle conversation). Par réponse longue : « Mettre dans le brouillon », « Résumer en 3 points », « Transformer en synthèse pour mon expert ». | Fait |
 | 9 | **Split screen Brouillon** | Conversation à gauche, panneau Brouillon à droite (lg+) ; copier + export PDF du brouillon. Brouillon masqué sous `lg`. | Fait |
 | 10 | **Raccourci global** | Alt+B / Cmd+Shift+B → navigation vers Bob ; désactivé si focus input/textarea/contenteditable. | Fait |
-| 11 | **Suggestions de démarrage** | Tous les boutons/liens après la première réponse (DUE, analyse 2035, arguments TNS, régime général/SSI, garanties minimales, fiche de paie, etc.) — libellés dans [TODO.md § 10](./TODO.md#10-suggestions-de-démarrage). | Fait |
+| 11 | **Suggestions de démarrage** | Tous les boutons/liens après la première réponse (DUE, analyse 2035, arguments TNS, régime général/SSI, garanties minimales, fiche de paie, etc.). | Fait |
 | 12 | **Loader base de connaissances** | `loadBobKnowledge()` dans `knowledge-loader.ts` : charge `docs/knowledge/bob/` quand `context.agent === "bob"` (limite 28k caractères). Fonctionne avec le dossier vide ou partiellement rempli. | Fait |
 | 13 | **Cœur de Bob dans le prompt** | Injecter dans le prompt : costume juridique (2035/2031/2033/2065, NAF, BNC/BIC/IS/Micro), formules IJ (BNC EI, BIC EI, Société IS, Micro), logique DUE (collège, 50 % employeur, dispenses), règle « détective » (bénéfice faible + frais généraux élevés → Frais Fixes). Contenu dérivé de `bob_sante.md`. | Fait |
 | 14 | **UI et accessibilité** | Couleur primaire par défaut (ex. teal, à surcharger plus tard si tu en choisis une). Neutres Slate, dark mode, `aria-label`, tooltips, micro-interactions. | Fait |
@@ -155,7 +155,7 @@ Cursor appliquera ces décisions en partie 3 (bandeau disclaimer, redirection `/
 ### 2.8 Tests manuels — ✅ Validé
 
 - **Validé :** Upload document 2033 BIC (ex. `exemple-2033-bic.txt`) + question « Analyse pour les IJ et frais généraux » → Bob identifie le profil BIC, extrait assiette IJ (47 100 €), frais généraux (24 500 €), et applique la règle détective (alerte garantie Frais Fixes renforcée).
-- **Optionnel :** Raccourci, « Bonjour », copier/masquage sensibles, export PDF, brouillon, suggestions, recentrage hors-sujet. Voir [TODO.md § 14](./TODO.md#14-check-list-de-tests-manuels). Remonter à Cursor tout bug ou ajustement.
+- **Optionnel :** Raccourci, « Bonjour », copier/masquage sensibles, export PDF, brouillon, suggestions, recentrage hors-sujet. Remonter à Cursor tout bug ou ajustement.
 
 ---
 

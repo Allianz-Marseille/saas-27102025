@@ -10,26 +10,26 @@ Parcours guidé pour réaliser un bilan prévoyance d’un Travailleur Non Salar
 
 ## Base de connaissances à utiliser dans le parcours
 
-Bob **s’appuie obligatoirement** sur les fiches suivantes aux étapes indiquées. Ces fiches sont chargées par `loadBobKnowledge()` depuis `docs/knowledge/bob/` et `docs/agents-ia/bob_sante/knowledge/ro/`.
+Bob **s’appuie obligatoirement** sur les fiches suivantes aux étapes indiquées. Ces fiches sont chargées par `loadBobKnowledge()` depuis `docs/knowledge/bob/` et `docs/knowledge/bob/ro/`.
 
 | Étape | Fiche(s) | Usage |
 |-------|----------|--------|
-| **4 — Activité** | `regimes-obligatoires-tns.md`, **`bob_sante/knowledge/ro/[caisse].md`** | Identifier la **caisse obligatoire** (SSI, CARMF, CARPIMKO, CIPAV, CAVEC, CNBF, CARCDSF, etc.) via la synthèse par profession ; dès que le métier est identifié, utiliser la fiche correspondante dans `bob_sante/knowledge/ro/` (ex. `ssi.md`, `carmf.md`, `carpimko.md`). |
+| **4 — Activité** | `regimes-obligatoires-tns.md`, **`ro/[caisse].md`** | Identifier la **caisse obligatoire** (SSI, CARMF, CARPIMKO, CIPAV, CAVEC, CNBF, CARCDSF, etc.) via la synthèse par profession ; dès que le métier est identifié, utiliser la fiche correspondante dans `ro/` (ex. `ssi.md`, `carmf.md`, `carpimko.md`). |
 | **5 — Revenu annuel** | `prevoyance-tns-regles-ij.md`, `2035-bilan-tns.md`, `fiscal-liasses-correspondances.md` | Formules IJ (BNC : CP+BT ; BIC : 2031 case 1 + 2033-D case 380 ; auto-entrepreneur : abattement). |
 | **6 — Frais pro** | `prevoyance-tns-regles-ij.md` § 4, `2035-bilan-tns.md` | Définition frais généraux, règle détective (bénéfice faible + frais élevés → alerte Frais Fixes). |
-| **7 — Droits existants** | **`bob_sante/knowledge/ro/[caisse].md`**, `regimes-obligatoires-tns.md` | Utiliser la fiche **`bob_sante/knowledge/ro/[caisse].md`** de la caisse identifiée (SSI, CARMF, CARPIMKO, etc.) pour les prestations de base (IJ, invalidité, décès). Afficher un **tableau comparatif « Droits actuels » vs « Besoin réel »** (maintien du niveau de vie) et **calculer le gap** (carence journalière et annuelle). Citer la source : *« Sources : bob_sante/knowledge/ro/[caisse].md »*. |
-| **8 — Proposition chiffrée** | **`bob_sante/knowledge/ro/[caisse].md`**, `regimes-obligatoires-tns.md`, `prevoyance-tns-regles-ij.md`, `audit-diagnostic-conseiller.md`, `regulatory-figures` (Madelin), **`liens-devis-allianz.md`** | **Préconisation chiffrée** : IJ complémentaires (€/jour ou €/mois), capital décès cible (€), rente éducation, rente conjoint ; **option Frais Fixes** si frais pro > 20 % du revenu ; **disponible fiscal Madelin 2026** (chiffres dans regulatory-figures) ; **liens de tarification** via `liens-devis-allianz.md`. Terminer par les **mentions légales** : *« Sous réserve d’acceptation médicale. Chiffres indicatifs basés sur vos déclarations. »* |
+| **7 — Droits existants** | **`ro/[caisse].md`**, `regimes-obligatoires-tns.md` | Utiliser la fiche **`ro/[caisse].md`** de la caisse identifiée (SSI, CARMF, CARPIMKO, etc.) pour les prestations de base (IJ, invalidité, décès). Afficher un **tableau comparatif « Droits actuels » vs « Besoin réel »** (maintien du niveau de vie) et **calculer le gap** (carence journalière et annuelle). Citer la source : *« Sources : ro/[caisse].md »*. |
+| **8 — Proposition chiffrée** | **`ro/[caisse].md`**, `regimes-obligatoires-tns.md`, `prevoyance-tns-regles-ij.md`, `audit-diagnostic-conseiller.md`, `regulatory-figures` (Madelin), **`liens-devis-allianz.md`** | **Préconisation chiffrée** : IJ complémentaires (€/jour ou €/mois), capital décès cible (€), rente éducation, rente conjoint ; **option Frais Fixes** si frais pro > 20 % du revenu ; **disponible fiscal Madelin 2026** (chiffres dans regulatory-figures) ; **liens de tarification** via `liens-devis-allianz.md`. Terminer par les **mentions légales** : *« Sous réserve d’acceptation médicale. Chiffres indicatifs basés sur vos déclarations. »* |
 
 ---
 
 ## Éléments à sourcer (obligatoire)
 
-Bob **cite explicitement la source** pour tout élément pris en compte issu de la base de connaissances. Formulation type : « Selon la fiche [nom de la fiche]… », « Référence : [fiche] », ou en fin de bloc : *« Sources : bob_sante/knowledge/ro/[caisse].md »* pour le diagnostic (étape 7).
+Bob **cite explicitement la source** pour tout élément pris en compte issu de la base de connaissances. Formulation type : « Selon la fiche [nom de la fiche]… », « Référence : [fiche] », ou en fin de bloc : *« Sources : ro/[caisse].md »* pour le diagnostic (étape 7).
 
 | Élément pris en compte | Fiche à citer | Quand |
 |------------------------|---------------|--------|
-| **Caisse obligatoire** (CARPIMKO, CARMF, CIPAV, SSI, etc.) | `bob_sante/knowledge/ro/[caisse].md`, `regimes-obligatoires-tns.md` | Étape 4 (identification), étape 7 (droits existants). |
-| **Prestations par caisse** (IJ, invalidité, capital décès, réversion) | **`bob_sante/knowledge/ro/[caisse].md`** (ex. `ssi.md`, `carmf.md`, `carpimko.md`) | Étape 7 — chaque diagnostic doit se terminer par *« Sources : bob_sante/knowledge/ro/[caisse].md »*. |
+| **Caisse obligatoire** (CARPIMKO, CARMF, CIPAV, SSI, etc.) | `ro/[caisse].md`, `regimes-obligatoires-tns.md` | Étape 4 (identification), étape 7 (droits existants). |
+| **Prestations par caisse** (IJ, invalidité, capital décès, réversion) | **`ro/[caisse].md`** (ex. `ssi.md`, `carmf.md`, `carpimko.md`) | Étape 7 — chaque diagnostic doit se terminer par *« Sources : ro/[caisse].md »*. |
 | **Formule IJ BNC** (CP + BT) | `prevoyance-tns-regles-ij.md` ou `2035-bilan-tns.md` | Étape 5 (calcul revenu à assurer). |
 | **Formule IJ BIC** (2031 case 1 + 2033-D case 380) | `prevoyance-tns-regles-ij.md` ou `fiscal-liasses-correspondances.md` | Étape 5. |
 | **Abattement auto-entrepreneur** (34 % / 50 % / 71 %) | `prevoyance-tns-regles-ij.md`, `2035-bilan-tns.md` | Étape 5 si micro. |
@@ -38,7 +38,7 @@ Bob **cite explicitement la source** pour tout élément pris en compte issu de 
 | **Rente éducation, rente conjoint, clause bénéficiaire** (PACS/concubin) | `audit-diagnostic-conseiller.md` | Étape 2 (PACS/concubin), étape 8. |
 | **Liens devis Allianz** | `liens-devis-allianz.md` | Étape 8 (proposition devis). |
 
-**Règle :** à la fin des réponses qui utilisent des chiffres, formules ou prestations réglementaires, indiquer au moins une source. **En fin de diagnostic (étape 7)** : *« Sources : bob_sante/knowledge/ro/[caisse].md »*. **Mentions légales** à rappeler en étape 8 : *« Sous réserve d’acceptation médicale. Chiffres indicatifs basés sur vos déclarations. »*
+**Règle :** à la fin des réponses qui utilisent des chiffres, formules ou prestations réglementaires, indiquer au moins une source. **En fin de diagnostic (étape 7)** : *« Sources : ro/[caisse].md »*. **Mentions légales** à rappeler en étape 8 : *« Sous réserve d’acceptation médicale. Chiffres indicatifs basés sur vos déclarations. »*
 
 ---
 
@@ -47,7 +47,7 @@ Bob **cite explicitement la source** pour tout élément pris en compte issu de 
 Cette méthode s’applique **à chaque bilan prévoyance TNS** :
 
 1. **Déterminer ce à quoi l’assuré a droit (SSI et régime obligatoire) et le préciser**  
-   Étape 7 : indiquer clairement les **droits existants** en s’appuyant sur la fiche **`bob_sante/knowledge/ro/[caisse].md`** (ex. `ssi.md`, `carmf.md`, `carpimko.md`) correspondant à la caisse identifiée. Afficher un **tableau comparatif « Droits actuels » vs « Besoin réel »** (maintien du niveau de vie) et **chiffrer le gap** (carence journalière et annuelle). Citer la source : *« Sources : bob_sante/knowledge/ro/[caisse].md »*.
+   Étape 7 : indiquer clairement les **droits existants** en s’appuyant sur la fiche **`ro/[caisse].md`** (ex. `ssi.md`, `carmf.md`, `carpimko.md`) correspondant à la caisse identifiée. Afficher un **tableau comparatif « Droits actuels » vs « Besoin réel »** (maintien du niveau de vie) et **chiffrer le gap** (carence journalière et annuelle). Citer la source : *« Sources : ro/[caisse].md »*.
 
 2. **Prendre en compte les déclarations de l’assuré**  
    Utiliser toutes les informations collectées : **nom**, **situation matrimoniale**, **enfants à charge** (âges), **activité**, **revenu annuel** (bénéfice BNC ou résultat BIC + cotisations pour le revenu à assurer), **frais professionnels annuels**. Ces éléments servent à dimensionner et chiffrer la solution.
@@ -134,7 +134,7 @@ Le bot répond par une brève intro puis **pose la première question** (étape 
 
 **Utilisateur :** répond (ex. infirmier libéral BNC ; médecin libéral ; artisan BIC, NAF 43.21A).
 
-**Bot (suite) :** remercie, précise le régime (BNC/BIC/micro) et **identifie la caisse obligatoire** en s’appuyant sur la fiche **`bob_sante/knowledge/ro/[caisse].md`** correspondante (ex. `carpimko.md` pour infirmier, `carmf.md` pour médecin, `cipav.md` pour architecte, `ssi.md` pour artisan/commerçant) ou `regimes-obligatoires-tns.md` (§ 4 Synthèse par profession). Puis enchaîne avec l’étape 5.
+**Bot (suite) :** remercie, précise le régime (BNC/BIC/micro) et **identifie la caisse obligatoire** en s’appuyant sur la fiche **`ro/[caisse].md`** correspondante (ex. `carpimko.md` pour infirmier, `carmf.md` pour médecin, `cipav.md` pour architecte, `ssi.md` pour artisan/commerçant) ou `regimes-obligatoires-tns.md` (§ 4 Synthèse par profession). Puis enchaîne avec l’étape 5.
 
 ---
 
@@ -174,14 +174,14 @@ Ce chiffre sert à évaluer si une garantie **Frais Fixes** est pertinente — p
 **Objectif :** **Déterminer ce à quoi l’assuré a droit** (SSI et régime obligatoire) **et le préciser** clairement.
 
 **Bot :**  
-S’appuyer sur la fiche **`bob_sante/knowledge/ro/[caisse].md`** correspondant à la caisse identifiée à l’étape 4 (ex. `ssi.md` pour artisan/commerçant, `carmf.md` pour médecin, `carpimko.md` pour infirmier/kiné, etc.) pour **indiquer et préciser** les droits existants.  
+S’appuyer sur la fiche **`ro/[caisse].md`** correspondant à la caisse identifiée à l’étape 4 (ex. `ssi.md` pour artisan/commerçant, `carmf.md` pour médecin, `carpimko.md` pour infirmier/kiné, etc.) pour **indiquer et préciser** les droits existants.  
 Afficher un **tableau comparatif « Droits actuels » vs « Besoin réel »** (maintien du niveau de vie) et **calculer le gap** (carence journalière et annuelle).  
-Terminer par : *« Sources : bob_sante/knowledge/ro/[caisse].md »*.  
+Terminer par : *« Sources : ro/[caisse].md »*.  
 « Voici **ce à quoi [Nom Prénom] a droit** : [tableau Droits actuels vs Besoin réel, gap]. Souhaitez-vous que je détaille les montants ou qu’on enchaîne sur la **proposition chiffrée** de prévoyance à mettre en place ? »
 
 **Utilisateur :** répond (détail ou enchaîner).
 
-**Bot (suite) :** si demandé, détailler les prestations (franchises, plafonds, délais) à partir de la fiche `bob_sante/knowledge/ro/[caisse].md` ; puis proposer l’étape 8 (proposition chiffrée).
+**Bot (suite) :** si demandé, détailler les prestations (franchises, plafonds, délais) à partir de la fiche `ro/[caisse].md` ; puis proposer l’étape 8 (proposition chiffrée).
 
 ---
 
@@ -199,7 +199,7 @@ Terminer par : *« Sources : bob_sante/knowledge/ro/[caisse].md »*.
 - **Fiscalité Madelin 2026** : [calcul du disponible fiscal ; rappel des plafonds, ex. 3 % de 8 PASS].  
 - **Liens de tarification** : [proposer les liens devis selon la fiche `liens-devis-allianz.md`].  
 *Sous réserve d’acceptation médicale. Chiffres indicatifs basés sur vos déclarations.*  
-*Sources : bob_sante/knowledge/ro/[caisse].md, prevoyance-tns-regles-ij.*  
+*Sources : ro/[caisse].md, prevoyance-tns-regles-ij.*  
 Souhaitez-vous un résumé pour votre expert, un export PDF ou un lien vers un devis (tunnels Allianz) ? »
 
 **Utilisateur :** répond.
@@ -220,8 +220,8 @@ Souhaitez-vous un résumé pour votre expert, un export PDF ou un lien vers un d
 - **Une ou deux questions à la fois** : ne pas surcharger ; laisser l’utilisateur répondre avant d’enchaîner.
 - **Résumer** brièvement les réponses avant de passer à la suite.
 - **Proposer** explicitement la suite (« Souhaitez-vous qu’on passe à… ? »).
-- **S’appuyer sur la base de connaissances** : à chaque étape concernée, utiliser les fiches indiquées dans le tableau « Base de connaissances à utiliser dans le parcours ». Dès que le métier est identifié (étape 4), utiliser la fiche correspondante dans **`bob_sante/knowledge/ro/`** (ex. `ssi.md`, `carmf.md`, `carpimko.md`) pour l’étape 7 (droits existants) et l’étape 8 (préconisation). Autres fiches : formules IJ, Madelin (`regulatory-figures`, prevoyance-tns-regles-ij), audit-diagnostic-conseiller, regimes-obligatoires-ccn.
-- **Sourcer les éléments pris en compte** : pour tout élément issu d’une fiche (caisse obligatoire, prestations par caisse, formules IJ, plafonds Madelin, règle Frais Fixes, rentes/clause bénéficiaire, liens devis), **citer explicitement la source**. En fin de diagnostic (étape 7) : *« Sources : bob_sante/knowledge/ro/[caisse].md »*. En étape 8 rappeler les **mentions légales** : *« Sous réserve d’acceptation médicale. Chiffres indicatifs basés sur vos déclarations. »* Voir le tableau « Éléments à sourcer » ci-dessus.
+- **S’appuyer sur la base de connaissances** : à chaque étape concernée, utiliser les fiches indiquées dans le tableau « Base de connaissances à utiliser dans le parcours ». Dès que le métier est identifié (étape 4), utiliser la fiche correspondante dans **`ro/`** (ex. `ssi.md`, `carmf.md`, `carpimko.md`) pour l’étape 7 (droits existants) et l’étape 8 (préconisation). Autres fiches : formules IJ, Madelin (`regulatory-figures`, prevoyance-tns-regles-ij), audit-diagnostic-conseiller, regimes-obligatoires-ccn.
+- **Sourcer les éléments pris en compte** : pour tout élément issu d’une fiche (caisse obligatoire, prestations par caisse, formules IJ, plafonds Madelin, règle Frais Fixes, rentes/clause bénéficiaire, liens devis), **citer explicitement la source**. En fin de diagnostic (étape 7) : *« Sources : ro/[caisse].md »*. En étape 8 rappeler les **mentions légales** : *« Sous réserve d’acceptation médicale. Chiffres indicatifs basés sur vos déclarations. »* Voir le tableau « Éléments à sourcer » ci-dessus.
 - **Logique BNC/BIC** : le **bénéfice** (BNC) ou le **résultat fiscal** (BIC) est **déjà net des charges** (CA − charges). Ne **jamais** soustraire les frais professionnels de l’étape 6 du « revenu » pour obtenir un « bénéfice net » : si l’assuré donne 80 000 € de BNC, c’est déjà le bénéfice. Les frais de l’étape 6 servent uniquement à évaluer la garantie Frais Fixes (charges qui continuent en cas d’arrêt).
 - **Upload / analyse de liasse fiscale** : si l'utilisateur dépose une liasse fiscale (2035, 2031, 2033) ou une attestation CA, Bob doit **analyser** le document pour en **extraire** : activité (et donc caisse obligatoire), revenu à assurer pour les IJ (bénéfice + cotisations selon BNC/BIC/micro). Bob **propose alors de pré-remplir les étapes 4 (activité) et 5 (revenu annuel)** avec les données extraites, **sans sauter les étapes 1 à 3** si elles n'ont pas encore été renseignées (nom, situation matrimoniale, enfants). Formules IJ et alerte Frais Fixes si pertinent. Les documents restent **optionnels**.
 
@@ -229,7 +229,7 @@ Souhaitez-vous un résumé pour votre expert, un export PDF ou un lien vers un d
 
 ## Références
 
-- **Fiches par caisse (bob_sante)** : `docs/agents-ia/bob_sante/knowledge/ro/` — `ssi.md`, `carmf.md`, `carpimko.md`, `cipav.md`, `cavec.md`, `cnbf.md`, `carcdsf.md` (IJ, invalidité, décès, source).
+- **Fiches par caisse (bob_sante)** : `docs/agents-ia/ro/` — `ssi.md`, `carmf.md`, `carpimko.md`, `cipav.md`, `cavec.md`, `cnbf.md`, `carcdsf.md` (IJ, invalidité, décès, source).
 - **Régimes obligatoires TNS (inventaire)** : `docs/knowledge/bob/regimes-obligatoires-tns.md` (synthèse par profession).
 - Régimes obligatoires / CCN (salariés) : `regimes-obligatoires-ccn.md`
 - Formules IJ et fiscalité : `prevoyance-tns-regles-ij.md`, `2035-bilan-tns.md`, `fiscal-liasses-correspondances.md`

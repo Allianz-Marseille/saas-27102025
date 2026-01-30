@@ -206,20 +206,20 @@ function loadMarkdownDir(
 
 /**
  * Charge la base de connaissances Bob depuis docs/knowledge/bob/ puis
- * docs/agents-ia/bob_sante/knowledge/ro/ (fiches par caisse).
+ * docs/knowledge/bob/ro/ (fiches par caisse).
  * Concatène avec une limite globale de taille.
  * Retourne une chaîne vide si les deux dossiers sont absents ou vides.
  */
 export function loadBobKnowledge(): string {
   try {
     const bobDir = path.join(process.cwd(), "docs", "knowledge", "bob");
-    const bobRoTnDir = path.join(process.cwd(), "docs", "agents-ia", "bob_sante", "knowledge", "ro");
+    const bobRoDir = path.join(process.cwd(), "docs", "knowledge", "bob", "ro");
 
     const parts: string[] = [];
     const totalRef = { current: 0 };
 
     loadMarkdownDir(bobDir, parts, totalRef);
-    loadMarkdownDir(bobRoTnDir, parts, totalRef);
+    loadMarkdownDir(bobRoDir, parts, totalRef);
 
     if (parts.length === 0) return "";
     return parts.join("\n\n---\n\n");

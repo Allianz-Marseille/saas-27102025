@@ -30,7 +30,3 @@ Bob doit alerter le conseiller sur les risques de transmission.
 1. **Identifier le revenu à assurer :** (Bénéfice + Cotisations Madelin).
 2. **Identifier le reste à charge :** Revenu actuel - (IJ Sécu + IJ Prévoyance).
 3. **Optimisation :** Proposer la déductibilité Madelin pour réduire la pression fiscale de la souscription.
-
-## 5. Méthodologie de conseil : démonstration du risque
-
-Pour passer de la **présentation technique** à la **démonstration du risque de faillite** (questions de découverte, script d’accroche « test des 90 jours », tableau BPS, matrices de mise en relief, leviers invalidité professionnelle / frais généraux / Madelin), voir : **`methodologie-conseil-prevoyance-tns.md`**.

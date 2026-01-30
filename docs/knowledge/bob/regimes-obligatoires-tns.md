@@ -22,39 +22,7 @@ La **SSI** (Sécurité sociale des indépendants) a remplacé le **RSI** (Régim
 | **Auto-entrepreneurs** (artisans/commerçants) | SSI | Idem (BNC → caisses libérales). |
 | **Assimilés** (gérants majoritaires SARL, etc.) | SSI | Sous conditions. |
 
-### Prestations obligatoires SSI (repères)
-
-**Indemnités journalières (IJ) — arrêt de travail**
-
-- **Calcul :** 1/730e du **revenu annuel moyen (RAAM)** des 3 dernières années, plafonné au **PASS** (Plafond annuel de la Sécurité sociale). Les montants exacts (PASS, IJ max) sont dans `lib/assistant/regulatory-figures.ts` et mis à jour annuellement.
-- **Délai de carence :** 3 jours calendaires avant le premier versement d’IJ.
-- **Franchise possible :** 7, 14 ou 30 jours selon les options (contrat complémentaire pour réduire la franchise).
-- **Seuil minimal :** en dessous d’un certain RAAM (ordre de grandeur : ~4 500 €), les IJ peuvent être nulles.
-- **En pratique :** les IJ SSI restent souvent **inférieures au revenu réel** de l’indépendant → prévoyance complémentaire recommandée pour compléter ou anticiper.
-
-**Invalidité**
-
-- **Pension d’invalidité** : environ **30 % du revenu moyen** en invalidité partielle, **50 %** en invalidité totale (ordre de grandeur ; conditions et taux à vérifier sur secu-independants.fr).
-- **Condition** : réduction de la capacité de travail d’au moins 2/3 (66 %) ; maladie ou accident non professionnel ; affiliation depuis au moins 12 mois.
-- **En pratique :** niveau souvent insuffisant pour maintenir le train de vie → prévoyance complémentaire (rente invalidité) recommandée.
-
-**Décès**
-
-- **Capital décès** (cotisant) : de l’ordre de **20 % du PASS** (montant exact dans regulatory-figures ou sur le site officiel).
-- **Capital décès** (retraité) : de l’ordre de **8 % du PASS**.
-- **Bonus par enfant à charge** : montant complémentaire par enfant (moins de 16 ans, ou jusqu’à 20 ans si études). Bénéficiaires sous condition de ressources ; demande dans le mois suivant le décès.
-- **Pension de réversion** : conjoint survivant **54 % de la pension de retraite de base** du défunt, sous condition d’âge (ex. 55 ans).
-- **En pratique :** capital décès obligatoire **souvent insuffisant** pour protéger le foyer (dettes, train de vie) → prévoyance complémentaire (capital décès, rente conjoint, rente éducation) recommandée.
-
-### Synthèse pour le conseiller
-
-| Prestation | SSI (obligatoire) | À compléter par |
-|------------|-------------------|-----------------|
-| **IJ** | 1/730e RAAM (3 ans), plafonné PASS ; délai carence 3 j ; franchise possible 7/14/30 j | Prévoyance complémentaire (Loi Madelin) : compléter le montant, réduire la franchise. |
-| **Invalidité** | Pension partielle (~30 %) / totale (~50 %) | Rente invalidité complémentaire. |
-| **Décès** | Capital ~20 % PASS (cotisant), réversion conjoint 54 % | Capital décès, rente conjoint, rente éducation (Loi Madelin). |
-
-**Référence chiffres annuels :** PASS et montants dérivés dans `lib/assistant/regulatory-figures.ts` ; détails prestations sur [secu-independants.fr](https://www.secu-independants.fr/).
+**Prestations détaillées** (IJ, invalidité, décès, exemples chiffrés, synthèse conseiller) : voir **ro/ssi.md**. Chiffres réglementaires (PASS, IJ max) : `lib/assistant/regulatory-figures.ts` ; détails sur [secu-independants.fr](https://www.secu-independants.fr/).
 
 ---
 
@@ -116,10 +84,17 @@ Chaque caisse gère **retraite de base**, **retraite complémentaire**, **invali
 
 ---
 
-## 6. Références
+## 6. Synthèse comparative RO (garanties vs manques)
+
+Pour un **tableau comparatif final** par famille de TNS (Artisan/Commerçant SSI, Professions médicales CARMF/CARCDSF/CARPIMKO, Juridiques/Techniques CNBF/CAVEC/CIPAV) et les **manques critiques** du RO (frais fixes, maintien du niveau de vie, invalidité professionnelle), voir : **`synthese-comparative-ro-tns.md`**.
+
+---
+
+## 7. Références
 
 - **CNAVPL :** [cnavpl.fr](https://www.cnavpl.fr/)
 - **CIPAV (liste des activités) :** [cipav.info](https://www.cipav.info/)
 - **SSI (site officiel, prestations, CPSTI) :** [secu-independants.fr](https://www.secu-independants.fr/)
+- **Synthèse comparative RO TNS :** `synthese-comparative-ro-tns.md` (trois familles, garanties vs manques).
 - **Fiche parcours** : `parcours-bilan-tns.md`
 - **CCN et salariés** : `regimes-obligatoires-ccn.md` (conventions collectives, 1,50 % TA cadres, etc.)
