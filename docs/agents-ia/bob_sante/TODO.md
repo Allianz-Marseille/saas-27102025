@@ -8,7 +8,7 @@ Document de référence : [bob_sante.md](./bob_sante.md)
 
 | | Statut |
 |---|--------|
-| **Ce qui a été fait** | Page Bob (`/commun/agents-ia/bob-sante`), prompt `bob-system-prompt.ts`, API `context.agent === "bob"`, config `BOB_TIMEOUT` / `ENABLE_BOB_BOT`, liste agents + raccourci Alt+B / Cmd+Shift+B, dossier `docs/knowledge/bob/`. |
+| **Ce qui a été fait** | Page Bob (`/commun/agents-ia/bob-sante`), prompt `bob-system-prompt.ts`, API `context.agent === "bob"`, config `BOB_TIMEOUT` / `ENABLE_BOB_BOT`, liste agents + raccourci Alt+B / Cmd+Shift+B, dossier `docs/knowledge/bob/`. **Parcours Bilan prévoyance TNS** : [parcours_bilan_tns.md](./parcours_bilan_tns.md), [TODO parcours](./TODO_parcours_bilan_tns.md), [scénarios de test](./scenarios-test-parcours-bilan-tns.md). |
 | **Ce qui reste à faire** | Fiches base de connaissances, modale présentation, variable Vercel `NEXT_PUBLIC_ENABLE_BOB_BOT`, tests manuels, points à trancher en équipe. |
 
 ---

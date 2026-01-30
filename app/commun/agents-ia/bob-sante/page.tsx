@@ -44,6 +44,7 @@ import {
  */
 
 const SUGGESTIONS_DEMARRAGE = [
+  { label: "Bilan prévoyance TNS", message: "Je souhaite faire un bilan prévoyance pour un TNS. Peux-tu me guider étape par étape ?" },
   { label: "Rédiger une DUE (contrat groupe)", message: "Je voudrais rédiger une DUE pour la mise en place d'un contrat groupe santé/prévoyance" },
   { label: "Analyser une 2035 (IJ et frais généraux)", message: "Je voudrais analyser une 2035 pour déterminer les IJ et frais généraux d'un TNS" },
   { label: "Arguments pour rassurer un client TNS", message: "Quels arguments pour rassurer un client TNS sur la prévoyance ?" },

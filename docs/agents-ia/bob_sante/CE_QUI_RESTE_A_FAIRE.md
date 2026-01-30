@@ -2,7 +2,8 @@
 
 Répartition en **3 étapes** : Cursor tout de suite → toi → Cursor en finalisation.
 
-Références : [bob_sante.md](./bob_sante.md), [TODO.md](./TODO.md).
+Références : [bob_sante.md](./bob_sante.md), [TODO.md](./TODO.md).  
+**Parcours Bilan prévoyance TNS :** [parcours_bilan_tns.md](./parcours_bilan_tns.md), [TODO parcours](./TODO_parcours_bilan_tns.md), [scénarios de test](./scenarios-test-parcours-bilan-tns.md).
 
 ---
 
