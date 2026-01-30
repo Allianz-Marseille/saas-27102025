@@ -65,11 +65,38 @@ const menuItems: SidebarItem[] = [
   },
 ];
 
+const gestionnaireSinistreMenuItems: SidebarItem[] = [
+  {
+    icon: Zap,
+    label: "Boost",
+    href: "/commun/boost",
+  },
+  {
+    icon: Workflow,
+    label: "Process",
+    href: "/commun/process",
+  },
+  {
+    icon: Wrench,
+    label: "Outils",
+    href: "/commun/outils",
+  },
+  {
+    icon: Bot,
+    label: "Agents IA",
+    href: "/commun/agents-ia",
+    title: "Nina, assistante secrétaire. Raccourci : Alt+N (Windows/Linux) ou Cmd+Shift+N (Mac)",
+  },
+];
+
 export function CommercialSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, userData, loading } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const isGestionnaireSinistre = userData?.role === "GESTIONNAIRE_SINISTRE";
+  const menuItemsToShow = isGestionnaireSinistre ? gestionnaireSinistreMenuItems : menuItems;
 
   // Ne rien rendre pendant le chargement ou si userData n'est pas disponible
   if (loading || !userData) {
@@ -157,7 +184,7 @@ export function CommercialSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
-        {menuItems.map((item) => {
+        {menuItemsToShow.map((item) => {
           const Icon = item.icon;
           const isActive = item.href === "/commun/process" 
             ? pathname?.startsWith("/commun/process")
@@ -209,8 +236,11 @@ export function CommercialSidebar() {
                   {userData.email.split('@')[0]}
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <div className="px-2 py-0.5 rounded-full bg-blue-500 text-white text-[10px] font-bold">
-                    COMMERCIAL
+                  <div className={cn(
+                    "px-2 py-0.5 rounded-full text-white text-[10px] font-bold",
+                    isGestionnaireSinistre ? "bg-orange-500" : "bg-blue-500"
+                  )}>
+                    {isGestionnaireSinistre ? "SINISTRE" : "COMMERCIAL"}
                   </div>
                   <User className="h-3 w-3 text-muted-foreground" />
                 </div>
@@ -233,16 +263,23 @@ export function CommercialSidebar() {
         
         <div className="p-4 space-y-2">
           <div className={cn("flex gap-2", isCollapsed && "flex-col")}>
-            <NotificationCenter />
-            <ThemeToggle />
+            {!isGestionnaireSinistre && (
+              <>
+                <NotificationCenter />
+                <ThemeToggle />
+              </>
+            )}
           {!isCollapsed && (
             <Button
               variant="outline"
               onClick={handleLogout}
-              className="flex-1 gap-2 bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all"
+              className={cn(
+                "gap-2 bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all",
+                isGestionnaireSinistre ? "flex-1 w-full" : "flex-1"
+              )}
             >
               <LogOut className="h-4 w-4" />
-              Déconnexion
+              Se déconnecter
             </Button>
           )}
           {isCollapsed && (
@@ -250,8 +287,8 @@ export function CommercialSidebar() {
               variant="outline"
               size="icon"
               onClick={handleLogout}
-              title="Déconnexion"
-              className="bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all"
+              title="Se déconnecter"
+              className="w-full bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all"
             >
               <LogOut className="h-4 w-4" />
             </Button>

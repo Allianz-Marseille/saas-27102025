@@ -89,7 +89,7 @@ export function canAccessAdmin(userData: UserData | null): boolean {
  * Vérifie si l'utilisateur peut accéder au dashboard commercial
  */
 export function canAccessDashboard(userData: UserData | null): boolean {
-  return isAdmin(userData) || isCommercial(userData);
+  return isAdmin(userData) || isCommercial(userData) || isGestionnaireSinistre(userData);
 }
 
 /**

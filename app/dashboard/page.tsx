@@ -4,6 +4,8 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { Construction, HardHat } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
 import { ProgressTracker } from "@/components/dashboard/progress-tracker";
 import { AchievementBadges } from "@/components/dashboard/achievement-badges";
@@ -12,7 +14,6 @@ import { ProcessLeaderboardWidget } from "@/components/dashboard/process-leaderb
 import { CommissionsSummary } from "@/components/dashboard/commissions-summary";
 import { SpecialtyContractsTracker } from "@/components/dashboard/specialty-contracts-tracker";
 import { calculateKPI } from "@/lib/utils/kpi";
-import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import { Act } from "@/types";
 import { getActsByMonth } from "@/lib/firebase/acts";
@@ -27,6 +28,26 @@ export default function DashboardPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>(
     format(new Date(), "yyyy-MM")
   );
+
+  if (userData?.role === "GESTIONNAIRE_SINISTRE") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-6">
+        <Card className="border-2 border-dashed max-w-md w-full">
+          <CardContent className="p-8 text-center">
+            <div className="flex justify-center gap-4 mb-4">
+              <Construction className="h-12 w-12 text-orange-500" />
+              <HardHat className="h-12 w-12 text-amber-600" />
+            </div>
+            <h1 className="text-xl font-bold mb-2">Tableau de bord</h1>
+            <p className="text-muted-foreground">En construction</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Cette section est en cours de développement.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const loadActs = async () => {
     if (!user) {

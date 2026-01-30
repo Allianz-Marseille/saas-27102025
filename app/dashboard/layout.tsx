@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Home, FileText, User, Coins, Workflow, Wrench, Zap } from "lucide-react";
+import { Home, FileText, User, Coins, Workflow, Wrench, Zap, Bot } from "lucide-react";
 import { CommercialSidebar } from "@/components/dashboard/commercial-sidebar";
 import { MobileMenu } from "@/components/navigation/mobile-menu";
 import { ResponsiveHeader } from "@/components/navigation/responsive-header";
 import { NavigationItems } from "@/components/navigation/navigation-items";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { useAuth } from "@/lib/firebase/use-auth";
+import { isGestionnaireSinistre } from "@/lib/utils/roles";
 import { useAutoLogout } from "@/lib/hooks/use-auto-logout";
 import { usePathname, useRouter } from "next/navigation";
 import { logout } from "@/lib/firebase/auth";
@@ -53,6 +54,29 @@ const commercialNavItems = [
   },
 ];
 
+const gestionnaireSinistreNavItems = [
+  {
+    icon: Zap,
+    label: "Boost",
+    href: "/commun/boost",
+  },
+  {
+    icon: Workflow,
+    label: "Process",
+    href: "/commun/process",
+  },
+  {
+    icon: Wrench,
+    label: "Outils",
+    href: "/commun/outils",
+  },
+  {
+    icon: Bot,
+    label: "Agents IA",
+    href: "/commun/agents-ia",
+  },
+];
+
 export default function DashboardLayout({
   children,
 }: {
@@ -95,6 +119,9 @@ export default function DashboardLayout({
     setIsMobileMenuOpen(false);
   };
 
+  const isGestionnaireSinistreUser = isGestionnaireSinistre(userData);
+  const navItems = isGestionnaireSinistreUser ? gestionnaireSinistreNavItems : commercialNavItems;
+
   return (
     <RouteGuard>
       <div className="flex h-screen overflow-hidden">
@@ -108,7 +135,7 @@ export default function DashboardLayout({
           variant="commercial"
         >
           <NavigationItems
-            items={commercialNavItems}
+            items={navItems}
             currentPath={pathname || ""}
             variant="commercial"
             onLogout={handleLogout}
@@ -119,10 +146,10 @@ export default function DashboardLayout({
 
         {/* Header Responsive */}
         <ResponsiveHeader
-          title="Dashboard Commercial"
+          title={isGestionnaireSinistreUser ? "Gestionnaire Sinistre" : "Dashboard Commercial"}
           onMenuToggle={() => setIsMobileMenuOpen(true)}
           variant="commercial"
-          showNotifications={true}
+          showNotifications={!isGestionnaireSinistreUser}
         />
 
         <main className="flex-1 overflow-y-auto bg-background pt-16 lg:pt-0 lg:ml-64">

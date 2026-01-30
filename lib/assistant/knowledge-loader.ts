@@ -178,34 +178,50 @@ export function loadSegmentationKnowledge(context: SegmentationContext): string 
 const BOB_KNOWLEDGE_MAX_CHARS = 28_000;
 
 /**
- * Charge la base de connaissances Bob depuis docs/knowledge/bob/.
- * Concatène tous les .md du dossier avec une limite de taille.
- * Retourne une chaîne vide si le dossier n'existe pas ou est vide.
+ * Charge tous les .md d'un dossier et les ajoute à parts en respectant la limite.
+ * Retourne le nouveau total de caractères.
+ */
+function loadMarkdownDir(
+  dirPath: string,
+  parts: string[],
+  totalRef: { current: number }
+): void {
+  if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) return;
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  const files = entries
+    .filter((e) => e.isFile() && e.name.toLowerCase().endsWith(".md"))
+    .map((e) => e.name)
+    .sort();
+  for (const file of files) {
+    if (totalRef.current >= BOB_KNOWLEDGE_MAX_CHARS) break;
+    const filePath = path.join(dirPath, file);
+    const content = fs.readFileSync(filePath, "utf-8");
+    const remaining = BOB_KNOWLEDGE_MAX_CHARS - totalRef.current;
+    const toAdd =
+      content.length <= remaining ? content : content.slice(0, remaining) + "\n\n[... tronqué]";
+    parts.push(toAdd);
+    totalRef.current += toAdd.length;
+  }
+}
+
+/**
+ * Charge la base de connaissances Bob depuis docs/knowledge/bob/ puis
+ * docs/agents-ia/bob_sante/knowledge/ro/ (fiches par caisse).
+ * Concatène avec une limite globale de taille.
+ * Retourne une chaîne vide si les deux dossiers sont absents ou vides.
  */
 export function loadBobKnowledge(): string {
   try {
     const bobDir = path.join(process.cwd(), "docs", "knowledge", "bob");
-    if (!fs.existsSync(bobDir) || !fs.statSync(bobDir).isDirectory()) {
-      return "";
-    }
-    const entries = fs.readdirSync(bobDir, { withFileTypes: true });
-    const files = entries
-      .filter((e) => e.isFile() && e.name.toLowerCase().endsWith(".md"))
-      .map((e) => e.name)
-      .sort();
-    if (files.length === 0) return "";
+    const bobRoTnDir = path.join(process.cwd(), "docs", "agents-ia", "bob_sante", "knowledge", "ro");
 
     const parts: string[] = [];
-    let total = 0;
-    for (const file of files) {
-      if (total >= BOB_KNOWLEDGE_MAX_CHARS) break;
-      const filePath = path.join(bobDir, file);
-      const content = fs.readFileSync(filePath, "utf-8");
-      const remaining = BOB_KNOWLEDGE_MAX_CHARS - total;
-      const toAdd = content.length <= remaining ? content : content.slice(0, remaining) + "\n\n[... tronqué]";
-      parts.push(toAdd);
-      total += toAdd.length;
-    }
+    const totalRef = { current: 0 };
+
+    loadMarkdownDir(bobDir, parts, totalRef);
+    loadMarkdownDir(bobRoTnDir, parts, totalRef);
+
+    if (parts.length === 0) return "";
     return parts.join("\n\n---\n\n");
   } catch (error) {
     console.error("Erreur chargement base Bob:", error);

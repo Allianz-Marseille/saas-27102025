@@ -86,6 +86,29 @@ const commercialNavItems = [
   },
 ];
 
+const gestionnaireSinistreNavItems = [
+  {
+    icon: Zap,
+    label: "Boost",
+    href: "/commun/boost",
+  },
+  {
+    icon: Workflow,
+    label: "Process",
+    href: "/commun/process",
+  },
+  {
+    icon: Wrench,
+    label: "Outils",
+    href: "/commun/outils",
+  },
+  {
+    icon: Bot,
+    label: "Agents IA",
+    href: "/commun/agents-ia",
+  },
+];
+
 const healthNavItems = [
   {
     href: "/sante-individuelle",
@@ -331,6 +354,11 @@ export default function CommunLayout({
     variant = "health";
     navItems = healthCollectiveNavItems;
     title = "Processus";
+  } else if (isGestionnaireSinistreUser && !isCommercialUser) {
+    variant = "commercial";
+    navItems = gestionnaireSinistreNavItems;
+    title = "Processus";
+    showNotifications = false;
   } else if (isCommercialUser || isGestionnaireSinistreUser) {
     variant = "commercial";
     navItems = commercialNavItems;
