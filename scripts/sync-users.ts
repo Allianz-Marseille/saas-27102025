@@ -27,7 +27,7 @@ const firebaseConfig = {
 };
 
 // Mapping des utilisateurs et leurs rôles
-const USER_ROLES: Record<string, 'ADMINISTRATEUR' | 'CDC_COMMERCIAL'> = {
+const USER_ROLES: Record<string, 'ADMINISTRATEUR' | 'CDC_COMMERCIAL' | 'GESTIONNAIRE_SINISTRE'> = {
   'jeanmichel@allianz-nogaro.fr': 'ADMINISTRATEUR',
   'julien@allianz-nogaro.fr': 'ADMINISTRATEUR', // Email réel dans Firebase Auth
   'julien.boetti@allianz-nogaro.fr': 'ADMINISTRATEUR',
@@ -37,6 +37,8 @@ const USER_ROLES: Record<string, 'ADMINISTRATEUR' | 'CDC_COMMERCIAL'> = {
   'astrid.ulrich@allianz-nogaro.fr': 'CDC_COMMERCIAL',
   'corentin.ulrich@allianz-nogaro.fr': 'CDC_COMMERCIAL',
   'donia.sahraoui@allianz-nogaro.fr': 'CDC_COMMERCIAL',
+  'nejma.hariati@allianz-nogaro.fr': 'CDC_COMMERCIAL',
+  'virginie.tommasini@allianz-nogaro.fr': 'GESTIONNAIRE_SINISTRE',
 };
 
 async function syncUsers() {

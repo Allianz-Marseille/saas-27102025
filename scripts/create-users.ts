@@ -70,6 +70,16 @@ const USERS_TO_CREATE = [
     password: 'Allianz2025@',
     role: 'CDC_COMMERCIAL' as const,
   },
+  {
+    email: 'nejma.hariati@allianz-nogaro.fr',
+    password: 'Allianz2025@',
+    role: 'CDC_COMMERCIAL' as const,
+  },
+  {
+    email: 'virginie.tommasini@allianz-nogaro.fr',
+    password: 'Allianz2025@',
+    role: 'GESTIONNAIRE_SINISTRE' as const,
+  },
 ];
 
 async function createUsers() {

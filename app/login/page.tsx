@@ -118,6 +118,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
+                  autoComplete="email"
                   placeholder={`vous${ALLOWED_EMAIL_DOMAINS[0]}`}
                   {...registerField("email")}
                   disabled={isLoading}
@@ -131,6 +132,7 @@ export default function LoginPage() {
                 <Label htmlFor="password">Mot de passe</Label>
                 <PasswordInput
                   id="password"
+                  autoComplete="current-password"
                   placeholder="••••••••"
                   {...registerField("password")}
                   disabled={isLoading}

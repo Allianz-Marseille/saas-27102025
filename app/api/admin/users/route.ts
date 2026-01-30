@@ -89,7 +89,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Rôles valides pour l'accès au dashboard (alignés avec lib/utils/roles et RouteGuard)
+const VALID_ROLES = [
+  "ADMINISTRATEUR",
+  "CDC_COMMERCIAL",
+  "COMMERCIAL_SANTE_INDIVIDUEL",
+  "COMMERCIAL_SANTE_COLLECTIVE",
+  "GESTIONNAIRE_SINISTRE",
+] as const;
+
 // POST - Créer un nouvel utilisateur
+// Intègre automatiquement l'utilisateur dans tout le processus : Firebase Auth + Firestore (users).
+// Le document Firestore (id, email, role, active) suffit pour l'accès au dashboard selon le rôle
+// (redirection login + RouteGuard). Aucune autre création n'est requise pour l'accès.
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -98,6 +110,14 @@ export async function POST(request: NextRequest) {
     if (!email || !password || !role) {
       return NextResponse.json(
         { error: "Email, password et role requis" },
+        { status: 400 }
+      );
+    }
+
+    // Vérifier que le rôle est valide pour l'accès au dashboard
+    if (!VALID_ROLES.includes(role)) {
+      return NextResponse.json(
+        { error: `Rôle invalide. Rôles acceptés : ${VALID_ROLES.join(", ")}` },
         { status: 400 }
       );
     }
