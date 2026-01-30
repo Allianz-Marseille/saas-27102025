@@ -29,7 +29,51 @@ export default function DashboardPage() {
     format(new Date(), "yyyy-MM")
   );
 
-  if (userData?.role === "GESTIONNAIRE_SINISTRE") {
+  const loadActs = async () => {
+    if (!user) {
+      setActs([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const actsData = await getActsByMonth(user.uid, selectedMonth);
+
+      const convertedActs: Act[] = actsData.map((act) => {
+        const dateEffet = (act as unknown as { dateEffet: Timestamp | Date }).dateEffet instanceof Timestamp
+          ? (act as unknown as { dateEffet: Timestamp }).dateEffet.toDate()
+          : (act as unknown as { dateEffet: Date }).dateEffet;
+
+        const dateSaisie = (act as unknown as { dateSaisie: Timestamp | Date }).dateSaisie instanceof Timestamp
+          ? (act as unknown as { dateSaisie: Timestamp }).dateSaisie.toDate()
+          : (act as unknown as { dateSaisie: Date }).dateSaisie;
+
+        return {
+          ...act,
+          dateEffet,
+          dateSaisie,
+        };
+      });
+
+      setActs(convertedActs);
+    } catch {
+      toast.error("Erreur lors du chargement des actes");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userData?.role === "GESTIONNAIRE_SINISTRE") return;
+    loadActs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth, user, userData?.role]);
+
+  const kpi = calculateKPI(acts);
+  const isGestionnaireSinistre = userData?.role === "GESTIONNAIRE_SINISTRE";
+
+  if (isGestionnaireSinistre) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-6">
         <Card className="border-2 border-dashed max-w-md w-full">
@@ -48,49 +92,6 @@ export default function DashboardPage() {
       </div>
     );
   }
-
-  const loadActs = async () => {
-    if (!user) {
-      setActs([]);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const actsData = await getActsByMonth(user.uid, selectedMonth);
-      
-      // Convertir les Timestamp en Date
-      const convertedActs: Act[] = actsData.map((act) => {
-        const dateEffet = (act as unknown as { dateEffet: Timestamp | Date }).dateEffet instanceof Timestamp 
-          ? (act as unknown as { dateEffet: Timestamp }).dateEffet.toDate() 
-          : (act as unknown as { dateEffet: Date }).dateEffet;
-          
-        const dateSaisie = (act as unknown as { dateSaisie: Timestamp | Date }).dateSaisie instanceof Timestamp 
-          ? (act as unknown as { dateSaisie: Timestamp }).dateSaisie.toDate() 
-          : (act as unknown as { dateSaisie: Date }).dateSaisie;
-        
-        return {
-          ...act,
-          dateEffet,
-          dateSaisie,
-        };
-      });
-      
-      setActs(convertedActs);
-    } catch {
-      toast.error("Erreur lors du chargement des actes");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadActs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMonth, user]);
-
-  const kpi = calculateKPI(acts);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
