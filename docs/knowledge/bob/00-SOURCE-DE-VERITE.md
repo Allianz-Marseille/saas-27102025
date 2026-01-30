@@ -17,6 +17,7 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 | **Méthodologie conseil / démonstration du risque** | `docs/knowledge/bob/methodologie-conseil-prevoyance-tns.md` | Script, matrices, BPS, leviers. |
 | **Synthèse comparative RO (familles, manques)** | `docs/knowledge/bob/synthese-comparative-ro-tns.md` | Tableaux par famille (SSI, médicales, juridiques/techniques) et « ce que le RO ne fait jamais ». |
 | **Audit / diagnostic (situation → garanties)** | `docs/knowledge/bob/audit-diagnostic-conseiller.md` | Questionnement stratégique, diagnostic matrimonial, transformation situation → garanties. |
+| **Logique de calcul carence / moteur de calcul gap** | `docs/agents-ia/bob_sante/LOGIQUE_CALCUL_CARENCE_TNS.md` | Spec pour implémenter le calcul par segments (J1–3, J4–90, J91+), table RO 2026, RegimeConstants, Gap Report, Survival Duration. Aligner avec `regulatory-figures.ts` et `ro/*.md`. |
 
 ---
 
