@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      { source: "/bob", destination: "/commun/agents-ia/bob-sante", permanent: true },
+    ];
+  },
   // Optimiser les imports (compatible avec Turbopack)
   experimental: {
     optimizePackageImports: [

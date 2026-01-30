@@ -50,6 +50,8 @@ Cursor peut réaliser tout ce qui suit **sans attendre** de contenu, décision o
 | 2.2 | **Variable Vercel** | `NEXT_PUBLIC_ENABLE_BOB_BOT=true` ajoutée dans le projet Vercel (saas-allianz-marseille). |
 | 2.5 | **URLs tunnels de devis** | Liste complète dans `liens-devis-allianz.md` avec code agence H91358 (auto, habitation, santé, pro, etc.). |
 | 2.3 | **Documents de test** | Exemples anonymisés dans `docs/agents-ia/bob_sante/documents-de-test/` (2035 BNC, 2033 BIC, 2033 IS, attestation CA auto). |
+| 2.8 | **Tests manuels** | Scénario upload 2033 BIC + analyse IJ + alerte Frais Fixes validé (grille de lecture, règle détective). Reste optionnel : raccourci, Bonjour, copier, export PDF, brouillon, suggestions, recentrage. |
+| 2.7 | **Points à trancher en équipe** | Décisions prises : route actuelle conservée (+ redirection `/bob` si besoin), disclaimers en bandeau haut + lien Mentions légales, public prioritaire TNS puis salariés/entreprises, couleur teal conservée, stockage V1 LocalStorage (V2 base = évolution ultérieure). Raccourci Alt+B / Cmd+Shift+B confirmé. |
 
 ---
 
@@ -57,11 +59,9 @@ Cursor peut réaliser tout ce qui suit **sans attendre** de contenu, décision o
 
 | # | Tâche | À faire |
 |---|--------|--------|
-| **2.6** | **Chiffres réglementaires** | Une fois par an : vérifier PASS et Madelin (URSSAF, Allianz) et mettre à jour `docs/knowledge/bob/` et `references.md`. |
-| **2.7** | **Points à trancher en équipe** | Route finale, disclaimers, public cible, couleur primaire, stockage (voir détail ci‑dessous). |
-| **2.8** | **Tests manuels** | Après mise en place : raccourci, Bonjour, chat, upload, copier, export PDF, brouillon, suggestions, recentrage ; remonter bugs à Cursor. |
+| **2.6** | **Chiffres réglementaires** | Une fois par an : vérifier PASS et Madelin (URSSAF, Allianz) et mettre à jour `docs/knowledge/bob/` et `references.md`. (Peut attendre ; ne bloque pas la partie 3.) |
 
-**Quand tu confirmes que ces points sont faits (ou que tu as les infos pour 2.7, 2.8), on lance la partie 3.**
+**Bloc 2 prêt pour la partie 3.** Il ne reste que 2.6 (annuel, à faire quand tu veux). Tu peux lancer la partie 3 dès maintenant : « On lance la partie 3 » ou « Finalise Bob avec les décisions 2.7 ».
 
 ---
 
@@ -135,28 +135,33 @@ Tu peux réutiliser ou dupliquer `docs/knowledge/sources/sante-regles-remboursem
 
 ---
 
-### 2.7 Points à trancher en équipe — ⬜ À faire
+### 2.7 Points à trancher en équipe — ✅ Fait
 
-- Route : `/commun/agents-ia/bob-sante` ou `/bob` ? Raccourci **Alt+B** / **Cmd+Shift+B** confirmé ?
-- Où afficher les **disclaimers** juridiques (modale, bandeau, en bas des réponses) ?
-- **Public cible prioritaire** : TNS, salariés ou entreprises en premier ?
-- **Couleur primaire** : bleu santé / teal / autre ?
-- **Stockage** : V1 LocalStorage ; V2 base pour reprise multi-appareils ?
+Décisions prises (recommandations validées) :
 
-Dès que c’est décidé, tu transmets à Cursor pour la finalisation (bloc 3).
+| Point | Décision |
+|-------|----------|
+| **Route** | Garder `/commun/agents-ia/bob-sante`. Ajouter une redirection `/bob` → cette page si besoin (lien court). |
+| **Raccourci** | **Alt+B** / **Cmd+Shift+B** confirmé (déjà en place). |
+| **Disclaimers** | Bandeau fixe en haut de la page Bob + lien vers Mentions légales. Pas de phrase en bas de chaque réponse. |
+| **Public cible prioritaire** | TNS en premier (où Bob apporte le plus), puis salariés et entreprises. |
+| **Couleur primaire** | Teal conservé (changer seulement si charte agence l’impose). |
+| **Stockage** | V1 LocalStorage pour la partie 3. V2 (conversations en base, multi-appareils) = évolution ultérieure. |
+
+Cursor appliquera ces décisions en partie 3 (bandeau disclaimer, redirection `/bob` si demandée, pas de changement stockage).
 
 ---
 
-### 2.8 Tests manuels — ⬜ À faire (après mise en place du code)
+### 2.8 Tests manuels — ✅ Validé
 
-- Vérifier : raccourci, « Bonjour », chat streamé, upload image/fichiers, copier avec masquage sensibles, export PDF, brouillon, suggestions de démarrage, recentrage hors-sujet.  
-Voir [TODO.md § 14](./TODO.md#14-check-list-de-tests-manuels). Remonter à Cursor les bugs ou ajustements.
+- **Validé :** Upload document 2033 BIC (ex. `exemple-2033-bic.txt`) + question « Analyse pour les IJ et frais généraux » → Bob identifie le profil BIC, extrait assiette IJ (47 100 €), frais généraux (24 500 €), et applique la règle détective (alerte garantie Frais Fixes renforcée).
+- **Optionnel :** Raccourci, « Bonjour », copier/masquage sensibles, export PDF, brouillon, suggestions, recentrage hors-sujet. Voir [TODO.md § 14](./TODO.md#14-check-list-de-tests-manuels). Remonter à Cursor tout bug ou ajustement.
 
 ---
 
 ## 3. Finalisation par Cursor — à lancer quand tu confirmes que le bloc 2 est prêt
 
-**Déclencheur :** tu confirmes que les points « Ce qui reste à faire » (2.2, 2.3, 2.6, 2.7, 2.8) sont faits ou que tu as les infos nécessaires → on lance la partie 3.
+**Déclencheur :** les décisions 2.7 sont prises → tu peux lancer la partie 3 dès maintenant en disant « On lance la partie 3 » ou « Finalise Bob avec les décisions 2.7 ». Le point 2.6 (chiffres réglementaires annuels) peut attendre.
 
 Une fois que c’est le cas, Cursor peut :
 
@@ -180,3 +185,15 @@ Une fois que c’est le cas, Cursor peut :
 | **1** | **Cursor** | Tout le code immédiat : modale, saisie, upload, copier, export PDF, streaming, erreurs, brouillon, menu ···, actions rapides, suggestions, loader, cœur de Bob, UI/accessibilité, tests prompt. |
 | **2** | **Toi** | Fiches base de connaissances, variable Vercel, documents de test, enrichissement Allianz, URLs devis, mise à jour PASS/Madelin, décisions équipe, tests manuels + remontée des retours. |
 | **3** | **Cursor** | Finalisation : intégration des fiches/URLs/décisions, ajustements prompt, corrections après tes tests, optionnellement RAG. |
+
+---
+
+## La suite
+
+**Bloc 2 — Statut :** 2.7 est fait (décisions prises). Il ne reste que :
+
+| Priorité | # | Action |
+|----------|---|--------|
+| 1 | **Partie 3** | **Lancer la finalisation par Cursor** : dire **« On lance la partie 3 »** ou **« Finalise Bob avec les décisions 2.7 »** → Cursor applique les décisions (bandeau disclaimer, redirection `/bob` si demandée), sans toucher au stockage ni à la couleur. |
+| 2 | **2.6** | **Chiffres réglementaires** (annuel) : quand tu veux, vérifier PASS et Madelin (URSSAF, Allianz) et mettre à jour `docs/knowledge/bob/` et `references.md`. Ne bloque pas la partie 3. |
+| 3 | **2.8 (optionnel)** | Compléter les tests manuels (raccourci, Bonjour, copier, export PDF, brouillon, suggestions, recentrage) et remonter tout bug à Cursor. |

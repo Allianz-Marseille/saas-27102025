@@ -690,6 +690,22 @@ export default function BobSantePage() {
         )}
       </header>
 
+      <div
+        className="flex shrink-0 flex-wrap items-center justify-center gap-x-2 gap-y-1 border-b border-slate-200 bg-slate-50 px-4 py-2 text-center text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400 md:px-6"
+        role="complementary"
+        aria-label="Avertissement juridique"
+      >
+        <span>
+          Bob est un outil d&apos;aide à la décision. Les réponses ne constituent pas un conseil juridique ou fiscal personnalisé.
+        </span>
+        <Link
+          href="/commun/mentions-legales"
+          className="font-medium text-teal-600 underline underline-offset-2 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300"
+        >
+          Mentions légales
+        </Link>
+      </div>
+
       <main className="flex flex-1 flex-col overflow-hidden">
         {!hasStarted ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-6 p-8">
