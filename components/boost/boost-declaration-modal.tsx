@@ -50,6 +50,22 @@ export function BoostDeclarationModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
+  const formatClientName = (name: string): string => {
+    return name
+      .split(/[\s-]+/)
+      .map((word) => {
+        if (word.length === 0) return word;
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join(" ")
+      .replace(/\s-\s/g, "-");
+  };
+
+  const handleClientNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatClientName(e.target.value);
+    setClientName(formatted);
+  };
+
   const resetForm = () => {
     setSelectedType(null);
     setClientName("");
@@ -135,9 +151,9 @@ export function BoostDeclarationModal({
                 <Label htmlFor="clientName">Nom du client</Label>
                 <Input
                   id="clientName"
-                  placeholder="Ex: Dupont Martin"
+                  placeholder="Ex: Dupont Martin ou Jean-Pierre Dubois"
                   value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
+                  onChange={handleClientNameChange}
                   className="max-w-xs"
                 />
               </div>
