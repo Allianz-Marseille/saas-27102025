@@ -19,6 +19,7 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 | **Synthèse comparative RO (familles, manques)** | `docs/knowledge/bob/synthese-comparative-ro-tns.md` | Tableaux par famille (SSI, médicales, juridiques/techniques) et « ce que le RO ne fait jamais ». |
 | **Audit / diagnostic (situation → garanties)** | `docs/knowledge/bob/audit-diagnostic-conseiller.md` | Questionnement stratégique, diagnostic matrimonial, transformation situation → garanties. |
 | **Logique de calcul carence / moteur de calcul gap** | `docs/agents-ia/bob_sante/LOGIQUE_CALCUL_CARENCE_TNS.md` | Spec pour implémenter le calcul par segments (J1–3, J4–90, J91+), table RO 2026, RegimeConstants, Gap Report, Survival Duration. Aligner avec `regulatory-figures.ts` et `ro/*.md`. |
+| **Templates de réponse (modules hors bilan TNS)** | `docs/knowledge/bob/templates-reponse-modules-bob.md` | Structures de réponse obligatoires : Analyse 2035 / Bilan chiffré, Comparatif prévoyance Allianz vs concurrence, Audit retraite & senior. Bob les applique selon l'amorce (hors parcours bilan TNS). |
 
 ---
 
@@ -77,6 +78,7 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 | `retraite-collective-pero.md` | PERO, retraite collective. |
 | `sante-panier-soins-minimal.md` | Panier de soins, minimal. |
 | `synthese-comparative-ro-tns.md` | Synthèse comparative RO (familles, manques). |
+| `templates-reponse-modules-bob.md` | Templates de réponse (Analyse 2035, Comparatif prévoyance, Audit retraite/senior) — modules hors bilan TNS. |
 
 ### Fiches dans `docs/knowledge/bob/ro/`
 
