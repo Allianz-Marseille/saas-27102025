@@ -36,7 +36,7 @@ export function getFreeChatPrompt(): string {
 
 /**
  * Ancienne sélection par bouton/rôle — désormais retourne le prompt secrétaire.
- * Conservé pour compatibilité avec d'éventuels appels (ex. route 2, M+3).
+ * Conservé pour compatibilité avec d'éventuels appels (ex. M+3).
  */
 export function getSystemPromptForButton(_buttonId: string, _subButtonId?: string): string {
   return SECRETARY_PROMPT;
