@@ -6,6 +6,8 @@ Parcours guidé pour réaliser un bilan prévoyance d’un Travailleur Non Salar
 
 **Nota :** Le bilan peut être réalisé **sans fournir de documents financiers** : l’utilisateur peut indiquer uniquement les **grandes masses** (revenu annuel, frais professionnels annuels). Les liasses (2035, 2031, 2033) ou attestations sont optionnelles.
 
+**Structure de raisonnement :** Chaque analyse suit : **profil → régime obligatoire → besoins → écarts → préconisations → conclusion**. Référence détaillée : `docs/knowledge/bob/logique-parcours-bilan-tns.md` (ordre des régimes, conclusion guidée, formulation tableau client, objectif de couverture).
+
 ---
 
 ## Base de connaissances à utiliser dans le parcours
@@ -17,7 +19,7 @@ Bob **s’appuie obligatoirement** sur les fiches suivantes aux étapes indiqué
 | **4 — Activité** | `regimes-obligatoires-tns.md`, **`ro/[caisse].md`** | Identifier la **caisse obligatoire** (SSI, CARMF, CARPIMKO, CIPAV, CAVEC, CNBF, CARCDSF, etc.) via la synthèse par profession ; dès que le métier est identifié, utiliser la fiche correspondante dans `ro/` (ex. `ssi.md`, `carmf.md`, `carpimko.md`). |
 | **5 — Revenu annuel** | `prevoyance-tns-regles-ij.md`, `2035-bilan-tns.md`, `fiscal-liasses-correspondances.md` | Formules IJ (BNC : CP+BT ; BIC : 2031 case 1 + 2033-D case 380 ; auto-entrepreneur : abattement). |
 | **6 — Frais pro** | `prevoyance-tns-regles-ij.md` § 4, `2035-bilan-tns.md` | Définition frais généraux, règle détective (bénéfice faible + frais élevés → alerte Frais Fixes). |
-| **7 — Droits existants** | **`ro/[caisse].md`**, `regimes-obligatoires-tns.md` | Utiliser la fiche **`ro/[caisse].md`** de la caisse identifiée (SSI, CARMF, CARPIMKO, etc.) pour les prestations de base (IJ, invalidité, décès). Afficher un **tableau comparatif « Droits actuels » vs « Besoin réel »** (maintien du niveau de vie) et **calculer le gap** (carence journalière et annuelle). Citer la source : *« Sources : ro/[caisse].md »*. |
+| **7 — Droits existants** | **`ro/[caisse].md`**, `regimes-obligatoires-tns.md` | Utiliser la fiche **`ro/[caisse].md`** (et `ro/ssi.md` si artisan/commerçant) pour les **garanties acquises SSI et RO**. Afficher un **tableau d'empilement (Garantie | SSI | RO | Reste à assurer)** (maintien du niveau de vie) et **calculer le gap** (carence journalière et annuelle). Citer la source : *« Sources : ro/[caisse].md »*. |
 | **8 — Proposition chiffrée** | **`ro/[caisse].md`**, `regimes-obligatoires-tns.md`, `prevoyance-tns-regles-ij.md`, `audit-diagnostic-conseiller.md`, `regulatory-figures` (Madelin), **`liens-devis-allianz.md`** | **Préconisation chiffrée** : IJ complémentaires (€/jour ou €/mois), capital décès cible (€), rente éducation, rente conjoint ; **option Frais Fixes** si frais pro > 20 % du revenu ; **disponible fiscal Madelin 2026** (chiffres dans regulatory-figures) ; **liens de tarification** via `liens-devis-allianz.md`. Terminer par les **mentions légales** : *« Sous réserve d’acceptation médicale. Chiffres indicatifs basés sur vos déclarations. »* |
 
 ---
@@ -41,13 +43,18 @@ Bob **cite explicitement la source** pour tout élément pris en compte issu de 
 **Règle :** à la fin des réponses qui utilisent des chiffres, formules ou prestations réglementaires, indiquer au moins une source. **En fin de diagnostic (étape 7)** : *« Sources : ro/[caisse].md »*. **Mentions légales** à rappeler en étape 8 : *« Sous réserve d’acceptation médicale. Chiffres indicatifs basés sur vos déclarations. »*
 
 ---
+## Format de rendu du bilan (obligatoire)
+
+Le rendu du bilan doit : (1) **Préciser les garanties acquises au titre de la SSI** (cf `ro/ssi.md` si artisan/commerçant ; sinon « Non concerné »). (2) **Préciser les garanties acquises au titre du RO** (cf `ro/[caisse].md`) : IJ, invalidité, décès, réversion. (3) **Souligner ce qui reste à assurer** (contrat complémentaire). **Tableau obligatoire** : colonnes **Garantie | SSI (si concerné) | RO (caisse) | Reste à assurer (complémentaire)** — lignes IJ, Invalidité, Décès, Rente conjoint, Rente éducation, Frais Fixes. **Formulation à utiliser face au client :** « Ce que vous avez / Ce dont vous avez besoin / Les écarts à compléter ». Mettre en relief la colonne « Reste à assurer ».
+
+---
 
 ## Méthode à appliquer dans tous les cas
 
-Cette méthode s’applique **à chaque bilan prévoyance TNS** :
+Cette méthode s'applique **à chaque bilan prévoyance TNS** :
 
 1. **Déterminer ce à quoi l’assuré a droit (SSI et régime obligatoire) et le préciser**  
-   Étape 7 : indiquer clairement les **droits existants** en s’appuyant sur la fiche **`ro/[caisse].md`** (ex. `ssi.md`, `carmf.md`, `carpimko.md`) correspondant à la caisse identifiée. Afficher un **tableau comparatif « Droits actuels » vs « Besoin réel »** (maintien du niveau de vie) et **chiffrer le gap** (carence journalière et annuelle). Citer la source : *« Sources : ro/[caisse].md »*.
+   Étape 7 : indiquer clairement les **droits existants** en s’appuyant sur la fiche **`ro/[caisse].md`** (ex. `ssi.md`, `carmf.md`, `carpimko.md`) correspondant à la caisse identifiée. Afficher un **tableau d'empilement (Garantie | SSI | RO | Reste à assurer)** (maintien du niveau de vie) et **chiffrer le gap** (carence journalière et annuelle). Citer la source : *« Sources : ro/[caisse].md »*.
 
 2. **Prendre en compte les déclarations de l’assuré**  
    Utiliser toutes les informations collectées : **nom**, **situation matrimoniale**, **enfants à charge** (âges), **activité**, **revenu annuel** (bénéfice BNC ou résultat BIC + cotisations pour le revenu à assurer), **frais professionnels annuels**. Ces éléments servent à dimensionner et chiffrer la solution.
@@ -173,11 +180,17 @@ Ce chiffre sert à évaluer si une garantie **Frais Fixes** est pertinente — p
 
 **Objectif :** **Déterminer ce à quoi l’assuré a droit** (SSI et régime obligatoire) **et le préciser** clairement.
 
+**Ordre d'exposition :** Exposer **d'abord la SSI** (fiche `ro/ssi.md` si artisan/commerçant), **puis le régime principal** (fiche `ro/[caisse].md` du métier). Souligner que **même en cumulant, ça ne suffit pas** ; la prévoyance complémentaire devient logique.
+
+**Conclusion guidée :** En fin d'étape 7, amener une **validation logique** (le client constate l'écart) **sans annoncer le prix**. Proposer ensuite l'étape 8 pour la « proposition chiffrée ».
+
+
 **Bot :**  
-S’appuyer sur la fiche **`ro/[caisse].md`** correspondant à la caisse identifiée à l’étape 4 (ex. `ssi.md` pour artisan/commerçant, `carmf.md` pour médecin, `carpimko.md` pour infirmier/kiné, etc.) pour **indiquer et préciser** les droits existants.  
-Afficher un **tableau comparatif « Droits actuels » vs « Besoin réel »** (maintien du niveau de vie) et **calculer le gap** (carence journalière et annuelle).  
+S'appuyer sur la fiche **`ro/ssi.md`** (en premier si artisan/commerçant), puis **`ro/[caisse].md`** (régime principal), pour **indiquer et préciser** les droits existants et montrer que même cumulés ils ne suffisent pas.  
+Afficher un **tableau d'empilement (Garantie | SSI | RO | Reste à assurer)** — formulation client : « Ce que vous avez / Ce dont vous avez besoin / Les écarts à compléter » — et **calculer le gap** (carence journalière et annuelle).  
 Terminer par : *« Sources : ro/[caisse].md »*.  
-« Voici **ce à quoi [Nom Prénom] a droit** : [tableau Droits actuels vs Besoin réel, gap]. Souhaitez-vous que je détaille les montants ou qu’on enchaîne sur la **proposition chiffrée** de prévoyance à mettre en place ? »
+« Voici **ce à quoi [Nom Prénom] a droit** : [tableau + gap]. Souhaitez-vous que je détaille les montants ou qu'on enchaîne sur la **proposition chiffrée** de prévoyance à mettre en place ? »
+
 
 **Utilisateur :** répond (détail ou enchaîner).
 
@@ -188,6 +201,8 @@ Terminer par : *« Sources : ro/[caisse].md »*.
 ## Étape 8 — Proposition chiffrée de la solution à mettre en place
 
 **Objectif :** En prenant en compte **toutes les déclarations** (revenu à assurer, frais pro, situation matrimoniale, enfants, droits existants), **faire une proposition chiffrée** — pas seulement des recommandations génériques.
+
+**Objectif de couverture par défaut :** viser le **maintien du niveau de vie** (ex. 100 % du revenu pour les IJ), sauf mention contraire du conseiller.
 
 **Bot :**  
 « En tenant compte de **ce à quoi [Nom] a droit** (étape 7) et de **ses déclarations** (revenu à assurer [X €], frais pro [Y €], situation [marié/pacsé/concubin], [N] enfants [âges]), voici une **préconisation chiffrée** pour compléter sa prévoyance :  

@@ -14,6 +14,7 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 | **Prestations par caisse** (IJ, invalidité, décès, exemples) | `docs/knowledge/bob/ro/[caisse].md` | Une fiche par caisse (ssi, carmf, carpimko, carcdsf, cavec, cipav, cnbf, cavp, carpv). Ne **pas** dupliquer les montants PASS dans ces fiches : indiquer « PASS (voir regulatory-figures) » ou « plafond annuel (source : regulatory-figures) ». |
 | **Inventaire des caisses / synthèse par profession** | `docs/knowledge/bob/regimes-obligatoires-tns.md` | § 2 (CNAVPL), § 3 (CNBF), § 4 (tableau profession → caisse). Ajouter une nouvelle caisse ici **et** créer `ro/[caisse].md` si besoin. |
 | **Parcours bilan TNS (étapes, fiches à utiliser)** | `docs/knowledge/bob/parcours-bilan-tns.md` | C’est la fiche **chargée** par `loadBobKnowledge()`. La version détaillée (spec) est dans `docs/agents-ia/bob_sante/parcours_bilan_tns.md` — garder les deux alignées sur les étapes et les références de fiches. |
+| **Logique du parcours bilan TNS (structure de raisonnement, 7 piliers)** | `docs/knowledge/bob/logique-parcours-bilan-tns.md` | Rôle, cadre méthodologique, collecte en entonnoir, tableau obligatoire, ordre des régimes, langage, conclusion. Réutilisable par Bob et par les commerciaux. |
 | **Méthodologie conseil / démonstration du risque** | `docs/knowledge/bob/methodologie-conseil-prevoyance-tns.md` | Script, matrices, BPS, leviers. |
 | **Synthèse comparative RO (familles, manques)** | `docs/knowledge/bob/synthese-comparative-ro-tns.md` | Tableaux par famille (SSI, médicales, juridiques/techniques) et « ce que le RO ne fait jamais ». |
 | **Audit / diagnostic (situation → garanties)** | `docs/knowledge/bob/audit-diagnostic-conseiller.md` | Questionnement stratégique, diagnostic matrimonial, transformation situation → garanties. |
@@ -65,6 +66,7 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 | `fiscalite-entree-sortie-prevoyance.md` | Fiscalité prévoyance (entrée/sortie). |
 | `glossaire.md` | Définitions (PASS, IJ, Madelin, etc.). |
 | `liens-devis-allianz.md` | Liens devis / tarification. |
+| `logique-parcours-bilan-tns.md` | Logique du parcours bilan TNS (structure de raisonnement, 7 piliers). |
 | `methodologie-conseil-prevoyance-tns.md` | Méthodologie conseil, script, BPS, matrices, leviers. |
 | `parcours-bilan-tns.md` | Parcours bilan TNS (étapes, fiches à utiliser) — **version chargée**. |
 | `prevoyance-tns-regles-ij.md` | Règles IJ TNS, formules, Frais Fixes, Madelin. |

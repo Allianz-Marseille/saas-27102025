@@ -64,6 +64,15 @@ Ne pas parler de « contrat ». Parler de **« Bilan de Protection Sociale »**.
 
 ---
 
+
+## 4b. Reformulations orales / phrases déclic
+
+À réutiliser en étape 7 et 8 du parcours bilan TNS :
+
+- *« La question n'est pas de savoir s'il faut une prévoyance, mais comment combler cet écart. »*
+- *« Voici ce que vous avez, ce dont vous avez besoin, et les écarts à compléter. »*
+- *« Une fois cet écart constaté, on peut regarder ensemble comment le combler de façon chiffrée. »* (transition vers l'étape 8, avant d'aborder le prix)
+
 ## 5. Script d’accroche : « Le test des 90 jours »
 
 Objectif : susciter une **« peur saine »** et positionner l’expertise immédiatement. Sortir de la vente de « prix » pour entrer dans la vente de « valeur ».
