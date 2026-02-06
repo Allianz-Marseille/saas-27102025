@@ -43,12 +43,12 @@ Ce dossier documente les agents IA de l’agence : rôles, identité visuelle, s
 
 ## Bob — Bot Santé & Prévoyance
 
-Bot expert en régimes sociaux, santé et prévoyance pour TNS, salariés, entreprises et seniors. En cours de réflexion et de spécification.
+Bot expert en régimes sociaux, santé et prévoyance pour TNS, salariés, entreprises et seniors.
 
-- **Documentation** : [docs/agents-ia/bob_sante/bob_sante.md](bob_sante/bob_sante.md) — description, cibles, thèmes, prompt (ébauche), design, todo, points à trancher.
+- **Documentation (référence expert)** : [docs/agents-ia/bob-sante/bob-expert.md](bob-sante/bob-expert.md) — plan des thématiques expert (RO, santé, prévoyance, retraite, ingénierie fiscale, audit).
 - **Stack** : même base que Nina (Next.js, API chat, streaming, extraction docs, PDF, masquage données sensibles).
-- **Fonctionnalités prévues** : chat streamé, pièces jointes (bulletins, attestations, contrats), copier / export PDF, brouillon, actions rapides, raccourci global (`Alt + B` / `Cmd + Shift + B`).
-- **Route prévue** : `/commun/agents-ia/bob-sante`. Code et page à créer.
+- **Fonctionnalités** : chat streamé, pièces jointes (bulletins, attestations, contrats, liasses 2035), copier / export PDF, brouillon, actions rapides, raccourci global (`Alt + B` / `Cmd + Shift + B`).
+- **Route** : `/commun/agents-ia/bob-sante`.
 
 ---
 

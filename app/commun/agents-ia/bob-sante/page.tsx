@@ -46,6 +46,10 @@ import {
 const SUGGESTIONS_DEMARRAGE = [
   { label: "Bilan prévoyance TNS", message: "Je souhaite faire un bilan prévoyance pour un TNS. Peux-tu me guider étape par étape ?" },
   { label: "Rédiger une DUE (contrat groupe)", message: "Je voudrais rédiger une DUE pour la mise en place d'un contrat groupe santé/prévoyance" },
+  { label: "Vérifier la carence d'un RO (ex: CARPIMKO)", message: "Je voudrais vérifier la carence (franchise, délai) du régime obligatoire pour un professionnel — par exemple CARPIMKO ou une autre caisse" },
+  { label: "Calculer le plafond Madelin", message: "Comment calculer le plafond Madelin pour un TNS ? Je veux les chiffres à jour (PASS) et la formule." },
+  { label: "Audit 1,50% TA (Obligation Cadre)", message: "Je dois auditer l'obligation 1,50 % de la tranche A pour les cadres (prévoyance). Quels points vérifier ?" },
+  { label: "Risques invalidité Pro vs Fonctionnelle", message: "Quelle est la différence entre invalidité professionnelle et invalidité fonctionnelle ? Quels risques pour le client ?" },
   { label: "Analyser une 2035 (IJ et frais généraux)", message: "Je voudrais analyser une 2035 pour déterminer les IJ et frais généraux d'un TNS" },
   { label: "Arguments pour rassurer un client TNS", message: "Quels arguments pour rassurer un client TNS sur la prévoyance ?" },
   { label: "Différence régime général / SSI", message: "Quelle est la différence entre le régime général et la SSI pour un prospect ?" },
@@ -697,7 +701,7 @@ export default function BobSantePage() {
         aria-label="Avertissement juridique"
       >
         <span>
-          Bob est un outil d&apos;aide à la décision. Les réponses ne constituent pas un conseil juridique ou fiscal personnalisé.
+          Bob est un outil d&apos;aide à la décision (expert RO, SSI, régimes obligatoires). Les réponses ne constituent pas un conseil juridique ou fiscal personnalisé. Validez carences et cadre fiscal avec le client.
         </span>
         <Link
           href="/commun/mentions-legales"

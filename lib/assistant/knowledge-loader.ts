@@ -206,7 +206,9 @@ function loadMarkdownDir(
 
 /**
  * Charge la base de connaissances Bob depuis docs/knowledge/bob/ puis
- * docs/knowledge/bob/ro/ (fiches par caisse).
+ * docs/knowledge/bob/ro/ (fiches par caisse : SSI, CARMF, CARPIMKO, etc.).
+ * Le dossier ro/ est essentiel pour l’expertise RO : Bob doit citer la fiche
+ * exacte (ex. « Sources : ro/ssi.md ») en fin de réponse quand il s’appuie sur une caisse.
  * Concatène avec une limite globale de taille.
  * Retourne une chaîne vide si les deux dossiers sont absents ou vides.
  */

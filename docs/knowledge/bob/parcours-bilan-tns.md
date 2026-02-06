@@ -16,25 +16,25 @@ Quand l'utilisateur demande un **bilan prévoyance**, le rendu doit :
 2. **Préciser les garanties acquises au titre du RO** (cf base de connaissance : `ro/[caisse].md` selon l'activité — CARMF, CARPIMKO, CIPAV, CAVEC, CNBF, etc.) : IJ, invalidité, capital décès, réversion, selon la fiche de la caisse.
 3. **Souligner ce qui reste à assurer avec un contrat complémentaire** : manques (gap) en IJ, invalidité, décès, rente conjoint, rente éducation, Frais Fixes si besoin.
 
-**Tableau obligatoire** à produire (empilement des garanties et compléments à mettre en place). **Formulation à utiliser face au client :** « Ce que vous avez / Ce dont vous avez besoin / Les écarts à compléter » — le tableau technique ci-dessous (Garantie | SSI | RO | Reste à assurer) en est l’implémentation.
+**Tableau obligatoire** à produire (empilement des garanties et compléments à mettre en place). **Formulation à utiliser face au client :** « Ce que vous avez / Ce dont vous avez besoin / Les écarts à compléter » — le tableau technique ci-dessous (Garantie | SSI | RO | Carence du RO | Reste à assurer). La colonne **Carence du RO** est obligatoire (franchises : ex. 3 j SSI, 90 j caisses libérales).
 
-| Garantie | SSI (si concerné) | RO (caisse) | Reste à assurer (complémentaire) |
-|----------|-------------------|-------------|-----------------------------------|
-| **Indemnités journalières** | [montant ou « — »] | [montant selon ro/[caisse].md] | [écart à couvrir] |
-| **Invalidité** | [rentes / —] | [rentes selon ro/[caisse].md] | [écart à couvrir] |
-| **Décès (capital)** | [montant / —] | [montant selon ro/[caisse].md] | [écart à couvrir] |
-| **Rente conjoint / réversion** | [selon SSI / —] | [selon RO] | [complément si besoin] |
-| **Rente éducation** | [—] | [—] | [à mettre en place si enfants] |
-| **Frais Fixes (charges pro)** | [—] | [—] | [à mettre en place si frais élevés] |
+| Garantie | SSI (si concerné) | RO (caisse) | **Carence du RO** | Reste à assurer (complémentaire) |
+|----------|-------------------|-------------|-------------------|-----------------------------------|
+| **Indemnités journalières** | [montant ou « — »] | [montant selon ro/[caisse].md] | [ex. 3 j SSI, 90 j CARPIMKO…] | [écart à couvrir] |
+| **Invalidité** | [rentes / —] | [rentes selon ro/[caisse].md] | [délai, conditions] | [écart à couvrir] |
+| **Décès (capital)** | [montant / —] | [montant selon ro/[caisse].md] | [—] | [écart à couvrir] |
+| **Rente conjoint / réversion** | [selon SSI / —] | [selon RO] | [—] | [complément si besoin] |
+| **Rente éducation** | [—] | [—] | [souvent absente au RO] | [à mettre en place si enfants] |
+| **Frais Fixes (charges pro)** | [—] | [—] | [—] | [à mettre en place si frais élevés] |
 
-- **Expliquer** en quelques phrases ce que donnent la SSI et le RO (sources : base de connaissance), puis **mettre en relief** la colonne « Reste à assurer ».
-- Pour les libéraux (pas SSI), la colonne SSI reste vide ou « Non concerné » ; seules les colonnes **RO** et **Reste à assurer** sont renseignées.
+- **Expliquer** en quelques phrases ce que donnent la SSI et le RO (sources : base de connaissance), **mettre en relief la colonne « Carence du RO »** (franchises, délais avant indemnisation) puis la colonne « Reste à assurer ».
+- Pour les libéraux (pas SSI), la colonne SSI reste vide ou « Non concerné » ; colonnes **RO**, **Carence du RO** et **Reste à assurer** renseignées.
 
 ## Base de connaissances à utiliser (obligatoire)
 
 À chaque étape, s'appuyer sur les fiches suivantes (chargées avec ce parcours dans la base Bob) :
 
-- **Étape 4 (Activité)** : **regimes-obligatoires-tns** — § 4 Synthèse par profession et § 2 (caisses CNAVPL) ou § 1 (SSI) pour identifier la caisse obligatoire ; dès que le métier est identifié, utiliser la fiche **ro/[caisse].md** correspondante (ex. ssi.md, carmf.md, carpimko.md, cipav.md).
+- **Étape 4 (Activité)** : **regimes-obligatoires-tns** — § 4 Synthèse par profession et § 2 (caisses CNAVPL) ou § 1 (SSI) pour identifier la caisse obligatoire. Bob doit **confirmer explicitement la caisse de retraite/prévoyance** associée à la profession (ex. « Kiné = CARPIMKO », « Médecin libéral = CARMF », « Artisan = SSI ») **avant de passer à l’étape 5**. Dès que le métier est identifié, utiliser la fiche **ro/[caisse].md** correspondante (ex. ssi.md, carmf.md, carpimko.md, cipav.md).
 - **Étape 5 (Revenu)** : prevoyance-tns-regles-ij, 2035-bilan-tns, fiscal-liasses-correspondances — formules IJ (CP+BT, 2031+380, abattement auto-entrepreneur).
 - **Étape 6 (Frais pro)** : prevoyance-tns-regles-ij § 4, 2035-bilan-tns — règle détective (Frais Fixes si bénéfice faible + frais élevés).
 - **Étape 7 (Droits existants)** : **ro/[caisse].md** — utiliser la fiche de la caisse identifiée à l’étape 4 (ex. ssi.md, carmf.md, carpimko.md) pour les prestations de base (IJ, invalidité, décès). Afficher un **tableau comparatif « Droits actuels » vs « Besoin réel »** et chiffrer le gap. Citer en fin de diagnostic : *« Sources : ro/[caisse].md »*.
@@ -85,7 +85,7 @@ Bob **cite explicitement la source** pour tout élément pris en compte issu de 
 
 **Bot :** « Quelle est l'activité du TNS ? Profession (ex. médecin, infirmier libéral, artisan, commerçant). Régime fiscal si connu : BNC, BIC, micro. NAF ou intitulé si pertinent. »
 
-**Suite :** remercier, préciser régime (BNC/BIC/micro) et **identifier la caisse obligatoire** en s'appuyant sur regimes-obligatoires-tns (§ 4) puis sur la fiche **ro/[caisse].md** correspondante (ex. carpimko.md infirmier, carmf.md médecin, cipav.md architecte, ssi.md artisan). Enchaîner étape 5.
+**Suite :** remercier, préciser régime (BNC/BIC/micro) et **identifier la caisse obligatoire** en s'appuyant sur regimes-obligatoires-tns (§ 4) puis sur la fiche **ro/[caisse].md** correspondante (ex. carpimko.md infirmier, carmf.md médecin, cipav.md architecte, ssi.md artisan). **Bob doit confirmer la caisse** (ex. « Votre client relève de la CARPIMKO (kinésithérapeute) » ou « de la SSI (artisan) ») **avant d’enchaîner à l’étape 5**. Enchaîner étape 5.
 
 ## Étape 5 — Revenu annuel
 
@@ -113,7 +113,7 @@ Bob **cite explicitement la source** pour tout élément pris en compte issu de 
 
 **Bot :** S'appuyer sur la base de connaissance (**ro/ssi.md** en premier si artisan/commerçant, **ro/[caisse].md** pour le régime principal) pour :
 1. **Expliquer** les garanties acquises au titre de la SSI (si concerné), puis du RO (IJ, invalidité, décès, réversion) — en montrant que même cumulées, elles ne suffisent pas.
-2. Afficher le **tableau d'empilement** : colonnes **Garantie | SSI (si concerné) | RO (caisse) | Reste à assurer (complémentaire)** — lignes IJ, Invalidité, Décès, Rente conjoint, Rente éducation, Frais Fixes.
+2. Afficher le **tableau d'empilement** : colonnes **Garantie | SSI (si concerné) | RO (caisse) | Carence du RO | Reste à assurer (complémentaire)** — lignes IJ, Invalidité, Décès, Rente conjoint, Rente éducation, Frais Fixes. La colonne **Carence du RO** doit faire apparaître les délais de franchise (ex. 3 j SSI, 90 j pour certaines caisses libérales).
 3. **Souligner** la colonne « Reste à assurer » (écarts à couvrir par un contrat complémentaire).
 4. Chiffrer le gap (carence journalière et annuelle) si les montants sont connus. Terminer par : *« Sources : ro/[caisse].md »* (et ro/ssi.md si SSI). « Voici **ce à quoi [Nom] a droit** et **ce qui reste à assurer**. Souhaitez-vous le détail ou qu'on enchaîne sur la **proposition chiffrée** ? »
 

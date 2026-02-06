@@ -70,6 +70,7 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 | `logique-parcours-bilan-tns.md` | Logique du parcours bilan TNS (structure de raisonnement, 7 piliers). |
 | `methodologie-conseil-prevoyance-tns.md` | Méthodologie conseil, script, BPS, matrices, leviers. |
 | `parcours-bilan-tns.md` | Parcours bilan TNS (étapes, fiches à utiliser) — **version chargée**. |
+| `plafond-madelin.md` | Calcul du plafond Madelin (formule, exemple, déductibilité santé/prévoyance TNS) — chiffres à jour via regulatory-figures. |
 | `prevoyance-tns-regles-ij.md` | Règles IJ TNS, formules, Frais Fixes, Madelin. |
 | `references.md` | Références réglementaires, chiffres (regulatory-figures). |
 | `regimes-obligatoires-ccn.md` | Régimes CCN, salariés. |

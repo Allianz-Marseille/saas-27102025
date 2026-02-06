@@ -1,11 +1,15 @@
 /**
- * Chiffres réglementaires (PASS, Madelin) pour Bob — source unique, chargés dynamiquement.
- * Mise à jour annuelle : modifier PASS_ANNUEL et PASS_YEAR (et SOURCES si les URLs changent).
+ * Chiffres réglementaires (PASS, PMSS, Madelin) pour Bob — source unique, chargés dynamiquement.
+ * Bob doit utiliser EXCLUSIVEMENT les constantes de ce fichier pour les calculs de tranches de cotisations,
+ * plafonds d'indemnités journalières (IJ) et formules Madelin. Mise à jour annuelle : PASS_ANNUEL, PASS_YEAR.
  * Référence : docs/knowledge/bob/00-SOURCE-DE-VERITE.md (chiffres réglementaires)
  */
 
 /** PASS (Plafond Annuel de la Sécurité Sociale) — valeur annuelle en euros */
 export const PASS_ANNUEL = 48_060;
+
+/** PMSS (Plafond Mensuel de la Sécurité Sociale) — PASS / 12, pour calculs mensuels */
+export const PMSS = Math.round(PASS_ANNUEL / 12);
 
 /** Année du PASS (revalorisation chaque 1er janvier) */
 export const PASS_YEAR = 2026;
@@ -38,6 +42,7 @@ export function getRegulatoryFiguresBlock(): string {
 | Indicateur | Valeur | Source |
 |:---|:---|:---|
 | **PASS ${PASS_YEAR}** (Plafond Annuel de la Sécurité Sociale) | ${PASS_ANNUEL.toLocaleString("fr-FR")} € (annuel) | URSSAF / Service-public |
+| **PMSS** (Plafond Mensuel = PASS/12) | ${PMSS.toLocaleString("fr-FR")} € | Dérivé du PASS |
 | **8 PASS** (pour plafond Madelin) | ${HUIT_PASS.toLocaleString("fr-FR")} € | Dérivé du PASS |
 
 ### Plafond Madelin Prévoyance (TNS)
