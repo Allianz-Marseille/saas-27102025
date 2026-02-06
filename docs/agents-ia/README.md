@@ -52,6 +52,17 @@ Bot expert en régimes sociaux, santé et prévoyance pour TNS, salariés, entre
 
 ---
 
+## Sinistro — Bot Sinistres
+
+Assistant IA expert en gestion de sinistres : analyse de constats (OCR/Vision), aide à la décision (IRSA, IRSI, Badinter), génération de courriers/mails.
+
+- **Documentation :** [docs/agents-ia/sinistro_sinistre/PD_SINISTRO.md](sinistro_sinistre/PD_SINISTRO.md) — plan de développement (vision, backlog, roadmap).
+- **Stack :** même base que Nina (Next.js, API chat, streaming, Firebase). Spécifique : Vision (gpt-4o) pour constats, RAG conventions sinistres.
+- **Fonctionnalités prévues :** upload constat (drag & drop), extraction structurée, détection contradictions, matching convention, justification juridique, templates mails, validation Approuver/Modifier.
+- **Route prévue :** `/commun/agents-ia/bot-sinistre`. Code et page à créer.
+
+---
+
 ## Où stocker les visages / photos des agents
 
 - **Images (avatars, visages)** → **`public/agents-ia/`**
@@ -67,6 +78,7 @@ Bot expert en régimes sociaux, santé et prévoyance pour TNS, salariés, entre
 |-----------------|--------|--------------------------|----------------------------------------|
 | `bot-secretaire`| Nina   | Rédaction, mails, correction, analyse docs, comparaison devis | `public/agents-ia/bot-secretaire/avatar.jpg`, `avatar-tete.jpg` |
 | `bob-sante`     | Bob    | Régimes sociaux, santé, prévoyance (TNS, salariés, entreprises, seniors) | `public/agents-ia/bob-sante/avatar.jpg`, `avatar-tete.jpg` |
+| `bot-sinistre`  | Sinistro | Gestion sinistres (constats, IRSA, IRSI, Badinter, courriers) | `public/agents-ia/bot-sinistre/sinistro.png` |
 | `m-plus-3`      | —      | Expert portefeuille M+3 | `public/agents-ia/m-plus-3/avatar.png` |
 | *(à compléter)* | —      | …                       | …                                      |
 
