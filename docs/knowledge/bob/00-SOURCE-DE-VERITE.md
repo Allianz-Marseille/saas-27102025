@@ -10,7 +10,7 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 
 | Type d’information | Source unique | Où mettre à jour |
 |--------------------|----------------|------------------|
-| **Chiffres réglementaires** (PASS, année, plafonds Madelin, formules) | `lib/assistant/regulatory-figures.ts` | Modifier **uniquement** ce fichier (PASS_ANNUEL, PASS_YEAR, constantes Madelin). Mise à jour **annuelle** (revalorisation PASS). |
+| **Chiffres réglementaires** (PASS, Madelin, **régime général** : SMIC, plafond IJSS, IJ max, capital décès CPAM) | `lib/assistant/regulatory-figures.ts` | Modifier **uniquement** ce fichier (PASS_ANNUEL, PASS_YEAR, SMIC_MENSUEL_BRUT, CAPITAL_DECES_CPAM_SALARIE, constantes Madelin). Mise à jour **annuelle** (revalorisation PASS, SMIC, capital décès). |
 | **Prestations par caisse** (IJ, invalidité, décès, exemples) | `docs/knowledge/bob/ro/[caisse].md` | Une fiche par caisse (ssi, carmf, carpimko, carcdsf, cavec, cipav, cnbf, cavp, carpv). Ne **pas** dupliquer les montants PASS dans ces fiches : indiquer « PASS (voir regulatory-figures) » ou « plafond annuel (source : regulatory-figures) ». |
 | **Inventaire des caisses / synthèse par profession** | `docs/knowledge/bob/regimes-obligatoires-tns.md` | § 2 (CNAVPL), § 3 (CNBF), § 4 (tableau profession → caisse). Ajouter une nouvelle caisse ici **et** créer `ro/[caisse].md` si besoin. |
 | **Parcours bilan TNS (étapes, fiches à utiliser)** | `docs/knowledge/bob/parcours-bilan-tns.md` | C’est la fiche **chargée** par `loadBobKnowledge()`. La version détaillée (spec) est dans `docs/agents-ia/bob_sante/parcours_bilan_tns.md` — garder les deux alignées sur les étapes et les références de fiches. |
@@ -62,6 +62,7 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 | `attestation-mutuelle.md` | Expliquer une attestation mutuelle au client (usage, contenu, droits portables). |
 | `ccn-top10-obligations.md` | CCN, obligations employeur, 1,50 % TA cadres. |
 | `commercial-objections-reponses.md` | Objections commerciales et réponses. |
+| `dispenses-mutuelle-obligatoire.md` | Dispenses à la mutuelle obligatoire (liste officielle ordre public + facultatives, preuve DUE/décharge). |
 | `due-contrat-groupe.md` | DUE, contrat de groupe. |
 | `extraire-infos-bulletin-contrat.md` | Extraire infos d’un bulletin, contrat ou document (usage Bob + infos utiles par type). |
 | `faq.md` | FAQ. |
@@ -80,6 +81,8 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 | `references.md` | Références réglementaires, chiffres (regulatory-figures). |
 | `regimes-obligatoires-ccn.md` | Régimes CCN, salariés. |
 | `regimes-obligatoires-tns.md` | Inventaire TNS (SSI, caisses CNAVPL, CNBF), synthèse par profession. |
+| `regimes-socle-comparatif.md` | Tableau comparatif RG / SSI / RO : carences, qui verse les IJ, invalidité, décès (capital, rente conjoint). |
+| `regime-general.md` | Régime général (CPAM) : salariés — IJ, invalidité, décès, maternité/paternité, AT/MP, checklist calcul des droits. Chiffres : regulatory-figures. |
 | `reglementaire-due-standard.md` | DUE, standard réglementaire. |
 | `retraite-collective-pero.md` | PERO, retraite collective. |
 | `sante-panier-soins-minimal.md` | Panier de soins, minimal. |
@@ -95,9 +98,12 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 | `carpimko.md` | CARPIMKO | Infirmiers, kinés, orthos, etc. |
 | `carpv.md` | CARPV | Vétérinaires |
 | `cavec.md` | CAVEC | Experts-comptables, commissaires aux comptes |
+| `cavom.md` | CAVOM | Huissiers, commissaires-priseurs, officiers ministériels |
+| `cavamac.md` | CAVAMAC | Agents généraux d'assurance |
 | `cavp.md` | CAVP | Pharmaciens |
 | `cipav.md` | CIPAV | Architectes, ingénieurs, psychologues, etc. |
 | `cnbf.md` | CNBF | Avocats |
+| `cprn.md` | CPRN | Notaires |
 | `ssi.md` | SSI | Artisans, commerçants, industriels |
 
 ---
@@ -106,7 +112,7 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 
 | Fréquence | Action |
 |-----------|--------|
-| **Annuelle** (revalorisation PASS) | Modifier `lib/assistant/regulatory-figures.ts` (PASS_ANNUEL, PASS_YEAR). Vérifier les ordres de grandeur dans `ro/ssi.md` (IJ max, capital décès) et les mettre à jour si nécessaire. |
+| **Annuelle** (revalorisation PASS, SMIC, capital décès) | Modifier `lib/assistant/regulatory-figures.ts` (PASS_ANNUEL, PASS_YEAR, SMIC_MENSUEL_BRUT, CAPITAL_DECES_CPAM_SALARIE). Vérifier les ordres de grandeur dans `ro/ssi.md`, `regime-general.md` et les mettre à jour si nécessaire. |
 | **À chaque changement réglementaire** | Mettre à jour la fiche concernée (ex. Madelin → prevoyance-tns-regles-ij + regulatory-figures). |
 | **Ajout d’une caisse** | Créer `ro/[caisse].md`, mettre à jour `regimes-obligatoires-tns.md` et parcours si besoin. |
 | **Ajout d’un thème transversal** | Créer une fiche dans `docs/knowledge/bob/` et ajouter une ligne dans ce document (§ 3). |

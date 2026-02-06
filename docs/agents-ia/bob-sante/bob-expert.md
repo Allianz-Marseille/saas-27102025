@@ -6,6 +6,8 @@ Pour agir en véritable expert de la protection sociale et sécuriser chaque dé
 
 **Cahier des charges Cursor** (paramétrage de la base de connaissances, concepts BRSS/PASS, logique du gap, instructions) : **[bob-cursor-charges.md](bob-cursor-charges.md)**.
 
+**Informations supplémentaires pour que Bob soit l’expert souhaité** (manques, priorisation, actions) : **[infos-supplementaires-expert.md](infos-supplementaires-expert.md)**.
+
 ---
 
 ## Fichiers détaillés par régime
