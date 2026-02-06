@@ -1,7 +1,7 @@
 /**
  * Chiffres réglementaires (PASS, Madelin) pour Bob — source unique, chargés dynamiquement.
  * Mise à jour annuelle : modifier PASS_ANNUEL et PASS_YEAR (et SOURCES si les URLs changent).
- * Référence : CE_QUI_RESTE_A_FAIRE.md § 2.6
+ * Référence : docs/knowledge/bob/00-SOURCE-DE-VERITE.md (chiffres réglementaires)
  */
 
 /** PASS (Plafond Annuel de la Sécurité Sociale) — valeur annuelle en euros */
