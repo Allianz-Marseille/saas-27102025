@@ -103,7 +103,7 @@ Conformément au Règlement Général sur la Protection des Données (RGPD), vou
 
 ### Exercer ses droits
 
-Pour exercer vos droits, contacter : **jm.nogaro@allianz.fr**
+Pour exercer vos droits, contacter : **jeanminono13@gmail.com**
 
 ### Principes à respecter en pratique
 

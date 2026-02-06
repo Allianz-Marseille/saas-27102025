@@ -35,7 +35,7 @@
 - **Base légale** : Obligations légales et contractuelles (exécution du contrat d'assurance)
 - **Conservation** : 5 ans après fin de la relation commerciale (ou jusqu'à prescription)
 - **Droits des personnes** : Accès, rectification, effacement, portabilité
-  - Exercer via : jm.nogaro@allianz.fr
+  - Exercer via : jeanminono13@gmail.com
 - **Lien** : [CNIL - RGPD](https://www.cnil.fr/fr/reglement-europeen-protection-donnees)
 
 ### Médiation
