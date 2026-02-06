@@ -59,13 +59,18 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 | `00-SOURCE-DE-VERITE.md` | Ce document — règles et inventaire. |
 | `2035-bilan-tns.md` | Grille de lecture liasses BNC (2035), calcul assiette IJ. |
 | `audit-diagnostic-conseiller.md` | Questionnement stratégique, situation → garanties, renvoi vers méthodologie conseil. |
+| `attestation-mutuelle.md` | Expliquer une attestation mutuelle au client (usage, contenu, droits portables). |
 | `ccn-top10-obligations.md` | CCN, obligations employeur, 1,50 % TA cadres. |
 | `commercial-objections-reponses.md` | Objections commerciales et réponses. |
 | `due-contrat-groupe.md` | DUE, contrat de groupe. |
+| `extraire-infos-bulletin-contrat.md` | Extraire infos d’un bulletin, contrat ou document (usage Bob + infos utiles par type). |
 | `faq.md` | FAQ. |
+| `fiche-paie-sante.md` | Comprendre les lignes santé sur une fiche de paie. |
+| `garanties-minimales-entreprise.md` | Garanties minimales entreprise (CCN, 1,50 % TA, capital décès, panier). |
 | `fiscal-liasses-correspondances.md` | Correspondances fiscales (liasses, cases). |
 | `fiscalite-entree-sortie-prevoyance.md` | Fiscalité prévoyance (entrée/sortie). |
 | `glossaire.md` | Définitions (PASS, IJ, Madelin, etc.). |
+| `invalidite-pro-vs-fonctionnelle.md` | Invalidité professionnelle vs fonctionnelle (définition, impact conseil). |
 | `liens-devis-allianz.md` | Liens devis / tarification. |
 | `logique-parcours-bilan-tns.md` | Logique du parcours bilan TNS (structure de raisonnement, 7 piliers). |
 | `methodologie-conseil-prevoyance-tns.md` | Méthodologie conseil, script, BPS, matrices, leviers. |
