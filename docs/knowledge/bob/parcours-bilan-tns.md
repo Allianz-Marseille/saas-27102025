@@ -10,25 +10,27 @@ Le bilan TNS se fait **par étape**, dans cet ordre. Quand l'utilisateur envoie 
 
 ## Format de rendu du bilan (obligatoire)
 
+**Logique à suivre pour tout bilan TNS :** (1) **Toujours intégrer la SSI** — déterminer les droits au titre de la SSI (si artisan/commerçant ; sinon « Non concerné »). (2) Déterminer les **droits au titre du RO** (ro/[caisse].md). (3) Calculer le **découvert à assurer** (manque) pour chaque garantie. Toujours fonctionner ainsi et **terminer par un tableau chiffré par garantie**.
+
 Quand l'utilisateur demande un **bilan prévoyance**, le rendu doit :
 
-1. **Préciser les garanties acquises au titre de la SSI** (cf base de connaissance : `ro/ssi.md`, `regimes-obligatoires-tns.md` § 1) — uniquement si l'assuré relève de la SSI (artisan, commerçant). Sinon, indiquer « Non concerné (profession libérale) ».
-2. **Préciser les garanties acquises au titre du RO** (cf base de connaissance : `ro/[caisse].md` selon l'activité — CARMF, CARPIMKO, CIPAV, CAVEC, CNBF, etc.) : IJ, invalidité, capital décès, réversion, selon la fiche de la caisse.
-3. **Souligner ce qui reste à assurer avec un contrat complémentaire** : manques (gap) en IJ, invalidité, décès, rente conjoint, rente éducation, Frais Fixes si besoin.
+1. **Préciser les garanties acquises au titre de la SSI** (cf `ro/ssi.md`) — **toujours** pour un TNS : si artisan/commerçant, chiffrer les droits SSI ; sinon « Non concerné (profession libérale) ».
+2. **Préciser les garanties acquises au titre du RO** (cf `ro/[caisse].md` selon l'activité) : IJ, invalidité, capital décès, réversion.
+3. **Chiffrer le découvert à assurer** : pour chaque garantie, montant et **durées** quand il y a des paliers (ex. IJ : « 50 €/j pendant 365 jours, puis 120 €/j pendant 2 ans »).
 
-**Tableau obligatoire** à produire (empilement des garanties et compléments à mettre en place). **Formulation à utiliser face au client :** « Ce que vous avez / Ce dont vous avez besoin / Les écarts à compléter » — le tableau technique ci-dessous (Garantie | SSI | RO | Carence du RO | Reste à assurer). La colonne **Carence du RO** est obligatoire (franchises : ex. 3 j SSI, 90 j caisses libérales).
+**Tableau obligatoire** à produire (chiffré par garantie). Colonnes : **SSI** | **RO** | **Carence du RO** | **Manque à assurer** (avec montants et durées). Exemple pour les IJ : SSI 30 €/j | RO 34 €/j | Carence 3 j (SSI) ou 90 j (selon caisse) | Manque 50 €/j à assurer pendant 365 j, puis 120 €/j pendant 2 ans.
 
-| Garantie | SSI (si concerné) | RO (caisse) | **Carence du RO** | Reste à assurer (complémentaire) |
-|----------|-------------------|-------------|-------------------|-----------------------------------|
-| **Indemnités journalières** | [montant ou « — »] | [montant selon ro/[caisse].md] | [ex. 3 j SSI, 90 j CARPIMKO…] | [écart à couvrir] |
+| Garantie | SSI (si concerné) | RO (caisse) | **Carence du RO** | Manque à assurer (chiffré + durées) |
+|----------|-------------------|-------------|-------------------|-------------------------------------|
+| **Indemnités journalières** | [ex. 30 €/j] | [ex. 34 €/j selon ro/[caisse].md] | [ex. 3 j SSI, 90 j CARPIMKO…] | [ex. 50 €/j pendant 365 j, puis 120 €/j pendant 2 ans] |
 | **Invalidité** | [rentes / —] | [rentes selon ro/[caisse].md] | [délai, conditions] | [écart à couvrir] |
 | **Décès (capital)** | [montant / —] | [montant selon ro/[caisse].md] | [—] | [écart à couvrir] |
 | **Rente conjoint / réversion** | [selon SSI / —] | [selon RO] | [—] | [complément si besoin] |
-| **Rente éducation** | [—] | [—] | [souvent absente au RO] | [à mettre en place si enfants] |
-| **Frais Fixes (charges pro)** | [—] | [—] | [—] | [à mettre en place si frais élevés] |
+| **Rente éducation** | [—] | [—] | [souvent absente] | [à mettre en place si enfants] |
+| **Frais Fixes (charges pro)** | [—] | [—] | [—] | [si frais élevés] |
 
-- **Expliquer** en quelques phrases ce que donnent la SSI et le RO (sources : base de connaissance), **mettre en relief la colonne « Carence du RO »** (franchises, délais avant indemnisation) puis la colonne « Reste à assurer ».
-- Pour les libéraux (pas SSI), la colonne SSI reste vide ou « Non concerné » ; colonnes **RO**, **Carence du RO** et **Reste à assurer** renseignées.
+- **Expliquer** ce que donnent la SSI et le RO, **mettre en relief la carence** (franchises, délais) puis le **manque à assurer** avec montants et durées.
+- Pour les libéraux : colonne SSI = « Non concerné » ; RO, Carence et Manque à assurer renseignés et chiffrés.
 
 ## Base de connaissances à utiliser (obligatoire)
 
