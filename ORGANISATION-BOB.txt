@@ -1,0 +1,125 @@
+================================================================================
+  ORGANISATION DE BOB — Assistant agence Santé & Prévoyance
+================================================================================
+
+Bob est l'assistant IA intégré au SaaS, spécialisé en régimes sociaux, santé et
+prévoyance. Il aide les conseillers de l'agence (pas le client final) avec une
+double casquette : commerciale (arguments, objections, vente) et technique
+(régimes obligatoires, SSI, mutuelle, prévoyance, DUE, analyse 2035, etc.).
+
+Ce fichier décrit comment Bob est organisé dans le projet : code, base de
+connaissances, chiffres réglementaires et maintenance.
+
+
+1. OÙ EST LE CODE BOB ?
+--------------------------------------------------------------------------------
+
+  - lib/assistant/bob-system-prompt.ts
+    → Prompt système de Bob (rôle, personnalité, règles d'or, modules).
+    → Rappelle d'utiliser regulatory-figures.ts pour tous les montants et de
+      citer les fiches ro/[caisse].md en fin de réponse.
+
+  - lib/assistant/knowledge-loader.ts
+    → loadBobKnowledge() : charge tous les .md de docs/knowledge/bob/ puis
+      docs/knowledge/bob/ro/, avec une limite globale d’environ 28 000
+      caractères. Les fichiers sont lus par ordre alphabétique ; au-delà de la
+      limite, le contenu est tronqué avec "[... tronqué]".
+
+  - lib/assistant/regulatory-figures.ts
+    → Source unique des chiffres réglementaires : PASS, PMSS, Madelin, régime
+      général (SMIC, plafond IJSS, IJ max/jour, capital décès CPAM). Ces
+      valeurs sont injectées à chaque requête Bob via getRegulatoryFiguresBlock()
+      dans la route chat — elles ne sont pas dans les fiches .md pour éviter
+      les doublons et faciliter la revalorisation annuelle.
+
+  - app/api/assistant/chat/route.ts
+    → Détecte context.agent === "bob", charge le prompt Bob + loadBobKnowledge()
+      + getRegulatoryFiguresBlock(), et construit le prompt système envoyé au LLM.
+
+
+2. BASE DE CONNAISSANCES CHARGÉE (CE QUE BOB LIT)
+--------------------------------------------------------------------------------
+
+  Dossiers lus par loadBobKnowledge() (dans cet ordre) :
+
+  (A) docs/knowledge/bob/
+      Tous les fichiers .md à la racine de ce dossier, triés par nom.
+      Exemples : parcours-bilan-tns.md, regime-general.md, due-contrat-groupe.md,
+      dispenses-mutuelle-obligatoire.md, retraite-collective-pero.md, ro/...
+
+  (B) docs/knowledge/bob/ro/
+      Une fiche par caisse de régime obligatoire (TNS / professions libérales).
+      Exemples : ssi.md, carmf.md, carpimko.md, cipav.md, cavec.md, cprn.md,
+      cavamac.md, cavom.md, etc.
+      Bob doit citer la fiche exacte en fin de réponse (ex. "Sources : ro/ssi.md").
+
+  Limite : ~28 000 caractères au total pour (A) + (B). Les derniers fichiers
+  peuvent être tronqués ; pour ajouter du contenu, privilégier des fiches
+  courtes ou déplacer du détail vers docs/agents-ia/bob-sante/ (non chargé).
+
+
+3. DOCUMENTATION EXPERTE (NON CHARGÉE PAR BOB)
+--------------------------------------------------------------------------------
+
+  docs/agents-ia/bob-sante/
+  → Fichiers de référence pour les humains et pour Cursor : spec du parcours
+    bilan TNS, fiches détaillées (regime-general, ssi, ro-caisses), plan
+    "compléter les connaissances" (infos-supplementaires-expert.md), etc.
+  → Ces fichiers ne sont pas lus par loadBobKnowledge(). Les contenus à faire
+    utiliser par Bob doivent être soit copiés/résumés dans docs/knowledge/bob/,
+    soit reflétés dans le prompt (bob-system-prompt.ts) ou dans
+    regulatory-figures.ts (chiffres).
+
+
+4. SOURCE DE VÉRITÉ ET INVENTAIRE
+--------------------------------------------------------------------------------
+
+  docs/knowledge/bob/00-SOURCE-DE-VERITE.md
+  → Définit où se trouve la vérité pour chaque type d’info (chiffres, prestations
+    par caisse, parcours TNS, etc.) et les règles pour garder la base cohérente.
+  → Section 3 : inventaire de toutes les fiches chargées (bob/ et bob/ro/).
+  → À mettre à jour dès qu’une fiche est ajoutée, renommée ou supprimée.
+
+
+5. MAPPING THÈMES → FICHES (UI / BOUTONS)
+--------------------------------------------------------------------------------
+
+  docs/agents-ia/bob-sante/themes-fiches-mapping.md
+  → Tableau qui relie chaque bouton / thème d’accueil ("Que souhaitez-vous
+    faire ?") aux fiches de connaissance utilisées par Bob pour structurer
+    sa réponse (ex. "Bilan prévoyance TNS" → parcours-bilan-tns.md, ro/*.md ;
+    "Dispenses mutuelle obligatoire" → dispenses-mutuelle-obligatoire.md).
+  → À mettre à jour quand un nouveau thème ou une nouvelle fiche est ajouté.
+
+
+6. CHIFFRES RÉGLEMENTAIRES (MAINTENANCE ANNUELLE)
+--------------------------------------------------------------------------------
+
+  Fichier unique : lib/assistant/regulatory-figures.ts
+
+  Mettre à jour au moins une fois par an (revalorisation PASS, SMIC, capital
+  décès, etc.) :
+  - PASS_ANNUEL, PASS_YEAR
+  - SMIC_MENSUEL_BRUT
+  - IJSS_* (plafond assiette, IJ max/jour) si les barèmes changent
+  - CAPITAL_DECES_CPAM_SALARIE
+
+  Ne pas recopier ces montants dans les fiches .md ; les fiches doivent
+  renvoyer à "regulatory-figures" ou "voir regulatory-figures.ts".
+
+
+7. RÉSUMÉ DES RÔLES DES FICHIERS CLÉS
+--------------------------------------------------------------------------------
+
+  Fichier / Dossier                    Rôle
+  --------------------------------    ----------------------------------------
+  bob-system-prompt.ts                 Identité, règles, rappel chiffres/RO
+  knowledge-loader.ts                  loadBobKnowledge() : bob/ + bob/ro/, 28k
+  regulatory-figures.ts                Chiffres PASS, SMIC, IJSS, capital décès
+  docs/knowledge/bob/*.md              Fiches générales (parcours, DUE, RG, …)
+  docs/knowledge/bob/ro/*.md          Fiches par caisse (SSI, CARMF, etc.)
+  docs/knowledge/bob/00-SOURCE-DE-VERITE.md   Inventaire + règles de cohérence
+  docs/agents-ia/bob-sante/            Référence détaillée (non chargée par Bob)
+  themes-fiches-mapping.md             Correspondance thème UI → fiches
+
+================================================================================
