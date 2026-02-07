@@ -53,8 +53,8 @@ la logique du bot pour maintenir ou faire évoluer Bob.
 
   CONFIG
   - lib/assistant/config.ts ...................... BOB_TIMEOUT (60 000 ms),
-      ENABLE_BOB_BOT : Bob est affiché sur le dashboard Agents IA si
-      NEXT_PUBLIC_ENABLE_BOB_BOT=true (sinon masqué).
+      ENABLE_BOB_BOT : Bob est affiché sur le dashboard par défaut ; mettre
+      NEXT_PUBLIC_ENABLE_BOB_BOT=false pour le masquer (opt-out, comme Nina et Sinistro).
 
   ROUTE API
   - app/api/assistant/chat/route.ts .............. Détection isBob
@@ -104,8 +104,8 @@ la logique du bot pour maintenir ou faire évoluer Bob.
       envoi context: { agent: "bob" }, suggestions de démarrage, upload
       images/fichiers (liasses, 2035, attestations), avatars bob_rit / bob_reflechit
   - app/commun/agents-ia/page.tsx ................ Dashboard Agents IA : carte
-      Bob (BOB_SANTE) visible si ENABLE_BOB_BOT true
-      (NEXT_PUBLIC_ENABLE_BOB_BOT=true), image /agents-ia/bot-sante/bob_rit.png,
+      Bob (BOB_SANTE) affichée si ENABLE_BOB_BOT (visible par défaut),
+      image /agents-ia/bot-sante/bob_rit.png,
       lien vers /commun/agents-ia/bob-sante
   - public/agents-ia/bot-sante/ .................. Avatars Bob (bob_rit.png,
       bob_sourit.png, bob_reflechit.png)
@@ -161,8 +161,8 @@ la logique du bot pour maintenir ou faire évoluer Bob.
   - Éditer uniquement lib/assistant/regulatory-figures.ts (source unique).
 
   Pour afficher ou masquer le bot sur le dashboard
-  - Bob est affiché si NEXT_PUBLIC_ENABLE_BOB_BOT=true. Pour le masquer :
-    NEXT_PUBLIC_ENABLE_BOB_BOT=false (ou retirer la variable).
+  - Bob est affiché par défaut (opt-out). Pour le masquer : définir
+    NEXT_PUBLIC_ENABLE_BOB_BOT=false (env ou .env.local).
 
   Pour déboguer le flux
   - Vérifier que la requête contient context: { agent: "bob" }.
