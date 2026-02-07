@@ -1,0 +1,205 @@
+================================================================================
+  ORGANISATION DE BOB — Assistant agence Santé & Prévoyance
+================================================================================
+
+Bob est le bot IA dédié à la santé et à la prévoyance pour l'agence. Il aide les
+conseillers (pas le client final) avec une double casquette : commerciale (arguments,
+objections, vente) et technique (régimes sociaux, SSI, mutuelle, prévoyance, DUE,
+bilan TNS). RAG Firestore : la base est interrogée par recherche vectorielle
+(collection bob_knowledge, text-embedding-3-small, TOP_K 5) ; en cas d'échec ou
+d'index non prêt, fallback sur loadBobKnowledge(). Le bloc réglementaire
+getRegulatoryFiguresBlock() (PASS, SMIC, capital décès CPAM, Madelin) est toujours
+injecté en fin de prompt (non vectorisé).
+
+Ce fichier permet à une IA de comprendre la stack, l'organisation des fichiers et
+la logique du bot pour maintenir ou faire évoluer Bob.
+
+
+1. STACK TECHNIQUE
+--------------------------------------------------------------------------------
+
+  - Next.js (App Router), React, TypeScript
+  - Firebase : Auth (route chat) ; Firestore + extension Vector Search pour
+    bob_knowledge (recherche vectorielle RAG)
+  - OpenAI API : modèle de chat + text-embedding-3-small (1536 dim.) pour la
+    requête RAG
+  - Route unique de chat : POST /api/assistant/chat — reçoit message, images,
+    fichiers, history, context (dont context.agent). Si context.agent === "bob",
+    la route utilise getBobRagContext(message, openai) puis formatBobRagContext ;
+    si vide, fallback loadBobKnowledge() ; baseKnowledge = getBobSystemPrompt()
+    + BASE DE CONNAISSANCES (RAG ou fallback) + getRegulatoryFiguresBlock()
+  - Visuel : avatars public/agents-ia/bot-sante/ (bob_rit.png, bob_sourit.png,
+    bob_reflechit.png) — carte dashboard et bulles du chat
+
+
+2. ORGANISATION DES FICHIERS
+--------------------------------------------------------------------------------
+
+  RÉSUMÉS BOTS (ce dossier)
+  - docs/resumes-bots/ORGANISATION-BOB.txt ........ Ce fichier (doc pour IA)
+
+  PROMPT, RAG ET CHARGEUR
+  - lib/assistant/bob-system-prompt.ts ............. getBobSystemPrompt() :
+      identité Bob (commercial + technique), expert RO, parcours bilan TNS,
+      DUE, règles d'or (antériorité, pluriactivité, assiette revenu, sourçage)
+  - lib/assistant/bob-rag.ts ....................... RAG Bob : getBobRagContext(),
+      formatBobRagContext() ; collection bob_knowledge, TOP_K 5, COSINE ;
+      fallback sur loadBobKnowledge() si findNearest indisponible ou en erreur
+  - lib/assistant/knowledge-loader.ts ............. loadBobKnowledge() :
+      fallback statique (lit docs/knowledge/bob/ puis bob/ro/, 28 000 car. max)
+  - lib/assistant/regulatory-figures.ts ............ getRegulatoryFiguresBlock() :
+      chiffres réglementaires (PASS, SMIC, plafond IJSS, capital décès CPAM,
+      Madelin). Source unique pour les calculs ; mise à jour annuelle.
+
+  CONFIG
+  - lib/assistant/config.ts ...................... BOB_TIMEOUT (60 000 ms),
+      ENABLE_BOB_BOT : Bob est affiché sur le dashboard Agents IA si
+      NEXT_PUBLIC_ENABLE_BOB_BOT=true (sinon masqué).
+
+  ROUTE API
+  - app/api/assistant/chat/route.ts .............. Détection isBob
+      (context?.agent === "bob"). Si vrai : ragChunks = getBobRagContext(message, openai),
+      bobKnowledge = formatBobRagContext(ragChunks) ; si vide, fallback loadBobKnowledge() ;
+      baseKnowledge = getBobSystemPrompt() + BASE DE CONNAISSANCES + bobKnowledge
+      + getRegulatoryFiguresBlock() ; coreKnowledge = baseKnowledge ; chatTimeout = BOB_TIMEOUT.
+
+  MIGRATION RAG
+  - scripts/migrate-bob-to-firestore.ts .......... Upload des .md de
+      docs/knowledge/bob/ et docs/knowledge/bob/ro/ vers Firestore bob_knowledge ;
+      docId racine = nom fichier (ex. parcours-bilan-tns), docId ro/ = ro_xxx (ex. ro_ssi) ;
+      set(..., { merge: true }). Commande : npm run migrate:bob-firestore
+  - firestore.indexes.json ....................... Index vectoriel bob_knowledge
+      (champ embedding, dimension 1536, COSINE). Déployer : firebase deploy --only firestore
+
+  BASE DE CONNAISSANCES (sources : RAG bob_knowledge ou fallback loadBobKnowledge)
+  - docs/knowledge/bob/
+      - 00-SOURCE-DE-VERITE.md .................... Inventaire des fiches, règles,
+          source unique des chiffres (regulatory-figures), convention de citation
+      - parcours-bilan-tns.md ..................... Parcours guidé bilan TNS
+          (étapes 1→8), fiches à utiliser
+      - logique-parcours-bilan-tns.md ............. Structure de raisonnement,
+          7 piliers, tableau obligatoire SSI | RO | Manque à assurer
+      - regimes-obligatoires-tns.md ............... Inventaire SSI, caisses
+          (CNAVPL, CNBF), tableau profession → caisse
+      - regime-general.md ......................... Régime général (CPAM) :
+          salariés, IJ, invalidité, décès ; chiffres via regulatory-figures
+      - fiscal-liasses-correspondances.md ......... Correspondances fiscales
+          (2035, 2031/2033, 2065), cases pour assiette IJ
+      - due-contrat-groupe.md, reglementaire-due-standard.md  DUE, contrat groupe
+      - audit-diagnostic-conseiller.md ............ Questionnement stratégique,
+          situation familiale → garanties (rente conjoint, capital décès, rente éducation)
+      - methodologie-conseil-prevoyance-tns.md ..... Script, BPS, matrices
+      - templates-reponse-modules-bob.md ........... Templates hors bilan TNS
+          (Analyse 2035, Comparatif prévoyance, Audit retraite/senior)
+      - (autres fiches : plafond-madelin, prevoyance-tns-regles-ij, ccn-top10-obligations,
+          garanties-minimales-entreprise, dispenses-mutuelle-obligatoire, etc.)
+  - docs/knowledge/bob/ro/
+      - ssi.md ................................... SSI (artisans, commerçants)
+      - carmf.md, carpimko.md, cipav.md, cnbf.md, cavp.md, carpv.md, etc.
+          (une fiche par caisse : prestations IJ, invalidité, décès, carences)
+      Inventaire complet : docs/knowledge/bob/00-SOURCE-DE-VERITE.md § 3
+
+  UI
+  - app/commun/agents-ia/bob-sante/page.tsx ...... Page chat plein écran :
+      envoi context: { agent: "bob" }, suggestions de démarrage, upload
+      images/fichiers (liasses, 2035, attestations), avatars bob_rit / bob_reflechit
+  - app/commun/agents-ia/page.tsx ................ Dashboard Agents IA : carte
+      Bob (BOB_SANTE) visible si ENABLE_BOB_BOT true
+      (NEXT_PUBLIC_ENABLE_BOB_BOT=true), image /agents-ia/bot-sante/bob_rit.png,
+      lien vers /commun/agents-ia/bob-sante
+  - public/agents-ia/bot-sante/ .................. Avatars Bob (bob_rit.png,
+      bob_sourit.png, bob_reflechit.png)
+
+  DOCUMENTATION (référence humaine, non chargée par le bot)
+  - docs/agents-ia/bob-sante/ ..................... Specs, expert, charges,
+      parcours bilan TNS, etc.
+
+
+3. LOGIQUE DU BOT (flux et règles)
+--------------------------------------------------------------------------------
+
+  Identification de l'agent
+  - Le front envoie context: { agent: "bob" } pour chaque requête depuis la
+    page /commun/agents-ia/bob-sante. La route chat lit context.agent et
+    branche sur isBob.
+
+  Construction du système
+  - baseKnowledge = getBobSystemPrompt() + "\n\n---\n\nBASE DE CONNAISSANCES (sources à citer) :\n\n"
+    + (formatBobRagContext(ragChunks) ou fallback loadBobKnowledge())
+    + "\n\n---\n\n" + getRegulatoryFiguresBlock()
+  - RAG : getBobRagContext(message, openai) → chunks ; si findNearest échoue ou absent,
+    fallback loadBobKnowledge(). Le bloc réglementaire est toujours ajouté en fin de prompt.
+  - Ce bloc est envoyé comme système au LLM avec l'historique et le message
+    utilisateur (et les images/fichiers en contenu si présents).
+
+  Comportement attendu (défini dans le prompt)
+  - Toujours citer la source (fiche bob/ ou ro/[caisse].md, regulatory-figures).
+  - Bilan TNS : parcours guidé (étapes 1→8), tableau SSI | RO | Manque à assurer,
+    citer ro/[caisse].md et ro/ssi.md en fin d'étape 7.
+  - DUE : demander Collège, répartition cotisation, dispenses ; rappeler preuve
+    de remise individuelle (décharge, liste d'émargement).
+  - Ne jamais déduire les charges deux fois (Revenu Net = CA - Charges).
+  - Antériorité, pluriactivité, costume juridique (TNS BNC/BIC/IS, salarié).
+
+  Chiffres réglementaires
+  - PASS, SMIC, plafond IJSS, capital décès CPAM, Madelin : uniquement dans
+    lib/assistant/regulatory-figures.ts ; mise à jour annuelle.
+
+
+4. RÉSUMÉ POUR UNE IA
+--------------------------------------------------------------------------------
+
+  Pour modifier le comportement de Bob
+  - Éditer lib/assistant/bob-system-prompt.ts (règles, parcours, DUE, bilan TNS).
+
+  Pour modifier les connaissances (fiches, RO, parcours)
+  - Éditer ou ajouter des .md dans docs/knowledge/bob/ ou docs/knowledge/bob/ro/ ;
+    mettre à jour docs/knowledge/bob/00-SOURCE-DE-VERITE.md (inventaire).
+    Puis relancer : npm run migrate:bob-firestore pour mettre à jour bob_knowledge.
+
+  Pour modifier les chiffres réglementaires (PASS, SMIC, capital décès, Madelin)
+  - Éditer uniquement lib/assistant/regulatory-figures.ts (source unique).
+
+  Pour afficher ou masquer le bot sur le dashboard
+  - Bob est affiché si NEXT_PUBLIC_ENABLE_BOB_BOT=true. Pour le masquer :
+    NEXT_PUBLIC_ENABLE_BOB_BOT=false (ou retirer la variable).
+
+  Pour déboguer le flux
+  - Vérifier que la requête contient context: { agent: "bob" }.
+  - Si RAG échoue (index non prêt, erreur Firestore), le fallback loadBobKnowledge()
+    est utilisé automatiquement ; vérifier les logs "Bob RAG: findNearest échoué...".
+  - Après mise à jour des fiches : npm run migrate:bob-firestore puis attendre
+    que l'extension Vector Search mette à jour les embeddings.
+
+  Fichiers clés à ne pas casser
+  - lib/assistant/bob-system-prompt.ts
+  - lib/assistant/bob-rag.ts (getBobRagContext, formatBobRagContext, fallback)
+  - lib/assistant/knowledge-loader.ts (loadBobKnowledge, fallback)
+  - lib/assistant/regulatory-figures.ts (getRegulatoryFiguresBlock)
+  - app/api/assistant/chat/route.ts (branche isBob, hybridation RAG + bloc réglementaire)
+  - app/commun/agents-ia/bob-sante/page.tsx (contexte agent)
+  - docs/knowledge/bob/*.md et docs/knowledge/bob/ro/*.md (contenu métier)
+
+
+5. RAG BOB — DÉPLOIEMENT ET MAINTENANCE
+--------------------------------------------------------------------------------
+
+Bob utilise désormais le RAG Firestore (collection bob_knowledge). Après toute
+modification du code ou des index :
+
+  1. Déployer l'index Firestore (obligatoire pour la recherche vectorielle)
+     - firebase deploy --only firestore
+     - Vérifier dans la console Firebase (Firestore → Indexes) que l'index
+       bob_knowledge (champ embedding, 1536) est au statut "Actif".
+
+  2. Remplir ou mettre à jour la base RAG
+     - npm run migrate:bob-firestore
+     - L'extension Vector Search remplira le champ embedding à partir de content.
+
+  3. Après ajout ou modification de fiches dans docs/knowledge/bob/ ou bob/ro/
+     - Relancer npm run migrate:bob-firestore pour mettre à jour bob_knowledge.
+
+Référence : lib/assistant/bob-rag.ts, scripts/migrate-bob-to-firestore.ts,
+firestore.indexes.json (bob_knowledge), branche isBob dans app/api/assistant/chat/route.ts.
+
+================================================================================

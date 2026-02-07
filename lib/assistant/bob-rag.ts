@@ -1,21 +1,19 @@
 /**
- * RAG Sinistro : recherche vectorielle Firestore (collection sinistro_knowledge).
+ * RAG Bob : recherche vectorielle Firestore (collection bob_knowledge).
  * Utilise OpenAI text-embedding-3-small pour la requête puis findNearest sur Firestore.
+ * Fallback sur loadBobKnowledge() si findNearest indisponible ou en erreur.
  */
 
-const COLLECTION = "sinistro_knowledge";
+const COLLECTION = "bob_knowledge";
 const EMBEDDING_FIELD = "embedding";
 const EMBEDDING_MODEL = "text-embedding-3-small";
-const TOP_K = 3;
+const TOP_K = 5;
 
-export interface SinistroRagChunk {
+export interface BobRagChunk {
   title: string;
   content: string;
 }
 
-/**
- * Génère l'embedding de la requête via OpenAI.
- */
 async function getQueryEmbedding(text: string, openai: import("openai").default): Promise<number[]> {
   const response = await openai.embeddings.create({
     model: EMBEDDING_MODEL,
@@ -29,13 +27,13 @@ async function getQueryEmbedding(text: string, openai: import("openai").default)
 }
 
 /**
- * Récupère les extraits les plus pertinents pour la question (3 documents).
- * Retourne un tableau de { title, content } pour injection dans le prompt.
+ * Récupère les extraits les plus pertinents pour la question (TOP_K documents).
+ * En cas d'erreur ou si findNearest n'existe pas : fallback sur loadBobKnowledge().
  */
-export async function getSinistroRagContext(
+export async function getBobRagContext(
   userMessage: string,
   openai: import("openai").default
-): Promise<SinistroRagChunk[]> {
+): Promise<BobRagChunk[]> {
   if (!userMessage?.trim()) return [];
 
   const { adminDb } = await import("@/lib/firebase/admin-config");
@@ -47,11 +45,11 @@ export async function getSinistroRagContext(
   const collWithVector = coll as typeof coll & { findNearest?: (opts: { vectorField: string; queryVector: number[]; limit: number; distanceMeasure: string }) => VectorQuery };
 
   if (typeof collWithVector.findNearest !== "function") {
-    console.warn("Sinistro RAG: findNearest non disponible, fallback base statique");
-    const { loadSinistroKnowledge } = await import("@/lib/assistant/knowledge-loader");
-    const full = loadSinistroKnowledge();
+    console.warn("Bob RAG: findNearest non disponible, fallback base statique");
+    const { loadBobKnowledge } = await import("@/lib/assistant/knowledge-loader");
+    const full = loadBobKnowledge();
     if (!full) return [];
-    return [{ title: "sinistro (base complète)", content: full }];
+    return [{ title: "bob (base complète)", content: full }];
   }
 
   try {
@@ -63,7 +61,7 @@ export async function getSinistroRagContext(
     });
 
     const snapshot = await vectorQuery.get();
-    const chunks: SinistroRagChunk[] = [];
+    const chunks: BobRagChunk[] = [];
 
     snapshot.forEach((doc) => {
       const data = doc.data();
@@ -78,23 +76,23 @@ export async function getSinistroRagContext(
     return chunks;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.warn("Sinistro RAG: findNearest échoué (", msg, "), fallback base statique");
-    const { loadSinistroKnowledge } = await import("@/lib/assistant/knowledge-loader");
-    const full = loadSinistroKnowledge();
+    console.warn("Bob RAG: findNearest échoué (", msg, "), fallback base statique");
+    const { loadBobKnowledge } = await import("@/lib/assistant/knowledge-loader");
+    const full = loadBobKnowledge();
     if (!full) return [];
-    return [{ title: "sinistro (base complète)", content: full }];
+    return [{ title: "bob (base complète)", content: full }];
   }
 }
 
 /**
- * Formate les chunks RAG pour injection dans le prompt système (avec titre pour sourçage).
+ * Formate les chunks RAG pour injection dans le prompt (sourçage bob/ ou bob/ro/).
  */
-export function formatSinistroRagContext(chunks: SinistroRagChunk[]): string {
+export function formatBobRagContext(chunks: BobRagChunk[]): string {
   if (chunks.length === 0) return "";
   return chunks
-    .map(
-      (c) =>
-        `## Source : sinistro/${c.title}.md\n\n${c.content}`
-    )
+    .map((c) => {
+      const path = c.title.startsWith("ro_") ? `bob/ro/${c.title.slice(3)}.md` : `bob/${c.title}.md`;
+      return `## Source : ${path}\n\n${c.content}`;
+    })
     .join("\n\n---\n\n");
 }

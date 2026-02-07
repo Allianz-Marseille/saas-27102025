@@ -34,8 +34,8 @@ la logique du bot pour maintenir ou faire évoluer Sinistro.
 2. ORGANISATION DES FICHIERS
 --------------------------------------------------------------------------------
 
-  RACINE PROJET
-  - ORGANISATION-SINISTRO.txt ...................... Ce fichier (doc pour IA)
+  RÉSUMÉS BOTS (ce dossier)
+  - docs/resumes-bots/ORGANISATION-SINISTRO.txt .. Ce fichier (doc pour IA)
 
   PROMPT, RAG ET CHARGEUR
   - lib/assistant/sinistro-system-prompt.ts ....... getSinistroSystemPrompt() :

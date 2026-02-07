@@ -195,14 +195,19 @@ export async function POST(request: NextRequest) {
       baseKnowledge = getNinaSystemPrompt();
     } else if (isBob) {
       const { getBobSystemPrompt } = await import("@/lib/assistant/bob-system-prompt");
+      const { getBobRagContext, formatBobRagContext } = await import("@/lib/assistant/bob-rag");
       const { loadBobKnowledge } = await import("@/lib/assistant/knowledge-loader");
       const { getRegulatoryFiguresBlock } = await import("@/lib/assistant/regulatory-figures");
-      const bobKnowledge = loadBobKnowledge();
-      const regulatoryBlock = getRegulatoryFiguresBlock();
+      const ragChunks = await getBobRagContext(typeof message === "string" ? message : "", openai);
+      let bobKnowledge = formatBobRagContext(ragChunks);
+      if (!bobKnowledge) {
+        const fallback = loadBobKnowledge();
+        bobKnowledge = fallback ? `## Source : bob (base complète)\n\n${fallback}` : "";
+      }
       const bobBase = bobKnowledge
-        ? getBobSystemPrompt() + "\n\n---\n\n" + bobKnowledge
+        ? getBobSystemPrompt() + "\n\n---\n\nBASE DE CONNAISSANCES (sources à citer) :\n\n" + bobKnowledge
         : getBobSystemPrompt();
-      baseKnowledge = bobBase + "\n\n---\n\n" + regulatoryBlock;
+      baseKnowledge = bobBase + "\n\n---\n\n" + getRegulatoryFiguresBlock();
     } else if (isSinistro) {
       const { getSinistroSystemPrompt } = await import("@/lib/assistant/sinistro-system-prompt");
       const { getSinistroRagContext, formatSinistroRagContext } = await import("@/lib/assistant/sinistro-rag");

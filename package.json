@@ -29,6 +29,7 @@
     "test:storage": "ts-node --project tsconfig.scripts.json scripts/test-storage-upload.ts",
     "cleanup:rag": "ts-node --project tsconfig.scripts.json scripts/cleanup-rag-collections.ts",
     "migrate:sinistro-firestore": "ts-node --project tsconfig.scripts.json scripts/migrate-to-firestore.ts",
+    "migrate:bob-firestore": "ts-node --project tsconfig.scripts.json scripts/migrate-bob-to-firestore.ts",
     "get-firebase-token": "ts-node --project tsconfig.scripts.json scripts/get-firebase-id-token.ts",
     "smoke:nina": "ts-node --project tsconfig.scripts.json scripts/smoke-test-nina.ts"
   },
