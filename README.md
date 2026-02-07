@@ -253,7 +253,7 @@ Assistant IA spécialisé pour l'agence Allianz Marseille avec 10 rôles métier
 - Historique des conversations
 - Export des conversations
 
-**Documentation** : Voir `docs/analyse-ia.md` et `docs/knowledge/core/specification-comportement-ia.md`
+**Documentation** : Voir `docs/knowledge/core/specification-comportement-ia.md` et `docs/agents-ia/README.md` pour les agents IA (Nina, Bob, Sinistro).
 
 ## 📁 Structure du projet
 
@@ -647,7 +647,7 @@ Pour plus de détails sur la configuration Vercel et les variables d'environneme
 ## 📚 Documentation supplémentaire
 
 - **Sécurité Firestore** : Voir `docs/SECURITE_FIRESTORE.md` pour les détails sur le resserrement des droits d'accès et les tests de sécurité
-- **Assistant IA** : Voir `docs/analyse-ia.md` pour la documentation complète de l'assistant IA et ses 10 rôles métier
+- **Assistant IA** : Voir `docs/knowledge/core/specification-comportement-ia.md` pour la spécification des rôles et `docs/agents-ia/README.md` pour les agents IA (Nina, Bob, Sinistro)
 - **Spécification comportement IA** : Voir `docs/knowledge/core/specification-comportement-ia.md` pour les spécifications détaillées de chaque rôle
 - **Gestion des sinistres** : Voir `docs/sinistre.md` pour la documentation complète du module de gestion des sinistres
 - **Guide RI** : Voir `docs/guide_ri.md` pour le guide de gestion des risques

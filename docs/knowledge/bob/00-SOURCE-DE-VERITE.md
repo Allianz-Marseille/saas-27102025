@@ -2,7 +2,7 @@
 
 Ce document définit **où se trouve la vérité** pour chaque type d’information et comment maintenir la base de connaissances de façon cohérente. Bob et les conseillers s’y réfèrent pour éviter les doublons et les incohérences.
 
-**Référence :** `docs/agents-ia/bob_sante/bob_sante.md` § Architecture de la Base de Connaissances Bob.
+**Référence :** `docs/agents-ia/bob-sante/bob-expert.md` pour le plan des thématiques expert Bob.
 
 ---
 
@@ -13,12 +13,12 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 | **Chiffres réglementaires** (PASS, Madelin, **régime général** : SMIC, plafond IJSS, IJ max, capital décès CPAM) | `lib/assistant/regulatory-figures.ts` | Modifier **uniquement** ce fichier (PASS_ANNUEL, PASS_YEAR, SMIC_MENSUEL_BRUT, CAPITAL_DECES_CPAM_SALARIE, constantes Madelin). Mise à jour **annuelle** (revalorisation PASS, SMIC, capital décès). |
 | **Prestations par caisse** (IJ, invalidité, décès, exemples) | `docs/knowledge/bob/ro/[caisse].md` | Une fiche par caisse (ssi, carmf, carpimko, carcdsf, cavec, cipav, cnbf, cavp, carpv). Ne **pas** dupliquer les montants PASS dans ces fiches : indiquer « PASS (voir regulatory-figures) » ou « plafond annuel (source : regulatory-figures) ». |
 | **Inventaire des caisses / synthèse par profession** | `docs/knowledge/bob/regimes-obligatoires-tns.md` | § 2 (CNAVPL), § 3 (CNBF), § 4 (tableau profession → caisse). Ajouter une nouvelle caisse ici **et** créer `ro/[caisse].md` si besoin. |
-| **Parcours bilan TNS (étapes, fiches à utiliser)** | `docs/knowledge/bob/parcours-bilan-tns.md` | C’est la fiche **chargée** par `loadBobKnowledge()`. La version détaillée (spec) est dans `docs/agents-ia/bob_sante/parcours_bilan_tns.md` — garder les deux alignées sur les étapes et les références de fiches. |
+| **Parcours bilan TNS (étapes, fiches à utiliser)** | `docs/knowledge/bob/parcours-bilan-tns.md` | C’est la fiche **chargée** par `loadBobKnowledge()`. Source de vérité unique pour le parcours ; à maintenir à jour (étapes, références de fiches). |
 | **Logique du parcours bilan TNS (structure de raisonnement, 7 piliers)** | `docs/knowledge/bob/logique-parcours-bilan-tns.md` | Rôle, cadre méthodologique, collecte en entonnoir, tableau obligatoire, ordre des régimes, langage, conclusion. Réutilisable par Bob et par les commerciaux. |
 | **Méthodologie conseil / démonstration du risque** | `docs/knowledge/bob/methodologie-conseil-prevoyance-tns.md` | Script, matrices, BPS, leviers. |
 | **Synthèse comparative RO (familles, manques)** | `docs/knowledge/bob/synthese-comparative-ro-tns.md` | Tableaux par famille (SSI, médicales, juridiques/techniques) et « ce que le RO ne fait jamais ». |
 | **Audit / diagnostic (situation → garanties)** | `docs/knowledge/bob/audit-diagnostic-conseiller.md` | Questionnement stratégique, diagnostic matrimonial, transformation situation → garanties. |
-| **Logique de calcul carence / moteur de calcul gap** | `docs/agents-ia/bob_sante/LOGIQUE_CALCUL_CARENCE_TNS.md` | Spec pour implémenter le calcul par segments (J1–3, J4–90, J91+), table RO 2026, RegimeConstants, Gap Report, Survival Duration. Aligner avec `regulatory-figures.ts` et `ro/*.md`. |
+| **Logique de calcul carence / structure de raisonnement parcours** | `docs/knowledge/bob/logique-parcours-bilan-tns.md` | Rôle, cadre méthodologique, collecte en entonnoir, ordre des régimes. Pour un moteur de calcul gap (J1–3, J4–90, J91+), aligner avec `regulatory-figures.ts` et `ro/*.md`. |
 | **Templates de réponse (modules hors bilan TNS)** | `docs/knowledge/bob/templates-reponse-modules-bob.md` | Structures de réponse obligatoires : Analyse 2035 / Bilan chiffré, Comparatif prévoyance Allianz vs concurrence, Audit retraite & senior. Bob les applique selon l'amorce (hors parcours bilan TNS). |
 
 ---
@@ -42,7 +42,7 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
    Pour une nouvelle caisse (ex. CAVAMAC, CPRN) :  
    - Ajouter la ligne dans `regimes-obligatoires-tns.md` (§ 2 ou § 4).  
    - Créer `docs/knowledge/bob/ro/[caisse].md` sur le modèle des fiches existantes (ssi, carmf, etc.).  
-   - Mettre à jour `parcours-bilan-tns.md` et `bob_sante/parcours_bilan_tns.md` si le parcours doit l’inclure.
+   - Mettre à jour `parcours-bilan-tns.md` si le parcours doit l’inclure.
 
 ---
 

@@ -2,7 +2,7 @@
 
 Ce dossier contient les fiches métier injectées dans le prompt Bob (prévoyance TNS, bilan, régimes obligatoires, méthodologie conseil).
 
-**Référence :** `docs/agents-ia/bob_sante/bob_sante.md` § Architecture de la Base de Connaissances Bob.
+**Référence :** `docs/agents-ia/bob-sante/bob-expert.md` pour le plan des thématiques expert Bob.
 
 ---
 

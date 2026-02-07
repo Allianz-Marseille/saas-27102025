@@ -1,5 +1,7 @@
 # Processus M+3
 
+**Ce document** décrit le **processus métier** M+3 (définition, objectifs, étapes). Pour le workflow détaillé du bot (étapes utilisateur, prompts, exemples), voir [docs/process/m+3/m+3_ia.md](../../process/m+3/m+3_ia.md).
+
 ## Définition
 
 **M+3** désigne le processus de **relance systématique 3 mois après la souscription** d'un nouveau contrat d'assurance.
