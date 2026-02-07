@@ -205,10 +205,16 @@ export async function POST(request: NextRequest) {
       baseKnowledge = bobBase + "\n\n---\n\n" + regulatoryBlock;
     } else if (isSinistro) {
       const { getSinistroSystemPrompt } = await import("@/lib/assistant/sinistro-system-prompt");
+      const { getSinistroRagContext, formatSinistroRagContext } = await import("@/lib/assistant/sinistro-rag");
       const { loadSinistroKnowledge } = await import("@/lib/assistant/knowledge-loader");
-      const sinistroKnowledge = loadSinistroKnowledge();
+      const ragChunks = await getSinistroRagContext(typeof message === "string" ? message : "", openai);
+      let sinistroKnowledge = formatSinistroRagContext(ragChunks);
+      if (!sinistroKnowledge) {
+        const fallback = loadSinistroKnowledge();
+        sinistroKnowledge = fallback ? `## Source : sinistro (base complète)\n\n${fallback}` : "";
+      }
       baseKnowledge = sinistroKnowledge
-        ? getSinistroSystemPrompt() + "\n\n---\n\n" + sinistroKnowledge
+        ? getSinistroSystemPrompt() + "\n\n---\n\nBASE DE CONNAISSANCES (sources à citer) :\n\n" + sinistroKnowledge
         : getSinistroSystemPrompt();
     } else {
       // Charger la base de connaissances selon le contexte

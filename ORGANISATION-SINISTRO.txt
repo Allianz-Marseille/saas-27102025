@@ -5,8 +5,10 @@
 Sinistro est le bot IA dédié à la gestion de sinistres pour l'agence. Il aide les
 collaborateurs (pas le client final) à qualifier les sinistres (IRSA, IRSI, droit
 commun), analyser les constats amiables et sourcer ses réponses. Même logique que
-Bob (santé/prévoyance) : prompt dédié + base de connaissances chargée en contexte,
-sans RAG vecteurs en V1.
+Bob (santé/prévoyance) : prompt dédié + base de connaissances en contexte. Sinistro
+utilise un RAG vectoriel Firestore (collection sinistro_knowledge, findNearest)
+pour injecter les 3 extraits les plus pertinents ; fallback sur la base statique
+si l'index vectoriel ou findNearest n'est pas disponible.
 
 Ce fichier permet à une IA de comprendre la stack, l'organisation des fichiers et
 la logique du bot pour maintenir ou faire évoluer Sinistro.
@@ -16,15 +18,15 @@ la logique du bot pour maintenir ou faire évoluer Sinistro.
 --------------------------------------------------------------------------------
 
   - Next.js (App Router), React, TypeScript
-  - Firebase : Auth (vérification utilisateur sur la route chat), éventuellement
-    Firestore/Storage pour dossiers sinistre (hors scope V1)
-  - OpenAI API : appels au modèle (GPT-4o en cas d'images pour Vision), streaming
-    SSE pour le chat
+  - Firebase : Auth (vérification utilisateur sur la route chat), Firestore pour
+    le RAG Sinistro (collection sinistro_knowledge, recherche vectorielle
+    findNearest ; index vectoriel défini dans firestore.indexes.json)
+  - OpenAI API : appels au modèle (GPT-4o en cas d'images pour Vision), embeddings
+    text-embedding-3-small pour le RAG, streaming SSE pour le chat
   - Route unique de chat : POST /api/assistant/chat — reçoit message, images,
     fichiers, history, context (dont context.agent). Si context.agent === "sinistro",
-    la route charge le prompt Sinistro et la base sinistro/
-  - Pas de RAG (vecteurs, Pinecone, Firebase Vector Search) en V1 : toute la
-    base est injectée en texte dans le système prompt, comme pour Bob
+    la route charge le prompt Sinistro et le contexte RAG (3 chunks les plus proches
+    de la question) ou, en fallback, la base statique loadSinistroKnowledge()
   - Visuel : avatar public/agents-ia/bot-sinistre/sinistro.png (carte dashboard
     et bulles du chat)
 
@@ -35,14 +37,19 @@ la logique du bot pour maintenir ou faire évoluer Sinistro.
   RACINE PROJET
   - ORGANISATION-SINISTRO.txt ...................... Ce fichier (doc pour IA)
 
-  PROMPT ET CHARGEUR
+  PROMPT, RAG ET CHARGEUR
   - lib/assistant/sinistro-system-prompt.ts ....... getSinistroSystemPrompt() :
       identité Sinistro, conventions (IRSA, IRSI, Badinter), analyse constat,
       droit commun, règle de sourçage obligatoire, comportement (doute = deux
       options + demande de précision)
+  - lib/assistant/sinistro-rag.ts ................. RAG Firestore : getSinistroRagContext()
+      (embedding requête via text-embedding-3-small, findNearest sur collection
+      sinistro_knowledge, TOP_K=3, COSINE), formatSinistroRagContext(). Fallback
+      sur loadSinistroKnowledge() si findNearest indisponible.
   - lib/assistant/knowledge-loader.ts ............. loadSinistroKnowledge() :
       lit tous les .md de docs/knowledge/sinistro/ (ordre alphabétique),
-      limite globale 28 000 caractères, concatène avec "\n\n---\n\n"
+      limite globale 28 000 caractères ; utilisé en fallback RAG et pour la
+      migration Firestore (source des fiches).
 
   CONFIG
   - lib/assistant/config.ts ...................... SINISTRO_TIMEOUT (60 000 ms),
@@ -52,12 +59,24 @@ la logique du bot pour maintenir ou faire évoluer Sinistro.
   ROUTE API
   - app/api/assistant/chat/route.ts .............. Détection isSinistro
       (context?.agent === "sinistro"). Si vrai : getSinistroSystemPrompt() +
-      loadSinistroKnowledge() → baseKnowledge ; coreKnowledge = baseKnowledge ;
+      getSinistroRagContext(message) → formatSinistroRagContext() → baseKnowledge ;
+      si RAG vide, fallback loadSinistroKnowledge(). coreKnowledge = baseKnowledge ;
       formattingRules Markdown ; chatTimeout = SINISTRO_TIMEOUT ; historique
       tronqué comme Nina/Bob si trop long. Les images sont déjà gérées (base64,
       gpt-4o) pour l'analyse de constat.
 
-  BASE DE CONNAISSANCES (chargée par loadSinistroKnowledge)
+  RAG ET INDEX FIRESTORE
+  - firestore.indexes.json ........................ Index vectoriel pour
+      sinistro_knowledge (champ embedding, dimension 1536). Déploiement :
+      firebase deploy --only firestore. Vérification : voir
+      docs/agents-ia/sinistro_sinistre/VERIFIER-INDEX-VECTORIEL.md
+  - scripts/migrate-to-firestore.ts ............... Migration des fiches
+      docs/knowledge/sinistro/*.md vers la collection sinistro_knowledge (champs
+      title, content, updatedAt ; l'extension Vector Search remplit embedding).
+      Usage : npm run migrate:sinistro-firestore (ou npx ts-node avec
+      tsconfig.scripts.json).
+
+  BASE DE CONNAISSANCES (source des fiches ; chargée par RAG ou loadSinistroKnowledge)
   - docs/knowledge/sinistro/
       - 00-SOURCE-DE-VERITE.md .................... Inventaire des fiches, règles
       - irsa-auto.md ............................. Convention IRSA (auto),
@@ -86,6 +105,8 @@ la logique du bot pour maintenir ou faire évoluer Sinistro.
   - docs/agents-ia/sinistro_sinistre/
       - PD_SINISTRO.md ........................... Plan de développement
       - README.md ................................ Liens, ressources, chargeur
+      - VERIFIER-INDEX-VECTORIEL.md .............. Vérifier/créer l'index vectoriel
+          (gcloud, console Firebase, déploiement firestore.indexes.json)
       - UI-ET-DASHBOARD.md ....................... Spec UI et dashboard
       - themes-fiches-mapping.md ................. Suggestions → fiches
   - docs/knowledge/process/sinistres.md .......... Référence détaillée sinistres
@@ -103,7 +124,10 @@ la logique du bot pour maintenir ou faire évoluer Sinistro.
     branche sur isSinistro.
 
   Construction du système
-  - baseKnowledge = getSinistroSystemPrompt() + "\n\n---\n\n" + loadSinistroKnowledge()
+  - Contexte RAG : getSinistroRagContext(message) → 3 chunks les plus proches
+    (findNearest sur sinistro_knowledge) ; formatSinistroRagContext() en Markdown.
+    Si vide, fallback loadSinistroKnowledge() (base complète).
+  - baseKnowledge = getSinistroSystemPrompt() + "\n\n---\n\nBASE DE CONNAISSANCES ...\n\n" + sinistroKnowledge
   - Aucun bloc additionnel type "chiffres réglementaires" (contrairement à Bob).
   - Ce bloc est envoyé comme système au LLM avec l'historique et le message
     utilisateur (et les images en base64 si présentes).
@@ -132,8 +156,10 @@ la logique du bot pour maintenir ou faire évoluer Sinistro.
 
   Pour modifier les connaissances (conventions, seuils, droit commun)
   - Éditer ou ajouter des .md dans docs/knowledge/sinistro/ ; mettre à jour
-    docs/knowledge/sinistro/00-SOURCE-DE-VERITE.md (inventaire). La limite
-    globale est 28 000 caractères (troncation possible des derniers fichiers).
+    docs/knowledge/sinistro/00-SOURCE-DE-VERITE.md (inventaire). Puis exécuter
+    la migration Firestore (npm run migrate:sinistro-firestore) pour que le RAG
+    utilise les nouvelles fiches. La limite statique est 28 000 caractères
+    (fallback).
 
   Pour ajouter une suggestion de démarrage
   - Éditer SUGGESTIONS_DEMARRAGE dans app/commun/agents-ia/bot-sinistre/page.tsx
@@ -145,16 +171,21 @@ la logique du bot pour maintenir ou faire évoluer Sinistro.
 
   Pour déboguer le flux
   - Vérifier que la requête contient context: { agent: "sinistro" }.
-  - Vérifier que loadSinistroKnowledge() renvoie du contenu (dossier
-    docs/knowledge/sinistro/ présent et .md dedans).
+  - RAG : vérifier que l'index vectoriel sinistro_knowledge (embedding 1536) est
+    READY (gcloud firestore indexes composite list ; projet saas-27102025).
+    Log "findNearest non disponible" = fallback base statique.
+  - Fallback : loadSinistroKnowledge() nécessite docs/knowledge/sinistro/ avec
+    des .md.
   - En cas d'image : la route utilise gpt-4o et envoie les images en contenu
     utilisateur ; le prompt système demande déjà d'analyser les constats.
 
   Fichiers clés à ne pas casser
   - lib/assistant/sinistro-system-prompt.ts
-  - lib/assistant/knowledge-loader.ts (loadSinistroKnowledge)
+  - lib/assistant/sinistro-rag.ts (getSinistroRagContext, formatSinistroRagContext)
+  - lib/assistant/knowledge-loader.ts (loadSinistroKnowledge, fallback)
   - app/api/assistant/chat/route.ts (branche isSinistro)
   - app/commun/agents-ia/bot-sinistre/page.tsx (contexte agent)
+  - firestore.indexes.json (index vectoriel sinistro_knowledge)
   - docs/knowledge/sinistro/*.md (contenu métier)
 
 ================================================================================

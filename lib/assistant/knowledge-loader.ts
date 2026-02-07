@@ -238,8 +238,10 @@ export function loadBobKnowledge(): string {
 /**
  * Charge la base de connaissances Sinistro depuis docs/knowledge/sinistro/.
  * Fiches : IRSA, IRSI, Badinter/IRCA, droit commun, lecture constat amiable.
- * Concatène avec une limite globale de taille. Sinistro doit citer la fiche
- * utilisée (ex. « Sources : sinistro/irsa-auto.md »).
+ *
+ * @deprecated Sinistro utilise désormais le RAG Firestore (collection sinistro_knowledge).
+ * Conservé pour fallback si la recherche vectorielle échoue ou si la collection est vide.
+ * La limite de 28 000 caractères ne s'applique plus au mode RAG.
  */
 export function loadSinistroKnowledge(): string {
   try {
