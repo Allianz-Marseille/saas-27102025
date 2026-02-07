@@ -11,10 +11,10 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 | Type d’information | Source unique | Où mettre à jour |
 |--------------------|----------------|------------------|
 | **Chiffres réglementaires** (PASS, Madelin, **régime général** : SMIC, plafond IJSS, IJ max, capital décès CPAM) | `lib/assistant/regulatory-figures.ts` | Modifier **uniquement** ce fichier (PASS_ANNUEL, PASS_YEAR, SMIC_MENSUEL_BRUT, CAPITAL_DECES_CPAM_SALARIE, constantes Madelin). Mise à jour **annuelle** (revalorisation PASS, SMIC, capital décès). |
-| **Prestations par caisse** (IJ, invalidité, décès, exemples) | `docs/knowledge/bob/ro/[caisse].md` | Une fiche par caisse (ssi, carmf, carpimko, carcdsf, cavec, cipav, cnbf, cavp, carpv). Ne **pas** dupliquer les montants PASS dans ces fiches : indiquer « PASS (voir regulatory-figures) » ou « plafond annuel (source : regulatory-figures) ». |
+| **Prestations par caisse** (IJ, invalidité, décès) | `docs/knowledge/bob/ro/[caisse].md` | Une fiche par caisse (ssi, carmf, caram, carpimko, carcdsf, cavec, cipav, cnbf, cavp, carpv, cavom, cavamac, cprn). **Structure obligatoire** : § 1 Indemnités Journalières (Franchise, Montant, Durée max), § 2 Invalidité (Seuil, Rente annuelle), § 3 Décès (Capital décès, Rente conjoint, Rente éducation). Données **extractibles pour le tableau** Bilan TNS (Garantie | Droits SSI | Droits RO | Manque à assurer). Ne pas dupliquer les montants PASS : renvoyer à `regulatory-figures.ts`. Si une info manque : tag `[À COMPLÉTER]`. |
 | **Inventaire des caisses / synthèse par profession** | `docs/knowledge/bob/regimes-obligatoires-tns.md` | § 2 (CNAVPL), § 3 (CNBF), § 4 (tableau profession → caisse). Ajouter une nouvelle caisse ici **et** créer `ro/[caisse].md` si besoin. |
 | **Parcours bilan TNS (étapes, fiches à utiliser)** | `docs/knowledge/bob/parcours-bilan-tns.md` | C’est la fiche **chargée** par `loadBobKnowledge()`. Source de vérité unique pour le parcours ; à maintenir à jour (étapes, références de fiches). |
-| **Logique du parcours bilan TNS (structure de raisonnement, 7 piliers)** | `docs/knowledge/bob/logique-parcours-bilan-tns.md` | Rôle, cadre méthodologique, collecte en entonnoir, tableau obligatoire, ordre des régimes, langage, conclusion. Réutilisable par Bob et par les commerciaux. |
+| **Logique du parcours bilan TNS (structure de raisonnement, 7 piliers)** | `docs/knowledge/bob/logique-parcours-bilan-tns.md` | Rôle, cadre méthodologique, collecte en entonnoir, **modèle de tableau obligatoire** (Garantie | Franchise/Durée | Droits SSI | Droits RO | Manque à assurer), ordre des régimes, langage, conclusion. Bob remplit le tableau à partir des fiches `ro/[caisse].md`. Réutilisable par Bob et par les commerciaux. |
 | **Méthodologie conseil / démonstration du risque** | `docs/knowledge/bob/methodologie-conseil-prevoyance-tns.md` | Script, matrices, BPS, leviers. |
 | **Synthèse comparative RO (familles, manques)** | `docs/knowledge/bob/synthese-comparative-ro-tns.md` | Tableaux par famille (SSI, médicales, juridiques/techniques) et « ce que le RO ne fait jamais ». |
 | **Audit / diagnostic (situation → garanties)** | `docs/knowledge/bob/audit-diagnostic-conseiller.md` | Questionnement stratégique, diagnostic matrimonial, transformation situation → garanties. |
@@ -100,6 +100,7 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 | `cavec.md` | CAVEC | Experts-comptables, commissaires aux comptes |
 | `cavom.md` | CAVOM | Huissiers, commissaires-priseurs, officiers ministériels |
 | `cavamac.md` | CAVAMAC | Agents généraux d'assurance |
+| `caram.md` | CARAM | Agents d'assurances (branche Vie / IARD) |
 | `cavp.md` | CAVP | Pharmaciens |
 | `cipav.md` | CIPAV | Architectes, ingénieurs, psychologues, etc. |
 | `cnbf.md` | CNBF | Avocats |
@@ -113,9 +114,9 @@ Ce document définit **où se trouve la vérité** pour chaque type d’informat
 | Fréquence | Action |
 |-----------|--------|
 | **Annuelle** (revalorisation PASS, SMIC, capital décès) | Modifier `lib/assistant/regulatory-figures.ts` (PASS_ANNUEL, PASS_YEAR, SMIC_MENSUEL_BRUT, CAPITAL_DECES_CPAM_SALARIE). Vérifier les ordres de grandeur dans `ro/ssi.md`, `regime-general.md` et les mettre à jour si nécessaire. |
-| **À chaque changement réglementaire** | Mettre à jour la fiche concernée (ex. Madelin → prevoyance-tns-regles-ij + regulatory-figures). |
-| **Ajout d’une caisse** | Créer `ro/[caisse].md`, mettre à jour `regimes-obligatoires-tns.md` et parcours si besoin. |
-| **Ajout d’un thème transversal** | Créer une fiche dans `docs/knowledge/bob/` et ajouter une ligne dans ce document (§ 3). |
+| **À chaque changement réglementaire** | Mettre à jour la fiche concernée (ex. Madelin → prevoyance-tns-regles-ij + regulatory-figures). **Fiches RO modifiées :** relancer `npm run migrate:bob-firestore`. |
+| **Ajout d’une caisse** | Créer `ro/[caisse].md` (squelette : § 1 IJ, § 2 Invalidité, § 3 Décès), mettre à jour `regimes-obligatoires-tns.md` et parcours si besoin. |
+| **Ajout d’un thème transversal** | Créer une fiche dans `docs/knowledge/bob/` et ajouter une ligne dans ce document (§ 3). Après modification des fiches `ro/*.md` : relancer `npm run migrate:bob-firestore`. Structure fiches RO : § 1 IJ (Franchise, Montant, Durée max), § 2 Invalidité, § 3 Décès. |
 
 ---
 

@@ -1,67 +1,38 @@
-# CAVAMAC — Caisse d'allocation vieillesse des agents généraux d'assurance
+# Caisse : CAVAMAC (Caisse d'Allocation Vieillesse des Agents Généraux d'Assurance)
 
-**Professions :** Agents généraux d’assurance, mandataires non salariés d’assurance.
+**Professions :** Agents généraux d'assurance libéraux. **Classe de cotisation obligatoire** (de 1 à 8), basée sur les commissions brutes N-1, qui détermine l'intégralité des prestations.
 
-**Référence :** Caisse des agents généraux. Site : [cavamac.fr](https://www.cavamac.fr/).
+## 1. Indemnités Journalières (IJ)
 
-La **CAVAMAC** gère la retraite et la **prévoyance (invalidité-décès)** des agents généraux. Depuis le **1er juillet 2021**, les IJ en arrêt de travail sont versées par la **CPAM** (régime commun professions libérales). Le régime **invalidité-décès** a été **renforcé au 1er octobre 2025** (rente minimale, suppression du délai de carence d’un an).
+- **Franchise Maladie :** 90 jours (CPAM assure le relais de J4 à J90 ; CAVAMAC à partir du 91e jour).
+- **Franchise Accident :** 90 jours.
+- **Franchise Hospitalisation :** 90 jours.
+- **Montant (2025) :** Forfait selon la classe de cotisation (basée sur les commissions brutes N-1) :
+  - **Classe 1 :** env. **35 €/jour**.
+  - **Classe 3 :** env. **105 €/jour**.
+  - **Classe 8 (Max) :** env. **280 €/jour**.
+- **Durée maximum :** **365 jours**.
 
----
+## 2. Invalidité
 
-## 1. Prestations CAVAMAC (prévoyance)
+- **Seuil de déclenchement :** Invalidité totale et définitive à l'exercice de la profession d'agent (100 %). **Absence totale de prestation pour l'invalidité partielle** (inférieure à 100 %).
+- **Rente annuelle :** Proportionnelle à la classe de cotisation :
+  - **Classe 1 :** env. **12 500 €/an**.
+  - **Classe 8 :** env. **100 000 €/an**.
+  - (Barème intermédiaire selon classe 2 à 7.)
 
-### A. Incapacité temporaire (arrêt de travail)
+## 3. Décès
 
-| Période | Organisme | Règle |
-|---------|-----------|--------|
-| **Jours 4 à 90** | **CPAM** | IJ selon régime commun libéraux (depuis juil. 2021). |
-| **À partir du 91e jour** | **CAVAMAC** | **La CAVAMAC ne verse pas d’indemnités journalières.** Seule une **rente d’invalidité** peut être versée si l’assuré est reconnu invalide. |
+- **Capital décès :** Équivalent à **1 an de rente d'invalidité** de la classe concernée.
+- **Rente conjoint :** Environ **60 % de la rente d'invalidité**, versée jusqu'au 65e anniversaire du conjoint.
+- **Rente éducation :** env. **10 % à 15 % de la rente d'invalidité** par enfant jusqu'à 25 ans (si études).
 
-**Point critique :** Pas de relais IJ après 90 jours. Une **prévoyance complémentaire** en IJ longue durée est recommandée.
+## Conseil Bilan (pour le tableau)
 
-### B. Invalidité (régime invalidité-décès, renforcé oct. 2025)
-
-| Élément | Règle |
-|--------|--------|
-| **Rente invalidité > 66 %** | **25 % des commissions** (versée à l’arrêt total d’activité). |
-| **Invalidité entre 33 % et 66 %** | Prise en charge **partielle** (versée à l’arrêt total d’activité). |
-| **Rente minimale (oct. 2025)** | **60 000 points** ≈ **24 500 €/an**. |
-| **Délai de carence** | **Supprimé** : plus de délai d’un an pour le versement de la rente (à compter d’oct. 2025). |
-
-### C. Décès
-
-| Prestation | Règle |
-|------------|--------|
-| **Capital décès** | **50 % des commissions** versé aux ayants droit. |
-| **PRAGA** | Rente d’éducation + **rente de conjoint survivant** (régime dédié). |
-
-Détails et montants à jour sur [cavamac.fr](https://www.cavamac.fr/).
+- **Point critique n°1 (invalidité partielle) :** Un agent général qui peut encore gérer son agence mais plus assurer le développement commercial ou les visites clients ne touchera **RIEN** de la CAVAMAC.
+- **Point critique n°2 (frais de structure) :** L'agent général a souvent des frais fixes très lourds (loyer du cabinet, salaires des collaborateurs). Les IJ de la CAVAMAC couvrent rarement ces charges en plus du revenu personnel.
+- **Manque à assurer :** Le tableau doit impérativement mettre en avant le besoin de **prise en charge des frais généraux permanente** et d'une **prévoyance avec seuil 15 % ou 33 %**.
 
 ---
 
-## 2. Cotisation et évolution
-
-- **Taux cotisation invalidité-décès** : passé de **0,7 %** à **0,45 %** au **1er janvier 2026**.
-- Situation financière du régime : réserves &gt; 70 M€, excédent annuel ~6 M€ (communication CAVAMAC).
-
----
-
-## 3. Synthèse CAVAMAC
-
-| Risque | Protection RO | Avis |
-|--------|----------------|------|
-| **Arrêt < 90 j** | CPAM (IJ) | Correct pour le début. |
-| **Arrêt > 90 j** | **NÉANT** (pas d’IJ CAVAMAC) | Complémentaire IJ longue durée recommandée. |
-| **Invalidité** | 25 % des commissions (&gt; 66 %) ; min. ~24 500 €/an ; partielle 33–66 %. Carence 1 an supprimée (oct. 2025). | Régime renforcé. |
-| **Décès** | 50 % des commissions + PRAGA (rente conjoint, rente éducation) | À compléter en privé si besoin. |
-
-**Point critique pour le dossier :** Recommander une **prévoyance complémentaire** pour les **IJ au-delà de 90 jours** et, si besoin, un renfort capital décès / rentes.
-
----
-
-## 4. Source
-
-- **Fiche de référence :** `ro/cavamac.md`
-- **Site officiel :** [cavamac.fr](https://www.cavamac.fr/)
-- **Réforme oct. 2025 :** [Un régime Invalidité-Décès renforcé](https://www.cavamac.fr/actus/un-regime-invalidite-deces-renforce/)
-- **Référence parcours :** Étape 4 (identification caisse), étape 7 (droits existants), étape 8 (préconisation). Citer en fin de diagnostic : *« Sources : ro/cavamac.md »*.
+**Source :** `ro/cavamac.md` — Citer en fin de diagnostic. Site : [cavamac.fr](https://www.cavamac.fr/). Chiffres réglementaires : `lib/assistant/regulatory-figures.ts`.

@@ -7,7 +7,14 @@
 const COLLECTION = "bob_knowledge";
 const EMBEDDING_FIELD = "embedding";
 const EMBEDDING_MODEL = "text-embedding-3-small";
-const TOP_K = 5;
+const TOP_K = 8;
+
+/** Mots-clés métiers : si présents dans le message, on priorise les fiches ro_* dans les résultats. */
+const METIER_KEYWORDS = [
+  "dentiste", "sage-femme", "médecin", "kiné", "infirmier", "orthophoniste", "pharmacien", "vétérinaire",
+  "expert-comptable", "commissaire aux comptes", "avocat", "notaire", "architecte", "ingénieur", "psychologue",
+  "agent général", "assurance", "carmf", "carpimko", "carcdsf", "cavec", "cnbf", "cavp", "carpv", "cipav", "ssi",
+];
 
 export interface BobRagChunk {
   title: string;
@@ -72,6 +79,17 @@ export async function getBobRagContext(
         });
       }
     });
+
+    // Prioriser les fiches ro_* lorsque l'utilisateur mentionne un métier (bilan TNS / caisse RO).
+    const msgLower = userMessage.toLowerCase();
+    const mentionsMetier = METIER_KEYWORDS.some((k) => msgLower.includes(k));
+    if (mentionsMetier && chunks.length > 1) {
+      chunks.sort((a, b) => {
+        const aRo = a.title.startsWith("ro_") ? 1 : 0;
+        const bRo = b.title.startsWith("ro_") ? 1 : 0;
+        return bRo - aRo; // ro_ en premier
+      });
+    }
 
     return chunks;
   } catch (err) {

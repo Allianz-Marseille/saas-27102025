@@ -63,13 +63,21 @@ la logique du bot pour maintenir ou faire évoluer Bob.
       baseKnowledge = getBobSystemPrompt() + BASE DE CONNAISSANCES + bobKnowledge
       + getRegulatoryFiguresBlock() ; coreKnowledge = baseKnowledge ; chatTimeout = BOB_TIMEOUT.
 
-  MIGRATION RAG
+  MIGRATION RAG (confirmation RAG dans Firebase)
   - scripts/migrate-bob-to-firestore.ts .......... Upload des .md de
       docs/knowledge/bob/ et docs/knowledge/bob/ro/ vers Firestore bob_knowledge ;
       docId racine = nom fichier (ex. parcours-bilan-tns), docId ro/ = ro_xxx (ex. ro_ssi) ;
       set(..., { merge: true }). Commande : npm run migrate:bob-firestore
   - firestore.indexes.json ....................... Index vectoriel bob_knowledge
       (champ embedding, dimension 1536, COSINE). Déployer : firebase deploy --only firestore
+  - RAG dans Firebase : les fiches .md sont stockées dans la collection bob_knowledge
+      (champs title, content, updatedAt). L'extension Vector Search remplit le champ
+      embedding à partir de content. À chaque message utilisateur, l'API calcule l'embedding
+      de la question (OpenAI text-embedding-3-small), puis findNearest renvoie les TOP_K=8
+      documents les plus proches. Si le message mentionne un métier (dentiste, médecin, etc.),
+      les chunks ro_* sont priorisés en tête pour que Bob utilise la bonne fiche caisse.
+      Après modification des fiches ro/*.md : exécuter npm run migrate:bob-firestore pour
+      ré-envoyer le contenu dans le Cloud (les embeddings sont mis à jour par l'extension).
 
   BASE DE CONNAISSANCES (sources : RAG bob_knowledge ou fallback loadBobKnowledge)
   - docs/knowledge/bob/

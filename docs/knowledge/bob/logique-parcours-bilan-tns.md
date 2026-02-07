@@ -33,12 +33,26 @@ Enchaînement obligatoire : **profil → régime obligatoire → besoins → éc
 
 ---
 
-## 4. Tableau obligatoire
+## 4. Tableau obligatoire (format de sortie)
 
-Chaque bilan doit inclure un tableau avec **« Ce que vous avez / Ce dont vous avez besoin / Les écarts à compléter »**.
+Chaque bilan doit inclure un **tableau comparatif** pour chaque garantie (IJ, Invalidité, Décès). C’est le **format de sortie imposé** pour que Bob puisse piocher des chiffres exacts dans les fiches `ro/[caisse].md` et remplir le tableau de manière mathématique.
 
-- **Équivalent technique :** Garantie | SSI (si concerné) | RO (caisse) | Reste à assurer (complémentaire).
-- **Effet :** Le tableau **objectivise** ; le commercial ne « vend » pas, le client **constate par lui-même**. C’est le cœur du prompt.
+**Modèle de tableau obligatoire :**
+
+| Garantie | Franchise/Durée | Droits SSI | Droits RO | Manque à assurer |
+| :--- | :--- | :--- | :--- | :--- |
+| *(ex. IJ jour 1–3)* | *(ex. 3 j carence)* | *(€ ou Non concerné)* | *(€ — source ro/[caisse].md)* | *(€ à proposer)* |
+| *(ex. IJ jour 4–90)* | *(durée)* | *(€)* | *(€)* | *(€)* |
+| *(ex. Invalidité 2e cat.)* | *(seuil %)* | *(€)* | *(€)* | *(€)* |
+| *(ex. Capital décès)* | — | *(€)* | *(€)* | *(€)* |
+
+- **Colonne Garantie :** Nom de la garantie avec franchises et durées (ex. « IJ jour 1–3 », « IJ jour 4–90 », « Invalidité 2e catégorie », « Capital décès »).
+- **Colonne Franchise/Durée :** Carence, seuil, durée max (ex. 3 j, 90 j, 66 %).
+- **Colonne Droits SSI :** Montant en euros (ou « Non concerné » si profession libérale).
+- **Colonne Droits RO :** Montant en euros **issu de la fiche** `ro/[caisse].md` (ne jamais inventer).
+- **Colonne Manque à assurer :** Montant à proposer commercialement pour combler l’écart (besoin − SSI − RO).
+
+**Équivalent présentation client :** « Ce que vous avez / Ce dont vous avez besoin / Les écarts à compléter ». Le tableau **objectivise** ; le commercial ne « vend » pas, le client **constate par lui-même**. C’est le cœur du prompt et du flux Bilan TNS.
 
 ---
 
