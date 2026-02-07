@@ -177,6 +177,9 @@ export function loadSegmentationKnowledge(context: SegmentationContext): string 
 /** Limite de caractères pour la base Bob (éviter dépassement contexte) */
 const BOB_KNOWLEDGE_MAX_CHARS = 28_000;
 
+/** Limite de caractères pour la base Sinistro */
+const SINISTRO_KNOWLEDGE_MAX_CHARS = 28_000;
+
 /**
  * Charge tous les .md d'un dossier et les ajoute à parts en respectant la limite.
  * Retourne le nouveau total de caractères.
@@ -184,7 +187,8 @@ const BOB_KNOWLEDGE_MAX_CHARS = 28_000;
 function loadMarkdownDir(
   dirPath: string,
   parts: string[],
-  totalRef: { current: number }
+  totalRef: { current: number },
+  maxChars: number = BOB_KNOWLEDGE_MAX_CHARS
 ): void {
   if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) return;
   const entries = fs.readdirSync(dirPath, { withFileTypes: true });
@@ -193,10 +197,10 @@ function loadMarkdownDir(
     .map((e) => e.name)
     .sort();
   for (const file of files) {
-    if (totalRef.current >= BOB_KNOWLEDGE_MAX_CHARS) break;
+    if (totalRef.current >= maxChars) break;
     const filePath = path.join(dirPath, file);
     const content = fs.readFileSync(filePath, "utf-8");
-    const remaining = BOB_KNOWLEDGE_MAX_CHARS - totalRef.current;
+    const remaining = maxChars - totalRef.current;
     const toAdd =
       content.length <= remaining ? content : content.slice(0, remaining) + "\n\n[... tronqué]";
     parts.push(toAdd);
@@ -227,6 +231,26 @@ export function loadBobKnowledge(): string {
     return parts.join("\n\n---\n\n");
   } catch (error) {
     console.error("Erreur chargement base Bob:", error);
+    return "";
+  }
+}
+
+/**
+ * Charge la base de connaissances Sinistro depuis docs/knowledge/sinistro/.
+ * Fiches : IRSA, IRSI, Badinter/IRCA, droit commun, lecture constat amiable.
+ * Concatène avec une limite globale de taille. Sinistro doit citer la fiche
+ * utilisée (ex. « Sources : sinistro/irsa-auto.md »).
+ */
+export function loadSinistroKnowledge(): string {
+  try {
+    const sinistroDir = path.join(process.cwd(), "docs", "knowledge", "sinistro");
+    const parts: string[] = [];
+    const totalRef = { current: 0 };
+    loadMarkdownDir(sinistroDir, parts, totalRef, SINISTRO_KNOWLEDGE_MAX_CHARS);
+    if (parts.length === 0) return "";
+    return parts.join("\n\n---\n\n");
+  } catch (error) {
+    console.error("Erreur chargement base Sinistro:", error);
     return "";
   }
 }

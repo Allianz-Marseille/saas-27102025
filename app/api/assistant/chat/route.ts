@@ -9,7 +9,7 @@ import OpenAI from "openai";
 import { checkRateLimit, determineRequestType } from "@/lib/assistant/rate-limiting";
 import { checkBudgetLimit } from "@/lib/assistant/budget-alerts";
 import { openaiWithRetry } from "@/lib/assistant/retry";
-import { NINA_TIMEOUT, BOB_TIMEOUT, SUMMARY_WINDOW, DOCUMENT_CONTEXT_MAX_CHARS } from "@/lib/assistant/config";
+import { NINA_TIMEOUT, BOB_TIMEOUT, SINISTRO_TIMEOUT, SUMMARY_WINDOW, DOCUMENT_CONTEXT_MAX_CHARS } from "@/lib/assistant/config";
 import { logUsage } from "@/lib/assistant/monitoring";
 import { logAction } from "@/lib/assistant/audit";
 import { parseFile } from "@/lib/assistant/file-parsers";
@@ -185,9 +185,10 @@ export async function POST(request: NextRequest) {
         messageContent.includes("fiche")
       );
 
-    // Contexte Nina (bot secrétaire) ou Bob (santé & prévoyance) : prompt dédié
+    // Contexte Nina (bot secrétaire), Bob (santé & prévoyance) ou Sinistro (sinistres) : prompt dédié
     const isNina = context?.agent === "nina";
     const isBob = context?.agent === "bob";
+    const isSinistro = context?.agent === "sinistro";
     let baseKnowledge: string;
     if (isNina) {
       const { getNinaSystemPrompt } = await import("@/lib/assistant/nina-system-prompt");
@@ -202,6 +203,13 @@ export async function POST(request: NextRequest) {
         ? getBobSystemPrompt() + "\n\n---\n\n" + bobKnowledge
         : getBobSystemPrompt();
       baseKnowledge = bobBase + "\n\n---\n\n" + regulatoryBlock;
+    } else if (isSinistro) {
+      const { getSinistroSystemPrompt } = await import("@/lib/assistant/sinistro-system-prompt");
+      const { loadSinistroKnowledge } = await import("@/lib/assistant/knowledge-loader");
+      const sinistroKnowledge = loadSinistroKnowledge();
+      baseKnowledge = sinistroKnowledge
+        ? getSinistroSystemPrompt() + "\n\n---\n\n" + sinistroKnowledge
+        : getSinistroSystemPrompt();
     } else {
       // Charger la base de connaissances selon le contexte
       const { loadKnowledgeForContext, loadSegmentationKnowledge } = await import("@/lib/assistant/knowledge-loader");
@@ -225,8 +233,8 @@ export async function POST(request: NextRequest) {
     // via loadKnowledgeForContext ou loadSegmentationKnowledge
     const relevantKnowledge = "";
 
-    // Construire le prompt système (Nina / Bob = prompt dédié, sinon assistant agence)
-    const coreKnowledge = isNina || isBob
+    // Construire le prompt système (Nina / Bob / Sinistro = prompt dédié, sinon assistant agence)
+    const coreKnowledge = isNina || isBob || isSinistro
       ? baseKnowledge
       : `Tu es l'assistant interne de l'agence Allianz Marseille (Nogaro & Boetti).
 
@@ -284,7 +292,7 @@ Quand tu donnes une information technique, réglementaire ou juridique, tu DOIS 
 
 Si tu ne connais pas la réponse, dis-le clairement avec un ton professionnel mais accessible.`;
 
-    const formattingRules = isNina || isBob
+    const formattingRules = isNina || isBob || isSinistro
       ? "Utilise le format Markdown pour structurer tes réponses. Reste concis et professionnel."
       : isFormalWriting
       ? `RÈGLES DE FORMATAGE POUR MAILS ET LETTRES :
@@ -482,7 +490,7 @@ Tu as accès à plusieurs fonctions pour récupérer des informations sur les en
     let buttonPromptSection = "";
     
     // Cas unique : uiEvent="start" (bouton "Bonjour" cliqué). Nina/Bob ont leur propre prompt.
-    if (uiEvent === "start" && !isNina && !isBob) {
+    if (uiEvent === "start" && !isNina && !isBob && !isSinistro) {
       const { getStartPrompt } = await import("@/lib/assistant/main-button-prompts");
       const startPrompt = getStartPrompt();
       if (startPrompt) {
@@ -669,11 +677,11 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
 `;
     
     let systemPrompt = `${coreKnowledge}${buttonPromptSection}${ocrPromptSection}${persistedDocumentSection}${fileManagementPrompt}${formattingRules}`;
-    if ((isNina || isBob) && Array.isArray(history) && history.length > SUMMARY_WINDOW) {
+    if ((isNina || isBob || isSinistro) && Array.isArray(history) && history.length > SUMMARY_WINDOW) {
       systemPrompt += `\n\nNote: Les échanges précédents ont été tronqués (fenêtre glissante, ${SUMMARY_WINDOW} derniers messages).`;
     }
 
-    const chatTimeout = isBob ? BOB_TIMEOUT : NINA_TIMEOUT;
+    const chatTimeout = isSinistro ? SINISTRO_TIMEOUT : isBob ? BOB_TIMEOUT : NINA_TIMEOUT;
 
     // Construire le contenu du message utilisateur
     const userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];

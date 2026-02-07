@@ -18,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ENABLE_BOB_BOT } from "@/lib/assistant/config";
+import { ENABLE_BOB_BOT, ENABLE_SINISTRO_BOT } from "@/lib/assistant/config";
 
 type BotCardConfig = {
   name: string;
@@ -56,6 +56,19 @@ const BOB_SANTE: BotCardConfig = {
     "Analyser une 2035",
     "Rédiger une DUE",
     "Arguments santé & prévoyance",
+  ],
+};
+
+const SINISTRO_SINISTRE: BotCardConfig = {
+  name: "Assistant Sinistres",
+  firstName: "Sinistro",
+  href: "/commun/agents-ia/bot-sinistre",
+  image: "/agents-ia/bot-sinistre/sinistro.png",
+  hoverDescription: "Conventions IRSA, IRSI, Badinter. Analyse de constat, droit commun. Réponses sourcées.",
+  services: [
+    "Analyser un constat",
+    "Qualifier sinistre IRSA/IRSI",
+    "Analyse droit commun",
   ],
 };
 
@@ -108,7 +121,7 @@ export default function AgentsIAPage() {
         <CardContent>
           <TooltipProvider>
             <div className="flex flex-wrap gap-6">
-              {[BOT_SECRETAIRE, ...(ENABLE_BOB_BOT ? [BOB_SANTE] : [])].map(
+              {[BOT_SECRETAIRE, ...(ENABLE_BOB_BOT ? [BOB_SANTE] : []), ...(ENABLE_SINISTRO_BOT ? [SINISTRO_SINISTRE] : [])].map(
                 (bot) => (
                   <Link
                     key={bot.href}
