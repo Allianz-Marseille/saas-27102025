@@ -1,0 +1,160 @@
+================================================================================
+  ORGANISATION DE SINISTRO — Assistant agence Sinistres
+================================================================================
+
+Sinistro est le bot IA dédié à la gestion de sinistres pour l'agence. Il aide les
+collaborateurs (pas le client final) à qualifier les sinistres (IRSA, IRSI, droit
+commun), analyser les constats amiables et sourcer ses réponses. Même logique que
+Bob (santé/prévoyance) : prompt dédié + base de connaissances chargée en contexte,
+sans RAG vecteurs en V1.
+
+Ce fichier permet à une IA de comprendre la stack, l'organisation des fichiers et
+la logique du bot pour maintenir ou faire évoluer Sinistro.
+
+
+1. STACK TECHNIQUE
+--------------------------------------------------------------------------------
+
+  - Next.js (App Router), React, TypeScript
+  - Firebase : Auth (vérification utilisateur sur la route chat), éventuellement
+    Firestore/Storage pour dossiers sinistre (hors scope V1)
+  - OpenAI API : appels au modèle (GPT-4o en cas d'images pour Vision), streaming
+    SSE pour le chat
+  - Route unique de chat : POST /api/assistant/chat — reçoit message, images,
+    fichiers, history, context (dont context.agent). Si context.agent === "sinistro",
+    la route charge le prompt Sinistro et la base sinistro/
+  - Pas de RAG (vecteurs, Pinecone, Firebase Vector Search) en V1 : toute la
+    base est injectée en texte dans le système prompt, comme pour Bob
+  - Visuel : avatar public/agents-ia/bot-sinistre/sinistro.png (carte dashboard
+    et bulles du chat)
+
+
+2. ORGANISATION DES FICHIERS
+--------------------------------------------------------------------------------
+
+  RACINE PROJET
+  - ORGANISATION-SINISTRO.txt ...................... Ce fichier (doc pour IA)
+
+  PROMPT ET CHARGEUR
+  - lib/assistant/sinistro-system-prompt.ts ....... getSinistroSystemPrompt() :
+      identité Sinistro, conventions (IRSA, IRSI, Badinter), analyse constat,
+      droit commun, règle de sourçage obligatoire, comportement (doute = deux
+      options + demande de précision)
+  - lib/assistant/knowledge-loader.ts ............. loadSinistroKnowledge() :
+      lit tous les .md de docs/knowledge/sinistro/ (ordre alphabétique),
+      limite globale 28 000 caractères, concatène avec "\n\n---\n\n"
+
+  CONFIG
+  - lib/assistant/config.ts ...................... SINISTRO_TIMEOUT (60 000 ms),
+      ENABLE_SINISTRO_BOT : Sinistro est affiché par défaut sur le dashboard
+      Agents IA. Mettre NEXT_PUBLIC_ENABLE_SINISTRO_BOT=false pour le masquer.
+
+  ROUTE API
+  - app/api/assistant/chat/route.ts .............. Détection isSinistro
+      (context?.agent === "sinistro"). Si vrai : getSinistroSystemPrompt() +
+      loadSinistroKnowledge() → baseKnowledge ; coreKnowledge = baseKnowledge ;
+      formattingRules Markdown ; chatTimeout = SINISTRO_TIMEOUT ; historique
+      tronqué comme Nina/Bob si trop long. Les images sont déjà gérées (base64,
+      gpt-4o) pour l'analyse de constat.
+
+  BASE DE CONNAISSANCES (chargée par loadSinistroKnowledge)
+  - docs/knowledge/sinistro/
+      - 00-SOURCE-DE-VERITE.md .................... Inventaire des fiches, règles
+      - irsa-auto.md ............................. Convention IRSA (auto),
+          seuils 6 500 € HT, 1 500 € HT gestion simplifiée
+      - irsi-immeuble.md ......................... Convention IRSI (immeuble),
+          seuil 5 000 € HT, dégâts des eaux / incendie
+      - badinter-irca.md ......................... Loi Badinter, IRCA (corporel
+          auto), nomenclature Dintilhac
+      - droit-commun-sinistres.md ................ Sortie des conventions,
+          Code des assurances, délais, expertise
+      - constat-amiable-lecture.md ............... Structure constat (A/B,
+          cases, croquis), repérer contradictions
+
+  UI
+  - app/commun/agents-ia/bot-sinistre/page.tsx ... Page chat plein écran :
+      envoi context: { agent: "sinistro" }, suggestions (Analyser constat,
+      Qualifier IRSA/IRSI, Droit commun, Mail refus garantie, Recours, Seuils,
+      Délais), upload images/fichiers, avatar sinistro.png
+  - app/commun/agents-ia/page.tsx ................ Dashboard Agents IA : carte
+      Sinistro (SINISTRO_SINISTRE) : carte visible par défaut (ENABLE_SINISTRO_BOT
+      true sauf si NEXT_PUBLIC_ENABLE_SINISTRO_BOT=false), image
+      /agents-ia/bot-sinistre/sinistro.png, lien vers /commun/agents-ia/bot-sinistre
+  - public/agents-ia/bot-sinistre/sinistro.png .... Avatar / visuel du bot
+
+  DOCUMENTATION (référence humaine, non chargée par le bot)
+  - docs/agents-ia/sinistro_sinistre/
+      - PD_SINISTRO.md ........................... Plan de développement
+      - README.md ................................ Liens, ressources, chargeur
+      - UI-ET-DASHBOARD.md ....................... Spec UI et dashboard
+      - themes-fiches-mapping.md ................. Suggestions → fiches
+  - docs/knowledge/process/sinistres.md .......... Référence détaillée sinistres
+      (non chargée en V1)
+  - docs/knowledge/20-sinistres.md ................ Synthèse sinistres (non
+      chargée en V1)
+
+
+3. LOGIQUE DU BOT (flux et règles)
+--------------------------------------------------------------------------------
+
+  Identification de l'agent
+  - Le front envoie context: { agent: "sinistro" } pour chaque requête depuis la
+    page /commun/agents-ia/bot-sinistre. La route chat lit context.agent et
+    branche sur isSinistro.
+
+  Construction du système
+  - baseKnowledge = getSinistroSystemPrompt() + "\n\n---\n\n" + loadSinistroKnowledge()
+  - Aucun bloc additionnel type "chiffres réglementaires" (contrairement à Bob).
+  - Ce bloc est envoyé comme système au LLM avec l'historique et le message
+    utilisateur (et les images en base64 si présentes).
+
+  Comportement attendu (défini dans le prompt)
+  - Toujours citer la source en fin de réponse technique (fiche sinistro/xxx.md
+    ou convention / Code des assurances).
+  - En cas de doute entre deux cas de convention : présenter les deux options
+    et demander une précision au collaborateur.
+  - Format : résumé court d'abord, puis détail technique (liste, tableau).
+  - Si l'utilisateur envoie une image (constat) : extraire colonnes A/B, cases,
+    croquis ; alerter sur incohérences ; qualifier (IRSA / droit commun) et
+    sourcer. Le modèle utilisé en présence d'images est gpt-4o (Vision).
+
+  Seuils à ne pas inventer
+  - IRSA : 6 500 € HT (convention), 1 500 € HT (gestion simplifiée sous conditions)
+  - IRSI : 5 000 € HT. Au-delà = droit commun. Les montants sont dans les
+    fiches ; mise à jour manuelle si les conventions changent.
+
+
+4. RÉSUMÉ POUR UNE IA
+--------------------------------------------------------------------------------
+
+  Pour modifier le comportement de Sinistro
+  - Éditer lib/assistant/sinistro-system-prompt.ts (règles, ton, consignes).
+
+  Pour modifier les connaissances (conventions, seuils, droit commun)
+  - Éditer ou ajouter des .md dans docs/knowledge/sinistro/ ; mettre à jour
+    docs/knowledge/sinistro/00-SOURCE-DE-VERITE.md (inventaire). La limite
+    globale est 28 000 caractères (troncation possible des derniers fichiers).
+
+  Pour ajouter une suggestion de démarrage
+  - Éditer SUGGESTIONS_DEMARRAGE dans app/commun/agents-ia/bot-sinistre/page.tsx
+    et, si pertinent, docs/agents-ia/sinistro_sinistre/themes-fiches-mapping.md.
+
+  Pour afficher ou masquer le bot sur le dashboard
+  - Sinistro est affiché par défaut. Pour le masquer : définir
+    NEXT_PUBLIC_ENABLE_SINISTRO_BOT=false (env ou .env.local).
+
+  Pour déboguer le flux
+  - Vérifier que la requête contient context: { agent: "sinistro" }.
+  - Vérifier que loadSinistroKnowledge() renvoie du contenu (dossier
+    docs/knowledge/sinistro/ présent et .md dedans).
+  - En cas d'image : la route utilise gpt-4o et envoie les images en contenu
+    utilisateur ; le prompt système demande déjà d'analyser les constats.
+
+  Fichiers clés à ne pas casser
+  - lib/assistant/sinistro-system-prompt.ts
+  - lib/assistant/knowledge-loader.ts (loadSinistroKnowledge)
+  - app/api/assistant/chat/route.ts (branche isSinistro)
+  - app/commun/agents-ia/bot-sinistre/page.tsx (contexte agent)
+  - docs/knowledge/sinistro/*.md (contenu métier)
+
+================================================================================

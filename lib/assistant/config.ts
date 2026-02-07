@@ -39,9 +39,9 @@ export const ENABLE_BOB_BOT =
 /** Timeout (ms) pour les appels API Sinistro (analyse constats, conventions). */
 export const SINISTRO_TIMEOUT = 60000;
 
-/** Active le bot Sinistro (Sinistres) en UI et logique si la variable d'env est à 'true'. */
+/** Active le bot Sinistro (Sinistres) en UI. Affiché par défaut ; mettre NEXT_PUBLIC_ENABLE_SINISTRO_BOT=false pour le masquer. */
 export const ENABLE_SINISTRO_BOT =
-  typeof process !== "undefined" && process.env.NEXT_PUBLIC_ENABLE_SINISTRO_BOT === "true";
+  typeof process === "undefined" || process.env.NEXT_PUBLIC_ENABLE_SINISTRO_BOT !== "false";
 
 /** Date limite d'affichage de la modale d'intro Nina (6 fév 00:00 = affichage jusqu'au 5 fév inclus). */
 export const NINA_INTRO_MODAL_END_DATE = new Date("2026-02-06T00:00:00");
