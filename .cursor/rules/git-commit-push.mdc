@@ -1,0 +1,13 @@
+---
+description: À chaque demande de commit et push, tenter systématiquement le push après le commit
+alwaysApply: true
+---
+
+# Git : commit et push à la demande
+
+Lorsque l'utilisateur demande de **commiter et pousser** (ou "commit and push") :
+
+1. **Commit** : stager les fichiers concernés, créer le commit avec un message clair.
+2. **Push** : exécuter `git push` en demandant les permissions **network** et **git_write** (required_permissions: ["network", "git_write"]).
+
+Ne pas se contenter du commit : **toujours tenter le push** dans la même séquence. Si l'outil échoue (ex. erreur technique côté exécution), indiquer à l'utilisateur que le commit est fait et qu'il peut lancer `git push` manuellement dans le terminal.
