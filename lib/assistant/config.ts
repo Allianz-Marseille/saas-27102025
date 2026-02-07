@@ -25,9 +25,9 @@ export const NINA_CONFIG = {
   pdfExportMaxChars: PDF_EXPORT_MAX_CHARS,
 } as const;
 
-/** Active le bot Nina en UI et logique si la variable d'env est à 'true'. */
+/** Active le bot Nina (Secrétaire) en UI. Affiché par défaut ; mettre NEXT_PUBLIC_ENABLE_NINA_BOT=false pour le masquer. */
 export const ENABLE_NINA_BOT =
-  typeof process !== "undefined" && process.env.NEXT_PUBLIC_ENABLE_NINA_BOT === "true";
+  typeof process === "undefined" || process.env.NEXT_PUBLIC_ENABLE_NINA_BOT !== "false";
 
 /** Timeout (ms) pour les appels API Bob — évite les coupures sur analyses de documents lourds (liasses 2035, etc.). */
 export const BOB_TIMEOUT = 60000;

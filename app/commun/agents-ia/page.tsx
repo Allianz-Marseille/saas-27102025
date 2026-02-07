@@ -18,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ENABLE_BOB_BOT, ENABLE_SINISTRO_BOT } from "@/lib/assistant/config";
+import { ENABLE_BOB_BOT, ENABLE_NINA_BOT, ENABLE_SINISTRO_BOT } from "@/lib/assistant/config";
 
 type BotCardConfig = {
   name: string;
@@ -121,7 +121,7 @@ export default function AgentsIAPage() {
         <CardContent>
           <TooltipProvider>
             <div className="flex flex-wrap gap-6">
-              {[BOT_SECRETAIRE, ...(ENABLE_BOB_BOT ? [BOB_SANTE] : []), ...(ENABLE_SINISTRO_BOT ? [SINISTRO_SINISTRE] : [])].map(
+              {[...(ENABLE_NINA_BOT ? [BOT_SECRETAIRE] : []), ...(ENABLE_BOB_BOT ? [BOB_SANTE] : []), ...(ENABLE_SINISTRO_BOT ? [SINISTRO_SINISTRE] : [])].map(
                 (bot) => (
                   <Link
                     key={bot.href}

@@ -1,0 +1,143 @@
+================================================================================
+  ORGANISATION DE NINA — Bot Secrétaire (assistante secrétaire)
+================================================================================
+
+Nina est le bot IA dédié au secrétariat et à la gestion administrative pour
+l'agence. Elle aide les collaborateurs à rédiger (mails, courriers, comptes
+rendus), corriger des textes, analyser des documents (PDF, Word, Excel, etc.)
+et comparer des devis. Contrairement à Bob et Sinistro, Nina n'utilise pas de
+RAG ni de base de connaissances dédiée : son comportement repose uniquement
+sur le prompt système (getNinaSystemPrompt()). La route chat applique le même
+flux (auth, history, fichiers/images) avec un timeout dédié (NINA_TIMEOUT).
+
+Ce fichier permet à une IA de comprendre la stack, l'organisation des fichiers
+et la logique du bot pour maintenir ou faire évoluer Nina.
+
+
+1. STACK TECHNIQUE
+--------------------------------------------------------------------------------
+
+  - Next.js (App Router), React, TypeScript
+  - Firebase : Auth (vérification utilisateur sur la route chat)
+  - OpenAI API : modèle de chat (GPT-4o en cas d'images), streaming SSE pour le chat
+  - Route unique de chat : POST /api/assistant/chat — reçoit message, images,
+    fichiers, history, context (dont context.agent). Si context.agent === "nina",
+    la route charge getNinaSystemPrompt() comme baseKnowledge ; pas de RAG.
+    chatTimeout = NINA_TIMEOUT (45 000 ms).
+  - Traitement fichiers : lib/assistant/file-processing.ts (PDF, Word, Excel,
+    TXT, CSV), lib/assistant/image-utils.ts (base64) ; parsing côté API.
+  - Visuel : public/agents-ia/bot-secretaire/ (avatar.jpg, avatar-tete.jpg) —
+    carte dashboard et bulles du chat
+
+
+2. ORGANISATION DES FICHIERS
+--------------------------------------------------------------------------------
+
+  RÉSUMÉS BOTS (ce dossier)
+  - docs/resumes-bots/ORGANISATION-NINA.txt ....... Ce fichier (doc pour IA)
+
+  PROMPT (pas de RAG ni base de connaissances dédiée)
+  - lib/assistant/nina-system-prompt.ts ........... getNinaSystemPrompt() :
+      identité Nina (secrétaire), style (vouvoiement, concision), compétences
+      (rédaction, correction, analyse documents, formatage, comparaison devis),
+      règles d'or (questions minimales, non-invention, destinataire, hors-sujet,
+      réponse au "Bonjour")
+
+  CONFIG
+  - lib/assistant/config.ts ...................... NINA_TIMEOUT (45 000 ms),
+      ENABLE_NINA_BOT : Nina est affichée sur le dashboard par défaut ; mettre
+      NEXT_PUBLIC_ENABLE_NINA_BOT=false pour la masquer (opt-out, comme Sinistro).
+      SUMMARY_WINDOW (12 messages),
+      DOCUMENT_CONTEXT_MAX_CHARS (80 000), PDF_EXPORT_MAX_CHARS (50 000).
+      NINA_INTRO_MODAL_END_DATE / isNinaIntroModalActive() pour la modale d'intro.
+
+  ROUTE API
+  - app/api/assistant/chat/route.ts .............. Détection isNina
+      (context?.agent === "nina"). Si vrai : baseKnowledge = getNinaSystemPrompt() ;
+      coreKnowledge = baseKnowledge ; chatTimeout = NINA_TIMEOUT ; historique
+      tronqué à SUMMARY_WINDOW si trop long. Fichiers et images gérés comme
+      pour les autres agents (file-parsers, base64 pour Vision).
+
+  TRAITEMENT FICHIERS / IMAGES
+  - lib/assistant/file-processing.ts ............. processFiles(), limites par
+      type (PDF, Word, Excel, TXT, CSV), MAX_FILES_PER_MESSAGE
+  - lib/assistant/image-utils.ts ................. processImageFiles(),
+      convertImagesToBase64() pour envoi au modèle
+  - lib/assistant/mask-sensitive.ts .............. Masquage données sensibles
+      (optionnel avant copie)
+
+  UI
+  - app/commun/agents-ia/bot-secretaire/page.tsx . Page chat plein écran :
+      envoi context: { agent: "nina" }, suggestions (Rédiger mail, Résumer
+      document, Corriger texte, Extraire infos PDF, Comparer devis), upload
+      images/fichiers, zone brouillon, export PDF par réponse ou conversation,
+      avatar avatar-tete.jpg
+  - app/commun/agents-ia/page.tsx ................ Dashboard Agents IA : carte
+      Nina (BOT_SECRETAIRE) affichée si ENABLE_NINA_BOT (visible par défaut),
+      en premier, image /agents-ia/bot-secretaire/avatar.jpg, imageHover
+      avatar-tete.jpg, lien vers /commun/agents-ia/bot-secretaire
+  - public/agents-ia/bot-secretaire/ ............. avatar.jpg (carte), avatar-tete.jpg
+      (survol et bulles chat)
+  - components/assistant/NinaIntroModalWrapper.tsx  Modale d'intro Nina (affichage
+      conditionné par isNinaIntroModalActive() jusqu'à NINA_INTRO_MODAL_END_DATE)
+
+  DOCUMENTATION (référence humaine)
+  - docs/agents-ia/nina_secretaire/
+      - NINA-SECRETAIRE.md ........................ Spec complète : présentation,
+          prompt, design, UI, fonctionnalités
+      - TODO-DEPLOIEMENT-NINA.md .................. Checklist déploiement,
+          variables Vercel, tests post-déploiement
+  - docs/agents-ia/README.md ..................... Vue d'ensemble agents (Nina, Bob, Sinistro)
+
+
+3. LOGIQUE DU BOT (flux et règles)
+--------------------------------------------------------------------------------
+
+  Identification de l'agent
+  - Le front envoie context: { agent: "nina" } pour chaque requête depuis la
+    page /commun/agents-ia/bot-secretaire. La route chat lit context.agent et
+    branche sur isNina.
+
+  Construction du système
+  - baseKnowledge = getNinaSystemPrompt() (aucune base de connaissances ni RAG).
+  - coreKnowledge = baseKnowledge.
+  - Ce bloc est envoyé comme système au LLM avec l'historique et le message
+    utilisateur (et les images/fichiers en contenu si présents).
+  - chatTimeout = NINA_TIMEOUT (45 s) ; si history.length > SUMMARY_WINDOW,
+    troncation et note dans le prompt.
+
+  Comportement attendu (défini dans le prompt)
+  - Rédaction (mails, courriers, CR, synthèses), correction, analyse de documents,
+    formatage, comparaison de devis (après choix de l'angle par l'utilisateur).
+  - Règles : questions minimales (2–3 max), ne pas inventer noms/dates/montants,
+    reprendre le destinataire depuis les documents, hors-sujet = redirection
+    vers le secrétariat.
+  - Réponse au "Bonjour" : message d'accueil standard Nina.
+
+
+4. RÉSUMÉ POUR UNE IA
+--------------------------------------------------------------------------------
+
+  Pour modifier le comportement de Nina
+  - Éditer lib/assistant/nina-system-prompt.ts (identité, compétences, règles).
+
+  Pour modifier les suggestions d'accueil
+  - Éditer SUGGESTIONS_DEMARRAGE dans app/commun/agents-ia/bot-secretaire/page.tsx.
+
+  Pour afficher ou masquer le bot sur le dashboard
+  - Nina est affichée par défaut (opt-out, comme Sinistro). Pour la masquer :
+    définir NEXT_PUBLIC_ENABLE_NINA_BOT=false (env ou .env.local).
+  - La carte est conditionnée par ENABLE_NINA_BOT dans app/commun/agents-ia/page.tsx.
+
+  Pour déboguer le flux
+  - Vérifier que la requête contient context: { agent: "nina" }.
+  - Timeout : NINA_TIMEOUT (45 s) ; en cas de documents lourds, augmenter si
+    nécessaire dans config.ts (comme BOB_TIMEOUT / SINISTRO_TIMEOUT à 60 s).
+
+  Fichiers clés à ne pas casser
+  - lib/assistant/nina-system-prompt.ts
+  - app/api/assistant/chat/route.ts (branche isNina)
+  - app/commun/agents-ia/bot-secretaire/page.tsx (contexte agent, suggestions)
+  - lib/assistant/config.ts (NINA_TIMEOUT, SUMMARY_WINDOW, DOCUMENT_CONTEXT_MAX_CHARS)
+
+================================================================================

@@ -4,5 +4,6 @@ Ce répertoire regroupe les **résumés d’organisation** destinés aux IA (et 
 
 | Fichier | Bot / fonctionnalité |
 |---------|----------------------|
-| [ORGANISATION-SINISTRO.txt](ORGANISATION-SINISTRO.txt) | Sinistro — Assistant agence Sinistres (IRSA, IRSI, RAG Firestore) |
+| [ORGANISATION-NINA.txt](ORGANISATION-NINA.txt) | Nina — Bot Secrétaire (rédaction, correction, analyse documents, pas de RAG) |
 | [ORGANISATION-BOB.txt](ORGANISATION-BOB.txt) | Bob — Assistant agence Santé & Prévoyance (régimes sociaux, SSI, RO, bilan TNS, DUE) |
+| [ORGANISATION-SINISTRO.txt](ORGANISATION-SINISTRO.txt) | Sinistro — Assistant agence Sinistres (IRSA, IRSI, RAG Firestore) |
