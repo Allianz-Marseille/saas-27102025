@@ -15,6 +15,7 @@ Chargeur : `loadSinistroKnowledge()` dans `lib/assistant/knowledge-loader.ts`. D
 | `droit-commun-sinistres.md` | Quand sortir des conventions, Code des assurances, délais, expertise. |
 | `constat-amiable-lecture.md` | Structure du constat (A/B, cases, croquis), repérer contradictions. |
 | `exemples-cas-complexes.md` | Exemples few-shot : IRSA/IRSI sous seuil, dépassement, constat incohérent/signature manquante, corporel. |
+| `templates-communication.md` | Structures types : recours IRSA, demande de pièces complémentaires, refus de garantie motivé (ton professionnel, empathique). |
 
 ## Règles
 

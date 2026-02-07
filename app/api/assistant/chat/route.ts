@@ -216,6 +216,14 @@ export async function POST(request: NextRequest) {
       baseKnowledge = sinistroKnowledge
         ? getSinistroSystemPrompt() + "\n\n---\n\nBASE DE CONNAISSANCES (sources à citer) :\n\n" + sinistroKnowledge
         : getSinistroSystemPrompt();
+      const sinistroTwoDocs =
+        (images?.length ?? 0) >= 2 ||
+        ((images?.length ?? 0) >= 1 && (files?.length ?? 0) >= 1) ||
+        (files?.length ?? 0) >= 2;
+      if (sinistroTwoDocs) {
+        baseKnowledge +=
+          "\n\n---\n\nANALYSE COMPARATIVE (cette requête) : L'utilisateur a fourni deux documents (ex. constat amiable + photo de dommages, ou constat + rapport d'expert). Tu dois : 1) extraire les déclarations du constat (colonnes A/B, cases, croquis), 2) décrire les dommages visibles sur l'autre document, 3) comparer et lister les incohérences (localisation, gravité, cohérence croquis/photo), 4) alerter sur les fraudes ou erreurs de déclaration classiques. Applique la méthodologie d'analyse comparative définie dans ton prompt.";
+      }
     } else {
       // Charger la base de connaissances selon le contexte
       const { loadKnowledgeForContext, loadSegmentationKnowledge } = await import("@/lib/assistant/knowledge-loader");

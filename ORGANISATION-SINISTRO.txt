@@ -74,7 +74,9 @@ la logique du bot pour maintenir ou faire évoluer Sinistro.
       docs/knowledge/sinistro/*.md vers la collection sinistro_knowledge (champs
       title, content, updatedAt ; l'extension Vector Search remplit embedding).
       Usage : npm run migrate:sinistro-firestore (ou npx ts-node avec
-      tsconfig.scripts.json).
+      tsconfig.scripts.json). Après tout ajout ou modification de fiches dans
+      docs/knowledge/sinistro/, relancer la migration pour que le RAG utilise
+      les nouvelles fiches.
 
   BASE DE CONNAISSANCES (source des fiches ; chargée par RAG ou loadSinistroKnowledge)
   - docs/knowledge/sinistro/
@@ -89,6 +91,8 @@ la logique du bot pour maintenir ou faire évoluer Sinistro.
           Code des assurances, délais, expertise
       - constat-amiable-lecture.md ............... Structure constat (A/B,
           cases, croquis), repérer contradictions
+      - templates-communication.md ................ Structures types : recours
+          IRSA, demande de pièces, refus de garantie (rédaction brouillons)
 
   UI
   - app/commun/agents-ia/bot-sinistre/page.tsx ... Page chat plein écran :

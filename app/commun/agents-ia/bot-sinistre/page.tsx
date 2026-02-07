@@ -53,6 +53,38 @@ const SUGGESTIONS_DEMARRAGE = [
   { label: "Délais de déclaration et indemnisation", message: "Quels sont les délais légaux de déclaration et d'indemnisation (Code des assurances) ?" },
 ] as const;
 
+/** Retourne les actions suggérées selon le contenu de la dernière réponse Sinistro (Option B : détection côté client). */
+function getSuggestedActions(content: string): { label: string; message: string }[] {
+  if (!content || content.length < 50) return [];
+  const lower = content.toLowerCase();
+  const actions: { label: string; message: string }[] = [];
+  if ((lower.includes("irsa") || lower.includes("convention irsa")) && (lower.includes("recours") || lower.includes("tiers"))) {
+    actions.push({
+      label: "Générer le recours IRSA",
+      message: "Rédige le brouillon du mail de recours IRSA pour ce dossier en t'appuyant sur les éléments déjà analysés.",
+    });
+  }
+  if (lower.includes("refus de garantie") || lower.includes("refus de prise en charge")) {
+    actions.push({
+      label: "Rédiger le mail de refus de garantie",
+      message: "Rédige le brouillon du mail de refus de garantie motivé pour ce dossier (motifs, voies de recours).",
+    });
+  }
+  if (lower.includes("pièces complémentaires") || lower.includes("pièces manquantes") || lower.includes("documents à fournir")) {
+    actions.push({
+      label: "Rédiger la demande de pièces",
+      message: "Rédige le brouillon du mail de demande de pièces complémentaires pour ce sinistre (liste des pièces, délai, rappel des délais légaux).",
+    });
+  }
+  if (lower.includes("irsi") && (lower.includes("recours") || lower.includes("tiers"))) {
+    actions.push({
+      label: "Générer le recours (IRSI / dégâts des eaux)",
+      message: "Rédige le brouillon du mail de recours pour ce sinistre IRSI / dégâts des eaux.",
+    });
+  }
+  return actions;
+}
+
 interface SourceItem {
   name: string;
   pages?: string;
@@ -81,6 +113,10 @@ export default function BotSinistroPage() {
   const [maskBeforeCopy, setMaskBeforeCopy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [documentContext, setDocumentContext] = useState<{ name: string; content: string }[]>([]);
+  const [dynamicSuggestions, setDynamicSuggestions] = useState<{
+    messageId: string;
+    actions: { label: string; message: string }[];
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -155,6 +191,7 @@ export default function BotSinistroPage() {
         ...prev,
         { id: assistantId, role: "assistant", content: "", sources: sources.length ? sources : undefined },
       ]);
+      setDynamicSuggestions(null);
       setIsLoading(true);
 
       try {
@@ -237,6 +274,10 @@ export default function BotSinistroPage() {
               }
             }
           }
+        }
+        const suggested = getSuggestedActions(accumulated);
+        if (suggested.length > 0) {
+          setDynamicSuggestions({ messageId: assistantId, actions: suggested });
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Erreur réseau";
@@ -841,6 +882,22 @@ export default function BotSinistroPage() {
                             >
                               Résumer en 3 points
                             </Button>
+                          </div>
+                        )}
+                        {dynamicSuggestions?.messageId === msg.id && dynamicSuggestions.actions.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-200/80 dark:border-slate-600/80 pt-2">
+                            {dynamicSuggestions.actions.map((action, idx) => (
+                              <Button
+                                key={idx}
+                                variant="default"
+                                size="sm"
+                                className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white"
+                                onClick={() => sendMessage(action.message)}
+                                disabled={isLoading}
+                              >
+                                {action.label}
+                              </Button>
+                            ))}
                           </div>
                         )}
                         {msg.sources && msg.sources.length > 0 && (
