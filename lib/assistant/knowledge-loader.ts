@@ -180,6 +180,9 @@ const BOB_KNOWLEDGE_MAX_CHARS = 28_000;
 /** Limite de caractères pour la base Sinistro */
 const SINISTRO_KNOWLEDGE_MAX_CHARS = 28_000;
 
+/** Limite de caractères pour la base Pauline (fallback RAG). */
+const PAULINE_KNOWLEDGE_MAX_CHARS = 28_000;
+
 /**
  * Charge tous les .md d'un dossier et les ajoute à parts en respectant la limite.
  * Retourne le nouveau total de caractères.
@@ -253,6 +256,25 @@ export function loadSinistroKnowledge(): string {
     return parts.join("\n\n---\n\n");
   } catch (error) {
     console.error("Erreur chargement base Sinistro:", error);
+    return "";
+  }
+}
+
+/**
+ * Charge la base de connaissances Pauline depuis docs/knowledge/pauline/.
+ * Fiches : produits particuliers, règles de souscription, documentation.
+ * Utilisé comme fallback RAG si la recherche vectorielle échoue ou si la collection est vide.
+ */
+export function loadPaulineKnowledge(): string {
+  try {
+    const paulineDir = path.join(process.cwd(), "docs", "knowledge", "pauline");
+    const parts: string[] = [];
+    const totalRef = { current: 0 };
+    loadMarkdownDir(paulineDir, parts, totalRef, PAULINE_KNOWLEDGE_MAX_CHARS);
+    if (parts.length === 0) return "";
+    return parts.join("\n\n---\n\n");
+  } catch (error) {
+    console.error("Erreur chargement base Pauline:", error);
     return "";
   }
 }

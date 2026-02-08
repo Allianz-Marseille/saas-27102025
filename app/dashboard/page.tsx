@@ -20,6 +20,7 @@ import { getActsByMonth } from "@/lib/firebase/acts";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { Timestamp } from "firebase/firestore";
 import { MonthSelector } from "@/components/dashboard/month-selector";
+import { AgentsIAWidget } from "@/components/dashboard/agents-ia-widget";
 
 export default function DashboardPage() {
   const { user, userData } = useAuth();
@@ -118,6 +119,9 @@ export default function DashboardPage() {
       <div className="container mx-auto px-6 py-6">
         {/* Welcome Banner */}
         <WelcomeBanner kpi={kpi} />
+
+        {/* Agents IA — Nina, Bob, Sinistro, Pauline */}
+        <AgentsIAWidget />
 
         {/* Résumé Commissions avec bouton de redirection */}
         <CommissionsSummary kpi={kpi} />

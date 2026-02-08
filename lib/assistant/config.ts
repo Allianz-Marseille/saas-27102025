@@ -43,6 +43,13 @@ export const SINISTRO_TIMEOUT = 60000;
 export const ENABLE_SINISTRO_BOT =
   typeof process === "undefined" || process.env.NEXT_PUBLIC_ENABLE_SINISTRO_BOT !== "false";
 
+/** Timeout (ms) pour les appels API Pauline (produits particuliers). */
+export const PAULINE_TIMEOUT = 45000;
+
+/** Active le bot Pauline (Produits Particuliers) en UI. Affiché par défaut ; mettre NEXT_PUBLIC_ENABLE_PAULINE_BOT=false pour le masquer. */
+export const ENABLE_PAULINE_BOT =
+  typeof process === "undefined" || process.env.NEXT_PUBLIC_ENABLE_PAULINE_BOT !== "false";
+
 /** Date limite d'affichage de la modale d'intro Nina (6 fév 00:00 = affichage jusqu'au 5 fév inclus). */
 export const NINA_INTRO_MODAL_END_DATE = new Date("2026-02-06T00:00:00");
 
