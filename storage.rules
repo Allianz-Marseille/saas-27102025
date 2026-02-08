@@ -14,7 +14,8 @@ service firebase.storage {
     }
     
     // knowledge-base : upload admin uniquement, lecture pour tous authentifiés
-    match /knowledge-base/pdf/{fileName} {
+    // Chemin : knowledge-base/{baseId}/{fileName} (ex. knowledge-base/pauline/xxx.pdf)
+    match /knowledge-base/{baseId}/{fileName} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
