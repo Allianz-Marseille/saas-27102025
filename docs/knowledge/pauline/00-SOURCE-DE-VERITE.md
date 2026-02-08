@@ -9,13 +9,17 @@ Chargeur : `loadPaulineKnowledge()` dans `lib/assistant/knowledge-loader.ts`. Do
 | Fichier | Rôle |
 |---------|------|
 | `00-SOURCE-DE-VERITE.md` | Ce document — inventaire. |
-| Fiches `*.md` issues de `docs/pdf/auto/` | Vadémécums (bonus malus, carte grise, avantage bonus client, catégories socio-pro, code personnalisation, saisie sinistres, transport marchandises, Auto-Ultimo) et guide de souscription RES35901. Générées par `npm run extract:pauline-pdfs`. |
+| Fiches `*.md` issues de `docs/pdf/auto/` | Vadémécums auto (bonus malus, carte grise, avantage bonus client, catégories socio-pro, code personnalisation, saisie sinistres, transport marchandises, Auto-Ultimo), DG-AUTO, guide de souscription RES35901. Générées par `npm run extract:pauline-pdfs`. |
+| Fiches `*.md` issues de `docs/pdf/mrh/` | Vadémécums MRH/habitation (objets de valeur, bornes électriques, grands risques, protections vol, attestations, dépendances, etc.), DG-HABITATION, guide de souscription RES30820. Générées par `npm run extract:pauline-pdfs`. |
 
-### Fiches extraites des PDF auto
+### Fiches extraites des PDF auto et MRH
 
-Les fiches dont le nom correspond à un PDF du dossier `docs/pdf/auto/` sont générées par le script d’extraction (vadémécums, guide de souscription). Exemples : bonus malus, carte grise, avantage bonus client, catégories socio-pro, code personnalisation, saisie sinistres, transport public de marchandises, Auto-Ultimo, guide de souscription RES35901.
+Les fiches dont le nom correspond à un PDF des dossiers `docs/pdf/auto/` et `docs/pdf/mrh/` sont générées par le script d'extraction.
 
-**Génération** : `npm run extract:pauline-pdfs` (lit tous les PDF dans `docs/pdf/auto/`, crée ou écrase une fiche .md par PDF). Puis `npm run migrate:pauline-firestore` pour mettre à jour le RAG.
+- **Auto** : vadémécums (bonus malus, carte grise, avantage bonus client, catégories socio-pro, code personnalisation, saisie sinistres, transport public de marchandises, Auto-Ultimo), DG-AUTO, guide de souscription RES35901.
+- **MRH** : vadémécums MRH (objets de valeur, bornes électriques, grands risques, protections vol, attestations, dépendances, biens en extérieur, usages, etc.), DG-HABITATION, DG-SPECIAL-INVESTISSEUR, guide de souscription RES30820.
+
+**Génération** : `npm run extract:pauline-pdfs` (lit tous les PDF dans `docs/pdf/auto/` et `docs/pdf/mrh/`, crée ou écrase une fiche .md par PDF). Puis `npm run migrate:pauline-firestore` pour mettre à jour le RAG.
 
 ## Règles
 
