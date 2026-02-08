@@ -9,21 +9,21 @@ Objectif : intégrer l’OCR (Google Cloud Vision) dans le pipeline des bots
 
 --- PRÉREQUIS (points 1 à 3 du doc) -------------------------------------------
 
-[ ] 1. Activer Cloud Vision API
+✅ 1. Activer Cloud Vision API
       - Google Cloud Console → projet lié à Firebase
       - Activer "Cloud Vision API"
 
-[ ] 2. Credentials
+✅ 2. Credentials
       - Créer ou réutiliser un compte de service (JSON)
       - Rôle : Cloud Vision API User (ou équivalent)
       - Définir GOOGLE_APPLICATION_CREDENTIALS (local + déploiement)
         ou config via Secret Manager / variables d’env selon l’hébergeur
 
-[ ] 3. Dépendance et module partagé
-      - npm install @google-cloud/vision
-      - Créer un module lib (ex. lib/vision/ocr.ts ou lib/assistant/vision-ocr.ts)
+✅ 3. Dépendance et module partagé
+      - @google-cloud/vision déjà dans le projet
+      - Module créé : lib/assistant/vision-ocr.ts
       - Exposer une fonction d’OCR : entrée buffer ou base64, sortie texte
-        (textDetection ou documentTextDetection selon besoin de structure)
+        (documentTextDetection option pour Sinistro ; fallback "" si échec)
       - Gérer les erreurs (API indisponible, quota, image invalide) et
         prévoir un fallback sans OCR si échec
 
@@ -32,52 +32,52 @@ Objectif : intégrer l’OCR (Google Cloud Vision) dans le pipeline des bots
 
   NINA (Secrétaire — documents, PDF scannés, photos)
   --------------------------------------------------
-[ ] 4.1  Dans la route chat ou le traitement des fichiers (lib/assistant/),
+✅ 4.1  Dans la route chat ou le traitement des fichiers (lib/assistant/),
          détecter les entrées image/PDF (ou premières pages en images).
-[ ] 4.2  Avant envoi au LLM : appeler l’OCR sur chaque image / page PDF
+✅ 4.2  Avant envoi au LLM : appeler l’OCR sur chaque image / page PDF
          concernée.
-[ ] 4.3  Envoyer le texte extrait au LLM :
+✅ 4.3  Envoyer le texte extrait au LLM :
          - soit en plus de l’image (contexte enrichi),
          - soit à la place de l’image pour les PDF scannés (meilleurs
            résumés/analyses).
-[ ] 4.4  Adapter le prompt ou le format du message pour indiquer que le
+✅ 4.4  Adapter le prompt ou le format du message pour indiquer que le
          contenu est issu d’un document (OCR) si pertinent.
-[ ] 4.5  Tester : upload PDF scanné + photo de document → vérifier qualité
+🔲 4.5  Tester : upload PDF scanné + photo de document → vérifier qualité
          des résumés/analyses.
 
 
   SINISTRO (Sinistres — constats amiables)
   ----------------------------------------
-[ ] 4.6  Pour chaque image de constat amiable reçue dans le chat, appeler
+✅ 4.6  Pour chaque image de constat amiable reçue dans le chat, appeler
          documentTextDetection() pour conserver la structure (blocs, paragraphes).
-[ ] 4.7  Injecter le texte structuré dans le contexte du prompt Sinistro
+✅ 4.7  Injecter le texte structuré dans le contexte du prompt Sinistro
          (ou en entrée structurée dédiée “contenu du constat”).
-[ ] 4.8  S’assurer que le prompt Sinistro précise d’utiliser ce contenu
+✅ 4.8  S’assurer que le prompt Sinistro précise d’utiliser ce contenu
          pour la qualification (IRSA, IRSI, droit commun) et l’analyse.
-[ ] 4.9  Tester : envoi d’une image de constat → vérifier extraction puis
+🔲 4.9  Tester : envoi d’une image de constat → vérifier extraction puis
          qualité de la qualification et du sourçage.
 
 
   BOB (Santé & Prévoyance — attestations, liasses, 2035)
   ------------------------------------------------------
-[ ] 4.10 Optionnel : pour les uploads image (attestations, liasses, 2035),
+✅ 4.10 Optionnel : pour les uploads image (attestations, liasses, 2035),
          appeler l’OCR avant ou en parallèle de l’envoi au LLM.
-[ ] 4.11 Ajouter le texte extrait au contexte ou au message utilisateur
+✅ 4.11 Ajouter le texte extrait au contexte ou au message utilisateur
          pour que Bob puisse s’appuyer sur des champs précis (chiffres,
          noms de caisses, etc.).
-[ ] 4.12 Tester : upload image de liasse / 2035 → vérifier que les réponses
+🔲 4.12 Tester : upload image de liasse / 2035 → vérifier que les réponses
          citent correctement les données extraites.
 
 
 --- OPTIONNEL ET FINALISATION --------------------------------------------------
 
-[ ] 4.13 (Optionnel) Étiquetage d’images : si utile (ex. détecter “document”,
+🔲 4.13 (Optionnel) Étiquetage d’images : si utile (ex. détecter “document”,
          “tableau”), appeler labelDetection() et utiliser les labels pour
          router le traitement (Nina / Sinistro).
-[ ] 4.14 Limiter les appels Vision (coûts, quotas) : pas d’OCR sur toutes
+✅ 4.14 Limiter les appels Vision (coûts, quotas) : pas d’OCR sur toutes
          les images si le message n’en a pas besoin ; éventuellement
          limite par message (ex. max N images en OCR).
-[ ] 4.15 Documenter : mettre à jour ORGANISATION-NINA.txt, ORGANISATION-SINISTRO.txt
+🔲 4.15 Documenter : mettre à jour ORGANISATION-NINA.txt, ORGANISATION-SINISTRO.txt
          et ORGANISATION-BOB.txt avec les chemins du module OCR et le
          flux (quand l’OCR est appelé, fallback si échec).
 

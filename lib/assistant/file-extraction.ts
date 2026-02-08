@@ -217,31 +217,26 @@ async function convertPDFToImages(arrayBuffer: ArrayBuffer): Promise<ArrayBuffer
 }
 
 /**
- * Initialise le client Google Vision AI avec credentials depuis variable d'environnement
+ * Initialise le client Google Vision AI avec credentials depuis variable d'environnement.
+ * Utilise GOOGLE_APPLICATION_CREDENTIALS_JSON (contenu JSON) ou GOOGLE_APPLICATION_CREDENTIALS (chemin fichier).
  */
 async function getVisionClient() {
   const { ImageAnnotatorClient } = await import("@google-cloud/vision");
   const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
-  if (!credentialsJson) {
-    throw new Error(
-      "GOOGLE_APPLICATION_CREDENTIALS_JSON manquante dans les variables d'environnement"
-    );
+  if (credentialsJson) {
+    try {
+      const credentials = JSON.parse(credentialsJson) as object;
+      return new ImageAnnotatorClient({ credentials });
+    } catch (error) {
+      throw new Error(
+        "Erreur lors du parsing de GOOGLE_APPLICATION_CREDENTIALS_JSON: " +
+          (error instanceof Error ? error.message : "Format JSON invalide")
+      );
+    }
   }
 
-  let credentials;
-  try {
-    credentials = JSON.parse(credentialsJson);
-  } catch (error) {
-    throw new Error(
-      "Erreur lors du parsing de GOOGLE_APPLICATION_CREDENTIALS_JSON: " +
-        (error instanceof Error ? error.message : "Format JSON invalide")
-    );
-  }
-
-  return new ImageAnnotatorClient({
-    credentials,
-  });
+  return new ImageAnnotatorClient();
 }
 
 /** Nombre max de pages pour l'OCR sync Vision (files.annotate n'accepte que 5 pages). */
