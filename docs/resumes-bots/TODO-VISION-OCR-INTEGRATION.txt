@@ -77,7 +77,7 @@ Objectif : intégrer l’OCR (Google Cloud Vision) dans le pipeline des bots
 ✅ 4.14 Limiter les appels Vision (coûts, quotas) : pas d’OCR sur toutes
          les images si le message n’en a pas besoin ; éventuellement
          limite par message (ex. max N images en OCR).
-🔲 4.15 Documenter : mettre à jour ORGANISATION-NINA.txt, ORGANISATION-SINISTRO.txt
+✅ 4.15 Documenter : mettre à jour ORGANISATION-NINA.txt, ORGANISATION-SINISTRO.txt
          et ORGANISATION-BOB.txt avec les chemins du module OCR et le
          flux (quand l’OCR est appelé, fallback si échec).
 

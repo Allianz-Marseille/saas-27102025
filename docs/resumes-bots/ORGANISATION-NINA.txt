@@ -26,6 +26,11 @@ et la logique du bot pour maintenir ou faire évoluer Nina.
     chatTimeout = NINA_TIMEOUT (45 000 ms).
   - Traitement fichiers : lib/assistant/file-processing.ts (PDF, Word, Excel,
     TXT, CSV), lib/assistant/image-utils.ts (base64) ; parsing côté API.
+  - OCR images : lib/assistant/vision-ocr.ts — pour les requêtes avec images,
+    la route appelle extractTextFromImagesWithVision() (Google Cloud Vision) avant
+    le prompt ; le texte extrait est injecté dans le contexte système. Limite 5
+    images/requête. Fallback : si Vision indisponible ou erreur, pas de texte OCR
+    (chaîne vide), le flux continue avec les images seules (Vision OpenAI).
   - Visuel : public/agents-ia/bot-secretaire/ (avatar.jpg, avatar-tete.jpg) —
     carte dashboard et bulles du chat
 
@@ -63,6 +68,9 @@ et la logique du bot pour maintenir ou faire évoluer Nina.
       type (PDF, Word, Excel, TXT, CSV), MAX_FILES_PER_MESSAGE
   - lib/assistant/image-utils.ts ................. processImageFiles(),
       convertImagesToBase64() pour envoi au modèle
+  - lib/assistant/vision-ocr.ts .................. OCR Google Cloud Vision sur
+      images : extractTextFromImagesWithVision() ; texte injecté dans le contexte
+      (section "TEXTE EXTRAIT DES IMAGES (OCR)"). Fallback si erreur : "".
   - lib/assistant/mask-sensitive.ts .............. Masquage données sensibles
       (optionnel avant copie)
 

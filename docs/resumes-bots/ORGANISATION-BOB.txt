@@ -28,6 +28,10 @@ la logique du bot pour maintenir ou faire évoluer Bob.
     la route utilise getBobRagContext(message, openai) puis formatBobRagContext ;
     si vide, fallback loadBobKnowledge() ; baseKnowledge = getBobSystemPrompt()
     + BASE DE CONNAISSANCES (RAG ou fallback) + getRegulatoryFiguresBlock()
+  - OCR images (attestations, liasses, 2035) : lib/assistant/vision-ocr.ts —
+    pour les requêtes avec images, extractTextFromImagesWithVision() ; texte
+    extrait injecté dans le contexte pour que Bob s'appuie sur chiffres/caisses.
+    Limite 5 images/requête. Fallback : si Vision indisponible, pas de texte OCR.
   - Visuel : avatars public/agents-ia/bot-sante/ (bob_rit.png, bob_sourit.png,
     bob_reflechit.png) — carte dashboard et bulles du chat
 
@@ -50,6 +54,8 @@ la logique du bot pour maintenir ou faire évoluer Bob.
   - lib/assistant/regulatory-figures.ts ............ getRegulatoryFiguresBlock() :
       chiffres réglementaires (PASS, SMIC, plafond IJSS, capital décès CPAM,
       Madelin). Source unique pour les calculs ; mise à jour annuelle.
+  - lib/assistant/vision-ocr.ts .................. OCR Vision sur images (liasses,
+      2035, attestations) ; texte injecté dans le contexte. Fallback "" si erreur.
 
   CONFIG
   - lib/assistant/config.ts ...................... BOB_TIMEOUT (60 000 ms),
