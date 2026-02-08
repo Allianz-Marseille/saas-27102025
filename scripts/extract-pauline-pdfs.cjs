@@ -43,9 +43,10 @@ async function extractPdf(pdfPath, outPath, pdfName, pdfSubfolder) {
   const cleaned = cleanExtractedText(text);
   const basename = path.basename(pdfPath);
 
-  const header = `# ${pdfName} — Texte intégral (extrait PDF)
+  const docTitle = pdfName.replace(/^[\d-]+-/, "").replace(/_/g, " ");
+  const header = `# ${docTitle}
 
-Source : \`docs/pdf/${pdfSubfolder}/${basename}\` — document de référence pour les règles de souscription et la documentation produits particuliers (${pdfSubfolder}).
+Document de référence pour les règles de souscription — ${pdfSubfolder} (${basename}).
 
 ---
 

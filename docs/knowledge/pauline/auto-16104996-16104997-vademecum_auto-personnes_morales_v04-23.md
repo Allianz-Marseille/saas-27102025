@@ -1,6 +1,6 @@
-# 16104996-16104997-Vademecum_Auto-Personnes_morales_V04-23 — Texte intégral (extrait PDF)
+# Vademecum Auto Personnes morales
 
-Source : `docs/pdf/auto/16104996-16104997-Vademecum_Auto-Personnes_morales_V04-23.pdf` — document de référence pour les règles de souscription et la documentation produits particuliers (auto).
+Document de référence pour les règles de souscription assurance auto — personnes morales (sociétés, collectivités, commerçants, artisans, GAEC). Base : Guide de souscription RES35901.
 
 ---
 

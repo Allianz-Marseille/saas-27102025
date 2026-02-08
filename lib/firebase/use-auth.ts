@@ -239,12 +239,24 @@ export function useAuth(): AuthState {
             setUserData(null);
           }
         } catch (error) {
-          console.error("❌ Erreur lors de la récupération des données utilisateur:", {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            error: error instanceof Error ? error.message : String(error),
-            errorStack: error instanceof Error ? error.stack : undefined,
-          });
+          const firebaseError = error as { code?: string; message?: string };
+          const errorCode = firebaseError?.code ?? (error instanceof Error ? "unknown" : "non-Error");
+          const errorMessage =
+            firebaseError?.message ?? (error instanceof Error ? error.message : String(error));
+
+          console.error(
+            `❌ Erreur lors de la récupération des données utilisateur [${errorCode}]: ${errorMessage}`,
+            { uid: firebaseUser.uid, email: firebaseUser.email, error }
+          );
+
+          if (errorCode === "permission-denied") {
+            console.error(
+              "   → Vérifiez que le document users/" +
+                firebaseUser.uid +
+                " existe dans Firestore et que les règles autorisent la lecture."
+            );
+          }
+
           setUserData(null);
         }
       } else {
