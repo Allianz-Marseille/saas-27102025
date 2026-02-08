@@ -18,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ENABLE_BOB_BOT, ENABLE_NINA_BOT, ENABLE_SINISTRO_BOT } from "@/lib/assistant/config";
+import { ENABLE_BOB_BOT, ENABLE_NINA_BOT, ENABLE_SINISTRO_BOT, ENABLE_PAULINE_BOT } from "@/lib/assistant/config";
 
 type BotCardConfig = {
   name: string;
@@ -72,6 +72,19 @@ const SINISTRO_SINISTRE: BotCardConfig = {
   ],
 };
 
+const BOT_PAULINE: BotCardConfig = {
+  name: "Spécialiste Produits Particuliers",
+  firstName: "Pauline",
+  href: "/commun/agents-ia/bot-pauline",
+  image: "/agents-ia/bot-pauline/pauline.png",
+  hoverDescription: "Règles de souscription, infos produits, documentation Allianz marché particuliers. Réponses sourcées.",
+  services: [
+    "Règles de souscription",
+    "Infos produits",
+    "Documentation",
+  ],
+};
+
 export default function AgentsIAPage() {
   const router = useRouter();
 
@@ -121,7 +134,7 @@ export default function AgentsIAPage() {
         <CardContent>
           <TooltipProvider>
             <div className="flex flex-wrap gap-6">
-              {[...(ENABLE_NINA_BOT ? [BOT_SECRETAIRE] : []), ...(ENABLE_BOB_BOT ? [BOB_SANTE] : []), ...(ENABLE_SINISTRO_BOT ? [SINISTRO_SINISTRE] : [])].map(
+              {[...(ENABLE_NINA_BOT ? [BOT_SECRETAIRE] : []), ...(ENABLE_BOB_BOT ? [BOB_SANTE] : []), ...(ENABLE_SINISTRO_BOT ? [SINISTRO_SINISTRE] : []), ...(ENABLE_PAULINE_BOT ? [BOT_PAULINE] : [])].map(
                 (bot) => (
                   <Link
                     key={bot.href}

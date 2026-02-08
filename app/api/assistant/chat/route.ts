@@ -9,7 +9,7 @@ import OpenAI from "openai";
 import { checkRateLimit, determineRequestType } from "@/lib/assistant/rate-limiting";
 import { checkBudgetLimit } from "@/lib/assistant/budget-alerts";
 import { openaiWithRetry } from "@/lib/assistant/retry";
-import { NINA_TIMEOUT, BOB_TIMEOUT, SINISTRO_TIMEOUT, SUMMARY_WINDOW, DOCUMENT_CONTEXT_MAX_CHARS } from "@/lib/assistant/config";
+import { NINA_TIMEOUT, BOB_TIMEOUT, SINISTRO_TIMEOUT, PAULINE_TIMEOUT, SUMMARY_WINDOW, DOCUMENT_CONTEXT_MAX_CHARS } from "@/lib/assistant/config";
 import { logUsage } from "@/lib/assistant/monitoring";
 import { logAction } from "@/lib/assistant/audit";
 import { parseFile } from "@/lib/assistant/file-parsers";
@@ -186,10 +186,11 @@ export async function POST(request: NextRequest) {
         messageContent.includes("fiche")
       );
 
-    // Contexte Nina (bot secrétaire), Bob (santé & prévoyance) ou Sinistro (sinistres) : prompt dédié
+    // Contexte Nina (bot secrétaire), Bob (santé & prévoyance), Sinistro (sinistres) ou Pauline (produits particuliers) : prompt dédié
     const isNina = context?.agent === "nina";
     const isBob = context?.agent === "bob";
     const isSinistro = context?.agent === "sinistro";
+    const isPauline = context?.agent === "pauline";
     let baseKnowledge: string;
     if (isNina) {
       const { getNinaSystemPrompt } = await import("@/lib/assistant/nina-system-prompt");
@@ -230,6 +231,19 @@ export async function POST(request: NextRequest) {
         baseKnowledge +=
           "\n\n---\n\nANALYSE COMPARATIVE (cette requête) : L'utilisateur a fourni deux documents (ex. constat amiable + photo de dommages, ou constat + rapport d'expert). Tu dois : 1) extraire les déclarations du constat (colonnes A/B, cases, croquis), 2) décrire les dommages visibles sur l'autre document, 3) comparer et lister les incohérences (localisation, gravité, cohérence croquis/photo), 4) alerter sur les fraudes ou erreurs de déclaration classiques. Applique la méthodologie d'analyse comparative définie dans ton prompt.";
       }
+    } else if (isPauline) {
+      const { getPaulineSystemPrompt } = await import("@/lib/assistant/pauline-system-prompt");
+      const { getPaulineRagContext, formatPaulineRagContext } = await import("@/lib/assistant/pauline-rag");
+      const { loadPaulineKnowledge } = await import("@/lib/assistant/knowledge-loader");
+      const ragChunks = await getPaulineRagContext(typeof message === "string" ? message : "", openai);
+      let paulineKnowledge = formatPaulineRagContext(ragChunks);
+      if (!paulineKnowledge) {
+        const fallback = loadPaulineKnowledge();
+        paulineKnowledge = fallback ? `## Source : pauline (base complète)\n\n${fallback}` : "";
+      }
+      baseKnowledge = paulineKnowledge
+        ? getPaulineSystemPrompt() + "\n\n---\n\nBASE DE CONNAISSANCES (sources à citer) :\n\n" + paulineKnowledge
+        : getPaulineSystemPrompt();
     } else {
       // Charger la base de connaissances selon le contexte
       const { loadKnowledgeForContext, loadSegmentationKnowledge } = await import("@/lib/assistant/knowledge-loader");
@@ -253,8 +267,8 @@ export async function POST(request: NextRequest) {
     // via loadKnowledgeForContext ou loadSegmentationKnowledge
     const relevantKnowledge = "";
 
-    // Construire le prompt système (Nina / Bob / Sinistro = prompt dédié, sinon assistant agence)
-    const coreKnowledge = isNina || isBob || isSinistro
+    // Construire le prompt système (Nina / Bob / Sinistro / Pauline = prompt dédié, sinon assistant agence)
+    const coreKnowledge = isNina || isBob || isSinistro || isPauline
       ? baseKnowledge
       : `Tu es l'assistant interne de l'agence Allianz Marseille (Nogaro & Boetti).
 
@@ -312,7 +326,7 @@ Quand tu donnes une information technique, réglementaire ou juridique, tu DOIS 
 
 Si tu ne connais pas la réponse, dis-le clairement avec un ton professionnel mais accessible.`;
 
-    const formattingRules = isNina || isBob || isSinistro
+    const formattingRules = isNina || isBob || isSinistro || isPauline
       ? "Utilise le format Markdown pour structurer tes réponses. Reste concis et professionnel."
       : isFormalWriting
       ? `RÈGLES DE FORMATAGE POUR MAILS ET LETTRES :
@@ -717,11 +731,11 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
 `;
     
     let systemPrompt = `${coreKnowledge}${buttonPromptSection}${ocrPromptSection}${ocrImagesSection}${persistedDocumentSection}${fileManagementPrompt}${formattingRules}`;
-    if ((isNina || isBob || isSinistro) && Array.isArray(history) && history.length > SUMMARY_WINDOW) {
+    if ((isNina || isBob || isSinistro || isPauline) && Array.isArray(history) && history.length > SUMMARY_WINDOW) {
       systemPrompt += `\n\nNote: Les échanges précédents ont été tronqués (fenêtre glissante, ${SUMMARY_WINDOW} derniers messages).`;
     }
 
-    const chatTimeout = isSinistro ? SINISTRO_TIMEOUT : isBob ? BOB_TIMEOUT : NINA_TIMEOUT;
+    const chatTimeout = isPauline ? PAULINE_TIMEOUT : isSinistro ? SINISTRO_TIMEOUT : isBob ? BOB_TIMEOUT : NINA_TIMEOUT;
 
     // Construire le contenu du message utilisateur
     const userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];

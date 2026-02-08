@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/bob", destination: "/commun/agents-ia/bob-sante", permanent: true },
+      { source: "/pauline", destination: "/commun/agents-ia/bot-pauline", permanent: true },
     ];
   },
   // Optimiser les imports (compatible avec Turbopack)
