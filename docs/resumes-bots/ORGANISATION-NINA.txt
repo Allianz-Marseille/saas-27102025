@@ -109,6 +109,9 @@ et la logique du bot pour maintenir ou faire évoluer Nina.
   Construction du système
   - baseKnowledge = getNinaSystemPrompt() (aucune base de connaissances ni RAG).
   - coreKnowledge = baseKnowledge.
+  - En présence d'images : la route appelle extractTextFromImagesWithVision()
+    (Google Cloud Vision) et injecte le texte extrait dans le prompt système
+    (section "TEXTE EXTRAIT DES IMAGES (OCR)") avant envoi au LLM.
   - Ce bloc est envoyé comme système au LLM avec l'historique et le message
     utilisateur (et les images/fichiers en contenu si présents).
   - chatTimeout = NINA_TIMEOUT (45 s) ; si history.length > SUMMARY_WINDOW,
@@ -139,6 +142,8 @@ et la logique du bot pour maintenir ou faire évoluer Nina.
 
   Pour déboguer le flux
   - Vérifier que la requête contient context: { agent: "nina" }.
+  - OCR : nécessite GOOGLE_APPLICATION_CREDENTIALS (chemin fichier clé) ou
+    GOOGLE_APPLICATION_CREDENTIALS_JSON ; Cloud Vision API activée sur le projet.
   - Timeout : NINA_TIMEOUT (45 s) ; en cas de documents lourds, augmenter si
     nécessaire dans config.ts (comme BOB_TIMEOUT / SINISTRO_TIMEOUT à 60 s).
 
