@@ -26,6 +26,11 @@ et la logique du bot pour maintenir ou faire évoluer Nina.
     chatTimeout = NINA_TIMEOUT (45 000 ms).
   - Traitement fichiers : lib/assistant/file-processing.ts (PDF, Word, Excel,
     TXT, CSV), lib/assistant/image-utils.ts (base64) ; parsing côté API.
+  - OCR images : lib/assistant/vision-ocr.ts — pour les requêtes avec images,
+    la route appelle extractTextFromImagesWithVision() (Google Cloud Vision) avant
+    le prompt ; le texte extrait est injecté dans le contexte système. Limite 5
+    images/requête. Fallback : si Vision indisponible ou erreur, pas de texte OCR
+    (chaîne vide), le flux continue avec les images seules (Vision OpenAI).
   - Visuel : public/agents-ia/bot-secretaire/ (avatar.jpg, avatar-tete.jpg) —
     carte dashboard et bulles du chat
 
@@ -63,6 +68,9 @@ et la logique du bot pour maintenir ou faire évoluer Nina.
       type (PDF, Word, Excel, TXT, CSV), MAX_FILES_PER_MESSAGE
   - lib/assistant/image-utils.ts ................. processImageFiles(),
       convertImagesToBase64() pour envoi au modèle
+  - lib/assistant/vision-ocr.ts .................. OCR Google Cloud Vision sur
+      images : extractTextFromImagesWithVision() ; texte injecté dans le contexte
+      (section "TEXTE EXTRAIT DES IMAGES (OCR)"). Fallback si erreur : "".
   - lib/assistant/mask-sensitive.ts .............. Masquage données sensibles
       (optionnel avant copie)
 
@@ -101,6 +109,9 @@ et la logique du bot pour maintenir ou faire évoluer Nina.
   Construction du système
   - baseKnowledge = getNinaSystemPrompt() (aucune base de connaissances ni RAG).
   - coreKnowledge = baseKnowledge.
+  - En présence d'images : la route appelle extractTextFromImagesWithVision()
+    (Google Cloud Vision) et injecte le texte extrait dans le prompt système
+    (section "TEXTE EXTRAIT DES IMAGES (OCR)") avant envoi au LLM.
   - Ce bloc est envoyé comme système au LLM avec l'historique et le message
     utilisateur (et les images/fichiers en contenu si présents).
   - chatTimeout = NINA_TIMEOUT (45 s) ; si history.length > SUMMARY_WINDOW,
@@ -131,6 +142,8 @@ et la logique du bot pour maintenir ou faire évoluer Nina.
 
   Pour déboguer le flux
   - Vérifier que la requête contient context: { agent: "nina" }.
+  - OCR : nécessite GOOGLE_APPLICATION_CREDENTIALS (chemin fichier clé) ou
+    GOOGLE_APPLICATION_CREDENTIALS_JSON ; Cloud Vision API activée sur le projet.
   - Timeout : NINA_TIMEOUT (45 s) ; en cas de documents lourds, augmenter si
     nécessaire dans config.ts (comme BOB_TIMEOUT / SINISTRO_TIMEOUT à 60 s).
 

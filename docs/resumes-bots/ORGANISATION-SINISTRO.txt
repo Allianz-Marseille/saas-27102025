@@ -27,6 +27,11 @@ la logique du bot pour maintenir ou faire évoluer Sinistro.
     fichiers, history, context (dont context.agent). Si context.agent === "sinistro",
     la route charge le prompt Sinistro et le contexte RAG (3 chunks les plus proches
     de la question) ou, en fallback, la base statique loadSinistroKnowledge()
+  - OCR images (constats) : lib/assistant/vision-ocr.ts — pour les requêtes avec
+    images, appel extractTextFromImagesWithVision(images, { documentTextDetection: true })
+    pour garder la structure (blocs, paragraphes) ; texte injecté dans le contexte
+    + instruction d'utiliser ce contenu pour qualification IRSA/IRSI/droit commun.
+    Limite 5 images/requête. Fallback : si Vision indisponible, pas de texte OCR.
   - Visuel : avatar public/agents-ia/bot-sinistre/sinistro.png (carte dashboard
     et bulles du chat)
 
@@ -62,8 +67,11 @@ la logique du bot pour maintenir ou faire évoluer Sinistro.
       getSinistroRagContext(message) → formatSinistroRagContext() → baseKnowledge ;
       si RAG vide, fallback loadSinistroKnowledge(). coreKnowledge = baseKnowledge ;
       formattingRules Markdown ; chatTimeout = SINISTRO_TIMEOUT ; historique
-      tronqué comme Nina/Bob si trop long. Les images sont déjà gérées (base64,
-      gpt-4o) pour l'analyse de constat.
+      tronqué comme Nina/Bob si trop long. Les images sont gérées (base64, gpt-4o)
+      et passées en OCR (lib/assistant/vision-ocr.ts, documentTextDetection) ;
+      texte constat injecté dans le prompt pour qualification et sourçage.
+  - lib/assistant/vision-ocr.ts .................. OCR Vision sur images constat :
+      documentTextDetection pour structure ; fallback "" si erreur.
 
   RAG ET INDEX FIRESTORE
   - firestore.indexes.json ........................ Index vectoriel pour
@@ -132,6 +140,9 @@ la logique du bot pour maintenir ou faire évoluer Sinistro.
     (findNearest sur sinistro_knowledge) ; formatSinistroRagContext() en Markdown.
     Si vide, fallback loadSinistroKnowledge() (base complète).
   - baseKnowledge = getSinistroSystemPrompt() + "\n\n---\n\nBASE DE CONNAISSANCES ...\n\n" + sinistroKnowledge
+  - En présence d'images : la route appelle extractTextFromImagesWithVision()
+    (documentTextDetection: true) et injecte le texte du constat dans le prompt
+    système + instruction d'utiliser ce contenu pour qualification et sourçage.
   - Aucun bloc additionnel type "chiffres réglementaires" (contrairement à Bob).
   - Ce bloc est envoyé comme système au LLM avec l'historique et le message
     utilisateur (et les images en base64 si présentes).
@@ -143,8 +154,9 @@ la logique du bot pour maintenir ou faire évoluer Sinistro.
     et demander une précision au collaborateur.
   - Format : résumé court d'abord, puis détail technique (liste, tableau).
   - Si l'utilisateur envoie une image (constat) : extraire colonnes A/B, cases,
-    croquis ; alerter sur incohérences ; qualifier (IRSA / droit commun) et
-    sourcer. Le modèle utilisé en présence d'images est gpt-4o (Vision).
+    croquis, et restituer les noms et prénoms des assurés (outil interne agence,
+    pas de restriction sur l'identification des personnes) ; alerter sur
+    incohérences ; qualifier (IRSA / droit commun) et sourcer. Modèle : gpt-4o (Vision).
 
   Seuils à ne pas inventer
   - IRSA : 6 500 € HT (convention), 1 500 € HT (gestion simplifiée sous conditions)
@@ -180,8 +192,11 @@ la logique du bot pour maintenir ou faire évoluer Sinistro.
     Log "findNearest non disponible" = fallback base statique.
   - Fallback : loadSinistroKnowledge() nécessite docs/knowledge/sinistro/ avec
     des .md.
-  - En cas d'image : la route utilise gpt-4o et envoie les images en contenu
-    utilisateur ; le prompt système demande déjà d'analyser les constats.
+  - En cas d'image : la route utilise gpt-4o, appelle l'OCR Vision
+    (documentTextDetection) et injecte le texte constat ; le prompt demande
+    d'extraire noms/prénoms assurés (outil interne) et d'analyser/qualifier.
+  - OCR : GOOGLE_APPLICATION_CREDENTIALS ou GOOGLE_APPLICATION_CREDENTIALS_JSON ;
+    Cloud Vision API activée sur le projet.
 
   Fichiers clés à ne pas casser
   - lib/assistant/sinistro-system-prompt.ts

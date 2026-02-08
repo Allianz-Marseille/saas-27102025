@@ -10,7 +10,10 @@ Chargeur : `loadSinistroKnowledge()` dans `lib/assistant/knowledge-loader.ts`. D
 |---------|------|
 | `00-SOURCE-DE-VERITE.md` | Ce document — inventaire. |
 | `irsa-auto.md` | Convention IRSA (auto matériel), seuils 6 500 € HT, gestion simplifiée. |
+| `irsa-convention-complete.md` | Texte intégral Convention IRSA (extrait PDF France Assureurs, éd. juin 2014) : champ d'application, délais, renonciations à recours, barème, annexes. À citer pour les questions détaillées. |
 | `irsi-immeuble.md` | Convention IRSI (dégâts des eaux, incendie, immeuble), seuil 5 000 € HT. |
+| `irsi-convention-complete.md` | Texte intégral Convention IRSI (extrait PDF) : champ d'application, seuil 5 000 € HT, procédures. À citer pour les questions détaillées. |
+| `cide-cop-convention-complete.md` | Texte intégral Convention CIDE-COP (extrait PDF) : indemnisation directe, catastrophes, procédures. À citer pour les questions détaillées. |
 | `badinter-irca.md` | Loi Badinter, IRCA (corporel auto), indemnisation victimes. |
 | `droit-commun-sinistres.md` | Quand sortir des conventions, Code des assurances, délais, expertise. |
 | `constat-amiable-lecture.md` | Structure du constat (A/B, cases, croquis), repérer contradictions. |

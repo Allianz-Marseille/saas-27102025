@@ -28,6 +28,10 @@ la logique du bot pour maintenir ou faire évoluer Bob.
     la route utilise getBobRagContext(message, openai) puis formatBobRagContext ;
     si vide, fallback loadBobKnowledge() ; baseKnowledge = getBobSystemPrompt()
     + BASE DE CONNAISSANCES (RAG ou fallback) + getRegulatoryFiguresBlock()
+  - OCR images (attestations, liasses, 2035) : lib/assistant/vision-ocr.ts —
+    pour les requêtes avec images, extractTextFromImagesWithVision() ; texte
+    extrait injecté dans le contexte pour que Bob s'appuie sur chiffres/caisses.
+    Limite 5 images/requête. Fallback : si Vision indisponible, pas de texte OCR.
   - Visuel : avatars public/agents-ia/bot-sante/ (bob_rit.png, bob_sourit.png,
     bob_reflechit.png) — carte dashboard et bulles du chat
 
@@ -50,6 +54,8 @@ la logique du bot pour maintenir ou faire évoluer Bob.
   - lib/assistant/regulatory-figures.ts ............ getRegulatoryFiguresBlock() :
       chiffres réglementaires (PASS, SMIC, plafond IJSS, capital décès CPAM,
       Madelin). Source unique pour les calculs ; mise à jour annuelle.
+  - lib/assistant/vision-ocr.ts .................. OCR Vision sur images (liasses,
+      2035, attestations) ; texte injecté dans le contexte. Fallback "" si erreur.
 
   CONFIG
   - lib/assistant/config.ts ...................... BOB_TIMEOUT (60 000 ms),
@@ -137,6 +143,8 @@ la logique du bot pour maintenir ou faire évoluer Bob.
     + "\n\n---\n\n" + getRegulatoryFiguresBlock()
   - RAG : getBobRagContext(message, openai) → chunks ; si findNearest échoue ou absent,
     fallback loadBobKnowledge(). Le bloc réglementaire est toujours ajouté en fin de prompt.
+  - En présence d'images : la route appelle extractTextFromImagesWithVision() et
+    injecte le texte extrait (liasses, 2035, attestations) dans le prompt système.
   - Ce bloc est envoyé comme système au LLM avec l'historique et le message
     utilisateur (et les images/fichiers en contenu si présents).
 
@@ -174,6 +182,8 @@ la logique du bot pour maintenir ou faire évoluer Bob.
 
   Pour déboguer le flux
   - Vérifier que la requête contient context: { agent: "bob" }.
+  - OCR images : GOOGLE_APPLICATION_CREDENTIALS ou GOOGLE_APPLICATION_CREDENTIALS_JSON ;
+    Cloud Vision API activée sur le projet. Fallback : si Vision indisponible, "".
   - Si RAG échoue (index non prêt, erreur Firestore), le fallback loadBobKnowledge()
     est utilisé automatiquement ; vérifier les logs "Bob RAG: findNearest échoué...".
   - Après mise à jour des fiches : npm run migrate:bob-firestore puis attendre

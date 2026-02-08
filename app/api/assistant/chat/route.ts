@@ -14,6 +14,7 @@ import { logUsage } from "@/lib/assistant/monitoring";
 import { logAction } from "@/lib/assistant/audit";
 import { parseFile } from "@/lib/assistant/file-parsers";
 import { extractTextFromPDFBuffer } from "@/lib/assistant/file-extraction";
+import { extractTextFromImagesWithVision } from "@/lib/assistant/vision-ocr";
 // import { enrichMessagesWithKnowledge } from "@/lib/assistant/knowledge-loader"; // Plus utilisé, la logique métier est dans le system prompt
 
 // Client OpenAI créé à la demande pour éviter d'exiger OPENAI_API_KEY au build (Vercel).
@@ -612,6 +613,26 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
       }
     }
 
+    // OCR Vision sur les images pour Nina, Sinistro, Bob : texte extrait injecté dans le contexte
+    let ocrImagesSection = "";
+    if ((isNina || isSinistro || isBob) && images && Array.isArray(images) && images.length > 0) {
+      try {
+        const { ocrSection } = await extractTextFromImagesWithVision(images, {
+          documentTextDetection: isSinistro,
+          maxImages: 5,
+        });
+        if (ocrSection) {
+          ocrImagesSection =
+            ocrSection +
+            (isSinistro
+              ? "\n\nUtilise ce texte extrait du constat pour la qualification (IRSA, IRSI, droit commun) et pour sourcer ta réponse.\n"
+              : "\n\nTu peux t'appuyer sur ce texte extrait des images (OCR) pour analyser les documents.\n");
+        }
+      } catch (ocrErr) {
+        console.warn("[chat] OCR Vision sur images ignoré:", ocrErr instanceof Error ? ocrErr.message : ocrErr);
+      }
+    }
+
     // Section "documents partagés précédemment" pour que le bot garde le contexte des PDF/fichiers après plusieurs échanges
     let persistedDocumentSection = "";
     if (Array.isArray(documentContextFromClient) && documentContextFromClient.length > 0) {
@@ -695,7 +716,7 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
 - Documents (DOCX, TXT)
 `;
     
-    let systemPrompt = `${coreKnowledge}${buttonPromptSection}${ocrPromptSection}${persistedDocumentSection}${fileManagementPrompt}${formattingRules}`;
+    let systemPrompt = `${coreKnowledge}${buttonPromptSection}${ocrPromptSection}${ocrImagesSection}${persistedDocumentSection}${fileManagementPrompt}${formattingRules}`;
     if ((isNina || isBob || isSinistro) && Array.isArray(history) && history.length > SUMMARY_WINDOW) {
       systemPrompt += `\n\nNote: Les échanges précédents ont été tronqués (fenêtre glissante, ${SUMMARY_WINDOW} derniers messages).`;
     }
