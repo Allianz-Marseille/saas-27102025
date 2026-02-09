@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
         summary: data?.summary ?? "",
         storagePath: data?.storagePath ?? undefined,
         updatedAt: data?.updatedAt?.toMillis?.() ?? null,
+        enrichedAt: data?.enrichedAt?.toMillis?.() ?? null,
         contentLength: typeof content === "string" ? content.length : 0,
         sourceFileName: data?.sourceFileName ?? undefined,
       };

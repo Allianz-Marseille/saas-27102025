@@ -82,13 +82,14 @@ export async function POST(
         {
           role: "system",
           content:
-            "Tu es un assistant qui analyse des extraits de documents. Réponds uniquement en JSON avec les clés 'title' et 'summary'. Pas de texte avant ou après le JSON.",
+            "Tu es un assistant qui analyse des extraits de documents. Réponds uniquement en JSON avec les clés 'title', 'summary' et 'themes'. Pas de texte avant ou après le JSON.",
         },
         {
           role: "user",
           content: `À partir du texte suivant (extrait PDF), fournis :
 1. title : un titre court et descriptif en français (max 80 caractères)
 2. summary : un résumé en 3 à 5 phrases en français
+3. themes : un tableau de 3 à 5 mots-clés en français (ex. ["bonus", "CRM", "personne morale"])
 
 Texte :
 ${contentPreview}`,
@@ -103,9 +104,9 @@ ${contentPreview}`,
       throw new Error("Réponse OpenAI vide");
     }
 
-    let parsed: { title?: string; summary?: string };
+    let parsed: { title?: string; summary?: string; themes?: unknown };
     try {
-      parsed = JSON.parse(rawResponse) as { title?: string; summary?: string };
+      parsed = JSON.parse(rawResponse) as { title?: string; summary?: string; themes?: unknown };
     } catch {
       throw new Error("Réponse OpenAI invalide (JSON attendu)");
     }
@@ -113,17 +114,25 @@ ${contentPreview}`,
     const title = String(parsed.title ?? currentTitle).trim().slice(0, 80) || currentTitle;
     const summary = String(parsed.summary ?? "").trim();
 
+    const rawThemes = Array.isArray(parsed.themes) ? parsed.themes : [];
+    const themes = rawThemes
+      .slice(0, 5)
+      .map((t) => String(t).trim().slice(0, 50))
+      .filter(Boolean);
+
     const enrichedText = `TITRE: ${title} | RESUME: ${summary} | CONTENU: ${content}`;
     const embedding = await generateEmbedding(enrichedText, openai);
 
     await docRef.update({
       title,
       summary,
+      themes,
       embedding,
       updatedAt: Timestamp.now(),
+      enrichedAt: Timestamp.now(),
     });
 
-    return NextResponse.json({ success: true, title, summary });
+    return NextResponse.json({ success: true, title, summary, themes });
   } catch (error) {
     console.error("Erreur POST /api/admin/knowledge-base/documents/[docId]/enrich:", error);
     const message = error instanceof Error ? error.message : "Erreur inconnue";

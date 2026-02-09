@@ -45,14 +45,6 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-const SUMMARY_MAX_CHARS = 80;
-
-function truncateSummary(text: string, maxChars = SUMMARY_MAX_CHARS): string {
-  const trimmed = text.trim();
-  if (trimmed.length <= maxChars) return trimmed;
-  return trimmed.slice(0, maxChars).trimEnd() + "...";
-}
-
 interface DocumentItem {
   id: string;
   title: string;
@@ -61,6 +53,7 @@ interface DocumentItem {
   summary?: string;
   storagePath?: string;
   updatedAt: number | null;
+  enrichedAt?: number | null;
   contentLength: number;
   sourceFileName?: string;
 }
@@ -84,6 +77,7 @@ export default function KnowledgeBasePage() {
   const [editNotes, setEditNotes] = useState("");
   const [patching, setPatching] = useState(false);
   const [enrichingDocId, setEnrichingDocId] = useState<string | null>(null);
+  const [lastEnrichedDocId, setLastEnrichedDocId] = useState<string | null>(null);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
 
   const getAuthHeaders = useCallback(async () => {
@@ -122,6 +116,18 @@ export default function KnowledgeBasePage() {
   useEffect(() => {
     fetchDocuments();
   }, [fetchDocuments]);
+
+  useEffect(() => {
+    if (!lastEnrichedDocId || documents.length === 0) return;
+    const timer = setTimeout(() => {
+      const row = document.querySelector(`[data-doc-id="${lastEnrichedDocId}"]`);
+      if (row) {
+        row.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      setLastEnrichedDocId(null);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [lastEnrichedDocId, documents]);
 
   const handleUpload = async (e: React.FormEvent, forUpdate = false) => {
     e.preventDefault();
@@ -282,6 +288,7 @@ export default function KnowledgeBasePage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || data.details || `Erreur ${res.status}`);
       toast.success(`Document enrichi : ${data.title || doc.title}`);
+      setLastEnrichedDocId(doc.id);
       fetchDocuments();
     } catch (e) {
       toast.error((e as Error).message || "Erreur enrichissement");
@@ -393,6 +400,7 @@ export default function KnowledgeBasePage() {
                         <th className="text-left py-3 px-2 font-medium">Titre</th>
                         <th className="text-left py-3 px-2 font-medium">Thèmes</th>
                         <th className="text-left py-3 px-2 font-medium">Résumé</th>
+                        <th className="text-left py-3 px-2 font-medium">Enrichi le</th>
                         <th className="text-left py-3 px-2 font-medium">Mis à jour</th>
                         <th className="text-left py-3 px-2 font-medium">Taille</th>
                         <th className="text-right py-3 px-2 font-medium">Actions</th>
@@ -402,6 +410,7 @@ export default function KnowledgeBasePage() {
                       {documents.map((doc) => (
                         <tr
                           key={doc.id}
+                          data-doc-id={doc.id}
                           className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30"
                         >
                           <td className="py-3 px-2">
@@ -428,8 +437,8 @@ export default function KnowledgeBasePage() {
                               <TooltipProvider delayDuration={200}>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <span className="block cursor-default truncate">
-                                      {truncateSummary(doc.summary)}
+                                    <span className="block cursor-default line-clamp-3">
+                                      {doc.summary}
                                     </span>
                                   </TooltipTrigger>
                                   <TooltipContent
@@ -443,6 +452,11 @@ export default function KnowledgeBasePage() {
                             ) : (
                               <span className="text-slate-400">—</span>
                             )}
+                          </td>
+                          <td className="py-3 px-2 text-slate-500">
+                            {doc.enrichedAt
+                              ? format(new Date(doc.enrichedAt), "dd MMM yyyy HH:mm", { locale: fr })
+                              : "—"}
                           </td>
                           <td className="py-3 px-2 text-slate-500">
                             {doc.updatedAt
