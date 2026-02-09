@@ -34,7 +34,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { BookOpen, Upload, Trash2, RefreshCw, FileText, Pencil, List, Eye, Sparkles, Info, CheckCircle2, XCircle } from "lucide-react";
+import { BookOpen, Upload, Trash2, RefreshCw, FileText, Pencil, List, Eye, Sparkles, Info, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -88,6 +88,7 @@ export default function KnowledgeBasePage() {
   const [lastEnrichedDocId, setLastEnrichedDocId] = useState<string | null>(null);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
   const [enrichFilter, setEnrichFilter] = useState<"all" | "toEnrich" | "enriched">("all");
+  const [selectedThemeFilters, setSelectedThemeFilters] = useState<string[]>([]);
 
   const getAuthHeaders = useCallback(async () => {
     const token = await user?.getIdToken();
@@ -317,6 +318,25 @@ export default function KnowledgeBasePage() {
   const documentsSortedByTitle = [...documentsFiltered].sort((a, b) =>
     a.title.localeCompare(b.title, "fr")
   );
+
+  const allUniqueThemes = Array.from(
+    new Set(documentsSortedByTitle.flatMap((d) => d.themes ?? []))
+  ).sort((a, b) => a.localeCompare(b, "fr"));
+
+  const documentsFilteredByThemes =
+    selectedThemeFilters.length === 0
+      ? documentsSortedByTitle
+      : documentsSortedByTitle.filter((d) =>
+          selectedThemeFilters.some((t) => (d.themes ?? []).includes(t))
+        );
+
+  const toggleThemeFilter = (theme: string) => {
+    setSelectedThemeFilters((prev) =>
+      prev.includes(theme) ? prev.filter((t) => t !== theme) : [...prev, theme]
+    );
+  };
+
+  const resetThemeFilters = () => setSelectedThemeFilters([]);
 
   return (
     <div className="space-y-6">
@@ -843,14 +863,52 @@ export default function KnowledgeBasePage() {
 
       {selectedBase && documents.length > 0 && (
         <Card className="border-slate-200 dark:border-slate-800">
-          <CardHeader className="flex flex-row items-center gap-2">
-            <List className="h-5 w-5" />
-            <div>
-              <CardTitle>Table des matières</CardTitle>
-              <CardDescription>
-                Vue synthétique des documents avec leurs thèmes
-              </CardDescription>
+          <CardHeader className="flex flex-col gap-4">
+            <div className="flex flex-row items-center gap-2">
+              <List className="h-5 w-5 shrink-0" />
+              <div>
+                <CardTitle>Table des matières</CardTitle>
+                <CardDescription>
+                  Vue synthétique des documents avec leurs thèmes
+                </CardDescription>
+              </div>
             </div>
+            {allUniqueThemes.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Filtrer par thème :
+                </span>
+                {allUniqueThemes.map((theme) => {
+                  const isSelected = selectedThemeFilters.includes(theme);
+                  return (
+                    <button
+                      key={theme}
+                      type="button"
+                      onClick={() => toggleThemeFilter(theme)}
+                      className={cn(
+                        "inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                        isSelected
+                          ? "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 dark:ring-offset-slate-950"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                      )}
+                    >
+                      {theme}
+                    </button>
+                  );
+                })}
+                {selectedThemeFilters.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1 text-xs"
+                    onClick={resetThemeFilters}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Réinitialiser
+                  </Button>
+                )}
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -863,7 +921,16 @@ export default function KnowledgeBasePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {documentsSortedByTitle.map((doc) => (
+                  {documentsFilteredByThemes.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="py-8 text-center text-sm text-slate-500">
+                        {selectedThemeFilters.length > 0
+                          ? "Aucun document ne correspond aux thèmes sélectionnés"
+                          : "Aucun document"}
+                      </td>
+                    </tr>
+                  ) : (
+                    documentsFilteredByThemes.map((doc) => (
                     <tr
                       key={doc.id}
                       className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30"
@@ -897,7 +964,8 @@ export default function KnowledgeBasePage() {
                         </Button>
                       </td>
                     </tr>
-                  ))}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
