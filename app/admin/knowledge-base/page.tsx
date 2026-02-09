@@ -232,6 +232,7 @@ export default function KnowledgeBasePage() {
       toast.error("Aperçu non disponible (document importé avant archivage)");
       return;
     }
+    const previewWindow = window.open("", "_blank", "noopener,noreferrer");
     try {
       const token = await user.getIdToken();
       const res = await fetch(
@@ -240,13 +241,18 @@ export default function KnowledgeBasePage() {
       );
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `Erreur ${res.status}`);
-      if (data.url) {
-        window.open(data.url, "_blank");
-      } else {
+      if (data.url && previewWindow) {
+        previewWindow.location.href = data.url;
+      } else if (!data.url) {
         throw new Error("URL non reçue");
+      } else if (!previewWindow) {
+        toast.error("Autorisez les pop-ups pour ouvrir l'aperçu");
       }
     } catch (e) {
       toast.error((e as Error).message || "Erreur aperçu");
+      if (previewWindow && !previewWindow.closed) {
+        previewWindow.close();
+      }
     }
   };
 
