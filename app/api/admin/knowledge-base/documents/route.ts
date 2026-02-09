@@ -43,6 +43,8 @@ export async function GET(request: NextRequest) {
         title: data?.title ?? doc.id,
         themes: Array.isArray(data?.themes) ? data.themes : [],
         notes: data?.notes ?? "",
+        summary: data?.summary ?? "",
+        storagePath: data?.storagePath ?? undefined,
         updatedAt: data?.updatedAt?.toMillis?.() ?? null,
         contentLength: typeof content === "string" ? content.length : 0,
         sourceFileName: data?.sourceFileName ?? undefined,

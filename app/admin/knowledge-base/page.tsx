@@ -28,7 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { BookOpen, Upload, Trash2, RefreshCw, FileText, Pencil, List } from "lucide-react";
+import { BookOpen, Upload, Trash2, RefreshCw, FileText, Pencil, List, Eye, Sparkles, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,6 +44,8 @@ interface DocumentItem {
   title: string;
   themes?: string[];
   notes?: string;
+  summary?: string;
+  storagePath?: string;
   updatedAt: number | null;
   contentLength: number;
   sourceFileName?: string;
@@ -67,6 +69,8 @@ export default function KnowledgeBasePage() {
   const [editThemesInput, setEditThemesInput] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [patching, setPatching] = useState(false);
+  const [enrichingDocId, setEnrichingDocId] = useState<string | null>(null);
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
 
   const getAuthHeaders = useCallback(async () => {
     const token = await user?.getIdToken();
@@ -223,6 +227,49 @@ export default function KnowledgeBasePage() {
     setEditDialogOpen(true);
   };
 
+  const handlePreview = async (doc: DocumentItem) => {
+    if (!doc.storagePath || !selectedBaseId || !user) {
+      toast.error("Aperçu non disponible (document importé avant archivage)");
+      return;
+    }
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(
+        `/api/admin/knowledge-base/documents/${encodeURIComponent(doc.id)}/preview?knowledgeBaseId=${encodeURIComponent(selectedBaseId)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Erreur ${res.status}`);
+      if (data.url) {
+        window.open(data.url, "_blank");
+      } else {
+        throw new Error("URL non reçue");
+      }
+    } catch (e) {
+      toast.error((e as Error).message || "Erreur aperçu");
+    }
+  };
+
+  const handleEnrich = async (doc: DocumentItem) => {
+    if (!selectedBaseId || !user) return;
+    setEnrichingDocId(doc.id);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(
+        `/api/admin/knowledge-base/documents/${encodeURIComponent(doc.id)}/enrich?knowledgeBaseId=${encodeURIComponent(selectedBaseId)}`,
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || data.details || `Erreur ${res.status}`);
+      toast.success(`Document enrichi : ${data.title || doc.title}`);
+      fetchDocuments();
+    } catch (e) {
+      toast.error((e as Error).message || "Erreur enrichissement");
+    } finally {
+      setEnrichingDocId(null);
+    }
+  };
+
   const selectedBase = bases.find((b) => b.id === selectedBaseId);
   const documentsSortedByTitle = [...documents].sort((a, b) =>
     a.title.localeCompare(b.title, "fr")
@@ -234,6 +281,15 @@ export default function KnowledgeBasePage() {
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
           <BookOpen className="h-7 w-7" />
           Base de connaissance
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 rounded-full text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+            onClick={() => setHelpDialogOpen(true)}
+            aria-label="Aide"
+          >
+            <Info className="h-4 w-4" />
+          </Button>
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
           Consulter et gérer les bases RAG des agents IA
@@ -316,6 +372,7 @@ export default function KnowledgeBasePage() {
                       <tr className="border-b border-slate-200 dark:border-slate-700">
                         <th className="text-left py-3 px-2 font-medium">Titre</th>
                         <th className="text-left py-3 px-2 font-medium">Thèmes</th>
+                        <th className="text-left py-3 px-2 font-medium">Résumé</th>
                         <th className="text-left py-3 px-2 font-medium">Mis à jour</th>
                         <th className="text-left py-3 px-2 font-medium">Taille</th>
                         <th className="text-right py-3 px-2 font-medium">Actions</th>
@@ -346,6 +403,16 @@ export default function KnowledgeBasePage() {
                               <span className="text-slate-400">—</span>
                             )}
                           </td>
+                          <td
+                            className="py-3 px-2 text-slate-600 dark:text-slate-400 max-w-[200px]"
+                            title={doc.summary || undefined}
+                          >
+                            {doc.summary ? (
+                              <span className="line-clamp-2 block">{doc.summary}</span>
+                            ) : (
+                              <span className="text-slate-400">—</span>
+                            )}
+                          </td>
                           <td className="py-3 px-2 text-slate-500">
                             {doc.updatedAt
                               ? format(new Date(doc.updatedAt), "dd MMM yyyy HH:mm", { locale: fr })
@@ -358,7 +425,29 @@ export default function KnowledgeBasePage() {
                             car.
                           </td>
                           <td className="py-3 px-2 text-right">
-                            <div className="flex justify-end gap-1">
+                            <div className="flex flex-wrap justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="gap-1"
+                                onClick={() => handlePreview(doc)}
+                                disabled={!doc.storagePath}
+                                title={doc.storagePath ? "Ouvrir le PDF" : "Aperçu indisponible (import avant archivage)"}
+                              >
+                                <Eye className="h-4 w-4" />
+                                Aperçu
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="gap-1"
+                                onClick={() => handleEnrich(doc)}
+                                disabled={enrichingDocId === doc.id}
+                                title="Enrichir le document avec un titre et un résumé IA"
+                              >
+                                <Sparkles className={cn("h-4 w-4", enrichingDocId === doc.id && "animate-pulse")} />
+                                {enrichingDocId === doc.id ? "Enrichissement..." : "Enrichir"}
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -516,6 +605,113 @@ export default function KnowledgeBasePage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Comment fonctionne la Base de connaissance PDF</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm text-slate-700 dark:text-slate-300">
+            <section>
+              <h3 className="font-semibold mb-2">À quoi sert cette page ?</h3>
+              <p>
+                Cette page permet de nourrir les agents IA (Pauline, Bob, Sinistro) avec des
+                documents PDF. Chaque base est liée à un bot : les documents que vous ajoutez ici
+                seront utilisés pour répondre aux questions des collaborateurs.
+              </p>
+            </section>
+            <section>
+              <h3 className="font-semibold mb-2">Que se passe-t-il quand j&apos;upload un PDF ?</h3>
+              <ol className="list-decimal list-inside space-y-1">
+                <li>
+                  <strong>Extraction</strong> : Le texte du PDF est extrait automatiquement.
+                </li>
+                <li>
+                  <strong>Stockage</strong> : Le PDF original est archivé dans Firebase Storage (vous
+                  pourrez le consulter plus tard).
+                </li>
+                <li>
+                  <strong>Indexation</strong> : Un &quot;embedding&quot; (représentation vectorielle)
+                  est calculé pour permettre la recherche sémantique. C&apos;est ce qui permet au bot
+                  de retrouver les bons passages quand on lui pose une question.
+                </li>
+              </ol>
+            </section>
+            <section>
+              <h3 className="font-semibold mb-2">Les actions disponibles</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-700">
+                      <th className="py-2 pr-4 font-medium">Action</th>
+                      <th className="py-2 font-medium">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-slate-100 dark:border-slate-800">
+                      <td className="py-2 pr-4 font-medium">Aperçu</td>
+                      <td className="py-2">
+                        Ouvre le PDF original dans un nouvel onglet. Utile pour vérifier le document
+                        source. <em>Note : indisponible pour les documents importés avant la mise en
+                        place de l&apos;archivage.</em>
+                      </td>
+                    </tr>
+                    <tr className="border-b border-slate-100 dark:border-slate-800">
+                      <td className="py-2 pr-4 font-medium">Modifier</td>
+                      <td className="py-2">
+                        Change le titre, les thèmes ou les notes du document (sans ré-uploader le PDF).
+                      </td>
+                    </tr>
+                    <tr className="border-b border-slate-100 dark:border-slate-800">
+                      <td className="py-2 pr-4 font-medium">Remplacer PDF</td>
+                      <td className="py-2">
+                        Envoie un nouveau PDF à la place de l&apos;ancien. Le texte et l&apos;index
+                        sont recalculés. L&apos;ancien fichier est supprimé.
+                      </td>
+                    </tr>
+                    <tr className="border-b border-slate-100 dark:border-slate-800">
+                      <td className="py-2 pr-4 font-medium">Enrichir avec l&apos;IA</td>
+                      <td className="py-2">
+                        L&apos;IA génère un titre court et un résumé, puis ré-indexe le document.
+                        Cela améliore la précision des réponses du bot en lui donnant un &quot;contexte
+                        global&quot; avant les détails. <strong>Recommandé</strong> après chaque nouvel
+                        upload.
+                      </td>
+                    </tr>
+                    <tr className="border-b border-slate-100 dark:border-slate-800">
+                      <td className="py-2 pr-4 font-medium">Supprimer</td>
+                      <td className="py-2">
+                        Supprime le document et le fichier PDF associé. Irréversible.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+            <section>
+              <h3 className="font-semibold mb-2">Colonnes du tableau</h3>
+              <ul className="list-disc list-inside space-y-1">
+                <li>
+                  <strong>Titre</strong> : Nom du document (modifiable via &quot;Modifier&quot;).
+                </li>
+                <li>
+                  <strong>Thèmes</strong> : Mots-clés pour organiser et filtrer (ex. bonus, CRM,
+                  personne morale).
+                </li>
+                <li>
+                  <strong>Résumé</strong> : Synthèse générée par l&apos;IA ou saisie manuellement.
+                </li>
+                <li>
+                  <strong>Mis à jour</strong> : Date de dernière modification.
+                </li>
+                <li>
+                  <strong>Taille</strong> : Nombre de caractères du texte extrait.
+                </li>
+              </ul>
+            </section>
+          </div>
         </DialogContent>
       </Dialog>
 

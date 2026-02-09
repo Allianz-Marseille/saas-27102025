@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/utils/auth-utils";
 import { getKnowledgeBaseById } from "@/lib/knowledge/registry";
-import { adminDb } from "@/lib/firebase/admin-config";
+import { adminDb, getStorageBucket } from "@/lib/firebase/admin-config";
 import { Timestamp } from "firebase-admin/firestore";
 
 const TITLE_MAX = 200;
@@ -159,7 +159,22 @@ export async function DELETE(
       );
     }
 
-    await adminDb.collection(config.firestoreCollection).doc(docId).delete();
+    const docRef = adminDb.collection(config.firestoreCollection).doc(docId);
+    const docSnap = await docRef.get();
+
+    if (docSnap.exists) {
+      const storagePath = docSnap.data()?.storagePath;
+      if (storagePath && typeof storagePath === "string") {
+        try {
+          const bucket = getStorageBucket();
+          await bucket.file(storagePath).delete();
+        } catch (err) {
+          console.warn("Erreur suppression fichier Storage (ignorée):", err);
+        }
+      }
+    }
+
+    await docRef.delete();
 
     return NextResponse.json({ success: true });
   } catch (error) {

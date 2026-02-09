@@ -7,29 +7,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/utils/auth-utils";
 import { getKnowledgeBaseById } from "@/lib/knowledge/registry";
 import { extractTextFromPdfBuffer, slugFromFilename } from "@/lib/knowledge/extract-pdf";
-import { adminDb } from "@/lib/firebase/admin-config";
+import { generateEmbedding } from "@/lib/knowledge/embedding";
+import { adminDb, getStorageBucket } from "@/lib/firebase/admin-config";
 import { Timestamp } from "firebase-admin/firestore";
 import OpenAI from "openai";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
-const EMBEDDING_MODEL = "text-embedding-3-small";
-const EMBEDDING_INPUT_MAX_CHARS = 8_000;
 
 function getOpenAIClient(): OpenAI {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-}
-
-async function generateEmbedding(text: string, openai: OpenAI): Promise<number[]> {
-  const input = text.slice(0, EMBEDDING_INPUT_MAX_CHARS);
-  const response = await openai.embeddings.create({
-    model: EMBEDDING_MODEL,
-    input,
-  });
-  const embedding = response.data?.[0]?.embedding;
-  if (!embedding || !Array.isArray(embedding)) {
-    throw new Error("Réponse embedding OpenAI invalide");
-  }
-  return embedding;
 }
 
 export async function POST(request: NextRequest) {
@@ -94,6 +80,28 @@ export async function POST(request: NextRequest) {
 
     const title = file.name.replace(/\.pdf$/i, "");
 
+    const storagePath = `knowledge-base/${knowledgeBaseId}/${docId}.pdf`;
+
+    if (docIdParam?.trim()) {
+      const existingDoc = await adminDb.collection(config.firestoreCollection).doc(docId).get();
+      const oldStoragePath = existingDoc.data()?.storagePath;
+      if (oldStoragePath) {
+        try {
+          const bucket = getStorageBucket();
+          await bucket.file(oldStoragePath).delete();
+        } catch {
+          // Ignorer si le fichier n'existe pas (documents créés avant archivage)
+        }
+      }
+    }
+
+    const bucket = getStorageBucket();
+    const fileRef = bucket.file(storagePath);
+    await fileRef.save(buffer, {
+      contentType: "application/pdf",
+      metadata: { cacheControl: "private, max-age=3600" },
+    });
+
     const openai = getOpenAIClient();
     const embedding = await generateEmbedding(content, openai);
 
@@ -102,6 +110,7 @@ export async function POST(request: NextRequest) {
       content,
       updatedAt: Timestamp.now(),
       embedding,
+      storagePath,
     };
 
     await adminDb.collection(config.firestoreCollection).doc(docId).set(payload, { merge: true });
