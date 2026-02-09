@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/utils/auth-utils";
 import { getKnowledgeBaseById } from "@/lib/knowledge/registry";
-import { extractTextFromPdfBuffer, slugFromFilename } from "@/lib/knowledge/extract-pdf";
+import { slugFromFilename } from "@/lib/knowledge/extract-pdf";
+import { extractTextFromPDFBuffer } from "@/lib/assistant/file-extraction";
 import { generateEmbedding } from "@/lib/knowledge/embedding";
 import { adminDb, getStorageBucket } from "@/lib/firebase/admin-config";
 import { Timestamp } from "firebase-admin/firestore";
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const content = await extractTextFromPdfBuffer(buffer);
+    const content = await extractTextFromPDFBuffer(buffer);
 
     const docId = docIdParam?.trim() || slugFromFilename(file.name);
     if (!docId) {
@@ -125,8 +126,31 @@ export async function POST(request: NextRequest) {
       updated: isUpdate,
     });
   } catch (error) {
-    console.error("Erreur POST /api/admin/knowledge-base/ingest:", error);
     const message = error instanceof Error ? error.message : "Erreur inconnue";
+    console.error("Erreur POST /api/admin/knowledge-base/ingest:", error);
+
+    const isExtractionError =
+      message.includes("Aucun texte extrait") ||
+      message.includes("texte extrait") ||
+      message.includes("PDF corrompu") ||
+      message.includes("PDF invalide") ||
+      message.includes("mot de passe") ||
+      message.includes("chiffré");
+
+    if (isExtractionError) {
+      const hint =
+        message.includes("scanné") || message.includes("OCR")
+          ? " Les PDF scannés sont traités par OCR (5 premières pages). Vérifiez que Google Vision est configuré (GOOGLE_APPLICATION_CREDENTIALS_JSON)."
+          : " Utilisez un PDF avec texte sélectionnable ou une version déjà numérisée.";
+      return NextResponse.json(
+        {
+          error: "Impossible d'extraire le texte du PDF",
+          details: message + hint,
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Erreur lors de l'ingestion", details: message },
       { status: 500 }

@@ -162,7 +162,10 @@ export default function KnowledgeBasePage() {
       });
 
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || data.details || `Erreur ${res.status}`);
+      if (!res.ok) {
+        const msg = [data.error, data.details].filter(Boolean).join(" — ") || `Erreur ${res.status}`;
+        throw new Error(msg);
+      }
 
       toast.success(
         forUpdate ? "Document mis à jour" : `Document ajouté : ${data.title || uploadFile.name}`

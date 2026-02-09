@@ -627,12 +627,13 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
       }
     }
 
-    // OCR Vision sur les images pour Nina, Sinistro, Bob : texte extrait injecté dans le contexte
+    // OCR Vision sur les images : pour tous les agents (présents et à venir), avec documentTextDetection
+    // pour inclure l'écriture manuscrite (constats, formulaires, notes, etc.)
     let ocrImagesSection = "";
-    if ((isNina || isSinistro || isBob) && images && Array.isArray(images) && images.length > 0) {
+    if (images && Array.isArray(images) && images.length > 0) {
       try {
         const { ocrSection } = await extractTextFromImagesWithVision(images, {
-          documentTextDetection: isSinistro,
+          documentTextDetection: true,
           maxImages: 5,
         });
         if (ocrSection) {
@@ -640,7 +641,7 @@ Puis demande : "Les informations sont correctes ? ✅ Confirmer / ✏️ Corrige
             ocrSection +
             (isSinistro
               ? "\n\nUtilise ce texte extrait du constat pour la qualification (IRSA, IRSI, droit commun) et pour sourcer ta réponse.\n"
-              : "\n\nTu peux t'appuyer sur ce texte extrait des images (OCR) pour analyser les documents.\n");
+              : "\n\nTu peux t'appuyer sur ce texte extrait des images (OCR), y compris toute écriture manuscrite (formulaires, constats, notes). Utilise-le pour analyser les documents et répondre.\n");
         }
       } catch (ocrErr) {
         console.warn("[chat] OCR Vision sur images ignoré:", ocrErr instanceof Error ? ocrErr.message : ocrErr);
@@ -730,7 +731,15 @@ FICHIERS ACTUELLEMENT SUPPORTÉS :
 - Documents (DOCX, TXT)
 `;
     
-    let systemPrompt = `${coreKnowledge}${buttonPromptSection}${ocrPromptSection}${ocrImagesSection}${persistedDocumentSection}${fileManagementPrompt}${formattingRules}`;
+    const imagesInstruction =
+      hasImages
+        ? `
+
+IMAGES ENVOYÉES PAR L'UTILISATEUR :
+L'utilisateur a joint une ou plusieurs images à son message. Tu DOIS les analyser et répondre en t'appuyant sur leur contenu (texte imprimé, écriture manuscrite, tableaux, schémas, captures). Ne dis jamais que tu ne peux pas voir l'image : elle est fournie dans le message. Si un texte a été extrait par OCR ci-dessus (y compris écriture manuscrite : formulaires, constats, notes), utilise-le pour répondre ; sinon décris et analyse ce que tu vois dans l'image. L'écriture manuscrite doit être lue et prise en compte comme le texte imprimé.`
+        : "";
+
+    let systemPrompt = `${coreKnowledge}${buttonPromptSection}${ocrPromptSection}${ocrImagesSection}${persistedDocumentSection}${fileManagementPrompt}${formattingRules}${imagesInstruction}`;
     if ((isNina || isBob || isSinistro || isPauline) && Array.isArray(history) && history.length > SUMMARY_WINDOW) {
       systemPrompt += `\n\nNote: Les échanges précédents ont été tronqués (fenêtre glissante, ${SUMMARY_WINDOW} derniers messages).`;
     }

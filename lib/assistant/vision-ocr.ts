@@ -1,14 +1,14 @@
 /**
  * OCR via Google Cloud Vision API pour les images.
- * Utilisé par la route chat pour enrichir le contexte des bots (Nina, Sinistro, Bob).
- * Fallback : en cas d'erreur (credentials, quota, API), retourne une chaîne vide
- * pour ne pas bloquer le flux.
+ * Utilisé par la route chat pour enrichir le contexte de tous les bots (présents et à venir).
+ * documentTextDetection permet d'extraire aussi l'écriture manuscrite (formulaires, constats, notes).
+ * Fallback : en cas d'erreur (credentials, quota, API), retourne une chaîne vide pour ne pas bloquer le flux.
  */
 
 import type { ImageAnnotatorClient } from "@google-cloud/vision";
 
 export interface VisionOcrOptions {
-  /** true = documentTextDetection (structure blocs/paragraphes), false = textDetection (simple) */
+  /** true = documentTextDetection (structure document + écriture manuscrite), false = textDetection (texte imprimé simple) */
   documentTextDetection?: boolean;
 }
 
@@ -46,7 +46,7 @@ async function getVisionClient(): Promise<ImageAnnotatorClient | null> {
  * En cas d'échec, retourne "" pour permettre un fallback sans OCR.
  *
  * @param imageBase64OrDataUrl - Chaîne base64 ou dataURL (data:image/...;base64,...)
- * @param options - documentTextDetection: true pour Sinistro (structure document)
+ * @param options - documentTextDetection: true pour documents et écriture manuscrite (tous les bots)
  */
 export async function extractTextFromImageWithVision(
   imageBase64OrDataUrl: string,
