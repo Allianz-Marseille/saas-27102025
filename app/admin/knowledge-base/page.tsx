@@ -28,6 +28,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { BookOpen, Upload, Trash2, RefreshCw, FileText, Pencil, List, Eye, Sparkles, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,6 +44,14 @@ import { getKnowledgeBases, type KnowledgeBaseConfig } from "@/lib/knowledge/reg
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+
+const SUMMARY_MAX_CHARS = 80;
+
+function truncateSummary(text: string, maxChars = SUMMARY_MAX_CHARS): string {
+  const trimmed = text.trim();
+  if (trimmed.length <= maxChars) return trimmed;
+  return trimmed.slice(0, maxChars).trimEnd() + "...";
+}
 
 interface DocumentItem {
   id: string;
@@ -409,12 +423,23 @@ export default function KnowledgeBasePage() {
                               <span className="text-slate-400">—</span>
                             )}
                           </td>
-                          <td
-                            className="py-3 px-2 text-slate-600 dark:text-slate-400 max-w-[200px]"
-                            title={doc.summary || undefined}
-                          >
+                          <td className="py-3 px-2 text-slate-600 dark:text-slate-400 max-w-[220px]">
                             {doc.summary ? (
-                              <span className="line-clamp-2 block">{doc.summary}</span>
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="block cursor-default truncate">
+                                      {truncateSummary(doc.summary)}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent
+                                    side="top"
+                                    className="max-w-sm max-h-48 overflow-y-auto whitespace-pre-wrap"
+                                  >
+                                    <p>{doc.summary}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             ) : (
                               <span className="text-slate-400">—</span>
                             )}
