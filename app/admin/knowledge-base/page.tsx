@@ -34,7 +34,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { BookOpen, Upload, Trash2, RefreshCw, FileText, Pencil, List, Eye, Sparkles, Info } from "lucide-react";
+import { BookOpen, Upload, Trash2, RefreshCw, FileText, Pencil, List, Eye, Sparkles, Info, CheckCircle2, XCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -79,6 +79,7 @@ export default function KnowledgeBasePage() {
   const [enrichingDocId, setEnrichingDocId] = useState<string | null>(null);
   const [lastEnrichedDocId, setLastEnrichedDocId] = useState<string | null>(null);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+  const [enrichFilter, setEnrichFilter] = useState<"all" | "toEnrich" | "enriched">("all");
 
   const getAuthHeaders = useCallback(async () => {
     const token = await user?.getIdToken();
@@ -289,6 +290,7 @@ export default function KnowledgeBasePage() {
       if (!res.ok) throw new Error(data.error || data.details || `Erreur ${res.status}`);
       toast.success(`Document enrichi : ${data.title || doc.title}`);
       setLastEnrichedDocId(doc.id);
+      setEnrichFilter("enriched");
       fetchDocuments();
     } catch (e) {
       toast.error((e as Error).message || "Erreur enrichissement");
@@ -298,7 +300,13 @@ export default function KnowledgeBasePage() {
   };
 
   const selectedBase = bases.find((b) => b.id === selectedBaseId);
-  const documentsSortedByTitle = [...documents].sort((a, b) =>
+  const documentsFiltered =
+    enrichFilter === "enriched"
+      ? documents.filter((d) => d.enrichedAt != null)
+      : enrichFilter === "toEnrich"
+        ? documents.filter((d) => d.enrichedAt == null)
+        : documents;
+  const documentsSortedByTitle = [...documentsFiltered].sort((a, b) =>
     a.title.localeCompare(b.title, "fr")
   );
 
@@ -377,29 +385,69 @@ export default function KnowledgeBasePage() {
           </Card>
 
           <Card className="border-slate-200 dark:border-slate-800">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>Documents</CardTitle>
                 <CardDescription>Liste des documents intégrés dans cette base</CardDescription>
               </div>
-              <Button variant="outline" size="sm" onClick={fetchDocuments} disabled={loading} className="gap-2">
-                <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-                Actualiser
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800/50">
+                  <Button
+                    variant={enrichFilter === "all" ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-8 gap-1.5 px-3"
+                    onClick={() => setEnrichFilter("all")}
+                  >
+                    Tous
+                    <span className="text-xs text-slate-500">({documents.length})</span>
+                  </Button>
+                  <Button
+                    variant={enrichFilter === "toEnrich" ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-8 gap-1.5 px-3 text-amber-600 hover:text-amber-700 dark:text-amber-500"
+                    onClick={() => setEnrichFilter("toEnrich")}
+                  >
+                    <XCircle className="h-4 w-4" />
+                    À enrichir
+                    <span className="text-xs">({documents.filter((d) => !d.enrichedAt).length})</span>
+                  </Button>
+                  <Button
+                    variant={enrichFilter === "enriched" ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-8 gap-1.5 px-3 text-emerald-600 hover:text-emerald-700 dark:text-emerald-500"
+                    onClick={() => setEnrichFilter("enriched")}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    Enrichis
+                    <span className="text-xs">({documents.filter((d) => d.enrichedAt).length})</span>
+                  </Button>
+                </div>
+                <Button variant="outline" size="sm" onClick={fetchDocuments} disabled={loading} className="gap-2">
+                  <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+                  Actualiser
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {loading ? (
                 <p className="text-sm text-slate-500">Chargement...</p>
               ) : documents.length === 0 ? (
                 <p className="text-sm text-slate-500">Aucun document dans cette base</p>
+              ) : documentsFiltered.length === 0 ? (
+                <p className="text-sm text-slate-500">
+                  {enrichFilter === "toEnrich"
+                    ? "Tous les documents sont enrichis"
+                    : "Aucun document enrichi pour le moment"}
+                </p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full table-fixed text-sm">
                     <thead>
                       <tr className="border-b border-slate-200 dark:border-slate-700">
+                        <th className="w-10 px-2 py-3"></th>
                         <th className="text-left py-3 px-2 font-medium">Titre</th>
                         <th className="text-left py-3 px-2 font-medium">Thèmes</th>
-                        <th className="text-left py-3 px-2 font-medium">Résumé</th>
+                        <th className="w-[220px] max-w-[220px] text-left py-3 px-2 font-medium">Résumé</th>
                         <th className="text-left py-3 px-2 font-medium">Enrichi le</th>
                         <th className="text-left py-3 px-2 font-medium">Mis à jour</th>
                         <th className="text-left py-3 px-2 font-medium">Taille</th>
@@ -407,12 +455,37 @@ export default function KnowledgeBasePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {documents.map((doc) => (
+                      {documentsSortedByTitle.map((doc) => {
+                        const isEnriched = doc.enrichedAt != null;
+                        return (
                         <tr
                           key={doc.id}
                           data-doc-id={doc.id}
-                          className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30"
+                          className={cn(
+                            "border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30",
+                            isEnriched
+                              ? "border-l-4 border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20"
+                              : "border-l-4 border-l-amber-500 bg-amber-50/20 dark:bg-amber-950/15"
+                          )}
                         >
+                          <td className="py-3 px-2">
+                            <TooltipProvider delayDuration={200}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="inline-flex">
+                                    {isEnriched ? (
+                                      <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-500" />
+                                    ) : (
+                                      <XCircle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+                                    )}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">
+                                  <p>{isEnriched ? "Document enrichi" : "À enrichir"}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </td>
                           <td className="py-3 px-2">
                             <span className="font-medium">{doc.title}</span>
                           </td>
@@ -432,12 +505,12 @@ export default function KnowledgeBasePage() {
                               <span className="text-slate-400">—</span>
                             )}
                           </td>
-                          <td className="py-3 px-2 text-slate-600 dark:text-slate-400 max-w-[220px]">
+                          <td className="w-[220px] max-w-[220px] min-w-0 overflow-hidden py-3 px-2 text-slate-600 dark:text-slate-400">
                             {doc.summary ? (
                               <TooltipProvider delayDuration={200}>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <span className="block cursor-default line-clamp-3">
+                                    <span className="block min-w-0 cursor-default line-clamp-3">
                                       {doc.summary}
                                     </span>
                                   </TooltipTrigger>
@@ -530,7 +603,7 @@ export default function KnowledgeBasePage() {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      );})}
                     </tbody>
                   </table>
                 </div>
