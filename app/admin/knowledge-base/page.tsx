@@ -28,7 +28,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { BookOpen, Upload, Trash2, RefreshCw, FileText } from "lucide-react";
+import { BookOpen, Upload, Trash2, RefreshCw, FileText, Pencil, List } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { getKnowledgeBases, type KnowledgeBaseConfig } from "@/lib/knowledge/registry";
@@ -39,6 +42,8 @@ import { cn } from "@/lib/utils";
 interface DocumentItem {
   id: string;
   title: string;
+  themes?: string[];
+  notes?: string;
   updatedAt: number | null;
   contentLength: number;
   sourceFileName?: string;
@@ -53,9 +58,15 @@ export default function KnowledgeBasePage() {
   const [uploading, setUploading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [docToDelete, setDocToDelete] = useState<DocumentItem | null>(null);
   const [docToUpdate, setDocToUpdate] = useState<DocumentItem | null>(null);
+  const [docToEdit, setDocToEdit] = useState<DocumentItem | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editThemesInput, setEditThemesInput] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [patching, setPatching] = useState(false);
 
   const getAuthHeaders = useCallback(async () => {
     const token = await user?.getIdToken();
@@ -156,7 +167,66 @@ export default function KnowledgeBasePage() {
     }
   };
 
+  const handlePatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docToEdit || !selectedBaseId || !user) return;
+
+    const themes = editThemesInput
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const body: { title?: string; themes?: string[]; notes?: string } = {};
+    if (editTitle.trim() !== docToEdit.title) body.title = editTitle.trim();
+    if (JSON.stringify(themes) !== JSON.stringify(docToEdit.themes ?? [])) body.themes = themes;
+    if (editNotes !== (docToEdit.notes ?? "")) body.notes = editNotes;
+
+    if (Object.keys(body).length === 0) {
+      setEditDialogOpen(false);
+      setDocToEdit(null);
+      return;
+    }
+
+    setPatching(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(
+        `/api/admin/knowledge-base/documents/${encodeURIComponent(docToEdit.id)}?knowledgeBaseId=${encodeURIComponent(selectedBaseId)}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Erreur ${res.status}`);
+
+      toast.success("Document modifié");
+      setEditDialogOpen(false);
+      setDocToEdit(null);
+      fetchDocuments();
+    } catch (e) {
+      toast.error((e as Error).message || "Erreur lors de la modification");
+    } finally {
+      setPatching(false);
+    }
+  };
+
+  const openEditDialog = (doc: DocumentItem) => {
+    setDocToEdit(doc);
+    setEditTitle(doc.title);
+    setEditThemesInput((doc.themes ?? []).join(", "));
+    setEditNotes(doc.notes ?? "");
+    setEditDialogOpen(true);
+  };
+
   const selectedBase = bases.find((b) => b.id === selectedBaseId);
+  const documentsSortedByTitle = [...documents].sort((a, b) =>
+    a.title.localeCompare(b.title, "fr")
+  );
 
   return (
     <div className="space-y-6">
@@ -245,6 +315,7 @@ export default function KnowledgeBasePage() {
                     <thead>
                       <tr className="border-b border-slate-200 dark:border-slate-700">
                         <th className="text-left py-3 px-2 font-medium">Titre</th>
+                        <th className="text-left py-3 px-2 font-medium">Thèmes</th>
                         <th className="text-left py-3 px-2 font-medium">Mis à jour</th>
                         <th className="text-left py-3 px-2 font-medium">Taille</th>
                         <th className="text-right py-3 px-2 font-medium">Actions</th>
@@ -258,6 +329,22 @@ export default function KnowledgeBasePage() {
                         >
                           <td className="py-3 px-2">
                             <span className="font-medium">{doc.title}</span>
+                          </td>
+                          <td className="py-3 px-2">
+                            {(doc.themes ?? []).length > 0 ? (
+                              <span className="flex flex-wrap gap-1">
+                                {(doc.themes ?? []).map((t) => (
+                                  <span
+                                    key={t}
+                                    className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                  >
+                                    {t}
+                                  </span>
+                                ))}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">—</span>
+                            )}
                           </td>
                           <td className="py-3 px-2 text-slate-500">
                             {doc.updatedAt
@@ -276,6 +363,15 @@ export default function KnowledgeBasePage() {
                                 variant="ghost"
                                 size="sm"
                                 className="gap-1"
+                                onClick={() => openEditDialog(doc)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                                Modifier
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="gap-1"
                                 onClick={() => {
                                   setDocToUpdate(doc);
                                   setUploadFile(null);
@@ -283,7 +379,7 @@ export default function KnowledgeBasePage() {
                                 }}
                               >
                                 <FileText className="h-4 w-4" />
-                                Mettre à jour
+                                Remplacer PDF
                               </Button>
                               <Button
                                 variant="ghost"
@@ -362,6 +458,130 @@ export default function KnowledgeBasePage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier le document</DialogTitle>
+            <DialogDescription>
+              Modifiez le titre, les thèmes ou la note du document &quot;{docToEdit?.title}&quot;
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handlePatch} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Titre</Label>
+              <Input
+                id="edit-title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Ex. Personnes morales"
+                maxLength={200}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-themes">Thèmes (séparés par des virgules)</Label>
+              <Input
+                id="edit-themes"
+                value={editThemesInput}
+                onChange={(e) => setEditThemesInput(e.target.value)}
+                placeholder="Ex. bonus, CRM, personne morale, flotte"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-notes">Notes</Label>
+              <Textarea
+                id="edit-notes"
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder="Note libre sur ce document..."
+                rows={3}
+                maxLength={1000}
+                className="resize-none"
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setEditDialogOpen(false);
+                  setDocToEdit(null);
+                }}
+              >
+                Annuler
+              </Button>
+              <Button type="submit" disabled={patching}>
+                {patching ? "Enregistrement..." : "Enregistrer"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {selectedBase && documents.length > 0 && (
+        <Card className="border-slate-200 dark:border-slate-800">
+          <CardHeader className="flex flex-row items-center gap-2">
+            <List className="h-5 w-5" />
+            <div>
+              <CardTitle>Table des matières</CardTitle>
+              <CardDescription>
+                Vue synthétique des documents avec leurs thèmes
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-700">
+                    <th className="text-left py-3 px-2 font-medium">Titre</th>
+                    <th className="text-left py-3 px-2 font-medium">Thèmes</th>
+                    <th className="text-right py-3 px-2 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {documentsSortedByTitle.map((doc) => (
+                    <tr
+                      key={doc.id}
+                      className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30"
+                    >
+                      <td className="py-3 px-2 font-medium">{doc.title}</td>
+                      <td className="py-3 px-2">
+                        {(doc.themes ?? []).length > 0 ? (
+                          <span className="flex flex-wrap gap-1">
+                            {(doc.themes ?? []).map((t) => (
+                              <span
+                                key={t}
+                                className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                              >
+                                {t}
+                              </span>
+                            ))}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1"
+                          onClick={() => openEditDialog(doc)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Modifier
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

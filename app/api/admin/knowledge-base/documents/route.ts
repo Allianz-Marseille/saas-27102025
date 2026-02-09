@@ -41,6 +41,8 @@ export async function GET(request: NextRequest) {
       return {
         id: doc.id,
         title: data?.title ?? doc.id,
+        themes: Array.isArray(data?.themes) ? data.themes : [],
+        notes: data?.notes ?? "",
         updatedAt: data?.updatedAt?.toMillis?.() ?? null,
         contentLength: typeof content === "string" ? content.length : 0,
         sourceFileName: data?.sourceFileName ?? undefined,
