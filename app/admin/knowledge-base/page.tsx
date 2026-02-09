@@ -45,6 +45,14 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
+const SUMMARY_MAX_WORDS = 20;
+
+function truncateToWords(text: string, maxWords = SUMMARY_MAX_WORDS): string {
+  const words = text.trim().split(/\s+/);
+  if (words.length <= maxWords) return text.trim();
+  return words.slice(0, maxWords).join(" ") + "...";
+}
+
 interface DocumentItem {
   id: string;
   title: string;
@@ -462,10 +470,10 @@ export default function KnowledgeBasePage() {
                           key={doc.id}
                           data-doc-id={doc.id}
                           className={cn(
-                            "border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30",
+                            "border-b border-slate-100 dark:border-slate-800 border-l-[6px]",
                             isEnriched
-                              ? "border-l-4 border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20"
-                              : "border-l-4 border-l-amber-500 bg-amber-50/20 dark:bg-amber-950/15"
+                              ? "border-l-emerald-500 bg-emerald-50/80 dark:border-l-emerald-400 dark:bg-emerald-900/30"
+                              : "border-l-amber-500 bg-amber-50/80 dark:border-l-amber-400 dark:bg-amber-900/30"
                           )}
                         >
                           <td className="py-3 px-2">
@@ -510,8 +518,8 @@ export default function KnowledgeBasePage() {
                               <TooltipProvider delayDuration={200}>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <span className="block min-w-0 cursor-default line-clamp-3">
-                                      {doc.summary}
+                                    <span className="block min-w-0 cursor-default">
+                                      {truncateToWords(doc.summary)}
                                     </span>
                                   </TooltipTrigger>
                                   <TooltipContent
