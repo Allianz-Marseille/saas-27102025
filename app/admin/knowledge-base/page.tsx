@@ -34,7 +34,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { BookOpen, Upload, Trash2, RefreshCw, FileText, Pencil, List, Eye, Sparkles, Info, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
+import { BookOpen, Upload, Trash2, RefreshCw, FileText, Pencil, List, Eye, Sparkles, Info, CheckCircle2, XCircle, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -89,6 +89,8 @@ export default function KnowledgeBasePage() {
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
   const [enrichFilter, setEnrichFilter] = useState<"all" | "toEnrich" | "enriched">("all");
   const [selectedThemeFilters, setSelectedThemeFilters] = useState<string[]>([]);
+  const [documentsSectionExpanded, setDocumentsSectionExpanded] = useState(true);
+  const [tableMatièresSectionExpanded, setTableMatièresSectionExpanded] = useState(true);
 
   const getAuthHeaders = useCallback(async () => {
     const token = await user?.getIdToken();
@@ -414,9 +416,24 @@ export default function KnowledgeBasePage() {
 
           <Card className="border-slate-200 dark:border-slate-800">
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <CardTitle>Documents</CardTitle>
-                <CardDescription>Liste des documents intégrés dans cette base</CardDescription>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => setDocumentsSectionExpanded((v) => !v)}
+                  aria-label={documentsSectionExpanded ? "Réduire" : "Développer"}
+                >
+                  {documentsSectionExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+                <div>
+                  <CardTitle>Documents</CardTitle>
+                  <CardDescription>Liste des documents intégrés dans cette base</CardDescription>
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800/50">
@@ -456,6 +473,7 @@ export default function KnowledgeBasePage() {
                 </Button>
               </div>
             </CardHeader>
+            {documentsSectionExpanded && (
             <CardContent>
               {loading ? (
                 <p className="text-sm text-slate-500">Chargement...</p>
@@ -637,6 +655,7 @@ export default function KnowledgeBasePage() {
                 </div>
               )}
             </CardContent>
+            )}
           </Card>
         </>
       )}
@@ -865,6 +884,19 @@ export default function KnowledgeBasePage() {
         <Card className="border-slate-200 dark:border-slate-800">
           <CardHeader className="flex flex-col gap-4">
             <div className="flex flex-row items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => setTableMatièresSectionExpanded((v) => !v)}
+                aria-label={tableMatièresSectionExpanded ? "Réduire" : "Développer"}
+              >
+                {tableMatièresSectionExpanded ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
               <List className="h-5 w-5 shrink-0" />
               <div>
                 <CardTitle>Table des matières</CardTitle>
@@ -873,7 +905,7 @@ export default function KnowledgeBasePage() {
                 </CardDescription>
               </div>
             </div>
-            {allUniqueThemes.length > 0 && (
+            {tableMatièresSectionExpanded && allUniqueThemes.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                   Filtrer par thème :
@@ -910,6 +942,7 @@ export default function KnowledgeBasePage() {
               </div>
             )}
           </CardHeader>
+          {tableMatièresSectionExpanded && (
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -970,6 +1003,7 @@ export default function KnowledgeBasePage() {
               </table>
             </div>
           </CardContent>
+          )}
         </Card>
       )}
     </div>
