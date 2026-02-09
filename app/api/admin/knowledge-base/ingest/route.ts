@@ -1,12 +1,14 @@
 /**
  * POST /api/admin/knowledge-base/ingest
  * Ingère un PDF dans une base de connaissance RAG (extraction + embedding OpenAI + Firestore).
+ * Détection doublons (même docId) et versions Allianz (même référence) ; proposition de remplacement si version plus récente.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/utils/auth-utils";
 import { getKnowledgeBaseById } from "@/lib/knowledge/registry";
 import { slugFromFilename } from "@/lib/knowledge/extract-pdf";
+import { parseAllianzPdfFilename } from "@/lib/knowledge/allianz-pdf-version";
 import { extractTextFromPDFBuffer } from "@/lib/assistant/file-extraction";
 import { generateEmbedding } from "@/lib/knowledge/embedding";
 import { adminDb, getStorageBucket } from "@/lib/firebase/admin-config";
@@ -37,6 +39,8 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File | null;
     const knowledgeBaseId = formData.get("knowledgeBaseId") as string | null;
     const docIdParam = formData.get("docId") as string | null;
+    const replaceDocIdParam = formData.get("replaceDocId") as string | null;
+    const replaceDocId = replaceDocIdParam?.toString().trim() || null;
 
     if (!file || !knowledgeBaseId) {
       return NextResponse.json(
@@ -69,29 +73,106 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Seuls les fichiers PDF sont acceptés" }, { status: 400 });
     }
 
+    const title = file.name.replace(/\.pdf$/i, "");
+    const collection = adminDb.collection(config.firestoreCollection);
+
+    if (replaceDocId) {
+      const oldDoc = await collection.doc(replaceDocId).get();
+      if (oldDoc.exists) {
+        const oldData = oldDoc.data();
+        const oldStoragePath = oldData?.storagePath;
+        if (oldStoragePath) {
+          try {
+            const bucket = getStorageBucket();
+            await bucket.file(oldStoragePath).delete();
+          } catch {
+            // Ignorer si le fichier n'existe pas
+          }
+        }
+        await collection.doc(replaceDocId).delete();
+      }
+    }
+
+    const docId = replaceDocId ? slugFromFilename(file.name) : (docIdParam?.trim() || slugFromFilename(file.name));
+    if (!docId) {
+      return NextResponse.json({ error: "Impossible de générer un identifiant pour le document" }, { status: 400 });
+    }
+
+    if (!replaceDocId) {
+      const existingByDocId = await collection.doc(docId).get();
+      if (existingByDocId.exists) {
+        return NextResponse.json(
+          {
+            code: "DUPLICATE_DOC_ID",
+            docId,
+            message: "Un document avec le même nom existe déjà.",
+          },
+          { status: 409 }
+        );
+      }
+
+      const parsed = parseAllianzPdfFilename(title);
+      if (parsed) {
+        const snapshot = await collection.get();
+        const sameRef: { docId: string; title: string; versionOrderable: number; documentVersion?: string }[] = [];
+        for (const doc of snapshot.docs) {
+          const data = doc.data();
+          const storedRef = data?.documentReference as string | undefined;
+          const storedOrderable = data?.versionOrderable as number | undefined;
+          const docTitle = (data?.title as string) || doc.id;
+          const ref = storedRef ?? parseAllianzPdfFilename(docTitle)?.reference ?? "";
+          if (ref && ref === parsed.reference) {
+            const orderable = storedOrderable ?? parseAllianzPdfFilename(docTitle)?.versionOrderable ?? 0;
+            sameRef.push({
+              docId: doc.id,
+              title: docTitle,
+              versionOrderable: orderable,
+              documentVersion: data?.documentVersion as string | undefined,
+            });
+          }
+        }
+        if (sameRef.length > 0) {
+          const best = sameRef.reduce((a, b) => (a.versionOrderable >= b.versionOrderable ? a : b));
+          if (parsed.versionOrderable <= best.versionOrderable) {
+            return NextResponse.json(
+              {
+                code: "OLDER_OR_SAME_VERSION",
+                existingDocId: best.docId,
+                existingTitle: best.title,
+                existingVersion: best.documentVersion,
+                message: "Une version plus récente ou identique est déjà en base.",
+              },
+              { status: 409 }
+            );
+          }
+          return NextResponse.json({
+            code: "NEWER_VERSION_AVAILABLE",
+            replaceSuggested: true,
+            existingDocId: best.docId,
+            existingTitle: best.title,
+            incomingVersion: parsed.version,
+            message: "Une version plus récente est disponible. Remplacer l'ancienne ?",
+          });
+        }
+      }
+    }
+
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     const content = await extractTextFromPDFBuffer(buffer);
 
-    const docId = docIdParam?.trim() || slugFromFilename(file.name);
-    if (!docId) {
-      return NextResponse.json({ error: "Impossible de générer un identifiant pour le document" }, { status: 400 });
-    }
-
-    const title = file.name.replace(/\.pdf$/i, "");
-
     const storagePath = `knowledge-base/${knowledgeBaseId}/${docId}.pdf`;
 
-    if (docIdParam?.trim()) {
-      const existingDoc = await adminDb.collection(config.firestoreCollection).doc(docId).get();
+    if (docIdParam?.trim() && docId === docIdParam.trim()) {
+      const existingDoc = await collection.doc(docId).get();
       const oldStoragePath = existingDoc.data()?.storagePath;
       if (oldStoragePath) {
         try {
           const bucket = getStorageBucket();
           await bucket.file(oldStoragePath).delete();
         } catch {
-          // Ignorer si le fichier n'existe pas (documents créés avant archivage)
+          // Ignorer si le fichier n'existe pas
         }
       }
     }
@@ -106,17 +187,50 @@ export async function POST(request: NextRequest) {
     const openai = getOpenAIClient();
     const embedding = await generateEmbedding(content, openai);
 
-    const payload = {
+    const allianzMeta = parseAllianzPdfFilename(title);
+    const payload: Record<string, unknown> = {
       title,
       content,
       updatedAt: Timestamp.now(),
       embedding,
       storagePath,
     };
+    if (allianzMeta) {
+      payload.documentReference = allianzMeta.reference;
+      payload.documentVersion = allianzMeta.version;
+      payload.versionOrderable = allianzMeta.versionOrderable;
+    }
 
-    await adminDb.collection(config.firestoreCollection).doc(docId).set(payload, { merge: true });
+    await collection.doc(docId).set(payload, { merge: true });
 
-    const isUpdate = !!docIdParam?.trim();
+    const written = await collection.doc(docId).get();
+    if (!written.exists) {
+      console.error("Ingest: document écrit mais relecture introuvable", { docId, collection: config.firestoreCollection });
+      return NextResponse.json(
+        { error: "Document écrit mais vérification échouée (relecture introuvable)" },
+        { status: 500 }
+      );
+    }
+    const data = written.data();
+    const hasTitle = data && typeof data.title === "string" && data.title.length > 0;
+    const hasContent = data && typeof data.content === "string";
+    const hasEmbedding = data && Array.isArray(data.embedding) && data.embedding.length > 0;
+    if (!hasTitle || !hasContent || !hasEmbedding) {
+      console.error("Ingest: document écrit mais champs RAG invalides", {
+        docId,
+        hasTitle: !!hasTitle,
+        hasContent: !!hasContent,
+        hasEmbedding: !!hasEmbedding,
+      });
+      return NextResponse.json(
+        {
+          error: "Document écrit mais vérification échouée : le document doit contenir title, content et embedding pour être disponible pour le bot.",
+        },
+        { status: 500 }
+      );
+    }
+
+    const isUpdate = !!docIdParam?.trim() || !!replaceDocId;
 
     return NextResponse.json({
       success: true,

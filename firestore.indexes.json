@@ -182,6 +182,27 @@
           }
         }
       ]
+    },
+    {
+      "collectionGroup": "pauline_knowledge",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "documentReference", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "bob_knowledge",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "documentReference", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "sinistro_knowledge",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "documentReference", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -91,6 +91,11 @@ export default function KnowledgeBasePage() {
   const [selectedThemeFilters, setSelectedThemeFilters] = useState<string[]>([]);
   const [documentsSectionExpanded, setDocumentsSectionExpanded] = useState(true);
   const [tableMatièresSectionExpanded, setTableMatièresSectionExpanded] = useState(true);
+  const [replaceSuggested, setReplaceSuggested] = useState<{
+    existingDocId: string;
+    existingTitle: string;
+    file: File;
+  } | null>(null);
 
   const getAuthHeaders = useCallback(async () => {
     const token = await user?.getIdToken();
@@ -162,9 +167,27 @@ export default function KnowledgeBasePage() {
       });
 
       const data = await res.json().catch(() => ({}));
+
+      if (res.status === 409) {
+        const msg = data.message || data.error || "Document déjà présent ou version plus récente en base.";
+        toast.error(msg);
+        setUploading(false);
+        return;
+      }
+
       if (!res.ok) {
         const msg = [data.error, data.details].filter(Boolean).join(" — ") || `Erreur ${res.status}`;
         throw new Error(msg);
+      }
+
+      if (data.replaceSuggested && data.existingDocId && data.existingTitle) {
+        setReplaceSuggested({
+          existingDocId: data.existingDocId,
+          existingTitle: data.existingTitle,
+          file: uploadFile,
+        });
+        setUploading(false);
+        return;
       }
 
       toast.success(
@@ -176,6 +199,38 @@ export default function KnowledgeBasePage() {
       fetchDocuments();
     } catch (e) {
       toast.error((e as Error).message || "Erreur lors de l'upload");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUploadReplaceConfirm = async () => {
+    if (!replaceSuggested || !selectedBaseId || !user) return;
+    setUploading(true);
+    try {
+      const token = await user.getIdToken();
+      const formData = new FormData();
+      formData.append("file", replaceSuggested.file);
+      formData.append("knowledgeBaseId", selectedBaseId);
+      formData.append("replaceDocId", replaceSuggested.existingDocId);
+
+      const res = await fetch("/api/admin/knowledge-base/ingest", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = [data.error, data.details].filter(Boolean).join(" — ") || `Erreur ${res.status}`;
+        throw new Error(msg);
+      }
+
+      toast.success(`Document remplacé : ${data.title || replaceSuggested.file.name}`);
+      setReplaceSuggested(null);
+      fetchDocuments();
+    } catch (e) {
+      toast.error((e as Error).message || "Erreur lors du remplacement");
     } finally {
       setUploading(false);
     }
@@ -676,6 +731,29 @@ export default function KnowledgeBasePage() {
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
               Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!replaceSuggested}
+        onOpenChange={(open) => {
+          if (!open) setReplaceSuggested(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remplacer la version en base</AlertDialogTitle>
+            <AlertDialogDescription>
+              Une version plus récente est disponible. Remplacer &quot;{replaceSuggested?.existingTitle}&quot; par le
+              fichier uploadé ({replaceSuggested?.file.name}) ? L&apos;ancien document sera supprimé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={uploading}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUploadReplaceConfirm} disabled={uploading}>
+              {uploading ? "Remplacement..." : "Remplacer"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
