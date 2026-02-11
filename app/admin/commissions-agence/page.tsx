@@ -194,10 +194,12 @@ export default function CommissionsAgencePage() {
     }
   );
 
-  const monthsWithData = yearData.filter((d) => d.totalCommissions > 0 || d.chargesAgence > 0).length;
-  
+  const completeMonths = yearData.filter((d) => d.totalCommissions > 0 || d.chargesAgence > 0);
+  const completeMonthsCount = completeMonths.length;
+  const monthsWithData = completeMonthsCount;
+
   const extrapolated = extrapolateYear(yearData);
-  const isIncomplete = monthsWithData < 12;
+  const isIncomplete = completeMonthsCount < 12;
   
   // Vérifier si l'année a au moins un mois avec bénéfice
   const hasProfit = yearData.some((month) => month.resultat > 0);
@@ -215,10 +217,12 @@ export default function CommissionsAgencePage() {
     }
   };
 
-  // KPIs calculés selon la métrique sélectionnée
+  // KPIs calculés selon la métrique sélectionnée (extrapolé = mois complets uniquement)
   const currentMetricTotal = totals[selectedMetric];
   const currentMetricExtrapolated = extrapolated[selectedMetric];
-  const averageMonthly = monthsWithData > 0 ? Math.round(currentMetricTotal / monthsWithData) : 0;
+  const averageMonthly = isIncomplete
+    ? Math.round(currentMetricExtrapolated / 12)
+    : Math.round((currentMetricTotal || 0) / 12);
 
   // Meilleur et pire mois pour la métrique sélectionnée
   const monthsWithResults = yearData.filter((d) => d.totalCommissions > 0);
@@ -815,12 +819,11 @@ export default function CommissionsAgencePage() {
                 <tbody>
                   {rows.map((row, idx) => {
                     const rowTotal = yearData.reduce((sum, m) => sum + row.getValue(m), 0);
-                    const extrapolatedValue = isIncomplete && !row.isInfo
-                      ? Math.round((rowTotal / monthsWithData) * 12)
+                    const rowTotalComplete = completeMonths.reduce((sum, m) => sum + row.getValue(m), 0);
+                    const extrapolatedValue = isIncomplete
+                      ? (completeMonthsCount === 0 ? 0 : Math.round((rowTotalComplete / completeMonthsCount) * 12))
                       : rowTotal;
-                    
-                    // Calcul de la moyenne mensuelle
-                    const averageValue = Math.round((isIncomplete && !row.isInfo ? extrapolatedValue : rowTotal) / 12);
+                    const averageValue = Math.round(extrapolatedValue / 12);
 
                     return (
                       <tr
@@ -836,7 +839,12 @@ export default function CommissionsAgencePage() {
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => {
                           const monthData = yearData.find((d) => d.month === month);
                           const value = monthData ? row.getValue(monthData) : 0;
-                          const hasData = monthData && (monthData.totalCommissions > 0 || monthData.chargesAgence > 0);
+                          const hasData = monthData && (
+                            monthData.totalCommissions > 0 ||
+                            monthData.chargesAgence > 0 ||
+                            monthData.prelevementsJulien > 0 ||
+                            monthData.prelevementsJeanMichel > 0
+                          );
 
                           return (
                             <td
@@ -860,12 +868,12 @@ export default function CommissionsAgencePage() {
                             "px-4 py-3 text-center font-mono font-black text-lg border-l-4 border-yellow-500",
                             "bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/30 dark:to-orange-950/30",
                             row.isTotal && "text-yellow-700 dark:text-yellow-400",
-                            row.isResult && (isIncomplete && !row.isInfo ? extrapolatedValue : rowTotal) >= 0 
+                            row.isResult && extrapolatedValue >= 0 
                               ? "text-green-700 dark:text-green-400" 
                               : row.isResult && "text-red-700 dark:text-red-400"
                           )}
                         >
-                          {formatThousands(isIncomplete && !row.isInfo ? extrapolatedValue : rowTotal)}
+                          {formatThousands(extrapolatedValue)}
                         </td>
                         <td
                           className={cn(

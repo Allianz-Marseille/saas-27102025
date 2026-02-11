@@ -238,11 +238,11 @@ export const extrapolateYear = (data: AgencyCommission[]): {
   prelevementsJulien: number;
   prelevementsJeanMichel: number;
 } => {
-  const monthsWithData = data.filter(
+  const completeMonths = data.filter(
     (d) => d.totalCommissions > 0 || d.chargesAgence > 0
-  ).length;
+  );
 
-  if (monthsWithData === 0) {
+  if (completeMonths.length === 0) {
     return {
       totalCommissions: 0,
       chargesAgence: 0,
@@ -256,7 +256,7 @@ export const extrapolateYear = (data: AgencyCommission[]): {
     };
   }
 
-  const totals = data.reduce(
+  const totals = completeMonths.reduce(
     (acc, month) => ({
       totalCommissions: acc.totalCommissions + month.totalCommissions,
       chargesAgence: acc.chargesAgence + month.chargesAgence,
@@ -281,17 +281,18 @@ export const extrapolateYear = (data: AgencyCommission[]): {
     }
   );
 
-  // Extrapolation: (Somme / Nb mois) × 12
+  // Extrapolation: (Somme mois complets / Nb mois complets) × 12
+  const n = completeMonths.length;
   return {
-    totalCommissions: Math.round((totals.totalCommissions / monthsWithData) * 12),
-    chargesAgence: Math.round((totals.chargesAgence / monthsWithData) * 12),
-    resultat: Math.round((totals.resultat / monthsWithData) * 12),
-    commissionsIARD: Math.round((totals.commissionsIARD / monthsWithData) * 12),
-    commissionsVie: Math.round((totals.commissionsVie / monthsWithData) * 12),
-    commissionsCourtage: Math.round((totals.commissionsCourtage / monthsWithData) * 12),
-    profitsExceptionnels: Math.round((totals.profitsExceptionnels / monthsWithData) * 12),
-    prelevementsJulien: Math.round((totals.prelevementsJulien / monthsWithData) * 12),
-    prelevementsJeanMichel: Math.round((totals.prelevementsJeanMichel / monthsWithData) * 12),
+    totalCommissions: Math.round((totals.totalCommissions / n) * 12),
+    chargesAgence: Math.round((totals.chargesAgence / n) * 12),
+    resultat: Math.round((totals.resultat / n) * 12),
+    commissionsIARD: Math.round((totals.commissionsIARD / n) * 12),
+    commissionsVie: Math.round((totals.commissionsVie / n) * 12),
+    commissionsCourtage: Math.round((totals.commissionsCourtage / n) * 12),
+    profitsExceptionnels: Math.round((totals.profitsExceptionnels / n) * 12),
+    prelevementsJulien: Math.round((totals.prelevementsJulien / n) * 12),
+    prelevementsJeanMichel: Math.round((totals.prelevementsJeanMichel / n) * 12),
   };
 };
 
