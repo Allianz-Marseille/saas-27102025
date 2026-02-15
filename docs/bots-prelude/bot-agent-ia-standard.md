@@ -1,18 +1,54 @@
 # Bot / Agent IA Standard
 
-Ce document définit l’agent IA standard du SaaS : architecture, orchestration des modèles Mistral, RAG et intégration technique (Next.js / Firebase / Vercel).
+Ce document définit l'agent IA standard du SaaS : architecture **Router & Experts**, orchestration des modèles Mistral, RAG et intégration technique (Next.js / Firebase / Vercel).
 
 ---
 
-## 1. Architecture des "Cerveaux" (Multi-Modèles)
+## 0. Agent Big-Boss (Chef d'Orchestre)
 
-Mistral fournit des modèles spécialisés. Le bot les orchestre selon le cas d’usage :
+Agent léger configuré sur **Mistral Small** pour la rapidité. Rôle unique : analyser le **premier message utilisateur** pour classifier l'intention via une **Table de Routage Dynamique**.
 
-| Cas d’usage | Modèle | Rôle |
-|-------------|--------|------|
-| **Analyse d’image (Vision)** | Pixtral ou Mistral Large | Extraction de garanties depuis une photo de contrat concurrent |
-| **Traitement PDF (OCR)** | API Mistral OCR | Conversion des Vademecums en Markdown pour garder les tableaux lisibles par l’IA |
-| **Raisonnement & Suivi** | Mistral Large | Chatbot principal, plan de découverte client, processus M+3 |
+Le Big-Boss identifie l'intention même si la liste des bots experts n'est pas encore finalisée. Si l'intention ne correspond à aucun expert spécifique, il oriente vers la catégorie **`INTENT: GÉNÉRALISTE`** par défaut.
+
+### Logique de routage
+
+Le Big-Boss retourne un **tag d'intention strict** pour le backend Next.js :
+
+| Tag retourné | Aiguillage vers |
+|--------------|-----------------|
+| `INTENT: BILAN` | Expert Prévoyance |
+| `INTENT: VISION` | Expert Analyse d'image |
+| `INTENT: SUIVI` | Expert M+3 |
+| `INTENT: GÉNÉRALISTE` | Expert par défaut (fallback) |
+
+> Le Big-Boss ne traite pas les données — il trie le courrier.
+
+---
+
+## 1. Structure Modulaire d'Agents (Router & Experts)
+
+Chaque nouvel expert ajouté dans la console Mistral doit simplement être **déclaré ici** avec son `Agent ID` et son `Tag d'Intention`. Le code Next.js n'a pas besoin d'être modifié en profondeur — une entrée dans la table et une règle dans le Big-Boss suffisent.
+
+### Table des experts
+
+| Tag d'Intention | Agent ID (Mistral) | Modèle | Rôle |
+|-----------------|--------------------|--------|------|
+| `BILAN` | Expert Prévoyance | Mistral Large | Plan de découverte client (identité, métier, revenus, besoins) |
+| `VISION` | Expert Analyse d'image | Pixtral / Mistral Large | Extraction de garanties depuis une photo de contrat concurrent |
+| `SUIVI` | Expert M+3 | Mistral Large | Protocole M+3, conformité Allianz |
+| `GÉNÉRALISTE` | Expert par défaut | Mistral Large | Fallback lorsque l'intention ne correspond à aucun expert |
+
+> **Évolutivité** : Pour ajouter un "Expert Retraite" ou "Expert Santé", créez l'agent dans Mistral, ajoutez une ligne dans ce tableau et une règle dans le Big-Boss.
+
+### Outils transverses (partagés)
+
+Les agents partagent des **Outils Transverses** activables à la demande selon le contexte :
+
+| Outil | Usage |
+|-------|-------|
+| **API Mistral OCR** | Conversion des Vademecums en Markdown pour garder les tableaux lisibles par l'IA |
+| **Vision** | Analyse d'image (photo contrat, document scanné) |
+| **RAG (Recherche)** | Accès aux DG, Vademecums et documents stockés dans l'espace de travail Mistral |
 
 ---
 
@@ -20,19 +56,19 @@ Mistral fournit des modèles spécialisés. Le bot les orchestre selon le cas d�
 
 Pour des réponses précises à partir des Dispositions Générales (DG) :
 
-1. **Ingestion** : Envoi des PDF à l’API OCR Mistral.
-2. **Stockage** : Enregistrement du texte Markdown dans l’onglet **"Fichiers"** de l’espace de travail Mistral.
-3. **Récupération** : Activation de l’outil **"Recherche"** sur l’agent. L’IA ne lit les documents que lorsqu’elle en a besoin.
+1. **Ingestion** : Envoi des PDF à l'API OCR Mistral.
+2. **Stockage** : Enregistrement du texte Markdown dans l'onglet **"Fichiers"** de l'espace de travail Mistral.
+3. **Récupération** : Activation de l'outil **"Recherche"** sur l'agent. L'IA ne lit les documents que lorsqu'elle en a besoin.
 
 ---
 
 ## 3. Comportement (System Prompt)
 
-Dans la console Mistral, les **Instructions** de l’agent suivent deux processus principaux.
+Dans la console Mistral, les **Instructions** de l'agent suivent deux processus principaux.
 
 ### A. Plan de découverte (Phase 1)
 
-L’agent pose les questions une par une :
+L'agent pose les questions une par une :
 - Identité
 - Métier (RO)
 - Revenus (BNC/BIC)
@@ -40,45 +76,159 @@ L’agent pose les questions une par une :
 
 ### B. Processus M+3 (Phase de suivi)
 
-- Si l’utilisateur indique être en phase de suivi, l’agent active le protocole **M+3 (Mise en place + 3 mois)**.
-- L’IA vérifie la réception des documents obligatoires (preuve de communication des DG, etc.).
+- Si l'utilisateur indique être en phase de suivi, l'agent active le protocole **M+3 (Mise en place + 3 mois)**.
+- L'IA vérifie la réception des documents obligatoires (preuve de communication des DG, etc.).
 
 ---
 
-## 4. Intégration technique (Next.js)
+## 4. Flux de données
+
+```mermaid
+flowchart LR
+    U[Utilisateur] --> API[Next.js API]
+    API --> BB[Bot Big-Boss]
+    BB -->|Tag Intent| API
+    API --> Expert[Bot Expert ID]
+    Expert --> API
+    API --> U
+```
+
+Parcours détaillé :
+1. **Utilisateur** → envoie un message au **Next.js (API)**
+2. **Next.js** → appelle le **Bot Big-Boss** (Mistral Small)
+3. **Big-Boss** → retourne `INTENT: BILAN | VISION | SUIVI | GÉNÉRALISTE`
+4. **Next.js** → appelle le **Bot Expert** correspondant (via Agent ID Mistral)
+5. **Expert** → traite et répond en streaming
+6. **Next.js** → renvoie la réponse à l'utilisateur
+
+---
+
+## 5. Intégration technique (Next.js)
 
 ### Backend (Route Handler sur Vercel)
 
 - Utiliser une route API dédiée qui gère le **streaming**.
-- Les réponses de l’IA s’affichent en temps réel dans le chat.
+- Les réponses de l'IA s'affichent en temps réel dans le chat.
 
 ### Base de données (Firebase)
 
 | Service | Usage |
 |--------|--------|
-| **Firestore** | Stockage des sessions de chat. À chaque message, récupération de l’historique pour maintenir le contexte (ex. client « Kiné » ou « Médecin »). |
-| **Storage** | Stockage des photos uploadées avant envoi à l’API Vision Mistral. |
+| **Firestore** | Stockage des sessions de chat. À chaque message, récupération de l'historique pour maintenir le contexte (ex. client « Kiné » ou « Médecin »). |
+| **Storage** | Stockage des photos uploadées avant envoi à l'API Vision Mistral. |
 
 ---
 
-## 5. Flux de travail utilisateur
+## 6. Flux de travail utilisateur
 
 1. **Entrée** : Le collaborateur ouvre le chat et choisit « Nouveau Bilan ».
-2. **Vision** : Il photographie le contrat actuel du client. Le bot extrait les données (ex. : *« J’ai bien lu le contrat AXA, vous avez une carence de 90 jours. »*).
+2. **Vision** : Il photographie le contrat actuel du client. Le bot extrait les données (ex. : *« J'ai bien lu le contrat AXA, vous avez une carence de 90 jours. »*).
 3. **Documentaire** : Le bot croise ces informations avec les **Vademecums Allianz** stockés en interne.
 4. **Sortie** : Le bot affiche le tableau des **3 enveloppes** et propose de générer le mail de synthèse client.
 
 ---
 
-## 6. Avantages de cette organisation
+## 7. Avantages de cette organisation
 
-En utilisant l’**ID de l’agent** configuré dans un **espace de travail dédié** :
+En utilisant l'**ID de l'agent** configuré dans un **espace de travail dédié** :
 
-- Le code (Next.js) reste séparé de l’intelligence (Mistral).
-- Les règles du Vademecum peuvent être modifiées dans la console Mistral sans redéployer l’application sur Vercel.
+- Le code (Next.js) reste séparé de l'intelligence (Mistral).
+- Les règles du Vademecum peuvent être modifiées dans la console Mistral sans redéployer l'application sur Vercel.
+- **Performance** : Mistral Small pour le Big-Boss réduit la latence au démarrage de la conversation.
 
 ---
 
-## À compléter
+## 8. Bot Expert Suivi M+3 (Spécification complète)
 
-- [ ] Spécification détaillée de la fonction « Suivi M+3 » à ajouter dans les instructions système pour le protocole à J+3 mois.
+### Rôle
+
+**Garant de la conformité Allianz** à l'échéance M+3 (Mise en place + 3 mois).
+
+### Actions
+
+1. **Vérification signature DG** : Contrôler que les Dispositions Générales ont bien été signées et reçues par le client.
+2. **Cohérence revenus / garanties** : Vérifier l'adéquation entre les revenus actuels déclarés et les garanties souscrites.
+3. **Changements de situation familiale** : Détecter tout changement (mariage, naissance, divorce, etc.) pouvant impacter la couverture.
+
+### Livrable
+
+Génération d'une **Note de Conformité M+3** à archiver dans Firestore.
+
+---
+
+## 9. Capacités Avancées (Feuille de Route)
+
+Fonctionnalités pour enrichir le SaaS à l'avenir :
+
+### Function Calling (Sync Firestore)
+
+L'IA met à jour les champs de la base de données en temps réel pendant la discussion : BNC, âge, régime, garanties souscrites, etc. Le SaaS n'est plus un simple gadget de chat, mais un véritable assistant qui remplit les dossiers clients automatiquement.
+
+### Workflow Multi-Agents
+
+Capacité pour les bots de se passer le relais sans intervention humaine. Exemple : l'expert **VISION** extrait les garanties d'un contrat photo, puis envoie ses données à l'expert **BILAN** qui poursuit le plan de découverte avec ces informations pré-remplies.
+
+### Veille Réglementaire
+
+Utilisation de l'outil **Recherche** pour actualiser les barèmes SSI/RO via le web. Les agents restent à jour avec l'évolution réglementaire Allianz.
+
+---
+
+## 10. Metadata (Lien Firebase ↔ Mistral)
+
+Pour que le **Big-Boss** et les **Experts** ne repartent pas de zéro à chaque message, Next.js doit injecter un "contexte invisible" (Metadata) lors de chaque appel API.
+
+### Metadata de session (universelles)
+
+Ces champs doivent être lus par **n'importe quel futur bot** pour reprendre une conversation là où elle s'est arrêtée :
+
+| Champ Metadata | Source Firebase | Utilité pour l'Agent |
+|----------------|-----------------|----------------------|
+| `client_id` | Firestore Doc ID | Identifie le dossier client. Permet à tout bot de reprendre le contexte. |
+| `step_id` | Session State | Identifie l'étape précise dans le parcours (ex : "revenus_bnc", "garanties_souscrites"). |
+| `context_pro` | Firestore | Contexte métier agrégé : RO, revenus, garanties déjà collectées. |
+| `uid_collaborateur` | Auth User | Personnalise l'accueil (ex : "Bonjour Jean-Michel"). |
+| `client_statut` | Firestore (RO) | Précise d'emblée si le client est Kiné, Médecin, etc. |
+| `current_step` | Session State | Indique si on est en phase Découverte, Devis ou M+3. |
+| `has_uploaded_file` | Storage Link | Prévient l'expert VISION qu'une image attend son analyse. |
+
+### Pourquoi ces Metadata sont cruciales
+
+1. **Mémoire instantanée** : Même si la session est coupée, dès que le collaborateur revient sur le dossier de "M. Martin", le bot sait qu'il est déjà à l'étape "Revenus BNC" grâce au `current_step` stocké dans Firestore.
+2. **Sécurité** : L'agent ne peut accéder qu'aux fichiers (PDF/Photos) liés au `client_id` de la session en cours.
+3. **Aiguillage intelligent** : Si le `client_id` contient déjà un contrat signé depuis 90 jours, le **Big-Boss** peut suggérer automatiquement : *"Je vois que ce contrat a 3 mois, voulez-vous lancer le protocole de suivi M+3 ?"*
+
+### Implémentation (TypeScript)
+
+> Pour Cursor : générer les types TypeScript pour ces interfaces afin de garantir la cohérence entre le backend Next.js et les appels Mistral.
+
+```typescript
+interface BotSessionMetadata {
+  client_id: string;       // Obligatoire : dossier client
+  step_id?: string;        // Étape précise (ex: "revenus_bnc")
+  context_pro?: object;    // Contexte métier agrégé (RO, revenus, garanties)
+  uid_collaborateur: string;
+  client_statut?: string;  // "kiné" | "médecin" | etc.
+  current_step?: "decouverte" | "devis" | "m_plus_3";
+  has_uploaded_file?: boolean;
+}
+```
+
+> **Miroir code** : Créer un fichier `config/agents.ts` qui reflète exactement la table des experts. Le Standard documentaire devient le miroir parfait du code Next.js.
+
+---
+
+## 11. Touche finale : Conformité Allianz
+
+En tant qu'agent Allianz, la conformité est votre bouclier. En automatisant la **Note de Conformité M+3** dans Firestore, vous transformez une contrainte administrative en un automatisme digital qui valorise votre agence.
+
+---
+
+## File d'attente (Backlog)
+
+Futurs bots à définir au fur et à mesure des besoins :
+
+- [ ] **Expert Retraite** : Planification retraite, perte de revenus, transmission.
+- [ ] **Expert Santé** : Complémentaire santé, comparatif garanties, tiers-payant.
+- [ ] **Expert Sinistre** : Accompagnement déclaration, suivi dossier sinistre.
+- [ ] **Expert Prévoyance Agricole (AVAMAP)** : Spécificités agriculteurs.
