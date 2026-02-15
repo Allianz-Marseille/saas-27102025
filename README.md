@@ -666,7 +666,11 @@ Le fichier `vercel.json` configure le cron du leaderboard. Pour les variables d'
 
 ## 📚 Documentation supplémentaire
 
+- **Docs** : `docs/README.md` — Inventaire et structure de la documentation
 - **Boost** : `docs/boost/BOOST.md` — Spécification du module de déclaration des avis clients
+- **Rémunérations** : `docs/remuneration/grille.md` — Grille de pilotage des rémunérations
+- **Process M+3** : `docs/process/m+3/m+3_ia.md` — Workflow M+3 (suivi client ~3 mois)
+- **Knowledge** : `docs/knowledge/` — Fiches métier (sinistres, santé, compliance, produits, segmentation)
 - **Conventions Firestore** : `firestore.rules` — Règles de sécurité
 
 ## 🤝 Contribution
@@ -783,5 +787,5 @@ Pour toute question ou support, contacter l'équipe de développement.
 ---
 
 **Version** : 0.1.0  
-**Dernière mise à jour** : Février 2025
+**Dernière mise à jour** : Février 2026
 
