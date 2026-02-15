@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, FileText, User, LogOut, ChevronLeft, Coins, Workflow, Wrench, Zap } from "lucide-react";
+import { Home, FileText, User, LogOut, ChevronLeft, Coins, Workflow, Wrench, Zap, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { NotificationCenter } from "@/components/dashboard/notification-center";
@@ -49,6 +49,11 @@ const menuItems: SidebarItem[] = [
     href: "/commun/process",
   },
   {
+    icon: Bot,
+    label: "Mes agents IA",
+    href: "/commun/agents-ia",
+  },
+  {
     icon: Wrench,
     label: "Outils",
     href: "/commun/outils",
@@ -75,6 +80,11 @@ const gestionnaireSinistreMenuItems: SidebarItem[] = [
     icon: Workflow,
     label: "Process",
     href: "/commun/process",
+  },
+  {
+    icon: Bot,
+    label: "Mes agents IA",
+    href: "/commun/agents-ia",
   },
   {
     icon: Wrench,

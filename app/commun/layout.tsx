@@ -32,7 +32,8 @@ import {
   LayoutDashboard,
   BarChart3,
   Wrench,
-  Zap
+  Zap,
+  Bot
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -68,6 +69,11 @@ const commercialNavItems = [
     href: "/commun/process",
   },
   {
+    icon: Bot,
+    label: "Mes agents IA",
+    href: "/commun/agents-ia",
+  },
+  {
     icon: Wrench,
     label: "Outils",
     href: "/commun/outils",
@@ -89,6 +95,11 @@ const gestionnaireSinistreNavItems = [
     icon: Workflow,
     label: "Process",
     href: "/commun/process",
+  },
+  {
+    icon: Bot,
+    label: "Mes agents IA",
+    href: "/commun/agents-ia",
   },
   {
     icon: Wrench,
@@ -123,6 +134,11 @@ const healthNavItems = [
     href: "/commun/process",
     label: "Process",
     icon: Workflow,
+  },
+  {
+    href: "/commun/agents-ia",
+    label: "Mes agents IA",
+    icon: Bot,
   },
   {
     href: "/commun/outils",
@@ -162,6 +178,11 @@ const healthCollectiveNavItems = [
     href: "/commun/process",
     label: "Process",
     icon: Workflow,
+  },
+  {
+    href: "/commun/agents-ia",
+    label: "Mes agents IA",
+    icon: Bot,
   },
   {
     href: "/commun/outils",
@@ -216,6 +237,11 @@ const adminNavItems = [
     href: "/commun/outils",
     label: "Outils",
     icon: Wrench,
+  },
+  {
+    href: "/commun/agents-ia",
+    label: "Mes agents IA",
+    icon: Bot,
   },
   {
     href: "/admin/commissions-agence",
