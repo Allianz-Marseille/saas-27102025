@@ -61,6 +61,7 @@ const adminNavItems = [
     href: "/commun/agents-ia",
     label: "Mes agents IA",
     icon: Bot,
+    badge: "en formation",
   },
   {
     href: "/admin/commissions-agence",
@@ -192,6 +193,11 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
                     {!isCollapsed && (item as { comingSoon?: boolean }).comingSoon && (
                       <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse">
                         à venir
+                      </span>
+                    )}
+                    {!isCollapsed && (item as { badge?: string }).badge === "en formation" && (
+                      <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse">
+                        en formation
                       </span>
                     )}
                   </Button>

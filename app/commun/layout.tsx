@@ -72,6 +72,7 @@ const commercialNavItems = [
     icon: Bot,
     label: "Mes agents IA",
     href: "/commun/agents-ia",
+    badge: "en formation",
   },
   {
     icon: Wrench,
@@ -100,6 +101,7 @@ const gestionnaireSinistreNavItems = [
     icon: Bot,
     label: "Mes agents IA",
     href: "/commun/agents-ia",
+    badge: "en formation",
   },
   {
     icon: Wrench,
@@ -139,6 +141,7 @@ const healthNavItems = [
     href: "/commun/agents-ia",
     label: "Mes agents IA",
     icon: Bot,
+    badge: "en formation",
   },
   {
     href: "/commun/outils",
@@ -183,6 +186,7 @@ const healthCollectiveNavItems = [
     href: "/commun/agents-ia",
     label: "Mes agents IA",
     icon: Bot,
+    badge: "en formation",
   },
   {
     href: "/commun/outils",
@@ -242,6 +246,7 @@ const adminNavItems = [
     href: "/commun/agents-ia",
     label: "Mes agents IA",
     icon: Bot,
+    badge: "en formation",
   },
   {
     href: "/admin/commissions-agence",
@@ -467,6 +472,11 @@ export default function CommunLayout({
                             <Icon className="h-5 w-5 shrink-0" />
                             {!isSidebarCollapsed && (
                               <span className="font-medium">{item.label}</span>
+                            )}
+                            {!isSidebarCollapsed && (item as { badge?: string }).badge === "en formation" && (
+                              <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse">
+                                en formation
+                              </span>
                             )}
                           </Link>
                         )}

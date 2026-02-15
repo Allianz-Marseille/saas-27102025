@@ -52,6 +52,7 @@ const menuItems: SidebarItem[] = [
     icon: Bot,
     label: "Mes agents IA",
     href: "/commun/agents-ia",
+    badge: "en formation",
   },
   {
     icon: Wrench,
@@ -85,6 +86,7 @@ const gestionnaireSinistreMenuItems: SidebarItem[] = [
     icon: Bot,
     label: "Mes agents IA",
     href: "/commun/agents-ia",
+    badge: "en formation",
   },
   {
     icon: Wrench,
@@ -227,7 +229,14 @@ export function CommercialSidebar() {
                   </span>
                 )}
                 {!isCollapsed && item.badge && !item.comingSoon && (
-                  <span className="ml-auto text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
+                  <span
+                    className={cn(
+                      "ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold",
+                      item.badge === "en formation"
+                        ? "bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse"
+                        : "text-xs bg-red-500 text-white"
+                    )}
+                  >
                     {item.badge}
                   </span>
                 )}
