@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, FileText, User, Coins, Workflow, Wrench, Zap, Bot } from "lucide-react";
+import { Home, FileText, User, Coins, Workflow, Wrench, Zap } from "lucide-react";
 import { CommercialSidebar } from "@/components/dashboard/commercial-sidebar";
 import { MobileMenu } from "@/components/navigation/mobile-menu";
 import { ResponsiveHeader } from "@/components/navigation/responsive-header";
@@ -75,11 +75,6 @@ const gestionnaireSinistreNavItems = [
     icon: Wrench,
     label: "Outils",
     href: "/commun/outils",
-  },
-  {
-    icon: Bot,
-    label: "Agents IA",
-    href: "/commun/agents-ia",
   },
 ];
 

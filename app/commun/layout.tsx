@@ -32,7 +32,6 @@ import {
   LayoutDashboard,
   BarChart3,
   Wrench,
-  Bot,
   Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -75,11 +74,6 @@ const commercialNavItems = [
     href: "/commun/outils",
   },
   {
-    icon: Bot,
-    label: "Agents IA",
-    href: "/commun/agents-ia",
-  },
-  {
     icon: User,
     label: "Profil",
     href: "/dashboard/profile",
@@ -101,11 +95,6 @@ const gestionnaireSinistreNavItems = [
     icon: Wrench,
     label: "Outils",
     href: "/commun/outils",
-  },
-  {
-    icon: Bot,
-    label: "Agents IA",
-    href: "/commun/agents-ia",
   },
 ];
 
@@ -140,12 +129,6 @@ const healthNavItems = [
     href: "/commun/outils",
     label: "Outils",
     icon: Wrench,
-  },
-  {
-    href: "/commun/agents-ia",
-    label: "Agents IA",
-    icon: Bot,
-    title: "Nina, assistante secrétaire. Raccourci : Alt+N (Windows/Linux) ou Cmd+Shift+N (Mac)",
   },
   {
     href: "/sante-individuelle/profile",
@@ -185,12 +168,6 @@ const healthCollectiveNavItems = [
     href: "/commun/outils",
     label: "Outils",
     icon: Wrench,
-  },
-  {
-    href: "/commun/agents-ia",
-    label: "Agents IA",
-    icon: Bot,
-    title: "Nina, assistante secrétaire. Raccourci : Alt+N (Windows/Linux) ou Cmd+Shift+N (Mac)",
   },
   {
     href: "/sante-collective/profile",
@@ -240,11 +217,6 @@ const adminNavItems = [
     href: "/commun/outils",
     label: "Outils",
     icon: Wrench,
-  },
-  {
-    href: "/commun/agents-ia",
-    label: "Agents IA",
-    icon: Bot,
   },
   {
     href: "/admin/commissions-agence",
