@@ -143,66 +143,6 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "date", "order": "DESCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "sinistro_knowledge",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "embedding",
-          "vectorConfig": {
-            "dimension": 1536,
-            "flat": {}
-          }
-        }
-      ]
-    },
-    {
-      "collectionGroup": "bob_knowledge",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "embedding",
-          "vectorConfig": {
-            "dimension": 1536,
-            "flat": {}
-          }
-        }
-      ]
-    },
-    {
-      "collectionGroup": "pauline_knowledge",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "embedding",
-          "vectorConfig": {
-            "dimension": 1536,
-            "flat": {}
-          }
-        }
-      ]
-    },
-    {
-      "collectionGroup": "pauline_knowledge",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "documentReference", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "bob_knowledge",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "documentReference", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "sinistro_knowledge",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "documentReference", "order": "ASCENDING" }
-      ]
     }
   ],
   "fieldOverrides": []

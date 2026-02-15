@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { expliquerRegle } from "@/lib/assistant/antecedents-ia-service";
+import { expliquerRegle } from "@/lib/tools/antecedents/antecedents-ia-service";
 import type { JournalDecision } from "@/lib/tools/antecedents/antecedentsTypes";
 
 interface AntecedentsIAChatProps {

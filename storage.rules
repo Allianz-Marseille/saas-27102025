@@ -13,14 +13,7 @@ service firebase.storage {
              firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'ADMINISTRATEUR';
     }
     
-    // knowledge-base : upload admin uniquement, lecture pour tous authentifiés
-    // Chemin : knowledge-base/{baseId}/{fileName} (ex. knowledge-base/pauline/xxx.pdf)
-    match /knowledge-base/{baseId}/{fileName} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-    
-    // Tous les autres fichiers : règles par défaut (à adapter selon besoins)
+    // Tous les fichiers : règles par défaut (à adapter selon besoins)
     match /{allPaths=**} {
       allow read, write: if false; // Par défaut, tout est bloqué
     }

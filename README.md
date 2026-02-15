@@ -11,7 +11,7 @@ Cette application permet de gérer l'ensemble des activités commerciales d'une 
 - **KPIs en temps réel** : Suivi des indicateurs de performance par commercial et par équipe
 - **Boost** : Déclaration des avis clients (ex. Google) avec rémunération associée
 - **Messages** : Envoi de messages internes aux commerciaux (admin → collaborateurs)
-- **Outils intégrés** : Pappers, Societe.com, Process, agents IA (Nina, Bob, Sinistro, Pauline)
+- **Outils intégrés** : Pappers, Societe.com, Process
 - **Interface d'administration** : Gestion des utilisateurs, entreprises, offres, sinistres, rémunérations, messages
 
 ## 🚀 Technologies utilisées
@@ -37,15 +37,8 @@ Cette application permet de gérer l'ensemble des activités commerciales d'une 
 - **sonner** - Notifications toast
 - **react-hook-form** + **zod** - Gestion de formulaires et validation
 - **@tanstack/react-table** - Tableaux de données
-- **Vercel AI SDK** (`ai`, `@ai-sdk/openai`) - Streaming chat des agents IA
-- **Zustand** - État global (assistant)
-- **DOMPurify** - Sanitisation HTML
-- **react-markdown** + **remark-gfm** + **rehype-raw** - Rendu Markdown dans les agents
-- **exceljs**, **pdf-parse**, **pdf-lib**, **pdfjs-dist** - Manipulation de documents
-- **mammoth** - Extraction Word
-- **tesseract.js** - OCR
-- **@google-cloud/vision** - Extraction texte images (agents)
-- **jspdf** + **html2canvas** - Export PDF côté client
+- **react-markdown** + **remark-gfm** - Rendu Markdown (messages)
+- **exceljs**, **pdf-lib**, **pdfjs-dist** - Manipulation de documents
 - **canvas-confetti** - Animations
 - **Motion** (ex `framer-motion`) - Animations
 
@@ -237,15 +230,6 @@ Même grille de rémunération que la santé individuelle (0%, 2%, 3%, 4%, 6%).
 - Templates : `/admin/messages/templates`
 - Accès : `/admin/messages`
 
-#### Base de connaissances
-- Ingest de documents (PDF, etc.) pour le RAG des agents IA
-- Enrichissement par base (Bob, Sinistro, Pauline)
-- Accès : `/admin/knowledge-base`
-
-#### Assistant monitoring
-- Suivi de l'usage des agents IA
-- Accès : `/admin/assistant-monitoring`
-
 ### Messages (module utilisateur)
 
 - **Consultation** : `/messages` — liste des messages reçus (tous rôles sauf admin)
@@ -282,42 +266,12 @@ Outil complet de recherche d'informations entreprises via l'API Pappers :
 
 Informations entreprise et conventions collectives. Accès : `/commun/outils/societe-entreprise`
 
-#### M+3
-
-Expert portefeuille M+3. Accès : `/commun/outils/m-plus-3` (également dans Process)
-
 #### Process
 
 Documentation des processus métier :
 - Gestion des leads
 - Production : saisie des affaires nouvelles
 - Stratégie Process : L'art de la régularité
-
-#### Agents IA
-
-Assistant IA spécialisé pour l'agence Allianz Marseille avec 4 agents nommés :
-
-**Agents disponibles :**
-1. **Nina** (bot-secretaire) - Rédaction, mails, résumés, correction de texte, analyse de documents
-2. **Bob** (bob-sante) - Santé, prévoyance, régimes sociaux (TNS, salariés, entreprises, seniors)
-3. **Sinistro** (bot-sinistre) - Sinistres, conventions IRSA/IRSI/Badinter, analyse de constats
-4. **Pauline** (bot-pauline) - Produits particuliers, règles de souscription, documentation Allianz
-
-**Accès :**
-- Page hub : `/commun/agents-ia`
-- Raccourcis clavier : `Cmd+N` (Nina), `Alt+B` ou `Cmd+Shift+B` (Bob)
-- Redirections : `/bob` → Bob, `/pauline` → Pauline
-
-**Fonctionnalités communes :**
-- Analyse de documents (PDF, Excel, images)
-- OCR intégré pour extraction de texte
-- Base de connaissances segmentée par domaine métier (RAG)
-- Génération de mails et courriers
-- Support multi-fichiers et images
-- Historique des conversations
-- Export des conversations en PDF
-
-**Documentation** : Voir `docs/knowledge/core/specification-comportement-ia.md`, `docs/agents-ia/README.md` et `docs/agents-ia/pauline_retail/README.md` pour Pauline.
 
 ## 📁 Structure du projet
 
@@ -328,8 +282,6 @@ app/
 │   ├── commissions-agence/  # Gestion commissions agence
 │   ├── boost/               # Suivi boosts (liste, filtres, leaderboard)
 │   ├── remunerations/       # Gestion salaires (brouillons, historique)
-│   ├── knowledge-base/      # Base de connaissances RAG (ingest, enrichissement)
-│   ├── assistant-monitoring/ # Suivi usage agents IA
 │   ├── messages/            # Messages admin (page, statistics, templates)
 │   ├── companies/           # Gestion entreprises
 │   ├── logs/                # Logs système
@@ -357,11 +309,9 @@ app/
 │   └── page.tsx             # Dashboard principal
 ├── commun/                  # Pages communes
 │   ├── boost/               # Page Boost (déclaration utilisateurs)
-│   ├── agents-ia/           # Hub agents (Nina, Bob, Sinistro, Pauline)
-│   ├── outils/              # Outils (Pappers, Societe.com, M+3)
+│   ├── outils/              # Outils (Pappers, Societe.com)
 │   │   ├── beneficiaires-effectifs/
-│   │   ├── societe-entreprise/
-│   │   └── m-plus-3/
+│   │   └── societe-entreprise/
 │   ├── process/             # Documentation processus
 │   └── mentions-legales/    # Mentions légales
 ├── messages/                # Messages utilisateurs (consultation)
@@ -369,13 +319,11 @@ app/
 │   └── messages/           # Préférences messages
 ├── api/                     # Routes API Next.js
 │   ├── acts/                # API actes
-│   ├── admin/               # API admin (users, knowledge-base)
-│   ├── assistant/           # API assistant IA (chat, conversations, export, fichiers, monitoring, templates)
+│   ├── admin/               # API admin (users)
 │   ├── conventions-collectives/ # API conventions collectives (Societe.com)
 │   ├── cron/                # Tâches cron (leaderboard)
 │   ├── health-acts/         # API actes santé
 │   ├── leaderboard/         # API leaderboard
-│   ├── ocr/                 # API OCR (extraction texte PDF)
 │   ├── offres/              # API offres
 │   ├── pappers/             # API Pappers
 │   ├── process/             # API process
@@ -387,7 +335,6 @@ app/
 components/                   # Composants React réutilisables
 ├── acts/                    # Composants actes
 ├── admin/                   # Composants admin
-├── assistant/               # Composants assistant
 ├── auth/                    # Composants authentification
 ├── commissions/             # Composants commissions
 ├── dashboard/               # Composants dashboard
@@ -398,8 +345,6 @@ components/                   # Composants React réutilisables
 
 lib/                         # Utilitaires et logique métier
 ├── firebase/                # Configuration Firebase
-├── assistant/               # Logique agents IA (RAG, prompts, etc.)
-├── knowledge/               # Bases de connaissances
 ├── utils/                   # Utilitaires (KPI, rôles, etc.)
 ├── hooks/                   # Hooks React personnalisés
 └── validations/             # Schémas de validation
@@ -459,28 +404,11 @@ FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your_project_id.iam.gserviceaccoun
 PAPPERS_API_KEY=your_pappers_api_key
 SOCIETE_API_KEY=your_societe_api_key
 
-# Assistant IA (obligatoire pour les agents)
-OPENAI_API_KEY=your_openai_api_key
-
-# Feature flags agents IA (optionnel)
-NEXT_PUBLIC_ENABLE_NINA_BOT=true     # Nina activée par défaut
-NEXT_PUBLIC_ENABLE_BOB_BOT=false     # Bob désactivé par défaut
-NEXT_PUBLIC_ENABLE_SINISTRO_BOT=true  # Sinistro activé par défaut
-NEXT_PUBLIC_ENABLE_PAULINE_BOT=true  # Pauline activée par défaut
-
 # Base URL (liens, webhooks)
 NEXT_PUBLIC_BASE_URL=
 
-# Extraction PDF/images (OCR, Document AI) — si les agents traitent des documents
-GOOGLE_APPLICATION_CREDENTIALS_JSON=
-
 # Crons — Bearer secret pour routes protégées (/api/cron/*)
 CRON_SECRET=
-
-# Tests smoke (optionnel)
-SMOKE_TEST_EMAIL=
-SMOKE_TEST_PASSWORD=
-SMOKE_TEST_BASE_URL=
 ```
 
 #### Configuration Firebase
@@ -511,8 +439,6 @@ Les règles Firestore sont définies dans `firestore.rules`. Les collections pri
 - `admin_messages` : Messages envoyés par l'admin
 - `message_recipients` : Destinataires des messages
 - `message_replies` : Réponses aux messages
-- `rag_documents` : Documents RAG pour les agents IA (Bob, Sinistro, Pauline)
-- `assistant_conversations` : Conversations de l'assistant
 - `sinistres` : Sinistres (lecture admin, gestionnaire sinistre, CDC)
 - `sinistres_metadata` : Métadonnées des imports de sinistres
 
@@ -570,18 +496,6 @@ npm run import:kheira-may                # Importer données Kheira mai
 ```bash
 npm run migrate-ird-pro-commissions     # Migrer les commissions IRD Pro
 npm run generate-leaderboard            # Générer le leaderboard
-npm run migrate:sinistro-firestore      # Migrer Sinistro vers Firestore
-npm run migrate:bob-firestore           # Migrer Bob vers Firestore
-npm run migrate:pauline-firestore       # Migrer Pauline vers Firestore
-```
-
-### Scripts d'extraction PDF
-
-```bash
-npm run extract:irsa-pdf                # Extraire convention IRSA
-npm run extract:irsi-pdf                # Extraire convention IRSI
-npm run extract:cide-cop-pdf            # Extraire convention CIDE/COP
-npm run extract:pauline-pdfs             # Extraire PDFs Pauline
 ```
 
 ### Scripts utilitaires
@@ -589,8 +503,6 @@ npm run extract:pauline-pdfs             # Extraire PDFs Pauline
 ```bash
 npm run get-user-info                   # Obtenir les informations d'un utilisateur
 npm run get-firebase-token              # Obtenir un token Firebase (pour tests)
-npm run cleanup:rag                     # Nettoyer les collections RAG
-npm run smoke:nina                      # Test smoke de l'agent Nina
 ```
 
 ### Scripts de test
@@ -632,18 +544,6 @@ L'application utilise l'API Societe.com pour récupérer les conventions collect
 **Configuration** : Définir `SOCIETE_API_KEY` dans `.env.local`
 
 **Documentation** : [https://www.societe.com/api](https://www.societe.com/api)
-
-### OpenAI API
-
-L'application utilise l'API OpenAI pour l'assistant IA.
-
-**Configuration** : Définir `OPENAI_API_KEY` dans `.env.local` (obligatoire pour l'assistant)
-
-**Fonctionnalités** :
-- Chat conversationnel avec contexte métier
-- Analyse de documents (PDF, Excel, images)
-- OCR et extraction de texte
-- Génération de contenu (mails, courriers, etc.)
 
 ### Firebase
 
@@ -755,7 +655,6 @@ Les commits avec `[skip vercel]` dans le message seront ignorés par Vercel et n
 ### Variables d'environnement de production
 
 **📖 Référence** : Voir `.env.example` pour la liste des variables. Les variables essentielles sont :
-- **`OPENAI_API_KEY`** (requis pour l'assistant) : Clé API OpenAI pour l'assistant IA
 - Variables Firebase (client et admin)
 - Clés API externes (Pappers, Societe.com)
 
@@ -767,9 +666,7 @@ Le fichier `vercel.json` configure le cron du leaderboard. Pour les variables d'
 
 ## 📚 Documentation supplémentaire
 
-- **Agents IA** : `docs/agents-ia/README.md` (Nina, Bob, Sinistro) — `docs/agents-ia/pauline_retail/README.md` (Pauline)
 - **Boost** : `docs/boost/BOOST.md` — Spécification du module de déclaration des avis clients
-- **Base de connaissances** : `docs/plans/outil-admin-bases-connaissance.md` — Plan de l'outil admin
 - **Conventions Firestore** : `firestore.rules` — Règles de sécurité
 
 ## 🤝 Contribution

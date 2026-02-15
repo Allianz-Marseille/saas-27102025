@@ -18,7 +18,7 @@ import { useAuth } from "@/lib/firebase/use-auth";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { MarkdownRenderer } from "@/components/assistant/MarkdownRenderer";
+import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import { cn } from "@/lib/utils";
 import { MessageReply } from "./message-reply";
 import { MessageRepliesList } from "./message-replies-list";

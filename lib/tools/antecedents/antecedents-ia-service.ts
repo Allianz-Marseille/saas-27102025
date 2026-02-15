@@ -1,15 +1,11 @@
 /**
- * Service IA pour l'Assistant Antécédents Auto
- * 
- * IMPORTANT : L'IA est utilisée UNIQUEMENT pour :
- * - Reformulation du journal en français naturel
- * - Explications pédagogiques des règles
- * - Génération d'emails personnalisés
- * 
- * L'IA ne calcule JAMAIS le CRM ou ne décide JAMAIS des sinistres à retenir.
+ * Service pour l'Assistant Antécédents Auto
+ *
+ * Explications pédagogiques des règles et reformulation du journal.
+ * Pas d'appel API IA - logique locale uniquement.
  */
 
-import type { JournalDecision, ResultatCRM } from "@/lib/tools/antecedents/antecedentsTypes";
+import type { JournalDecision } from "@/lib/tools/antecedents/antecedentsTypes";
 
 /**
  * Reformule le journal structuré en français naturel et client-friendly
@@ -17,9 +13,6 @@ import type { JournalDecision, ResultatCRM } from "@/lib/tools/antecedents/antec
 export async function reformulerJournal(
   journal: JournalDecision
 ): Promise<string> {
-  // Pour l'instant, on retourne une version simplifiée
-  // TODO: Intégrer avec l'API IA (OpenAI, etc.)
-  
   const contexte = journal.contexte;
   const crm = journal.crm;
   const sinistres = journal.sinistres;
@@ -27,7 +20,6 @@ export async function reformulerJournal(
   let texte = `Bonjour,\n\n`;
   texte += `Suite à l'analyse de votre dossier, voici les éléments retenus :\n\n`;
 
-  // Section CRM
   texte += `**Coefficient retenu : ${crm.valeur}**\n`;
   texte += `${crm.justification}\n`;
   if (crm.calcul) {
@@ -35,7 +27,6 @@ export async function reformulerJournal(
   }
   texte += `\n`;
 
-  // Section Sinistres
   texte += `**Sinistres à déclarer :**\n`;
   texte += `Période : ${sinistres.regle.periode_mois} mois\n`;
   if (sinistres.liste.length > 0) {
@@ -43,7 +34,6 @@ export async function reformulerJournal(
   }
   texte += `\n`;
 
-  // Alertes
   if (journal.alertes.length > 0) {
     texte += `**Points de vigilance :**\n`;
     journal.alertes.forEach((alerte) => {
@@ -64,8 +54,6 @@ export async function expliquerRegle(
   regleId: string,
   question?: string
 ): Promise<string> {
-  // TODO: Intégrer avec l'API IA pour des explications contextuelles
-  
   const explications: Record<string, string> = {
     PM_01: "Pour une personne morale assurant son premier véhicule sans conducteur désigné, le coefficient de base est de 0,70. C'est le coefficient de départ pour toute nouvelle société.",
     PM_02: "Lors de l'ajout d'un véhicule supplémentaire, on calcule la moyenne des coefficients de tous les véhicules 4 roues <3,5t de la société (y compris ceux résiliés depuis moins de 12 mois). Cette moyenne est calculée sans arrondi.",
@@ -94,7 +82,7 @@ export async function genererEmail(
   ton: "formel" | "amical" = "formel"
 ): Promise<string> {
   const reformule = await reformulerJournal(journal);
-  
+
   if (ton === "amical") {
     return reformule.replace("Bonjour,", "Bonjour,").replace("Cordialement,", "À bientôt,");
   }

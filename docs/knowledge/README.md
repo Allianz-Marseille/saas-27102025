@@ -1,24 +1,20 @@
 # Base de connaissances (knowledge)
 
-Ce dossier contient les fiches métier et les bases **chargées** par les agents IA, ainsi que des référentiels utilisés dans la doc ou le code.
-
-## Bases chargées par les agents
-
-- **Bob** : `loadBobKnowledge()` charge `bob/` puis `bob/ro/`. Source de vérité : [bob/00-SOURCE-DE-VERITE.md](bob/00-SOURCE-DE-VERITE.md).
-- **Sinistro** : `loadSinistroKnowledge()` charge `sinistro/`. Source de vérité : [sinistro/00-SOURCE-DE-VERITE.md](sinistro/00-SOURCE-DE-VERITE.md).
+Ce dossier contient les fiches métier référentielles et les synthèses par domaine.
 
 ## Fiches à la racine (20, 30, 90)
 
-Les fichiers **`20-sinistres.md`**, **`30-sante.md`** et **`90-compliance.md`** sont des **synthèses par domaine** utilisées comme **références** (citées dans la doc, dans les prompts ou le code). Ils **ne sont pas chargés** par `loadBobKnowledge()` ni `loadSinistroKnowledge()`.
+Les fichiers **`20-sinistres.md`**, **`30-sante.md`** et **`90-compliance.md`** sont des **synthèses par domaine** utilisées comme références.
 
-- **20-sinistres.md** : conventions sinistres (IRSA, IRCA, IRSI), référencé par la doc Sinistro.
-- **30-sante.md** : santé individuelle et collective (remboursements, postes).
-- **90-compliance.md** : règles métier et conformité (ACPR, devoir de conseil), référencé par l’API chat.
+- **20-sinistres.md** : Conventions sinistres (IRSA, IRCA, IRSI).
+- **30-sante.md** : Santé individuelle et collective (remboursements, postes).
+- **90-compliance.md** : Règles métier et conformité (ACPR, devoir de conseil).
 
-Mettre à jour le libellé « A VERIFIER » dans 20 et 30 lorsque le contenu a été validé.
+## Sous-dossiers
 
-## Autres sous-dossiers
-
-- **core/** : agences, réglementation, spécification comportement IA, etc.
-- **process/** : processus métier (M+3, sinistres, leads, préterme).
-- **produits/** , **segmentation/** , **contrats/** , **sources/** : fiches métier référentielles.
+- **core/** : Agences, réglementation, spécification comportement, identité agence, liens devis, outils tarification.
+- **process/** : Processus métier (M+3, sinistres, leads, préterme auto, préterme IRD).
+- **produits/** : Produits assurance (IARD, santé, prévoyance, VTM, épargne).
+- **segmentation/** : Segments entreprises et particuliers.
+- **contrats/** : Contrats type entreprise, particulier, professionnel.
+- **sources/** : Référentiels (assurance décennale, complémentaire santé collective, règles de remboursement).

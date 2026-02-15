@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { useAutoLogout } from "@/lib/hooks/use-auto-logout";
@@ -32,14 +32,12 @@ import {
   LayoutDashboard,
   BarChart3,
   Wrench,
-  Zap,
-  Bot
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { ENABLE_BOB_BOT } from "@/lib/assistant/config";
 
 // Navigation items pour chaque rôle
 const commercialNavItems = [
@@ -75,12 +73,6 @@ const commercialNavItems = [
     href: "/commun/outils",
   },
   {
-    icon: Bot,
-    label: "Mes agents IA",
-    href: "#",
-    comingSoon: true,
-  },
-  {
     icon: User,
     label: "Profil",
     href: "/dashboard/profile",
@@ -102,12 +94,6 @@ const gestionnaireSinistreNavItems = [
     icon: Wrench,
     label: "Outils",
     href: "/commun/outils",
-  },
-  {
-    icon: Bot,
-    label: "Mes agents IA",
-    href: "#",
-    comingSoon: true,
   },
 ];
 
@@ -142,12 +128,6 @@ const healthNavItems = [
     href: "/commun/outils",
     label: "Outils",
     icon: Wrench,
-  },
-  {
-    href: "#",
-    label: "Mes agents IA",
-    icon: Bot,
-    comingSoon: true,
   },
   {
     href: "/sante-individuelle/profile",
@@ -187,12 +167,6 @@ const healthCollectiveNavItems = [
     href: "/commun/outils",
     label: "Outils",
     icon: Wrench,
-  },
-  {
-    href: "#",
-    label: "Mes agents IA",
-    icon: Bot,
-    comingSoon: true,
   },
   {
     href: "/sante-collective/profile",
@@ -244,12 +218,6 @@ const adminNavItems = [
     icon: Wrench,
   },
   {
-    href: "#",
-    label: "Mes agents IA",
-    icon: Bot,
-    comingSoon: true,
-  },
-  {
     href: "/admin/commissions-agence",
     label: "Commissions Agence",
     icon: Coins,
@@ -268,38 +236,6 @@ export default function CommunLayout({
   const pathname = usePathname();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = document.activeElement as HTMLElement | null;
-      const tag = target?.tagName?.toLowerCase();
-      const editable = target?.getAttribute?.("contenteditable") === "true";
-      if (tag === "input" || tag === "textarea" || editable) return;
-
-      const isAltN = e.altKey && e.key.toLowerCase() === "n";
-      const isCmdShiftN = (e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "n";
-      if (isAltN || isCmdShiftN) {
-        e.preventDefault();
-        if (pathname !== "/commun/agents-ia/bot-secretaire") {
-          router.push("/commun/agents-ia/bot-secretaire");
-        }
-        return;
-      }
-
-      if (ENABLE_BOB_BOT) {
-        const isAltB = e.altKey && e.key.toLowerCase() === "b";
-        const isCmdShiftB = (e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "b";
-        if (isAltB || isCmdShiftB) {
-          e.preventDefault();
-          if (pathname !== "/commun/agents-ia/bob-sante") {
-            router.push("/commun/agents-ia/bob-sante");
-          }
-        }
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [pathname, router]);
 
   // Déconnexion automatique après 10 minutes d'inactivité
   useAutoLogout({
@@ -367,16 +303,6 @@ export default function CommunLayout({
     navItems = commercialNavItems;
     title = "Processus";
     showNotifications = isCommercialUser;
-  }
-
-  // Nina — Bot Secrétaire : pleine page sans sidebar (spec NINA-SECRETAIRE.md)
-  const isNinaFullscreen = pathname === "/commun/agents-ia/bot-secretaire";
-  if (isNinaFullscreen) {
-    return (
-      <RouteGuard requireAuth={true}>
-        <div className="h-screen w-screen overflow-hidden">{children}</div>
-      </RouteGuard>
-    );
   }
 
   return (

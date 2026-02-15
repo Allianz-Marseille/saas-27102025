@@ -1,12 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  async redirects() {
-    return [
-      { source: "/bob", destination: "/commun/agents-ia/bob-sante", permanent: true },
-      { source: "/pauline", destination: "/commun/agents-ia/bot-pauline", permanent: true },
-    ];
-  },
   // Optimiser les imports (compatible avec Turbopack)
   experimental: {
     optimizePackageImports: [
@@ -20,10 +14,6 @@ const nextConfig: NextConfig = {
       'framer-motion',
     ],
   },
-
-  // Exclure pdf-parse du bundling Next.js (nécessaire pour Vercel)
-  // pdf-parse utilise des binaires natifs qui doivent être chargés à l'exécution
-  serverExternalPackages: ['pdf-parse'],
 
   // Configuration Turbopack (Next.js 16 utilise Turbopack par défaut)
   turbopack: {},

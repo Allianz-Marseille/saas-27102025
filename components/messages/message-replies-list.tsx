@@ -7,7 +7,7 @@ import { MessageReply } from "@/types/message";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getRelativeTime, toDate } from "@/lib/utils/date-helpers";
-import { MarkdownRenderer } from "@/components/assistant/MarkdownRenderer";
+import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import { isAdmin } from "@/lib/utils/roles";
 import { CheckCircle2, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
