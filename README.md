@@ -9,8 +9,10 @@ Cette application permet de gérer l'ensemble des activités commerciales d'une 
 - **Gestion des actes commerciaux** : Saisie et suivi de tous les types d'actes (Apports Nouveaux, M+3, Préterme, etc.)
 - **Calcul automatique des commissions** : Calcul des commissions selon les règles spécifiques à chaque type de commercial
 - **KPIs en temps réel** : Suivi des indicateurs de performance par commercial et par équipe
-- **Outils intégrés** : Accès à des outils externes (Pappers, Process, ChatGPT Assistant)
-- **Interface d'administration** : Gestion complète des utilisateurs, entreprises, et offres commerciales
+- **Boost** : Déclaration des avis clients (ex. Google) avec rémunération associée
+- **Messages** : Envoi de messages internes aux commerciaux (admin → collaborateurs)
+- **Outils intégrés** : Pappers, Societe.com, Process, agents IA (Nina, Bob, Sinistro, Pauline)
+- **Interface d'administration** : Gestion des utilisateurs, entreprises, offres, sinistres, rémunérations, messages
 
 ## 🚀 Technologies utilisées
 
@@ -35,6 +37,17 @@ Cette application permet de gérer l'ensemble des activités commerciales d'une 
 - **sonner** - Notifications toast
 - **react-hook-form** + **zod** - Gestion de formulaires et validation
 - **@tanstack/react-table** - Tableaux de données
+- **Vercel AI SDK** (`ai`, `@ai-sdk/openai`) - Streaming chat des agents IA
+- **Zustand** - État global (assistant)
+- **DOMPurify** - Sanitisation HTML
+- **react-markdown** + **remark-gfm** + **rehype-raw** - Rendu Markdown dans les agents
+- **exceljs**, **pdf-parse**, **pdf-lib**, **pdfjs-dist** - Manipulation de documents
+- **mammoth** - Extraction Word
+- **tesseract.js** - OCR
+- **@google-cloud/vision** - Extraction texte images (agents)
+- **jspdf** + **html2canvas** - Export PDF côté client
+- **canvas-confetti** - Animations
+- **Motion** (ex `framer-motion`) - Animations
 
 ## 👥 Rôles utilisateurs
 
@@ -205,9 +218,53 @@ Même grille de rémunération que la santé individuelle (0%, 2%, 3%, 4%, 6%).
 - Classement des commerciaux
 - Mise à jour automatique via cron
 
+#### Rémunérations
+- Gestion des salaires (brouillons, historique, validation)
+- Pilotage multi-années
+- Accès : `/admin/remunerations`
+
+#### Boost
+- Suivi des boosts déclarés par tous les collaborateurs
+- Filtres (mois, collaborateur, type)
+- Classement et totaux par personne
+- Accès : `/admin/boost`
+
+#### Messages
+- Envoi de messages aux commerciaux
+- Templates réutilisables
+- Planification des envois
+- Statistiques : `/admin/messages/statistics`
+- Templates : `/admin/messages/templates`
+- Accès : `/admin/messages`
+
+#### Base de connaissances
+- Ingest de documents (PDF, etc.) pour le RAG des agents IA
+- Enrichissement par base (Bob, Sinistro, Pauline)
+- Accès : `/admin/knowledge-base`
+
+#### Assistant monitoring
+- Suivi de l'usage des agents IA
+- Accès : `/admin/assistant-monitoring`
+
+### Messages (module utilisateur)
+
+- **Consultation** : `/messages` — liste des messages reçus (tous rôles sauf admin)
+- **Paramètres** : `/settings/messages` — préférences (rappel, fréquence des notifications)
+- **Admin** : création, envoi, templates, planification (voir Interface Admin ci-dessus)
+
 ### Outils communs
 
+#### Boost
+
+Module de déclaration et suivi des avis clients :
+- **Types** : Google (5 € par avis), autres types à venir
+- **Accès** : Tous les rôles (CDC, Santé Indiv/Coll, Gestionnaire sinistre)
+- Page utilisateur : `/commun/boost` — déclaration et classement
+- Page admin : `/admin/boost` — liste, filtres, leaderboard, export
+- Documentation : `docs/boost/BOOST.md`
+
 #### Pappers
+
 Outil complet de recherche d'informations entreprises via l'API Pappers :
 - **Recherche par SIREN/SIRET** ou **par nom**
 - **Informations légales** : Dénomination, forme juridique, adresse, capital, effectifs, etc.
@@ -219,41 +276,48 @@ Outil complet de recherche d'informations entreprises via l'API Pappers :
 - **Événements** : Historique des modifications
 - **Filiales et participations** : Réseau d'entreprises
 - **Marques** : Marques déposées
+- **Accès** : `/commun/outils/beneficiaires-effectifs`
+
+#### Societe.com
+
+Informations entreprise et conventions collectives. Accès : `/commun/outils/societe-entreprise`
+
+#### M+3
+
+Expert portefeuille M+3. Accès : `/commun/outils/m-plus-3` (également dans Process)
 
 #### Process
+
 Documentation des processus métier :
 - Gestion des leads
 - Production : saisie des affaires nouvelles
 - Stratégie Process : L'art de la régularité
 
-#### Assistant IA
-Assistant IA spécialisé pour l'agence Allianz Marseille avec 10 rôles métier :
+#### Agents IA
 
-**Rôles disponibles :**
-1. **💼 Commercial** - M+3, Préterme, Devis, Arguments commerciaux
-2. **🚨 Sinistre** - Gestion des sinistres, conventions IRSA/IRSI/IRCA
-3. **💚 Santé** - Santé individuelle et collective
-4. **🟣 Prévoyance** - Prévoyance individuelle et collective
-5. **📋 Secrétariat** - Assistant administratif, organisation
-6. **📱 Community Manager** - Contenu réseaux sociaux, communication
-7. **⚖️ Avocat** - Conseil juridique, droit assurance
-8. **📊 Expert-comptable** - Optimisation fiscale, déclarations, conformité
-9. **📊 Analyste de Performance** - Classements agence, analyse Excel/PDF, benchmarking
-10. **💬 Chat libre** - Discussion générale, brainstorming, autre sujet
+Assistant IA spécialisé pour l'agence Allianz Marseille avec 4 agents nommés :
 
-**Fonctionnalités :**
-- Qualification automatique du contexte avant chaque réponse
+**Agents disponibles :**
+1. **Nina** (bot-secretaire) - Rédaction, mails, résumés, correction de texte, analyse de documents
+2. **Bob** (bob-sante) - Santé, prévoyance, régimes sociaux (TNS, salariés, entreprises, seniors)
+3. **Sinistro** (bot-sinistre) - Sinistres, conventions IRSA/IRSI/Badinter, analyse de constats
+4. **Pauline** (bot-pauline) - Produits particuliers, règles de souscription, documentation Allianz
+
+**Accès :**
+- Page hub : `/commun/agents-ia`
+- Raccourcis clavier : `Cmd+N` (Nina), `Alt+B` ou `Cmd+Shift+B` (Bob)
+- Redirections : `/bob` → Bob, `/pauline` → Pauline
+
+**Fonctionnalités communes :**
 - Analyse de documents (PDF, Excel, images)
 - OCR intégré pour extraction de texte
-- Recherche d'entreprises par nom (Pappers)
-- Récupération de conventions collectives (Societe.com)
-- Base de connaissances segmentée par domaine métier
-- Génération de mails et courriers avec signature automatique
+- Base de connaissances segmentée par domaine métier (RAG)
+- Génération de mails et courriers
 - Support multi-fichiers et images
 - Historique des conversations
-- Export des conversations
+- Export des conversations en PDF
 
-**Documentation** : Voir `docs/knowledge/core/specification-comportement-ia.md` et `docs/agents-ia/README.md` pour les agents IA (Nina, Bob, Sinistro).
+**Documentation** : Voir `docs/knowledge/core/specification-comportement-ia.md`, `docs/agents-ia/README.md` et `docs/agents-ia/pauline_retail/README.md` pour Pauline.
 
 ## 📁 Structure du projet
 
@@ -262,6 +326,11 @@ app/
 ├── admin/                    # Interface administrateur
 │   ├── commercial/          # Détails d'un commercial
 │   ├── commissions-agence/  # Gestion commissions agence
+│   ├── boost/               # Suivi boosts (liste, filtres, leaderboard)
+│   ├── remunerations/       # Gestion salaires (brouillons, historique)
+│   ├── knowledge-base/      # Base de connaissances RAG (ingest, enrichissement)
+│   ├── assistant-monitoring/ # Suivi usage agents IA
+│   ├── messages/            # Messages admin (page, statistics, templates)
 │   ├── companies/           # Gestion entreprises
 │   ├── logs/                # Logs système
 │   ├── offres-commerciales/ # Gestion offres
@@ -287,14 +356,23 @@ app/
 │   ├── profile/             # Profil utilisateur
 │   └── page.tsx             # Dashboard principal
 ├── commun/                  # Pages communes
-│   ├── outils/              # Outils (Pappers, ChatGPT, etc.)
-│   └── process/             # Documentation processus
+│   ├── boost/               # Page Boost (déclaration utilisateurs)
+│   ├── agents-ia/           # Hub agents (Nina, Bob, Sinistro, Pauline)
+│   ├── outils/              # Outils (Pappers, Societe.com, M+3)
+│   │   ├── beneficiaires-effectifs/
+│   │   ├── societe-entreprise/
+│   │   └── m-plus-3/
+│   ├── process/             # Documentation processus
+│   └── mentions-legales/    # Mentions légales
+├── messages/                # Messages utilisateurs (consultation)
+├── settings/                # Paramètres utilisateur
+│   └── messages/           # Préférences messages
 ├── api/                     # Routes API Next.js
 │   ├── acts/                # API actes
-│   ├── admin/               # API admin
+│   ├── admin/               # API admin (users, knowledge-base)
 │   ├── assistant/           # API assistant IA (chat, conversations, export, fichiers, monitoring, templates)
 │   ├── conventions-collectives/ # API conventions collectives (Societe.com)
-│   ├── cron/                # Tâches cron
+│   ├── cron/                # Tâches cron (leaderboard)
 │   ├── health-acts/         # API actes santé
 │   ├── leaderboard/         # API leaderboard
 │   ├── ocr/                 # API OCR (extraction texte PDF)
@@ -303,8 +381,8 @@ app/
 │   ├── process/             # API process
 │   ├── sinistres/           # API sinistres (import Excel, sync Google Sheets)
 │   └── societe/             # API Societe.com
-├── login/                    # Page de connexion
-└── page.tsx                  # Page d'accueil
+├── login/                   # Page de connexion
+└── page.tsx                 # Page d'accueil
 
 components/                   # Composants React réutilisables
 ├── acts/                    # Composants actes
@@ -314,11 +392,14 @@ components/                   # Composants React réutilisables
 ├── commissions/             # Composants commissions
 ├── dashboard/               # Composants dashboard
 ├── health-acts/             # Composants actes santé
-├── navigation/             # Composants navigation
+├── messages/                # Composants messages
+├── navigation/              # Composants navigation
 └── ui/                      # Composants UI de base
 
 lib/                         # Utilitaires et logique métier
 ├── firebase/                # Configuration Firebase
+├── assistant/               # Logique agents IA (RAG, prompts, etc.)
+├── knowledge/               # Bases de connaissances
 ├── utils/                   # Utilitaires (KPI, rôles, etc.)
 ├── hooks/                   # Hooks React personnalisés
 └── validations/             # Schémas de validation
@@ -378,8 +459,28 @@ FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your_project_id.iam.gserviceaccoun
 PAPPERS_API_KEY=your_pappers_api_key
 SOCIETE_API_KEY=your_societe_api_key
 
-# Assistant IA (obligatoire pour l'assistant)
+# Assistant IA (obligatoire pour les agents)
 OPENAI_API_KEY=your_openai_api_key
+
+# Feature flags agents IA (optionnel)
+NEXT_PUBLIC_ENABLE_NINA_BOT=true     # Nina activée par défaut
+NEXT_PUBLIC_ENABLE_BOB_BOT=false     # Bob désactivé par défaut
+NEXT_PUBLIC_ENABLE_SINISTRO_BOT=true  # Sinistro activé par défaut
+NEXT_PUBLIC_ENABLE_PAULINE_BOT=true  # Pauline activée par défaut
+
+# Base URL (liens, webhooks)
+NEXT_PUBLIC_BASE_URL=
+
+# Extraction PDF/images (OCR, Document AI) — si les agents traitent des documents
+GOOGLE_APPLICATION_CREDENTIALS_JSON=
+
+# Crons — Bearer secret pour routes protégées (/api/cron/*)
+CRON_SECRET=
+
+# Tests smoke (optionnel)
+SMOKE_TEST_EMAIL=
+SMOKE_TEST_PASSWORD=
+SMOKE_TEST_BASE_URL=
 ```
 
 #### Configuration Firebase
@@ -404,12 +505,18 @@ Les règles Firestore sont définies dans `firestore.rules`. Les collections pri
 - `agency_commissions` : Commissions agence (accès admin uniquement)
 - `leaderboard` : Classement des commerciaux
 - `commissionRules` : Règles de calcul des commissions
-- `rag_documents` : Documents RAG pour l'assistant
+- `salary_history` : Historique des salaires (admin uniquement)
+- `salary_drafts` : Brouillons de salaires
+- `boosts` : Boosts déclarés (avis clients)
+- `admin_messages` : Messages envoyés par l'admin
+- `message_recipients` : Destinataires des messages
+- `message_replies` : Réponses aux messages
+- `rag_documents` : Documents RAG pour les agents IA (Bob, Sinistro, Pauline)
 - `assistant_conversations` : Conversations de l'assistant
 - `sinistres` : Sinistres (lecture admin, gestionnaire sinistre, CDC)
 - `sinistres_metadata` : Métadonnées des imports de sinistres
 
-**⚠️ Important** : Les règles de sécurité ont été renforcées pour protéger les données personnelles. Voir `docs/SECURITE_FIRESTORE.md` pour plus de détails.
+**⚠️ Important** : Les règles de sécurité ont été renforcées pour protéger les données personnelles. Voir `firestore.rules` pour les règles détaillées.
 
 ### Démarrage
 
@@ -446,28 +553,44 @@ npm run create-users                    # Créer des utilisateurs
 npm run check-users                     # Vérifier les utilisateurs
 npm run sync-users                      # Synchroniser les utilisateurs
 npm run init-companies                  # Initialiser les entreprises
-npm run import:commissions               # Importer des commissions depuis Markdown
-npm run import:commissions-2023          # Importer des commissions 2023
+npm run fix-kheira-user                 # Corriger un utilisateur Kheira
+npm run import:commissions              # Importer des commissions depuis Markdown
+npm run import:commissions-2023         # Importer des commissions 2023
+npm run import:sinistres-initial        # Importer les sinistres initiaux
 npm run import:kheira-nov               # Importer données Kheira novembre
 npm run import:kheira-oct               # Importer données Kheira octobre
-npm run import:kheira-sep               # Importer données Kheira septembre
-npm run import:kheira-jul               # Importer données Kheira juillet
-npm run import:kheira-jun               # Importer données Kheira juin
-npm run import:kheira-may               # Importer données Kheira mai
+npm run import:kheira-sep                # Importer données Kheira septembre
+npm run import:kheira-jul                # Importer données Kheira juillet
+npm run import:kheira-jun                # Importer données Kheira juin
+npm run import:kheira-may                # Importer données Kheira mai
 ```
 
 ### Scripts de migration
 
 ```bash
-npm run migrate-ird-pro-commissions      # Migrer les commissions IRD Pro
-npm run generate-leaderboard             # Générer le leaderboard
+npm run migrate-ird-pro-commissions     # Migrer les commissions IRD Pro
+npm run generate-leaderboard            # Générer le leaderboard
+npm run migrate:sinistro-firestore      # Migrer Sinistro vers Firestore
+npm run migrate:bob-firestore           # Migrer Bob vers Firestore
+npm run migrate:pauline-firestore       # Migrer Pauline vers Firestore
+```
+
+### Scripts d'extraction PDF
+
+```bash
+npm run extract:irsa-pdf                # Extraire convention IRSA
+npm run extract:irsi-pdf                # Extraire convention IRSI
+npm run extract:cide-cop-pdf            # Extraire convention CIDE/COP
+npm run extract:pauline-pdfs             # Extraire PDFs Pauline
 ```
 
 ### Scripts utilitaires
 
 ```bash
-npm run get-user-info                    # Obtenir les informations d'un utilisateur
-npm run cleanup:rag                      # Nettoyer les collections RAG
+npm run get-user-info                   # Obtenir les informations d'un utilisateur
+npm run get-firebase-token              # Obtenir un token Firebase (pour tests)
+npm run cleanup:rag                     # Nettoyer les collections RAG
+npm run smoke:nina                      # Test smoke de l'agent Nina
 ```
 
 ### Scripts de test
@@ -596,7 +719,7 @@ Les règles Firestore sont définies dans `firestore.rules` avec des restriction
 **Tests des règles** :
 - Script de test disponible : `scripts/test-firestore-rules-emulator.ts`
 - Exécution : `npm run test:rules:emulator` (nécessite l'Emulator Firebase)
-- Documentation complète : `docs/SECURITE_FIRESTORE.md`
+- Documentation : `firestore.rules` et `scripts/test-firestore-rules-emulator.ts`
 
 ### Protection des routes
 
@@ -610,7 +733,7 @@ Toutes les routes sont protégées par le composant `RouteGuard` qui vérifie :
 ### Vercel (recommandé)
 
 1. Connecter le repository GitHub à Vercel
-2. Configurer les variables d'environnement dans Vercel (voir [Guide de déploiement](docs/deployment.md))
+2. Configurer les variables d'environnement dans Vercel (voir `.env.example` et la section "Variables d'environnement" ci-dessus)
 3. Déployer automatiquement à chaque push sur `main`
 
 ### ⚠️ Éviter les déploiements multiples
@@ -631,9 +754,7 @@ Les commits avec `[skip vercel]` dans le message seront ignorés par Vercel et n
 
 ### Variables d'environnement de production
 
-**📖 Documentation complète** : Voir [docs/deployment.md](docs/deployment.md) pour la liste complète des variables d'environnement requises.
-
-Variables essentielles :
+**📖 Référence** : Voir `.env.example` pour la liste des variables. Les variables essentielles sont :
 - **`OPENAI_API_KEY`** (requis pour l'assistant) : Clé API OpenAI pour l'assistant IA
 - Variables Firebase (client et admin)
 - Clés API externes (Pappers, Societe.com)
@@ -642,16 +763,14 @@ Variables essentielles :
 
 Le fichier `vercel.json` configure les redirections et les routes API.
 
-Pour plus de détails sur la configuration Vercel et les variables d'environnement, consultez le [Guide de déploiement](docs/deployment.md).
+Le fichier `vercel.json` configure le cron du leaderboard. Pour les variables d'environnement, consultez `.env.example`.
 
 ## 📚 Documentation supplémentaire
 
-- **Sécurité Firestore** : Voir `docs/SECURITE_FIRESTORE.md` pour les détails sur le resserrement des droits d'accès et les tests de sécurité
-- **Assistant IA** : Voir `docs/knowledge/core/specification-comportement-ia.md` pour la spécification des rôles et `docs/agents-ia/README.md` pour les agents IA (Nina, Bob, Sinistro)
-- **Spécification comportement IA** : Voir `docs/knowledge/core/specification-comportement-ia.md` pour les spécifications détaillées de chaque rôle
-- **Gestion des sinistres** : Voir `docs/sinistre.md` pour la documentation complète du module de gestion des sinistres
-- **Guide RI** : Voir `docs/guide_ri.md` pour le guide de gestion des risques
-- **Pappers** : Voir `docs/outil-pappers.md` pour l'inventaire des fonctionnalités Pappers (si disponible)
+- **Agents IA** : `docs/agents-ia/README.md` (Nina, Bob, Sinistro) — `docs/agents-ia/pauline_retail/README.md` (Pauline)
+- **Boost** : `docs/boost/BOOST.md` — Spécification du module de déclaration des avis clients
+- **Base de connaissances** : `docs/plans/outil-admin-bases-connaissance.md` — Plan de l'outil admin
+- **Conventions Firestore** : `firestore.rules` — Règles de sécurité
 
 ## 🤝 Contribution
 
@@ -767,5 +886,5 @@ Pour toute question ou support, contacter l'équipe de développement.
 ---
 
 **Version** : 0.1.0  
-**Dernière mise à jour** : Janvier 2025
+**Dernière mise à jour** : Février 2025
 
