@@ -1,12 +1,13 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote, LogOut, ChevronLeft, User, Zap } from "lucide-react";
+import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote, LogOut, ChevronLeft, User, Zap, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/firebase/use-auth";
+import { toast } from "sonner";
 
 interface AdminSidebarProps {
   onLogout: () => void;
@@ -55,6 +56,12 @@ const adminNavItems = [
     href: "/commun/outils",
     label: "Outils",
     icon: Wrench,
+  },
+  {
+    href: "#",
+    label: "Mes agents IA",
+    icon: Bot,
+    comingSoon: true,
   },
   {
     href: "/admin/commissions-agence",
@@ -152,12 +159,13 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
             {adminNavItems.map((item, index) => {
               const Icon = item.icon;
-              const isActive = item.exact
+              const isComingSoon = (item as { comingSoon?: boolean }).comingSoon;
+              const isActive = !isComingSoon && (item.exact
                 ? pathname === item.href
-                : pathname?.startsWith(item.href);
+                : pathname?.startsWith(item.href));
 
               return (
-                <div key={item.href}>
+                <div key={isComingSoon ? item.label : item.href}>
                   {item.separator && index > 0 && (
                     <div className="my-2 border-t border-slate-200 dark:border-slate-800" />
                   )}
@@ -169,12 +177,23 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
                       !isActive && "hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100 dark:hover:from-slate-900/30 dark:hover:to-slate-800/30",
                       isCollapsed && "justify-center px-2"
                     )}
-                    onClick={() => router.push(item.href)}
+                    onClick={() => {
+                      if ((item as { comingSoon?: boolean }).comingSoon) {
+                        toast.info("Fonctionnalité à venir !");
+                        return;
+                      }
+                      router.push(item.href);
+                    }}
                     title={(item as { title?: string }).title ?? (isCollapsed ? item.label : undefined)}
                   >
                     <Icon className="h-5 w-5 shrink-0" />
                     {!isCollapsed && (
                       <span className="font-medium">{item.label}</span>
+                    )}
+                    {!isCollapsed && (item as { comingSoon?: boolean }).comingSoon && (
+                      <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse">
+                        à venir
+                      </span>
                     )}
                   </Button>
                 </div>

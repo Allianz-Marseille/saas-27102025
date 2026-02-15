@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, FileText, User, LogOut, ChevronLeft, Coins, Workflow, Wrench, Zap } from "lucide-react";
+import { Home, FileText, User, LogOut, ChevronLeft, Coins, Workflow, Wrench, Zap, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { NotificationCenter } from "@/components/dashboard/notification-center";
@@ -19,6 +19,7 @@ interface SidebarItem {
   href: string;
   badge?: string;
   title?: string;
+  comingSoon?: boolean;
 }
 
 const menuItems: SidebarItem[] = [
@@ -53,6 +54,12 @@ const menuItems: SidebarItem[] = [
     href: "/commun/outils",
   },
   {
+    icon: Bot,
+    label: "Mes agents IA",
+    href: "#",
+    comingSoon: true,
+  },
+  {
     icon: User,
     label: "Profil",
     href: "/dashboard/profile",
@@ -79,6 +86,12 @@ const gestionnaireSinistreMenuItems: SidebarItem[] = [
     icon: Wrench,
     label: "Outils",
     href: "/commun/outils",
+  },
+  {
+    icon: Bot,
+    label: "Mes agents IA",
+    href: "#",
+    comingSoon: true,
   },
 ];
 
@@ -198,13 +211,24 @@ export function CommercialSidebar() {
                   !isActive && "hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30",
                   isCollapsed && "justify-center px-2"
                 )}
-                onClick={() => router.push(item.href)}
+                onClick={() => {
+                  if (item.comingSoon) {
+                    toast.info("Fonctionnalité à venir !");
+                    return;
+                  }
+                  router.push(item.href);
+                }}
               >
                 <Icon className="h-5 w-5 shrink-0" />
                 {!isCollapsed && (
                   <span className="font-medium">{item.label}</span>
                 )}
-                {!isCollapsed && item.badge && (
+                {!isCollapsed && item.comingSoon && (
+                  <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse">
+                    à venir
+                  </span>
+                )}
+                {!isCollapsed && item.badge && !item.comingSoon && (
                   <span className="ml-auto text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
                     {item.badge}
                   </span>

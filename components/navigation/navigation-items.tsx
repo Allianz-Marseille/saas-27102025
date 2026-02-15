@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface NavItem {
   href: string;
@@ -11,6 +12,7 @@ interface NavItem {
   icon: React.ElementType;
   exact?: boolean;
   separator?: boolean;
+  comingSoon?: boolean;
 }
 
 interface NavigationItemsProps {
@@ -68,31 +70,51 @@ export function NavigationItems({
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {items.map((item) => {
           const Icon = item.icon;
-          const isActive = item.href === "/commun/process"
+          const isActive = !item.comingSoon && (item.href === "/commun/process"
             ? currentPath?.startsWith("/commun/process")
             : item.exact
               ? currentPath === item.href
-              : currentPath?.startsWith(item.href);
+              : currentPath?.startsWith(item.href));
 
           return (
-            <div key={item.href}>
+            <div key={item.comingSoon ? item.label : item.href}>
               {/* Séparateur visuel */}
               {item.separator && <div className="my-3 border-t border-muted" />}
               
-              <Link href={item.href} onClick={onNavigate}>
+              {item.comingSoon ? (
                 <Button
                   variant="ghost"
                   className={cn(
                     "w-full justify-start gap-3 transition-all relative overflow-hidden",
-                    isActive
-                      ? `bg-gradient-to-r ${config.activeGradient} text-white font-semibold shadow-md`
-                      : `hover:bg-gradient-to-r hover:${config.hoverGradient}`
+                    `hover:bg-gradient-to-r hover:${config.hoverGradient}`
                   )}
+                  onClick={() => {
+                    toast.info("Fonctionnalité à venir !");
+                    onNavigate?.();
+                  }}
                 >
                   <Icon className="h-5 w-5 shrink-0" />
                   <span className="font-medium">{item.label}</span>
+                  <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse">
+                    à venir
+                  </span>
                 </Button>
-              </Link>
+              ) : (
+                <Link href={item.href} onClick={onNavigate}>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-start gap-3 transition-all relative overflow-hidden",
+                      isActive
+                        ? `bg-gradient-to-r ${config.activeGradient} text-white font-semibold shadow-md`
+                        : `hover:bg-gradient-to-r hover:${config.hoverGradient}`
+                    )}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    <span className="font-medium">{item.label}</span>
+                  </Button>
+                </Link>
+              )}
             </div>
           );
         })}

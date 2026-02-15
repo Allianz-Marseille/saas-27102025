@@ -32,7 +32,8 @@ import {
   LayoutDashboard,
   BarChart3,
   Wrench,
-  Zap
+  Zap,
+  Bot
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -74,6 +75,12 @@ const commercialNavItems = [
     href: "/commun/outils",
   },
   {
+    icon: Bot,
+    label: "Mes agents IA",
+    href: "#",
+    comingSoon: true,
+  },
+  {
     icon: User,
     label: "Profil",
     href: "/dashboard/profile",
@@ -95,6 +102,12 @@ const gestionnaireSinistreNavItems = [
     icon: Wrench,
     label: "Outils",
     href: "/commun/outils",
+  },
+  {
+    icon: Bot,
+    label: "Mes agents IA",
+    href: "#",
+    comingSoon: true,
   },
 ];
 
@@ -129,6 +142,12 @@ const healthNavItems = [
     href: "/commun/outils",
     label: "Outils",
     icon: Wrench,
+  },
+  {
+    href: "#",
+    label: "Mes agents IA",
+    icon: Bot,
+    comingSoon: true,
   },
   {
     href: "/sante-individuelle/profile",
@@ -168,6 +187,12 @@ const healthCollectiveNavItems = [
     href: "/commun/outils",
     label: "Outils",
     icon: Wrench,
+  },
+  {
+    href: "#",
+    label: "Mes agents IA",
+    icon: Bot,
+    comingSoon: true,
   },
   {
     href: "/sante-collective/profile",
@@ -217,6 +242,12 @@ const adminNavItems = [
     href: "/commun/outils",
     label: "Outils",
     icon: Wrench,
+  },
+  {
+    href: "#",
+    label: "Mes agents IA",
+    icon: Bot,
+    comingSoon: true,
   },
   {
     href: "/admin/commissions-agence",
@@ -435,34 +466,58 @@ export default function CommunLayout({
             <nav className="flex-1 p-4 overflow-y-auto">
               <ul className="space-y-2">
                 {navItems.map((item) => {
-                  const isActive = item.href === "/commun/process"
+                  const isComingSoon = (item as { comingSoon?: boolean }).comingSoon;
+                  const isActive = !isComingSoon && (item.href === "/commun/process"
                     ? pathname?.startsWith("/commun/process")
-                    : (item as any).exact 
+                    : (item as { exact?: boolean }).exact 
                       ? pathname === item.href
-                      : pathname?.startsWith(item.href);
+                      : pathname?.startsWith(item.href));
                   const Icon = item.icon;
                   
                   return (
-                    <li key={item.href}>
+                    <li key={isComingSoon ? item.label : item.href}>
                       <div className="relative">
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 relative",
-                            isActive
-                              ? isHealthIndividuelUser
-                                ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30"
-                                : "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30"
-                              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50",
-                            isSidebarCollapsed && "justify-center px-2"
-                          )}
-                          title={(item as { title?: string }).title ?? (isSidebarCollapsed ? item.label : undefined)}
-                        >
-                          <Icon className="h-5 w-5 shrink-0" />
-                          {!isSidebarCollapsed && (
-                            <span className="font-medium">{item.label}</span>
-                          )}
-                        </Link>
+                        {isComingSoon ? (
+                          <button
+                            type="button"
+                            onClick={() => toast.info("Fonctionnalité à venir !")}
+                            className={cn(
+                              "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 relative w-full text-left",
+                              "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50",
+                              isSidebarCollapsed && "justify-center px-2"
+                            )}
+                            title={(item as { title?: string }).title ?? (isSidebarCollapsed ? item.label : undefined)}
+                          >
+                            <Icon className="h-5 w-5 shrink-0" />
+                            {!isSidebarCollapsed && (
+                              <span className="font-medium">{item.label}</span>
+                            )}
+                            {!isSidebarCollapsed && (
+                              <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse">
+                                à venir
+                              </span>
+                            )}
+                          </button>
+                        ) : (
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 relative",
+                              isActive
+                                ? isHealthIndividuelUser
+                                  ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30"
+                                  : "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30"
+                                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50",
+                              isSidebarCollapsed && "justify-center px-2"
+                            )}
+                            title={(item as { title?: string }).title ?? (isSidebarCollapsed ? item.label : undefined)}
+                          >
+                            <Icon className="h-5 w-5 shrink-0" />
+                            {!isSidebarCollapsed && (
+                              <span className="font-medium">{item.label}</span>
+                            )}
+                          </Link>
+                        )}
                       </div>
                     </li>
                   );
