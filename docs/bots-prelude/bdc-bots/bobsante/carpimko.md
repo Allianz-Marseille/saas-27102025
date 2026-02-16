@@ -1,101 +1,101 @@
-# CARPIMKO — Auxiliaires médicaux : Trous de couverture et axes de vente
+# CARPIMKO : Le Duo SSI / Caisse Autonome (Édition 2026)
 
-La **CARPIMKO** est le régime des professionnels de santé conventionnés : infirmiers, kinésithérapeutes, orthophonistes, orthoptistes, pédicures-podologues, masseurs-kinésithérapeutes, etc. C’est un régime **hybride** entre la CPAM et la caisse autonome.
+Le professionnel de santé libéral vit sous un **régime hybride**. S'il ne comprend pas où s'arrête la « Sécu » et où commence la « CARPIMKO », il s'expose à des trous de garantie importants.
 
-> **Population cible Bob-santé :** Une des plus importantes pour le bot, du fait du volume de professionnels concernés.
-
----
-
-## 1. Santé : Le régime PAMC
-
-Les professionnels CARPIMKO dépendent du régime **PAMC** (Praticiens et Auxiliaires Médicaux Conventionnés) géré par la CPAM.
-
-- **Remboursements :** Identiques au régime général (70 % consultations, etc.).
-- **Particularité :** Les cotisations maladie sont en grande partie prises en charge par l’Assurance Maladie lorsqu’ils sont conventionnés (avantage à mettre en avant).
+> **Population cible Bob-santé :** Infirmiers, kinésithérapeutes, orthophonistes, orthoptistes, pédicures-podologues, etc. Une des populations les plus volumineuses pour le bot.
 
 ---
 
-## 2. Incapacité Temporaire (Arrêt de Travail)
+## 1. Le Relais de l'Arrêt de Travail (Incapacité)
 
-L’indemnisation se fait en **deux étapes**, avec un changement de régime au 91ᵉ jour.
+C'est ici que la complémentarité est la plus visible... et la plus piégeuse.
 
-### Étape 1 : Du 4ᵉ au 90ᵉ jour (Régime CPAM)
+| Période | Qui paie ? | Logique de calcul | Montant max 2026 |
+|---------|------------|-------------------|------------------|
+| **Jours 1 à 3** | **Personne** | Franchise totale | **0 €** |
+| **Jours 4 à 90** | **SSI (CPAM)** | 50 % du revenu (indemnitaire) | ~**197,50 € / jour** |
+| **Jours 91 à 365** | **CARPIMKO** | Forfait fixe (peu importe le revenu) | ~**57,10 € / jour** |
 
-Depuis 2021, les libéraux ont des IJ courtes via la CPAM.
+### Majorations CARPIMKO (à partir du 91ᵉ jour)
 
-| Élément | Règle |
-|---------|-------|
-| **Carence** | 3 jours |
-| **Calcul** | 1/730ᵉ du revenu annuel moyen (moyenne 3 ans) |
-| **Plafond 2026** | Max **197,50 € / jour** (basé sur 3 PASS) |
+| Majoration | Montant |
+|------------|---------|
+| Conjoint / enfant à charge | 10,80 € / jour |
+| Conjoint invalide | 21,60 € / jour |
 
-### Étape 2 : Du 91ᵉ au 365ᵉ jour (Régime CARPIMKO)
+### Analyse Bob
 
-À partir du 3ᵉ mois, la CPAM s’arrête. La CARPIMKO prend le relais avec des **montants forfaitaires fixes** (peu importe le revenu réel).
-
-| Prestation | Montant 2026 (estim.) |
-|------------|------------------------|
-| **IJ de base** | **57,10 € / jour** |
-| **Majoration conjoint/enfant à charge** | 10,80 € / jour |
-| **Majoration conjoint invalide** | 21,60 € / jour |
-
-### Le gouffre du 91ᵉ jour
-
-> Pour un kiné gagnant 6 000 € net/mois, il passe d’environ 180 €/jour (CPAM) à 57 €/jour (CARPIMKO) au 91ᵉ jour. **C’est une chute d’environ 70 % de ses revenus.**
+> Le passage du 90ᵉ au 91ᵉ jour est un **choc financier**. La SSI protège (un peu) votre niveau de vie, mais la CARPIMKO ne protège que votre survie. Un kiné qui gagne 5 000 €/mois passe d'une aide de 2 500 € à une aide de ~1 700 € d'un coup.
 
 ---
 
-## 3. Invalidité (Après 1 an d’arrêt)
+## 2. Le Relais de l'Invalidité (Long terme)
 
-Si l’incapacité devient permanente, la CARPIMKO verse une rente.
+Ici, la SSI disparaît totalement. La CARPIMKO prend le **relais exclusif**.
 
-| Type d’Invalidité | Condition | Rente annuelle (base 2026) |
+| Type d'invalidité | Condition | Rente annuelle (base 2026) |
 |-------------------|-----------|----------------------------|
-| **Invalidité Totale** | 100 % (incapable d’exercer) | ~**21 000 € / an** |
+| **Invalidité Totale** | 100 % (incapable d'exercer) | ~**21 000 € / an** |
 | **Invalidité Partielle** | > 66 % | ~**10 500 € / an** |
-| **Majoration Tierce Personne** | Besoin d’une aide permanente | + ~**10 300 € / an** |
+| **Majoration Tierce Personne** | Besoin d'une aide permanente | + ~**10 300 € / an** |
 
-### Le danger du barème hybride
+### Le problème de la complémentarité
 
-La CARPIMKO utilise un **barème hybride** (professionnel et fonctionnel). Si le soignant peut encore « physiquement » exercer un autre métier (même s’il ne peut plus masser ou piquer), la rente peut être refusée ou réduite.
+- Contrairement à la SSI des salariés, la CARPIMKO ne tient **pas compte** du revenu réel. Elle verse la même somme à une infirmière débutante qu'à un kiné spécialisé en fin de carrière.
+- Si l'invalidité est jugée « partielle » par la caisse, la rente est divisée par deux (~10 500 €/an). Sans prévoyance privée, le praticien doit souvent vendre son cabinet.
+- **Barème hybride :** La CARPIMKO utilise un barème professionnel et fonctionnel. Si le soignant peut encore exercer un autre métier (ex. répondre au téléphone), la rente peut être refusée ou réduite.
 
 ---
 
-## 4. Décès (Prestations aux proches)
+## 3. La Santé : La fusion SSI / PAMC
 
-La CARPIMKO est plus généreuse que la SSI, mais les prestations restent souvent insuffisantes pour sécuriser la famille.
+Sur le plan des soins (médicaments, hôpital), la complémentarité est totale et simplifiée.
+
+- **Gestion :** Régime **PAMC** (Praticiens et Auxiliaires Médicaux Conventionnés). Tout est géré par la CPAM (guichet SSI des indépendants).
+- **Avantage :** L'Assurance Maladie finance une grande partie des cotisations santé du praticien.
+- **Le « trou » :** Comme pour les salariés, la SSI ne rembourse que sur la base du tarif conventionné. Pour les praticiens libéraux qui consultent des confrères en dépassement d'honoraires, le reste à charge peut être important.
+
+---
+
+## 4. Le Décès : L'absence de capital « immédiat »
+
+La SSI ne verse rien ou presque. La CARPIMKO est le seul filet, mais avec des limites.
 
 | Prestation | Montant 2026 (estim.) |
 |------------|------------------------|
 | **Capital Décès** | ~**52 000 €** (si le praticien a moins de 65 ans) |
-| **Rente de Survie (Conjoint)** | ~**10 500 € / an** (sous conditions d’âge et de mariage) |
-| **Rente Éducation (Enfant)** | ~**8 200 € / an / enfant** jusqu’à 25 ans (si études) |
+| **Rente de Survie (Conjoint)** | ~**10 500 € / an** (conditions d'âge et de mariage) |
+| **Rente Éducation (Enfant)** | ~**8 200 € / an / enfant** jusqu'à 25 ans (si études) |
+
+- **Le manque de complémentarité :** Le capital est fixe. Il ne s'adapte pas aux dettes du praticien (emprunt du cabinet, matériel).
+- **Axe de vente Bob :** *« La CARPIMKO s'occupe de vos enfants, mais qui solde le crédit de votre table de kiné ou de votre cabinet à 200 000 € ? »*
 
 ---
 
 ## 5. Maternité (Spécificité CARPIMKO)
 
-Les femmes bénéficient d’une **Allocation Forfaitaire de Repos Maternel** (environ 3 800 €) et d’IJ maternité (environ 60 €/jour), payées par la CPAM.
+Les femmes bénéficient d'une **Allocation Forfaitaire de Repos Maternel** (environ 3 800 €) et d'IJ maternité (environ 60 €/jour), payées par la CPAM.
 
 > **Point à signaler :** La CARPIMKO peut suspendre ou valider des trimestres de retraite pendant la maternité.
 
 ---
 
-## Analyse stratégique pour Bob-santé (Le pitch)
+## Synthèse : « La Méthode du Diagnostic » pour Bob-santé
 
-### Arguments pour Infirmiers et Kinés
+Pour analyser ce profil, Bob utilise cette règle : **« Le Régime Obligatoire n'est qu'un socle de survie. »**
 
-1. **Le gouffre du 91ᵉ jour :**  
-   *« Votre revenu va être divisé par 3 après trois mois d’arrêt. Avez-vous une prévoyance qui prend le relais pour maintenir vos 57 €/jour à votre niveau réel ? »*
+### Les 3 règles d'or
 
-2. **L’invalidité « professionnelle » :**  
-   *« La CARPIMKO est très stricte. Si vous ne pouvez plus masser mais que vous pouvez répondre au téléphone, ils peuvent réduire votre rente. Il vous faut un contrat avec un **Barème 100 % Professionnel**. »*
+1. **Identifier le revenu net :** Si > 30 000 €/an, la CARPIMKO devient mathématiquement insuffisante dès le 91ᵉ jour.
+2. **Vérifier les charges fixes :** La SSI et la CARPIMKO ne couvrent **jamais** les charges pro (loyer, leasing).
+3. **Alerter sur le barème :** La CARPIMKO peut vous juger « valide » si vous pouvez faire un métier de bureau. Un contrat privé doit imposer un **barème 100 % professionnel**.
 
-3. **Les frais mixtes :**  
-   *« En tant que libéral, vos charges (loyer cabinet, leasing) ne s’arrêtent pas. La CARPIMKO ne paie que votre survie personnelle, pas votre outil de travail. »*
+### Le mot de Bob
+
+> *« Cher client, votre régime CARPIMKO est comme un parachute de secours : il évite le crash, mais il ne vous permet pas de continuer à voler. On va rajouter les moteurs. »*
 
 ---
 
 ## Conseil produit : Options CARPIMKO
 
-La CARPIMKO propose des **options de prévoyance facultatives** (régimes complémentaires). Bob doit demander au client s’il a souscrit à ces options : elles modifient les prestations de base et le niveau de couverture.
+La CARPIMKO propose des **options de prévoyance facultatives** (régimes complémentaires). Bob doit demander au client s'il a souscrit à ces options : elles modifient les prestations de base et le niveau de couverture.
