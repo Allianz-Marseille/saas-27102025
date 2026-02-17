@@ -1,98 +1,26 @@
 /**
- * API Route Chat IA - Standard bot-agent-ia-standard.md
+ * API Route Chat IA — Architecture « Bots Outils »
  *
- * 1. Premier message : Big-Boss (Mistral Small) identifie l'intention
- * 2. Sélection de l'expert via AGENT_ROUTING_TABLE
- * 3. Streaming avec l'expert + injection des Metadata
- * 4. Sauvegarde Firestore : conversations/${client_id}/messages
+ * Passerelle sécurisée : reçoit botId + message, appelle l'agent Mistral correspondant en un seul appel.
+ * Streaming maintenu. Historique Firestore : conversations/{sessionId}/messages.
  */
 
 import { NextRequest } from "next/server";
 import { verifyAuth } from "@/lib/utils/auth-utils";
 import { adminDb, Timestamp } from "@/lib/firebase/admin-config";
-import {
-  AGENT_ROUTING_TABLE,
-  BIG_BOSS_MODEL,
-  type IntentTag,
-} from "@/lib/config/agents";
+import { getBotConfig } from "@/lib/config/agents";
 import type { BotSessionMetadata } from "@/types/bot";
 
 const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
-const INTENT_REGEX = /INTENT:\s*(BILAN|VISION|SUIVI|GENERAL)/i;
 
 /**
- * Récupère le prompt système du Big-Boss
+ * Construit le contexte metadata optionnel pour l'agent (si dossier client ouvert).
  */
-async function getBigBossPrompt(): Promise<string> {
-  const fs = await import("fs/promises");
-  const path = await import("path");
-  const promptPath = path.join(process.cwd(), "prompts", "big-boss.txt");
-  return fs.readFile(promptPath, "utf-8");
-}
-
-/**
- * Extrait le tag d'intention de la réponse du Big-Boss
- */
-function parseIntent(response: string): IntentTag {
-  const match = response.trim().match(INTENT_REGEX);
-  if (match) {
-    return match[1].toUpperCase() as IntentTag;
-  }
-  return "GENERAL";
-}
-
-/**
- * Appelle le Big-Boss pour identifier l'intention (premier message uniquement)
- */
-async function routeToIntent(
-  userMessage: string,
-  metadata: BotSessionMetadata
-): Promise<IntentTag> {
-  if (!MISTRAL_API_KEY) {
-    throw new Error("MISTRAL_API_KEY manquante");
-  }
-  const systemPrompt = await getBigBossPrompt();
-  const metadataContext = `Contexte session: client_id=${metadata.client_id}, current_step=${metadata.current_step ?? "?"}`;
-
-  const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${MISTRAL_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: BIG_BOSS_MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: `${metadataContext}\n\nMessage utilisateur:\n${userMessage}`,
-        },
-      ],
-      max_tokens: 20,
-      temperature: 0,
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Big-Boss API error: ${response.status} ${err}`);
-  }
-
-  const data = (await response.json()) as { choices?: { message?: { content?: string } }[] };
-  const content = data.choices?.[0]?.message?.content ?? "";
-  return parseIntent(content);
-}
-
-/**
- * Construit le contexte Metadata pour l'expert
- */
-function buildExpertContext(metadata: BotSessionMetadata): string {
-  const parts: string[] = [
-    `[Metadata Session]`,
-    `client_id: ${metadata.client_id}`,
-    `uid_collaborateur: ${metadata.uid_collaborateur}`,
-  ];
+function buildMetadataContext(metadata?: BotSessionMetadata | null): string {
+  if (!metadata) return "";
+  const parts: string[] = ["[Metadata Session]"];
+  if (metadata.client_id) parts.push(`client_id: ${metadata.client_id}`);
+  if (metadata.uid_collaborateur) parts.push(`uid_collaborateur: ${metadata.uid_collaborateur}`);
   if (metadata.current_step) parts.push(`current_step: ${metadata.current_step}`);
   if (metadata.step_id) parts.push(`step_id: ${metadata.step_id}`);
   if (metadata.client_statut) parts.push(`client_statut: ${metadata.client_statut}`);
@@ -100,40 +28,38 @@ function buildExpertContext(metadata: BotSessionMetadata): string {
   if (metadata.context_pro && Object.keys(metadata.context_pro).length > 0) {
     parts.push(`context_pro: ${JSON.stringify(metadata.context_pro)}`);
   }
-  return parts.join("\n");
+  return parts.length > 1 ? parts.join("\n") : "";
 }
 
 /**
- * Sauvegarde un message dans Firestore
- * Structure : conversations/${client_id}/messages (subcollection)
- * Chaque document : { role, content, intent?, createdAt }
+ * Sauvegarde un message dans Firestore.
+ * sessionId = client_id si présent, sinon un id de session standalone (ex: uid_collaborateur + botId).
  */
 async function saveMessageToFirestore(
-  clientId: string,
+  sessionId: string,
   role: "user" | "assistant",
   content: string,
-  metadata?: { intent?: string }
+  extra?: { botId?: string }
 ): Promise<void> {
   try {
     const ref = adminDb
       .collection("conversations")
-      .doc(clientId)
+      .doc(sessionId)
       .collection("messages");
     await ref.add({
       role,
       content,
-      ...metadata,
+      ...extra,
       createdAt: Timestamp.now(),
     });
   } catch (error) {
     console.error("Erreur sauvegarde Firestore conversations:", error);
-    // Ne pas faire échouer la requête si la sauvegarde échoue
   }
 }
 
 /**
  * POST /api/chat
- * Body: { message: string, metadata: BotSessionMetadata, isFirstMessage?: boolean, history?: Array<{role, content}> }
+ * Body: { message: string, botId: string, history?: Array<{role, content}>, metadata?: BotSessionMetadata }
  */
 export async function POST(request: NextRequest) {
   try {
@@ -148,80 +74,92 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       message,
-      metadata,
-      isFirstMessage = false,
+      botId,
       history = [],
+      metadata,
     }: {
       message: string;
-      metadata: BotSessionMetadata;
-      isFirstMessage?: boolean;
+      botId: string;
       history?: Array<{ role: string; content: string }>;
+      metadata?: BotSessionMetadata;
     } = body;
 
-    if (!message || !metadata?.client_id || !metadata?.uid_collaborateur) {
+    if (!message?.trim() || !botId) {
       return new Response(
-        JSON.stringify({ error: "message, metadata.client_id et metadata.uid_collaborateur requis" }),
+        JSON.stringify({ error: "message et botId sont requis" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // 1. Premier message : routage Big-Boss
-    let intent: IntentTag = "GENERAL";
-    if (isFirstMessage) {
-      intent = await routeToIntent(message, metadata);
+    const botConfig = getBotConfig(botId);
+    if (!botConfig) {
+      return new Response(
+        JSON.stringify({ error: `Bot inconnu: ${botId}` }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
     }
-    // TODO: Pour les messages suivants, récupérer l'intent depuis la session stockée
-    // (ex: dans conversations/${client_id}/session)
 
-    const expertConfig = AGENT_ROUTING_TABLE[intent];
+    if (!botConfig.agentId) {
+      return new Response(
+        JSON.stringify({ error: `Agent Mistral non configuré pour le bot: ${botId}` }),
+        { status: 503, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-    // 2. Injection Metadata dans le contexte
-    const metadataContext = buildExpertContext(metadata);
+    if (!MISTRAL_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: "MISTRAL_API_KEY manquante" }),
+        { status: 503, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-    // 3. Sauvegarde message utilisateur dans Firestore
-    await saveMessageToFirestore(metadata.client_id, "user", message, {
-      intent,
-    });
+    const sessionId =
+      metadata?.client_id ?? `standalone-${auth.userId}-${botId}`;
+    const metadataContext = buildMetadataContext(metadata);
 
-    // 4. Appel Mistral (streaming) avec l'expert
-    const messages = [
-      {
-        role: "system" as const,
-        content: `${metadataContext}\n\nTu es l'expert ${intent}. Réponds de manière professionnelle et ancrée au dossier client.`,
-      },
+    await saveMessageToFirestore(sessionId, "user", message, { botId });
+
+    const messages: Array<{ role: "user" | "assistant" | "system"; content: string }> = [];
+    if (metadataContext) {
+      messages.push({ role: "system", content: metadataContext });
+    }
+    messages.push(
       ...history.map((m: { role: string; content: string }) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
       })),
-      { role: "user" as const, content: message },
-    ];
+      { role: "user", content: message }
+    );
 
-    const streamResponse = await fetch("https://api.mistral.ai/v1/chat/completions", {
+    const requestBody: { agent_id: string; messages: unknown[]; stream?: boolean } = {
+      agent_id: botConfig.agentId,
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      stream: true,
+    };
+
+    const streamResponse = await fetch("https://api.mistral.ai/v1/agents/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${MISTRAL_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: expertConfig.model,
-        messages,
-        stream: true,
-        max_tokens: 4096,
-      }),
+      body: JSON.stringify(requestBody),
     });
-
-    if (!MISTRAL_API_KEY) {
-      throw new Error("MISTRAL_API_KEY manquante");
-    }
 
     if (!streamResponse.ok) {
       const err = await streamResponse.text();
-      throw new Error(`Mistral API error: ${streamResponse.status} ${err}`);
+      return new Response(
+        JSON.stringify({ error: `Mistral API error: ${streamResponse.status} ${err}` }),
+        { status: streamResponse.status >= 500 ? 502 : 400, headers: { "Content-Type": "application/json" } }
+      );
     }
 
     const reader = streamResponse.body;
     if (!reader) {
-      throw new Error("Pas de stream disponible");
+      return new Response(
+        JSON.stringify({ error: "Pas de stream disponible" }),
+        { status: 502, headers: { "Content-Type": "application/json" } }
+      );
     }
 
     let fullContent = "";
@@ -245,9 +183,7 @@ export async function POST(request: NextRequest) {
         }
       },
       async flush() {
-        await saveMessageToFirestore(metadata.client_id, "assistant", fullContent, {
-          intent,
-        });
+        await saveMessageToFirestore(sessionId, "assistant", fullContent, { botId });
       },
     });
 

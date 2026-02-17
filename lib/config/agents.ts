@@ -1,41 +1,30 @@
 /**
- * Table de routage des agents IA (Standard bot-agent-ia-standard.md)
- * Miroir du document de planification - chaque nouvel expert s'ajoute ici.
+ * Configuration des bots IA — Architecture « Bots Outils »
+ * Chaque bot = 1 agent Mistral (ID depuis la console) = 1 objectif précis.
  */
 
-export type IntentTag = "BILAN" | "VISION" | "SUIVI" | "GENERAL";
-
-export interface AgentConfig {
+export interface BotConfig {
+  id: string;
+  name: string;
   agentId: string;
   model: string;
   description: string;
 }
 
 /**
- * Table de routage : Tag d'intention → Agent ID Mistral
- * Remplacer les placeholders par les IDs réels depuis la console Mistral.
+ * Table des bots : botId → config
+ * MISTRAL_AGENT_BOB doit être défini dans .env / Vercel (ID agent depuis la console Mistral).
  */
-export const AGENT_ROUTING_TABLE: Record<IntentTag, AgentConfig> = {
-  BILAN: {
-    agentId: "MISTRAL_AGENT_ID_BILAN_PLACEHOLDER",
+export const BOTS: Record<string, BotConfig> = {
+  bob: {
+    id: "bob",
+    name: "Bob",
+    agentId: process.env.MISTRAL_AGENT_BOB ?? "",
     model: "mistral-large-latest",
-    description: "Expert Prévoyance - Plan de découverte client",
-  },
-  VISION: {
-    agentId: "MISTRAL_AGENT_ID_VISION_PLACEHOLDER",
-    model: "pixtral-12b-2409",
-    description: "Expert Analyse d'image - Extraction garanties contrat",
-  },
-  SUIVI: {
-    agentId: "MISTRAL_AGENT_ID_SUIVI_PLACEHOLDER",
-    model: "mistral-large-latest",
-    description: "Expert M+3 - Conformité Allianz",
-  },
-  GENERAL: {
-    agentId: "MISTRAL_AGENT_ID_GENERAL_PLACEHOLDER",
-    model: "mistral-large-latest",
-    description: "Expert par défaut (fallback)",
+    description: "Expert santé et prévoyance TNS",
   },
 };
 
-export const BIG_BOSS_MODEL = "mistral-small-latest";
+export function getBotConfig(botId: string): BotConfig | null {
+  return BOTS[botId] ?? null;
+}

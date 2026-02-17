@@ -1,201 +1,145 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Sparkles, Zap, Shield, Brain, MessageCircle } from "lucide-react";
+import { ArrowLeft, MessageCircle, ChevronRight } from "lucide-react";
+import { BOTS, getBotConfig } from "@/lib/config/agents";
+import { BotChat } from "@/components/chat/bot-chat";
 
-const agents = [
-  {
-    name: "Nina",
-    role: "La secrétaire ultime",
-    image: "/agents-ia/bot-secretaire/avatar.jpg",
-    superpower: "Gérer vos plannings comme si elle avait 8 bras (spoiler : elle en aura bientôt)",
-    color: "from-rose-500 via-pink-500 to-fuchsia-500",
-    glow: "shadow-rose-500/50",
-  },
-  {
-    name: "Bob",
-    role: "L'expert santé",
+const AVAILABLE_BOT_IDS = ["bob"] as const;
+
+const agentDisplay: Record<
+  string,
+  { image: string; color: string; glow: string; superpower: string }
+> = {
+  bob: {
     image: "/agents-ia/bot-sante/bob_sourit.png",
-    superpower: "Décoder les mutuelles comme personne. Bientôt : vision laser pour lire les bulletins à 10 m.",
     color: "from-emerald-500 via-teal-500 to-cyan-500",
     glow: "shadow-emerald-500/50",
-  },
-  {
-    name: "Sinistro",
-    role: "Le spécialiste sinistres",
-    image: "/agents-ia/bot-sinistre/sinistro.png",
-    superpower: "IRSA, IRCA, IRSI ? Child's play. Prochaine mise à jour : télépathie avec les assureurs.",
-    color: "from-amber-500 via-orange-500 to-red-500",
-    glow: "shadow-amber-500/50",
-  },
-  {
-    name: "Pauline",
-    role: "La reine du retail",
-    image: "/agents-ia/bot-pauline/pauline.png",
-    superpower: "Auto, MRH, tout ça. Bientôt elle vendra des contrats en dormant. (Non, on plaisante. Ou pas.)",
-    color: "from-violet-500 via-purple-500 to-indigo-500",
-    glow: "shadow-violet-500/50",
-  },
-];
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.2,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.5,
-    },
+    superpower: "Expert santé et prévoyance TNS. Mutuelles, SSI, CARPIMKO, CAVEC…",
   },
 };
 
 export default function AgentsIAPage() {
   const router = useRouter();
+  const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
+
+  const availableBots = AVAILABLE_BOT_IDS.map((id) => getBotConfig(id)).filter(Boolean);
+  const selectedConfig = selectedBotId ? getBotConfig(selectedBotId) : null;
+  const display = selectedBotId ? agentDisplay[selectedBotId] : null;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
-      {/* Fond futuriste : grille + gradients */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(139,92,246,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(139,92,246,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-violet-500/10 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-0 right-0 w-[600px] h-[300px] bg-cyan-500/10 rounded-full blur-[100px] -z-10" />
-      <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-fuchsia-500/5 rounded-full blur-[80px] -z-10" />
 
       <div className="relative container mx-auto py-12 px-4 max-w-6xl">
         <Button
           variant="ghost"
-          onClick={() => router.back()}
+          onClick={() => (selectedBotId ? setSelectedBotId(null) : router.back())}
           className="mb-8 text-slate-400 hover:text-white hover:bg-white/5 transition-all"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour
+          {selectedBotId ? "Retour aux agents" : "Retour"}
         </Button>
 
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="space-y-12"
-        >
-          {/* Header */}
-          <motion.div variants={itemVariants} className="text-center space-y-6">
+        <AnimatePresence mode="wait">
+          {!selectedBotId ? (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/20 border border-violet-500/30 text-violet-300 text-sm font-medium"
+              key="list"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-10"
             >
-              <Sparkles className="h-4 w-4" />
-              Mise à jour en cours...
-            </motion.div>
-            <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-200 to-fuchsia-200">
-              Nos agents IA sont en formation
-            </h1>
-            <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
-              Nina, Bob, Sinistro et Pauline ont été envoyés en stage intensif
-              <span className="text-violet-400 font-semibold"> « Super-pouvoirs niveau 2.0 »</span>.
-              Ils reviennent bientôt, plus puissants que jamais. Promis, on a vérifié les fusibles.
-            </p>
-          </motion.div>
+              <div className="text-center space-y-4">
+                <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-200 to-fuchsia-200">
+                  Mes agents IA
+                </h1>
+                <p className="text-slate-400 max-w-xl mx-auto">
+                  Choisissez un agent pour démarrer une conversation. Chaque bot a un objectif précis.
+                </p>
+              </div>
 
-          {/* Cartes agents */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {agents.map((agent, index) => (
-              <motion.div
-                key={agent.name}
-                variants={itemVariants}
-                className="group relative"
-              >
-                <div
-                  className={`
-                    relative overflow-hidden rounded-2xl p-6
-                    bg-slate-900/60 backdrop-blur-xl border
-                    border-slate-700/50 hover:border-violet-500/40
-                    transition-all duration-500 hover:scale-[1.02]
-                    ${agent.glow} hover:shadow-2xl
-                  `}
-                >
-                  {/* Glow effect au hover */}
-                  <div
-                    className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${agent.color} mix-blend-overlay opacity-10 rounded-2xl`}
-                  />
-
-                  <div className="relative flex gap-6 items-start">
-                    <div className="relative shrink-0">
-                      <div
-                        className={`w-24 h-24 rounded-2xl overflow-hidden border-2 border-slate-600/50 group-hover:border-violet-400/50 transition-colors shadow-xl ${agent.glow}`}
-                      >
-                        <Image
-                          src={agent.image}
-                          alt={agent.name}
-                          width={96}
-                          height={96}
-                          className="w-full h-full object-cover"
-                        />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                {availableBots.map((bot) => {
+                  const disp = agentDisplay[bot.id];
+                  if (!disp) return null;
+                  return (
+                    <motion.button
+                      key={bot.id}
+                      type="button"
+                      onClick={() => setSelectedBotId(bot.id)}
+                      className="group relative text-left rounded-2xl p-6 bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 hover:border-emerald-500/40 transition-all hover:scale-[1.02] shadow-xl hover:shadow-2xl"
+                    >
+                      <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br ${disp.color} mix-blend-overlay opacity-10 rounded-2xl`} />
+                      <div className="relative flex gap-4 items-center">
+                        <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-slate-600/50 shrink-0">
+                          <Image
+                            src={disp.image}
+                            alt={bot.name}
+                            width={80}
+                            height={80}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-xl font-bold text-white mb-1">{bot.name}</h3>
+                          <p className="text-slate-400 text-sm mb-2">{bot.description}</p>
+                          <p className="text-slate-500 text-xs">{disp.superpower}</p>
+                        </div>
+                        <MessageCircle className="h-5 w-5 text-emerald-400 shrink-0 group-hover:translate-x-1 transition-transform" />
                       </div>
-                      <div
-                        className={`absolute -inset-1 bg-gradient-to-r ${agent.color} opacity-0 group-hover:opacity-20 blur-xl rounded-2xl transition-opacity duration-500`}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-2xl font-bold text-white mb-1">
-                        {agent.name}
-                      </h3>
-                      <p className={`text-sm font-medium bg-gradient-to-r ${agent.color} bg-clip-text text-transparent mb-3`}>
-                        {agent.role}
-                      </p>
-                      <p className="text-slate-400 text-sm leading-relaxed">
-                        {agent.superpower}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                      <div className="absolute bottom-4 right-4 flex items-center gap-1 text-xs text-emerald-400/80">
+                        <span>Ouvrir le chat</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
 
-          {/* CTA humoristique */}
-          <motion.div
-            variants={itemVariants}
-            className="text-center p-8 rounded-2xl bg-slate-900/40 border border-slate-700/50 backdrop-blur-sm"
-          >
-            <p className="text-slate-400 text-lg mb-4">
-              En attendant, continuez à faire comme d&apos;habitude. Ou profitez pour prendre un café.
-              On dit que ça aide à patienter.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <span className="inline-flex items-center gap-2 text-sm text-slate-500">
-                <Brain className="h-4 w-4" />
-                Neurones en surchauffe
-              </span>
-              <span className="inline-flex items-center gap-2 text-sm text-slate-500">
-                <Zap className="h-4 w-4" />
-                Circuits en upgrade
-              </span>
-              <span className="inline-flex items-center gap-2 text-sm text-slate-500">
-                <Shield className="h-4 w-4" />
-                Super-pouvoirs en test
-              </span>
-              <span className="inline-flex items-center gap-2 text-sm text-slate-500">
-                <MessageCircle className="h-4 w-4" />
-                Blagues en préparation
-              </span>
-            </div>
-          </motion.div>
-        </motion.div>
+              {Object.keys(BOTS).length < 4 && (
+                <p className="text-center text-slate-500 text-sm">
+                  D&apos;autres agents (Nina, Sinistro, Pauline) arrivent bientôt.
+                </p>
+              )}
+            </motion.div>
+          ) : selectedConfig && display ? (
+            <motion.div
+              key="chat"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="max-w-2xl mx-auto"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-slate-600/50 shrink-0">
+                  <Image
+                    src={display.image}
+                    alt={selectedConfig.name}
+                    width={56}
+                    height={56}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">{selectedConfig.name}</h2>
+                  <p className="text-slate-400 text-sm">{selectedConfig.description}</p>
+                </div>
+              </div>
+              <BotChat
+                botId={selectedConfig.id}
+                botName={selectedConfig.name}
+                className="bg-slate-900/80 border-slate-700/50"
+              />
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </div>
     </div>
   );
