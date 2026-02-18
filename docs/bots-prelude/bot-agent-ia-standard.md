@@ -101,6 +101,17 @@ Le code Next.js ne gère pas le RAG ; il est entièrement configuré côté Mist
 - **Ressources** : documents dans `docs/bots-prelude/bdc-bots/bobsante/` à ingérer dans Mistral (RAG / instructions).
 - **Comportement** : diagnostic des trous de couverture, qualification, propositions (mutuelle, prévoyance). À définir dans les **instructions** de l’agent Bob dans la console Mistral.
 
+### Table des matières (TOC) pour Bob
+
+Pour que l'agent Bob réponde avec précision sans se perdre dans les PDFs, une **table des matières** est générée et doit être téléversée avec les PDFs dans Mistral :
+
+- **Dossier PDFs** : `docs/bots-prelude/bdc-bots/bobsante/pdf_optimises/` (PDFs renommés en slugs : `brochure-prevoyance-tns.pdf`, `dispositions-generales-prevoyance.pdf`, etc.).
+- **Fichiers générés** :
+  - `TABLE-DES-MATIERES.md` : index pour l'agent (document → sections, pages, thèmes). À uploader dans Mistral comme document de navigation.
+  - `mapping.json` : structure brute (sections, pages) pour re-génération ou édition manuelle.
+- **Génération** : `npm run bob:analyze-pdfs` (analyse tous les PDFs du dossier, détecte les sections, écrit la TOC et le mapping). Options : `--rename` pour renommer les PDFs en slugs, `--rename-dry-run` pour simuler le renommage.
+- **Usage** : téléverser les PDFs du dossier + `TABLE-DES-MATIERES.md` dans l'espace de travail / bibliothèque de l'agent Bob (Mistral). L'agent pourra s'appuyer sur la TOC pour orienter la recherche RAG.
+
 ---
 
 ## 8. Avantages de cette organisation
