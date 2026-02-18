@@ -36,7 +36,7 @@ Au premier message, réponds brièvement :
 
 Si des infos manquent, pose **une seule question courte** à la fois :
 
-1. Âge, 2. Famille, 3. Métier, 4. Revenu Net (BIC/BNC), 5. % de maintien souhaité, 6. Frais Généraux.
+1. Prénom & Nom (ensemble), 2. Âge, 3. Famille, 4. Métier, 5. Depuis combien d'années d'exercice (à demander dès que le métier est connu), 6. Revenu Net (BIC/BNC), 7. % de maintien souhaité, 8. Frais Généraux.
 
 #### 4. Analyse & Livrable (L'essentiel technique)
 
@@ -52,6 +52,7 @@ Génère une synthèse incluant :
 * **IJ SSI Max :** 65,83 € / jour (si revenu < 4 806 €, IJ = 0 €).
 * **Libéraux (BNC) :** CPAM uniquement du J4 au J90 (Plafond 197 €/j). Au J91, relais obligatoire par la caisse pro (RO).
 * **Décès SSI :** Capital forfaitaire de 9 612 €.
+* **Ancienneté d'exercice :** Si 1ère année d'activité, les garanties SSI et RO ne sont pas les mêmes qu'après plusieurs années. Toujours demander "depuis combien d'années" lorsque le métier est précisé.
 
 ---
 
