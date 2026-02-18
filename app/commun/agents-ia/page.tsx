@@ -27,7 +27,9 @@ export default function AgentsIAPage() {
   const router = useRouter();
   const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
 
-  const availableBots = AVAILABLE_BOT_IDS.map((id) => getBotConfig(id)).filter(Boolean);
+  const availableBots = AVAILABLE_BOT_IDS.map((id) => getBotConfig(id)).filter(
+    (b): b is NonNullable<typeof b> => b != null
+  );
   const selectedConfig = selectedBotId ? getBotConfig(selectedBotId) : null;
   const display = selectedBotId ? agentDisplay[selectedBotId] : null;
 

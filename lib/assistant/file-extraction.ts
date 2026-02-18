@@ -1,9 +1,39 @@
 /**
- * Extraction de texte générique pour fichiers DOCX et XLSX
- * Utilisé par l'assistant pour analyser les documents uploadés
+ * Extraction de texte générique pour fichiers DOCX, XLSX et PDF
+ * Utilisé par l'assistant et la base de connaissance RAG
  */
 
 import ExcelJS from "exceljs";
+
+/**
+ * Extrait le texte brut d'un buffer PDF.
+ * Utilisé par l'API knowledge-base/ingest pour l'ingestion RAG.
+ */
+export async function extractTextFromPDFBuffer(buffer: Buffer): Promise<string> {
+  try {
+    const { createRequire } = await import("module");
+    const requireFromProject = createRequire(import.meta.url);
+    const pdfParse = requireFromProject("pdf-parse");
+
+    if (typeof pdfParse !== "function") {
+      throw new Error("Impossible de charger pdf-parse correctement");
+    }
+
+    const pdfData = await pdfParse(buffer);
+    const text = (pdfData.text || "").trim();
+
+    if (!text || text.length === 0) {
+      throw new Error("Aucun texte extrait du PDF");
+    }
+
+    return text;
+  } catch (error) {
+    console.error("Erreur extraction PDF:", error);
+    throw new Error(
+      `Impossible d'extraire le texte du PDF : ${error instanceof Error ? error.message : "Erreur inconnue"}`
+    );
+  }
+}
 
 /**
  * Extrait le texte brut d'un fichier DOCX ou XLSX
