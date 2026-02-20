@@ -16,7 +16,10 @@ const nextConfig: NextConfig = {
   },
 
   // Configuration Turbopack (Next.js 16 utilise Turbopack par défaut)
-  turbopack: {},
+  // root évite que Turbopack prenne le mauvais répertoire (plusieurs lockfiles détectés)
+  turbopack: {
+    root: ".",
+  },
 };
 
 export default nextConfig;
