@@ -127,6 +127,7 @@ export function BotChat({
           cache: "no-store",
           headers: {
             "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
@@ -456,10 +457,11 @@ export function BotChat({
             }}
           />
           <Button
-            type="submit"
+            type="button"
             disabled={!input.trim() || isLoading}
             size="icon"
             className="shrink-0 h-11 w-11"
+            onClick={() => sendMessage()}
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
