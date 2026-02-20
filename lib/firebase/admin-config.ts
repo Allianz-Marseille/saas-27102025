@@ -31,19 +31,29 @@ function initializeFirebaseAdmin() {
 
   let serviceAccount: admin.ServiceAccount;
 
-  // Production : utiliser les variables d'environnement (Vercel)
-  if (
+  // Option 1 : Base64 — évite les erreurs DECODER sur la clé privée
+  const base64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+  if (base64) {
+    try {
+      const json = Buffer.from(base64, "base64").toString("utf8");
+      serviceAccount = JSON.parse(json) as admin.ServiceAccount;
+    } catch (error) {
+      console.error("FIREBASE_SERVICE_ACCOUNT_BASE64 invalid:", error);
+      throw new Error("FIREBASE_SERVICE_ACCOUNT_BASE64 is invalid.");
+    }
+  } else if (
     process.env.FIREBASE_PROJECT_ID &&
     process.env.FIREBASE_PRIVATE_KEY &&
     process.env.FIREBASE_CLIENT_EMAIL
   ) {
+    // Option 2 : Variables d'environnement (Vercel)
     serviceAccount = {
       projectId: process.env.FIREBASE_PROJECT_ID,
       privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
     };
   } else {
-    // Développement local : charger le fichier JSON
+    // Option 3 : Fichier JSON local (dev)
     try {
       const fs = require("fs");
       const path = require("path");

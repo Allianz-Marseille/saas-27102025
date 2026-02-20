@@ -2,31 +2,50 @@ import { NextRequest, NextResponse } from "next/server";
 import admin from "firebase-admin";
 
 // Fonction d'initialisation paresseuse de Firebase Admin
+// Priorité : 1) FIREBASE_SERVICE_ACCOUNT_BASE64 (évite les soucis d'échappement)
+//            2) FIREBASE_PROJECT_ID + FIREBASE_PRIVATE_KEY + FIREBASE_CLIENT_EMAIL
+//            3) Fichier JSON local (dev)
 function initializeFirebaseAdmin() {
   if (!admin.apps.length) {
-    // Utiliser des variables d'environnement (pour Vercel) ou le fichier local (pour dev)
     let serviceAccount: admin.ServiceAccount;
-    
-    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
-      // Production : utiliser les variables d'environnement (Vercel)
+
+    // Option 1 : Base64 — évite les erreurs DECODER sur la clé privée
+    const base64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+    if (base64) {
+      try {
+        const json = Buffer.from(base64, "base64").toString("utf8");
+        serviceAccount = JSON.parse(json) as admin.ServiceAccount;
+      } catch (error) {
+        console.error("FIREBASE_SERVICE_ACCOUNT_BASE64 invalid:", error);
+        throw new Error("FIREBASE_SERVICE_ACCOUNT_BASE64 is invalid. Must be base64-encoded JSON.");
+      }
+    } else if (
+      process.env.FIREBASE_PROJECT_ID &&
+      process.env.FIREBASE_PRIVATE_KEY &&
+      process.env.FIREBASE_CLIENT_EMAIL
+    ) {
+      // Option 2 : Variables séparées (Vercel)
       serviceAccount = {
         projectId: process.env.FIREBASE_PROJECT_ID,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       };
     } else {
-      // Développement local : charger le fichier JSON dynamiquement
-      // On évite d'utiliser require() directement pour éviter l'erreur au build
-      const fs = require('fs');
-      const path = require('path');
-      
+      // Option 3 : Fichier JSON local (dev)
+      const fs = require("fs");
+      const path = require("path");
       try {
-        const jsonPath = path.join(process.cwd(), 'saas-27102025-firebase-adminsdk-fbsvc-e5024f4d7c.json');
-        const jsonData = fs.readFileSync(jsonPath, 'utf8');
-        serviceAccount = JSON.parse(jsonData);
+        const jsonPath = path.join(
+          process.cwd(),
+          "saas-27102025-firebase-adminsdk-fbsvc-e5024f4d7c.json"
+        );
+        const jsonData = fs.readFileSync(jsonPath, "utf8");
+        serviceAccount = JSON.parse(jsonData) as admin.ServiceAccount;
       } catch (error) {
-        console.error("Firebase Admin credentials missing");
-        throw new Error('Firebase Admin credentials are missing. Check environment variables or local JSON file.');
+        console.error("Firebase Admin credentials missing:", error);
+        throw new Error(
+          "Firebase Admin credentials are missing. Use FIREBASE_SERVICE_ACCOUNT_BASE64, or FIREBASE_PROJECT_ID/PRIVATE_KEY/CLIENT_EMAIL, or the local JSON file."
+        );
       }
     }
 
@@ -34,7 +53,7 @@ function initializeFirebaseAdmin() {
       credential: admin.credential.cert(serviceAccount),
     });
   }
-  
+
   return admin;
 }
 
