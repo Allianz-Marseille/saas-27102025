@@ -58,7 +58,24 @@ async function saveMessageToFirestore(
 }
 
 /**
- * GET /api/chat — non supporté (évite 405 ambigu)
+ * OPTIONS /api/chat — preflight CORS (requis si en-tête Authorization).
+ * Sans cela, le navigateur reçoit 405 sur OPTIONS et bloque le POST.
+ */
+export function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      Allow: "POST, OPTIONS",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+      "Access-Control-Max-Age": "86400",
+    },
+  });
+}
+
+/**
+ * GET /api/chat — non supporté.
+ * Cache-Control no-store évite qu'un CDN renvoie ce 405 pour des POST.
  */
 export function GET() {
   return new Response(
@@ -67,7 +84,8 @@ export function GET() {
       status: 405,
       headers: {
         "Content-Type": "application/json",
-        Allow: "POST",
+        Allow: "POST, OPTIONS",
+        "Cache-Control": "no-store, no-cache, must-revalidate",
       },
     }
   );
@@ -87,20 +105,22 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const body = await request.json();
-    const {
-      message,
-      botId,
-      history = [],
-      metadata,
-    }: {
-      message: string;
-      botId: string;
-      history?: Array<{ role: string; content: string }>;
-      metadata?: BotSessionMetadata;
-    } = body;
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Body JSON invalide ou vide" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-    if (!message?.trim() || !botId) {
+    const message = typeof body.message === "string" ? body.message : "";
+    const botId = typeof body.botId === "string" ? body.botId : "";
+    const history = Array.isArray(body.history) ? body.history : [];
+    const metadata = body.metadata as BotSessionMetadata | undefined;
+
+    if (!message.trim() || !botId) {
       return new Response(
         JSON.stringify({ error: "message et botId sont requis" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
@@ -140,10 +160,12 @@ export async function POST(request: NextRequest) {
       messages.push({ role: "system", content: metadataContext });
     }
     messages.push(
-      ...history.map((m: { role: string; content: string }) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })),
+      ...history
+        .filter((m): m is { role: string; content: string } => typeof m === "object" && m !== null && "role" in m && "content" in m)
+        .map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: String(m.content ?? ""),
+        })),
       { role: "user", content: message }
     );
 

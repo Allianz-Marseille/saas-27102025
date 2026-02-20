@@ -125,6 +125,7 @@ export function BotChat({
         const response = await fetch(apiUrl, {
           method: "POST",
           cache: "no-store",
+          credentials: "same-origin",
           headers: {
             "Content-Type": "application/json",
             "X-Requested-With": "XMLHttpRequest",
