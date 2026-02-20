@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/firebase/use-auth";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface BotChatMessage {
@@ -12,25 +14,45 @@ export interface BotChatMessage {
   content: string;
 }
 
+type AccentColor = "default" | "blue";
+
 interface BotChatProps {
   botId: string;
   botName: string;
   className?: string;
+  /** Identité visuelle : "blue" pour Bob (bulles assistant, bordure header) */
+  accentColor?: AccentColor;
 }
 
 /**
  * Interface de chat avec un bot IA.
  * Appel POST /api/chat avec { message, botId, history }.
  */
-export function BotChat({ botId, botName, className }: BotChatProps) {
+export function BotChat({
+  botId,
+  botName,
+  className,
+  accentColor = "default",
+}: BotChatProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<BotChatMessage[]>([]);
   const [streamingContent, setStreamingContent] = useState("");
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleCopy = async (content: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    } catch {
+      // Ignorer si clipboard non disponible
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -104,6 +126,14 @@ export function BotChat({ botId, botName, className }: BotChatProps) {
     sendMessage();
   };
 
+  const isBlue = accentColor === "blue";
+  const headerBorderClass = isBlue
+    ? "border-b border-blue-500/30 bg-blue-950/20"
+    : "border-b bg-muted/30";
+  const assistantBubbleClass = isBlue
+    ? "mr-auto bg-blue-950/40 border border-blue-500/20"
+    : "mr-auto bg-muted";
+
   return (
     <div
       className={cn(
@@ -111,7 +141,7 @@ export function BotChat({ botId, botName, className }: BotChatProps) {
         className
       )}
     >
-      <div className="border-b bg-muted/30 px-4 py-2">
+      <div className={cn("px-4 py-2", headerBorderClass)}>
         <p className="font-medium text-sm">Chat avec {botName}</p>
       </div>
 
@@ -128,15 +158,47 @@ export function BotChat({ botId, botName, className }: BotChatProps) {
               "rounded-lg px-3 py-2 text-sm max-w-[85%]",
               msg.role === "user"
                 ? "ml-auto bg-primary text-primary-foreground"
-                : "mr-auto bg-muted"
+                : assistantBubbleClass
             )}
           >
-            {msg.content}
+            {msg.role === "user" ? (
+              msg.content
+            ) : (
+              <div className="flex items-start gap-2">
+                <div className="flex-1 min-w-0 prose prose-invert prose-sm max-w-none dark:prose-invert">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.content}
+                  </ReactMarkdown>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                  onClick={() => handleCopy(msg.content, i)}
+                  title="Copier"
+                >
+                  {copiedIndex === i ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         ))}
         {streamingContent && (
-          <div className="mr-auto rounded-lg px-3 py-2 text-sm bg-muted max-w-[85%]">
-            {streamingContent}
+          <div
+            className={cn(
+              "rounded-lg px-3 py-2 text-sm max-w-[85%]",
+              assistantBubbleClass
+            )}
+          >
+            <div className="prose prose-invert prose-sm max-w-none dark:prose-invert">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {streamingContent}
+              </ReactMarkdown>
+            </div>
           </div>
         )}
         <div ref={messagesEndRef} />
