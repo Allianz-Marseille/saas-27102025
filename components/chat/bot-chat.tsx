@@ -142,7 +142,7 @@ export function BotChat({
           const errData = await response.json().catch(() => ({}));
           const msg =
             response.status === 405
-              ? "Erreur de méthode (405). Ne pas ouvrir /api/chat dans le navigateur — utilisez le champ de saisie ci‑dessous."
+              ? "Erreur 405 (Méthode refusée). Rafraîchissez la page (Ctrl+F5), ou vérifiez que le déploiement est à jour."
               : errData.error ?? `Erreur ${response.status}`;
           throw new Error(msg);
         }

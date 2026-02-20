@@ -58,14 +58,17 @@ async function saveMessageToFirestore(
 }
 
 /**
- * OPTIONS /api/chat — preflight CORS (requis si en-tête Authorization).
- * Sans cela, le navigateur reçoit 405 sur OPTIONS et bloque le POST.
+ * OPTIONS /api/chat — preflight CORS (requis quand en-tête Authorization).
+ * Sans Access-Control-Allow-Origin, le navigateur peut rejeter la preflight.
  */
-export function OPTIONS() {
+export function OPTIONS(request: NextRequest) {
+  const origin =
+    request.headers.get("origin") ?? new URL(request.url).origin;
   return new Response(null, {
     status: 204,
     headers: {
       Allow: "POST, OPTIONS",
+      "Access-Control-Allow-Origin": origin,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
       "Access-Control-Max-Age": "86400",
