@@ -1,9 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FlaskConical, Bot } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { FlaskConical } from "lucide-react";
 
 export default function TestBotsPage() {
   return (
@@ -22,20 +20,13 @@ export default function TestBotsPage() {
             Environnement de test
           </CardTitle>
           <CardDescription>
-            Cette page est réservée aux administrateurs pour tester les bots et agents IA.
+            Cette page est réservée aux administrateurs pour tester les bots.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           <p className="text-sm text-muted-foreground">
-            Vous pouvez accéder aux agents IA depuis la page communautaire pour effectuer vos
-            tests.
+            Contenu à venir.
           </p>
-          <Button asChild variant="outline">
-            <Link href="/commun/agents-ia" className="flex items-center gap-2">
-              <Bot className="h-4 w-4" />
-              Ouvrir Mes agents IA
-            </Link>
-          </Button>
         </CardContent>
       </Card>
     </div>
