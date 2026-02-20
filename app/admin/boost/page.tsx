@@ -18,13 +18,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Zap, Star, TrendingUp } from "lucide-react";
+import { Zap, Star, TrendingUp, Plus, Pencil, Trash2 } from "lucide-react";
 import {
   getAllBoostsForAdmin,
   getUsersMap,
   getBoostsByMonth,
 } from "@/lib/firebase/boosts";
-import type { Boost, BoostWithUser, BoostType } from "@/types/boost";
+import type { BoostWithUser, BoostType } from "@/types/boost";
+import { Button } from "@/components/ui/button";
+import { BoostFormDialog } from "@/components/boost/boost-form-dialog";
+import { DeleteBoostDialog } from "@/components/boost/delete-boost-dialog";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatCurrency } from "@/lib/utils";
@@ -48,6 +51,9 @@ export default function AdminBoostPage() {
     { userId: string; userName: string; count: number; remuneration: number }[]
   >([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [formOpenForCreate, setFormOpenForCreate] = useState(false);
+  const [editingBoost, setEditingBoost] = useState<BoostWithUser | null>(null);
+  const [boostToDelete, setBoostToDelete] = useState<BoostWithUser | null>(null);
 
   const loadUsers = useCallback(async () => {
     if (!db) return;
@@ -135,6 +141,11 @@ export default function AdminBoostPage() {
       ? [b.userFirstName, b.userLastName].filter(Boolean).join(" ")
       : b.userEmail?.split("@")[0] ?? "Inconnu";
 
+  const handleCloseForm = () => {
+    setFormOpenForCreate(false);
+    setEditingBoost(null);
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -199,10 +210,24 @@ export default function AdminBoostPage() {
       <div className="grid gap-8 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Liste des boosts</CardTitle>
-            <CardDescription>
-              {boosts.length} boost(s) pour le mois sélectionné
-            </CardDescription>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle>Liste des boosts</CardTitle>
+                <CardDescription>
+                  {boosts.length} boost(s) pour le mois sélectionné
+                </CardDescription>
+              </div>
+              <Button
+                onClick={() => {
+                  setEditingBoost(null);
+                  setFormOpenForCreate(true);
+                }}
+                className="shrink-0"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter un boost
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -224,6 +249,7 @@ export default function AdminBoostPage() {
                       <TableHead>Client</TableHead>
                       <TableHead className="text-center">Étoiles</TableHead>
                       <TableHead className="text-right">Rémunération</TableHead>
+                      <TableHead className="w-[100px] text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -249,6 +275,31 @@ export default function AdminBoostPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           {formatCurrency(boost.remuneration)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => {
+                                setFormOpenForCreate(false);
+                                setEditingBoost(boost);
+                              }}
+                              title="Modifier"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                              onClick={() => setBoostToDelete(boost)}
+                              title="Supprimer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -315,6 +366,25 @@ export default function AdminBoostPage() {
           </CardContent>
         </Card>
       </div>
+
+      <BoostFormDialog
+        open={formOpenForCreate || !!editingBoost}
+        onOpenChange={(open) => {
+          if (!open) handleCloseForm();
+        }}
+        boost={editingBoost}
+        users={users}
+        onSuccess={loadData}
+      />
+
+      <DeleteBoostDialog
+        open={!!boostToDelete}
+        onOpenChange={(open) => {
+          if (!open) setBoostToDelete(null);
+        }}
+        boost={boostToDelete}
+        onSuccess={loadData}
+      />
     </div>
   );
 }

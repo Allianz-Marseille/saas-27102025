@@ -10,11 +10,14 @@ import {
   addDoc,
   orderBy,
   Timestamp,
+  doc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "./config";
 import type { Boost, BoostType } from "@/types/boost";
 import { BOOST_REMUNERATION } from "@/types/boost";
-import { doc, getDoc } from "firebase/firestore";
 
 function toDate(value: Date | Timestamp | null | undefined): Date {
   if (!value) return new Date();
@@ -60,6 +63,77 @@ export async function createBoost(
 
   const docRef = await addDoc(collection(db, "boosts"), boostData);
   return docRef.id;
+}
+
+/**
+ * Crée un boost par l'admin (pour n'importe quel collaborateur, date et rémunération optionnelles)
+ */
+export async function createBoostAdmin(
+  userId: string,
+  type: BoostType,
+  clientName: string,
+  stars: number,
+  date?: Date,
+  remuneration?: number
+): Promise<string> {
+  if (!db) {
+    throw new Error("Firebase non initialisé");
+  }
+
+  const boostDate = date ?? new Date();
+  const amount =
+    remuneration !== undefined && remuneration >= 0
+      ? remuneration
+      : BOOST_REMUNERATION[type] ?? 5;
+
+  const boostData = {
+    userId,
+    type,
+    clientName: clientName.trim(),
+    stars,
+    remuneration: amount,
+    date: Timestamp.fromDate(boostDate),
+    createdAt: Timestamp.fromDate(new Date()),
+  };
+
+  const docRef = await addDoc(collection(db, "boosts"), boostData);
+  return docRef.id;
+}
+
+/**
+ * Met à jour un boost (admin)
+ */
+export async function updateBoost(
+  id: string,
+  data: Partial<Pick<Boost, "type" | "clientName" | "stars" | "remuneration" | "date">>
+): Promise<void> {
+  if (!db) {
+    throw new Error("Firebase non initialisé");
+  }
+
+  const updateData: Record<string, unknown> = {};
+  if (data.type !== undefined) updateData.type = data.type;
+  if (data.clientName !== undefined) updateData.clientName = data.clientName.trim();
+  if (data.stars !== undefined) updateData.stars = data.stars;
+  if (data.remuneration !== undefined) updateData.remuneration = data.remuneration;
+  if (data.date !== undefined) {
+    updateData.date =
+      data.date instanceof Date ? Timestamp.fromDate(data.date) : data.date;
+  }
+
+  if (Object.keys(updateData).length === 0) return;
+
+  await updateDoc(doc(db, "boosts", id), updateData);
+}
+
+/**
+ * Supprime un boost (admin)
+ */
+export async function deleteBoost(id: string): Promise<void> {
+  if (!db) {
+    throw new Error("Firebase non initialisé");
+  }
+  await deleteDoc(doc(db, "boosts", id));
 }
 
 /**

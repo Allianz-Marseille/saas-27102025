@@ -166,11 +166,11 @@ service cloud.firestore {
       // Lecture : tous les authentifiés (leaderboard visible par tous les collaborateurs)
       allow read: if isAuthenticated();
       
-      // Création : utilisateur crée son propre boost
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Création : utilisateur crée son propre boost, ou admin pour n'importe quel userId
+      allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
       
-      // Modification/Suppression : non prévues en v1 (déclarations immuables)
-      allow update, delete: if false;
+      // Modification / Suppression : admin uniquement (CRUD admin)
+      allow update, delete: if isAdmin();
     }
     
     // Sinistres collection
