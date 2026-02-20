@@ -124,6 +124,7 @@ export function BotChat({
             : "/api/chat";
         const response = await fetch(apiUrl, {
           method: "POST",
+          cache: "no-store",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -137,7 +138,11 @@ export function BotChat({
 
         if (!response.ok) {
           const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.error ?? `Erreur ${response.status}`);
+          const msg =
+            response.status === 405
+              ? "Erreur de méthode (405). Ne pas ouvrir /api/chat dans le navigateur — utilisez le champ de saisie ci‑dessous."
+              : errData.error ?? `Erreur ${response.status}`;
+          throw new Error(msg);
         }
 
         const reader = response.body?.getReader();
