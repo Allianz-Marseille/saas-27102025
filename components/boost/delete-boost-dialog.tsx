@@ -93,12 +93,17 @@ export function DeleteBoostDialog({
             </span>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+        <AlertDialogFooter className="flex-wrap gap-2 sm:gap-2">
+          <AlertDialogCancel
+            disabled={isDeleting}
+            className="min-w-[7rem] shrink-0 px-4"
+          >
+            Annuler
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isDeleting}
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            className="min-w-[7rem] shrink-0 px-4 bg-red-600 hover:bg-red-700 focus:ring-red-600"
           >
             {isDeleting ? "Suppression..." : "Supprimer"}
           </AlertDialogAction>
