@@ -123,6 +123,7 @@ export function BotChat({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     sendMessage();
   };
 
@@ -210,7 +211,12 @@ export function BotChat({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="border-t p-4">
+      <form
+        method="post"
+        onSubmit={handleSubmit}
+        className="border-t p-4"
+        noValidate
+      >
         <div className="flex gap-2">
           <Textarea
             ref={inputRef}

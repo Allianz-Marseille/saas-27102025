@@ -58,6 +58,22 @@ async function saveMessageToFirestore(
 }
 
 /**
+ * GET /api/chat — non supporté (évite 405 ambigu)
+ */
+export function GET() {
+  return new Response(
+    JSON.stringify({ error: "Méthode non autorisée. Utilisez POST." }),
+    {
+      status: 405,
+      headers: {
+        "Content-Type": "application/json",
+        Allow: "POST",
+      },
+    }
+  );
+}
+
+/**
  * POST /api/chat
  * Body: { message: string, botId: string, history?: Array<{role, content}>, metadata?: BotSessionMetadata }
  */
