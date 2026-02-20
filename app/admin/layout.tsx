@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
-import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote, Zap } from "lucide-react";
+import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote, Zap, FlaskConical } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { MobileMenu } from "@/components/navigation/mobile-menu";
 import { ResponsiveHeader } from "@/components/navigation/responsive-header";
@@ -58,6 +58,11 @@ const adminNavItems = [
     href: "/commun/outils",
     label: "Outils",
     icon: Wrench,
+  },
+  {
+    href: "/admin/test-bots",
+    label: "Test des Bots",
+    icon: FlaskConical,
   },
   {
     href: "/admin/commissions-agence",
