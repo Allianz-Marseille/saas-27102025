@@ -32,7 +32,9 @@ import {
 } from "@/lib/firebase/boosts";
 import type { BoostType, BoostWithUser } from "@/types/boost";
 import { BOOST_REMUNERATION } from "@/types/boost";
-import type { UserData } from "@/lib/firebase/auth";
+
+/** Utilisateur pour le select (id, email + optionnellement firstName/lastName depuis Firestore) */
+type UserForSelect = { id: string; email: string; firstName?: string; lastName?: string };
 
 const BOOST_TYPES: { value: BoostType; label: string }[] = [
   { value: "GOOGLE", label: "Google" },
@@ -42,7 +44,7 @@ interface BoostFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   boost: BoostWithUser | null;
-  users: UserData[];
+  users: UserForSelect[];
   onSuccess?: () => void;
 }
 
@@ -55,7 +57,7 @@ function getBoostDate(boost: BoostWithUser): Date {
   return new Date();
 }
 
-function getUserDisplayName(u: UserData): string {
+function getUserDisplayName(u: UserForSelect): string {
   if (u.firstName || u.lastName) {
     return [u.firstName, u.lastName].filter(Boolean).join(" ");
   }
