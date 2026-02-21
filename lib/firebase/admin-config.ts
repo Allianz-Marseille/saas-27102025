@@ -53,16 +53,21 @@ function initializeFirebaseAdmin(): admin.app.App | null {
   try {
     let serviceAccount: admin.ServiceAccount;
 
-    const base64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+    const base64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64?.trim();
     if (base64) {
-      const json = Buffer.from(base64, "base64").toString("utf8");
-      const parsed = JSON.parse(json) as admin.ServiceAccount & {
-        private_key?: string;
-      };
-      if (parsed.private_key) {
-        parsed.private_key = getSafePrivateKey(parsed.private_key);
+      try {
+        const json = Buffer.from(base64, "base64").toString("utf8");
+        const parsed = JSON.parse(json) as admin.ServiceAccount & {
+          private_key?: string;
+        };
+        if (parsed.private_key) {
+          parsed.private_key = getSafePrivateKey(parsed.private_key);
+        }
+        serviceAccount = parsed;
+      } catch (e) {
+        console.error("FIREBASE_SERVICE_ACCOUNT_BASE64: erreur decode/parse", e);
+        throw e;
       }
-      serviceAccount = parsed;
     } else if (
       process.env.FIREBASE_PROJECT_ID &&
       process.env.FIREBASE_PRIVATE_KEY &&

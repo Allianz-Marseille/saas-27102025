@@ -14,6 +14,7 @@ import type { BotSessionMetadata } from "@/types/bot";
 
 const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
 
+
 /**
  * Construit le contexte metadata optionnel pour l'agent (si dossier client ouvert).
  */
