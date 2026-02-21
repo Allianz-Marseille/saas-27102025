@@ -107,7 +107,11 @@ export function BotChat({
   };
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+    });
   }, []);
 
   const shouldAutoScroll = useCallback(() => {
@@ -122,8 +126,20 @@ export function BotChat({
   }, [messages, streamingContent, scrollToBottom, shouldAutoScroll]);
 
   useEffect(() => {
+    if (isLoading || streamingContent) scrollToBottom();
+  }, [isLoading, streamingContent, scrollToBottom]);
+
+  useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  const prevLoadingRef = useRef(isLoading);
+  useEffect(() => {
+    if (prevLoadingRef.current && !isLoading) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+    prevLoadingRef.current = isLoading;
+  }, [isLoading]);
 
   const sendMessage = useCallback(
     async (
@@ -205,7 +221,7 @@ export function BotChat({
         setStreamingContent("");
       } finally {
         setIsLoading(false);
-        inputRef.current?.focus();
+        setTimeout(() => inputRef.current?.focus(), 0);
       }
     },
     [
@@ -516,6 +532,7 @@ export function BotChat({
           </Button>
           <Textarea
             ref={inputRef}
+            autoFocus
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Votre message..."
