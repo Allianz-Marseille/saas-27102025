@@ -20,6 +20,9 @@ import {
   Calendar,
   DollarSign,
   BarChart3,
+  Copy,
+  Check,
+  Scale,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +56,7 @@ interface ApiResponse {
     infosLegales: any;
     dirigeants: any;
     bilans: any;
+    beneficiaires: any;
     etablissements: any;
     procedures: any;
     evenements: any;
@@ -81,6 +85,7 @@ export default function SocieteEntreprisePage() {
   const [results, setResults] = useState<ApiResponse["data"] | null>(null);
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copiedSection, setCopiedSection] = useState<string | null>(null);
 
   // Validation et conversion SIRET → SIREN
   const validateAndExtractSiren = (input: string): string | null => {
@@ -225,6 +230,84 @@ export default function SocieteEntreprisePage() {
   const formatDate = (dateStr: string | undefined): string => {
     if (!dateStr || dateStr.length !== 8) return dateStr || "Non disponible";
     return `${dateStr.substring(6, 8)}/${dateStr.substring(4, 6)}/${dateStr.substring(0, 4)}`;
+  };
+
+  const copyToClipboard = async (text: string, sectionId: string) => {
+    if (!text.trim()) {
+      toast.error("Aucune donnée à copier");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedSection(sectionId);
+      toast.success("Données copiées dans le presse-papier");
+      setTimeout(() => setCopiedSection(null), 2000);
+    } catch {
+      toast.error("Erreur lors de la copie");
+    }
+  };
+
+  const formatInfosForCopy = (): string => {
+    if (!results?.infosLegales) return "";
+    const L = results.infosLegales;
+    let text = "INFORMATIONS ENTREPRISE (Societe.com)\n";
+    text += "=".repeat(50) + "\n\n";
+    text += `Dénomination: ${L.denoinsee || L.denorcs || "Non disponible"}\n`;
+    text += `Forme juridique: ${L.catjurlibinsee || L.catjurlibrcs || "Non disponible"}\n`;
+    text += `Adresse: ${L.voieadressageinsee || L.voieadressagercs || ""} ${L.codepostalinsee || L.codepostalrcs || ""} ${L.villeinsee || L.villercs || ""}\n`;
+    text += `SIREN: ${L.siren || "Non disponible"}\n`;
+    if (L.siretsiege) text += `SIRET siège: ${L.siretsiege}\n`;
+    if (L.numtva) text += `TVA: ${L.numtva}\n`;
+    if (L.rcs) text += `RCS: ${L.rcs}\n`;
+    if (L.capital) text += `Capital: ${L.capital_formate || L.capital + " " + (L.libdevise || "EUR")}\n`;
+    if (L.nafinsee) text += `Code NAF/APE: ${L.nafinsee} - ${L.naflibinsee || ""}\n`;
+    if (L.idcc || L.libidcc) text += `Convention collective: ${L.idcc || ""} - ${L.libidcc || L.libelle_idcc || ""}\n`;
+    return text;
+  };
+
+  const formatBeneficiairesForCopy = (): string => {
+    const list = results?.beneficiaires?.beneficiaires_effectifs ?? (Array.isArray(results?.beneficiaires) ? results.beneficiaires : []);
+    if (!list || list.length === 0) return "";
+    let text = "BÉNÉFICIAIRES EFFECTIFS\n";
+    text += "=".repeat(50) + "\n\n";
+    list.forEach((b: any, i: number) => {
+      text += `Bénéficiaire ${i + 1}: ${b.prenompp || b.prenom || ""} ${b.nompp || b.nom || b.denopm || "Non disponible"}\n`;
+      if (b.datenaisspp || b.date_naissance) text += `  Date naissance: ${b.datenaisspp || b.date_naissance}\n`;
+      if (b.pourcentage_parts != null) text += `  Parts: ${Number(b.pourcentage_parts).toFixed(2)}%\n`;
+      if (b.pourcentage_votes != null) text += `  Votes: ${Number(b.pourcentage_votes).toFixed(2)}%\n`;
+      text += "\n";
+    });
+    return text;
+  };
+
+  const formatDirigeantsForCopy = (): string => {
+    const list = results?.dirigeants?.dirigeants;
+    if (!list || list.length === 0) return "";
+    let text = "DIRIGEANTS\n";
+    text += "=".repeat(50) + "\n\n";
+    list.forEach((d: any, i: number) => {
+      text += `Dirigeant ${i + 1}: ${d.prenompp || ""} ${d.nompp || d.denopm || "Non disponible"}\n`;
+      text += `  Fonction: ${d.titre || "Non disponible"}\n`;
+      if (d.datedebut) text += `  Début: ${formatDate(d.datedebut)}\n`;
+      if (d.datefin) text += `  Fin: ${formatDate(d.datefin)}\n`;
+      text += "\n";
+    });
+    return text;
+  };
+
+  const formatFinancierForCopy = (): string => {
+    const list = results?.bilans?.bilans;
+    if (!list || list.length === 0) return "";
+    let text = "BILANS\n";
+    text += "=".repeat(50) + "\n\n";
+    list.slice(0, 10).forEach((b: any, i: number) => {
+      text += `Bilan ${i + 1}: ${b.annee || b.datecloture || ""}\n`;
+      if (b.chiffreaffaires != null) text += `  CA: ${b.chiffreaffaires}\n`;
+      if (b.resultatnet != null) text += `  Résultat net: ${b.resultatnet}\n`;
+      if (b.actiftotal != null) text += `  Actif total: ${b.actiftotal}\n`;
+      text += "\n";
+    });
+    return text;
   };
 
   return (
@@ -463,12 +546,41 @@ export default function SocieteEntreprisePage() {
           className="space-y-6"
         >
           <Tabs defaultValue="infos" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 mb-6">
-              <TabsTrigger value="infos">Informations</TabsTrigger>
-              <TabsTrigger value="dirigeants">Dirigeants</TabsTrigger>
-              <TabsTrigger value="financier">Financier</TabsTrigger>
-              <TabsTrigger value="autres">Autres</TabsTrigger>
-            </TabsList>
+            <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 flex-1">
+                <TabsTrigger value="infos">Informations</TabsTrigger>
+                <TabsTrigger value="beneficiaires">Bénéficiaires</TabsTrigger>
+                <TabsTrigger value="dirigeants">Dirigeants</TabsTrigger>
+                <TabsTrigger value="financier">Financier</TabsTrigger>
+                <TabsTrigger value="autres">Autres</TabsTrigger>
+              </TabsList>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const allData = [
+                    formatInfosForCopy(),
+                    formatBeneficiairesForCopy(),
+                    formatDirigeantsForCopy(),
+                    formatFinancierForCopy(),
+                  ].filter(Boolean).join("\n\n");
+                  copyToClipboard(allData, "all");
+                }}
+                className="gap-2"
+              >
+                {copiedSection === "all" ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Copié
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    Copier tout
+                  </>
+                )}
+              </Button>
+            </div>
 
             {/* Onglet Informations */}
             <TabsContent value="infos" className="space-y-6">
@@ -476,10 +588,30 @@ export default function SocieteEntreprisePage() {
               {results.infosLegales && (
                 <Card className="bg-card text-card-foreground rounded-xl border shadow-sm">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                      <Building2 className="h-5 w-5" />
-                      Informations légales
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2 text-xl">
+                        <Building2 className="h-5 w-5" />
+                        Informations légales
+                      </CardTitle>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(formatInfosForCopy(), "infos")}
+                        className="gap-2"
+                      >
+                        {copiedSection === "infos" ? (
+                          <>
+                            <Check className="h-4 w-4" />
+                            Copié
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4" />
+                            Copier
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -569,6 +701,37 @@ export default function SocieteEntreprisePage() {
                           </p>
                         </div>
                       )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Convention collective (CCN) */}
+              {results.infosLegales && (results.infosLegales.idcc || results.infosLegales.libidcc || results.infosLegales.libelle_idcc) && (
+                <Card className="bg-card text-card-foreground rounded-xl border shadow-sm border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <Scale className="h-5 w-5" />
+                      Convention collective
+                    </CardTitle>
+                    <CardDescription>
+                      IDCC et libellé applicables à l&apos;entreprise (source Societe.com)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {results.infosLegales.idcc && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-1">IDCC</p>
+                          <p className="text-base font-mono font-semibold">{results.infosLegales.idcc}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Libellé</p>
+                        <p className="text-base">
+                          {results.infosLegales.libidcc || results.infosLegales.libelle_idcc || "Non disponible"}
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -677,15 +840,122 @@ export default function SocieteEntreprisePage() {
               )}
             </TabsContent>
 
+            {/* Onglet Bénéficiaires effectifs */}
+            <TabsContent value="beneficiaires" className="space-y-6">
+              {(() => {
+                const list = results?.beneficiaires?.beneficiaires_effectifs ?? (Array.isArray(results?.beneficiaires) ? results.beneficiaires : []);
+                const hasBeneficiaires = list && list.length > 0;
+                return hasBeneficiaires ? (
+                  <Card className="bg-card text-card-foreground rounded-xl border shadow-sm">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                          <Users className="h-5 w-5" />
+                          Bénéficiaires effectifs ({list.length})
+                        </CardTitle>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(formatBeneficiairesForCopy(), "beneficiaires")}
+                          className="gap-2"
+                        >
+                          {copiedSection === "beneficiaires" ? (
+                            <>
+                              <Check className="h-4 w-4" />
+                              Copié
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4" />
+                              Copier
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {list.map((beneficiaire: any, index: number) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.3, delay: index * 0.05 }}
+                            className="p-4 rounded-lg border bg-muted/30"
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-sm font-medium text-muted-foreground mb-1">Nom complet</p>
+                                <p className="text-base font-semibold">
+                                  {(beneficiaire.prenompp || beneficiaire.prenom || "") + " " + (beneficiaire.nompp || beneficiaire.nom || beneficiaire.denopm || "Non disponible")}
+                                </p>
+                              </div>
+                              {(beneficiaire.datenaisspp || beneficiaire.date_naissance) && (
+                                <div>
+                                  <p className="text-sm font-medium text-muted-foreground mb-1">Date de naissance</p>
+                                  <p className="text-base">{beneficiaire.datenaisspp || beneficiaire.date_naissance}</p>
+                                </div>
+                              )}
+                              {beneficiaire.pourcentage_parts != null && (
+                                <div>
+                                  <p className="text-sm font-medium text-muted-foreground mb-1">Parts</p>
+                                  <p className="text-base">{Number(beneficiaire.pourcentage_parts).toFixed(2)} %</p>
+                                </div>
+                              )}
+                              {beneficiaire.pourcentage_votes != null && (
+                                <div>
+                                  <p className="text-sm font-medium text-muted-foreground mb-1">Votes</p>
+                                  <p className="text-base">{Number(beneficiaire.pourcentage_votes).toFixed(2)} %</p>
+                                </div>
+                              )}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="bg-card text-card-foreground rounded-xl border shadow-sm">
+                    <CardContent className="pt-6">
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Aucun bénéficiaire effectif disponible</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+            </TabsContent>
+
             {/* Onglet Dirigeants */}
             <TabsContent value="dirigeants" className="space-y-6">
               {results.dirigeants?.dirigeants && results.dirigeants.dirigeants.length > 0 ? (
                 <Card className="bg-card text-card-foreground rounded-xl border shadow-sm">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                      <Users className="h-5 w-5" />
-                      Dirigeants ({results.dirigeants.nbdirigeants || results.dirigeants.dirigeants.length})
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2 text-xl">
+                        <Users className="h-5 w-5" />
+                        Dirigeants ({results.dirigeants.nbdirigeants || results.dirigeants.dirigeants.length})
+                      </CardTitle>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(formatDirigeantsForCopy(), "dirigeants")}
+                        className="gap-2"
+                      >
+                        {copiedSection === "dirigeants" ? (
+                          <>
+                            <Check className="h-4 w-4" />
+                            Copié
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4" />
+                            Copier
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -769,10 +1039,30 @@ export default function SocieteEntreprisePage() {
               {results.bilans?.bilans && results.bilans.bilans.length > 0 && (
                 <Card className="bg-card text-card-foreground rounded-xl border shadow-sm">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                      <BarChart3 className="h-5 w-5" />
-                      Bilans ({results.bilans.nbbilans || results.bilans.bilans.length})
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2 text-xl">
+                        <BarChart3 className="h-5 w-5" />
+                        Bilans ({results.bilans.nbbilans || results.bilans.bilans.length})
+                      </CardTitle>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(formatFinancierForCopy(), "financier")}
+                        className="gap-2"
+                      >
+                        {copiedSection === "financier" ? (
+                          <>
+                            <Check className="h-4 w-4" />
+                            Copié
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4" />
+                            Copier
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">

@@ -157,12 +157,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Appels API en parallèle pour toutes les informations
+    // Appels API en parallèle pour toutes les informations (dont bénéficiaires effectifs)
     const [
       existenceResponse,
       infosLegalesResponse,
       dirigeantsResponse,
       bilansResponse,
+      beneficiairesResponse,
       etablissementsResponse,
       proceduresResponse,
       evenementsResponse,
@@ -175,6 +176,7 @@ export async function POST(request: NextRequest) {
       fetch(`${baseUrl}/entreprise/${numId}/infoslegales`, { headers }),
       fetch(`${baseUrl}/entreprise/${numId}/dirigeants`, { headers }),
       fetch(`${baseUrl}/entreprise/${numId}/bilans`, { headers }),
+      fetch(`${baseUrl}/entreprise/${numId}/beneficiaires-effectifs`, { headers }),
       fetch(`${baseUrl}/entreprise/${numId}/etablissements`, { headers }),
       fetch(`${baseUrl}/entreprise/${numId}/procedurescollectives`, { headers }),
       fetch(`${baseUrl}/entreprise/${numId}/evenements`, { headers }),
@@ -209,7 +211,7 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    let existence, infosLegales, dirigeants, bilans, etablissements, procedures, evenements, scoring, contact, marques, documents;
+    let existence, infosLegales, dirigeants, bilans, beneficiaires, etablissements, procedures, evenements, scoring, contact, marques, documents;
 
     try {
       [
@@ -217,6 +219,7 @@ export async function POST(request: NextRequest) {
         infosLegales,
         dirigeants,
         bilans,
+        beneficiaires,
         etablissements,
         procedures,
         evenements,
@@ -229,6 +232,7 @@ export async function POST(request: NextRequest) {
         processResponse(infosLegalesResponse, "infosLegales"),
         processResponse(dirigeantsResponse, "dirigeants"),
         processResponse(bilansResponse, "bilans"),
+        processResponse(beneficiairesResponse, "beneficiaires"),
         processResponse(etablissementsResponse, "etablissements"),
         processResponse(proceduresResponse, "procedures"),
         processResponse(evenementsResponse, "evenements"),
@@ -259,7 +263,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Retourner toutes les données structurées
+    // Retourner toutes les données structurées (dont bénéficiaires effectifs)
     return NextResponse.json({
       success: true,
       data: {
@@ -267,6 +271,7 @@ export async function POST(request: NextRequest) {
         infosLegales: infosLegales?.infolegales || null,
         dirigeants: dirigeants?.data || null,
         bilans: bilans?.data || null,
+        beneficiaires: beneficiaires?.data || null,
         etablissements: etablissements?.data || null,
         procedures: procedures?.data || null,
         evenements: evenements?.data || null,
