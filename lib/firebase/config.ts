@@ -18,19 +18,28 @@ let db: Firestore | undefined;
 
 if (typeof window !== 'undefined') {
   try {
-    // Vérifier si les credentials sont valides
-    const hasValidConfig = firebaseConfig.apiKey && 
-                           firebaseConfig.apiKey !== 'your_api_key_here' &&
-                           firebaseConfig.projectId && 
-                           firebaseConfig.projectId !== 'your_project_id';
-    
+    const hasApiKey = !!(firebaseConfig.apiKey && firebaseConfig.apiKey !== 'your_api_key_here');
+    const hasProjectId = !!(firebaseConfig.projectId && firebaseConfig.projectId !== 'your_project_id');
+    const hasValidConfig = hasApiKey && hasProjectId;
+
+    if (process.env.NODE_ENV === 'development' || !hasValidConfig) {
+      const status = {
+        apiKey: hasApiKey ? 'ok' : 'manquant ou placeholder',
+        projectId: hasProjectId ? 'ok' : 'manquant ou placeholder',
+        authDomain: firebaseConfig.authDomain ? 'ok' : 'manquant',
+      };
+      if (!hasValidConfig) {
+        console.warn('[Firebase] Config invalide côté client:', status);
+      }
+    }
+
     if (hasValidConfig) {
       app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
       auth = getAuth(app);
       db = getFirestore(app);
     }
   } catch (error) {
-    console.warn('Firebase not configured or invalid credentials');
+    console.warn('[Firebase] Init échouée:', error);
   }
 }
 
