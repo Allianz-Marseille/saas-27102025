@@ -39,7 +39,7 @@ Le bot ne pose qu'**une seule question courte à la fois**, en suivant stricteme
 | 7 | **Besoin** | % de maintien de revenu souhaité (par défaut 100%) |
 | 8 | **Frais Généraux** | Montant mensuel des charges fixes professionnelles |
 
-## 4. MOTEUR DE CALCUL DU GAP
+## 4. MOTEUR DE CALCUL DU GAP ET DE L'EFFORT NET FISCAL
 
 Pour chaque analyse, Bob doit :
 
@@ -49,6 +49,24 @@ Pour chaque analyse, Bob doit :
    > **Manque à gagner** = Besoin total − (Prestations cumulées SSI + Régime Obligatoire)
 
 - Les plafonds SSI/CPAM définissent le cadre légal ; le régime (CARPIMKO, CAVEC, CPRN, CAVAMAC, etc.) précise les montants réels.
+
+### 4.1 Estimation de la TMI (Tranche Marginale d'Imposition)
+
+- À partir du **revenu net** extrait (BIC/BNC), Bob estime la **TMI probable** du client (ex: 11%, 30%, 41%).
+- Cette TMI sert de **scénario central** pour le calcul de l'effort réel d'épargne (loi Madelin).
+
+### 4.2 Calcul de l'effort net fiscal (Simulation Madelin)
+
+Pour toute cotisation prévoyance proposée, Bob présente **toujours** l'effort selon **3 scénarios fiscaux** :
+
+| Scénario | TMI utilisée | Formule |
+|----------|--------------|---------|
+| **Conservateur** | TMI inférieure (ex: 11%) | Cotisation Nette = Cotisation Brute × (1 − TMI) |
+| **Central** | TMI estimée (ex: 30%) | Cotisation Nette = Cotisation Brute × (1 − TMI) |
+| **Optimiste** | TMI supérieure (ex: 41%) | Cotisation Nette = Cotisation Brute × (1 − TMI) |
+
+- **Effort réel** = ce que le client paie après économie d'impôt. Exemple : 100€/mois à 30% TMI → **70€ d'effort réel**.
+- Présenter ces 3 hypothèses sous forme de **tableau comparatif** à la fin de chaque recommandation (voir section 5.B).
 
 ## 5. RENDU DU LIVRABLE (UI)
 
@@ -62,7 +80,20 @@ Bob présente toujours son résultat en deux parties obligatoires (composant Rea
 | **Invalidité** | [Rente] € / an | **[Rente] € / an** |
 | **Décès** | [Capital] € | **[Capital] €** |
 
-### B. Timeline de l'Arrêt (obligatoire)
+### B. Calcul de l'effort net fiscal (obligatoire après diagnostic)
+
+Pour chaque recommandation de cotisation (prévoyance Madelin), Bob affiche un **tableau comparatif des 3 scénarios fiscaux** :
+
+| Scénario | TMI | Cotisation brute (ex. 100€/mois) | **Effort réel (net d'impôt)** |
+|----------|-----|----------------------------------|-------------------------------|
+| Conservateur | 11% | 100 € | **89 €** |
+| Central (estimé) | 30% | 100 € | **70 €** |
+| Optimiste | 41% | 100 € | **59 €** |
+
+- **Ton attendu :** Ne pas dire seulement *"Ça coûte 100€"*. Dire : *"La cotisation est de 100€/mois ; avec votre TMI probable de 30%, votre effort réel n'est que de **70€**. Si vous passez en tranche supérieure (41%), cela ne vous coûtera plus que **59€**."*
+- Ce tableau doit figurer **à la fin de chaque recommandation** pour montrer le gain fiscal concret.
+
+### C. Timeline de l'Arrêt (obligatoire)
 
 > **Point critique :** La coupure au **91ème jour** est décisive : c'est là que le relais des caisses libérales (CPRN, CAVAMAC, CARPIMKO, etc.) change tout le calcul.
 
@@ -96,7 +127,7 @@ Utiliser `@00-workflow-bob-methode.md` et `@app/api/chat/route.ts` lors de la mi
 | **Extraction** | Priorité Gemini Vision + étape de Confirmation (Métier, Date, Revenu, Nom) |
 | **Collecte** | Une question courte à la fois, ordre des 8 points |
 | **Calcul** | Croiser `01-referentiel` + fichier régime ; Manque à gagner = Besoin − (SSI + RO) |
-| **Rendu** | Tableau Diagnostic (Arrêt, Invalidité, Décès) + Timeline (J1-J3, J4-J90, J91+) |
+| **Rendu** | Tableau Diagnostic + **Tableau Effort net fiscal (3 scénarios TMI)** + Timeline (J1-J3, J4-J90, J91+) |
 | **Style** | Gras sur montants ; source citée en bas (ex: "Source : Fichier 07 - CAVEC") |
 
 > **Vérification Timeline :** S'assurer que la coupure au **91ème jour** (relais CPRN/CAVAMAC) est bien prise en compte dans les calculs.
