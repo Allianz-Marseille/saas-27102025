@@ -27,11 +27,7 @@
     "test:rules": "ts-node --project tsconfig.scripts.json scripts/test-firebase-rules.ts",
     "test:rules:emulator": "ts-node --project tsconfig.scripts.json scripts/test-firestore-rules-emulator.ts",
     "test:storage": "ts-node --project tsconfig.scripts.json scripts/test-storage-upload.ts",
-    "get-firebase-token": "ts-node --project tsconfig.scripts.json scripts/get-firebase-id-token.ts",
-    "bob:pdf": "ts-node --project tsconfig.scripts.json scripts/generate-bob-pdf.ts",
-    "bob:html": "ts-node --project tsconfig.scripts.json scripts/generate-bob-html.ts",
-    "bob:table-matieres-pdf": "ts-node --project tsconfig.scripts.json scripts/generate-table-matieres-pdf.ts",
-    "bob:analyze-pdfs": "ts-node --project tsconfig.scripts.json scripts/analyze-bob-pdfs.ts"
+    "get-firebase-token": "ts-node --project tsconfig.scripts.json scripts/get-firebase-id-token.ts"
   },
   "dependencies": {
     "@google-cloud/vision": "^5.3.4",
