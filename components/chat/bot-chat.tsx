@@ -96,6 +96,10 @@ export function BotChat({
     if (shouldAutoScroll()) scrollToBottom();
   }, [messages, streamingContent, scrollToBottom, shouldAutoScroll]);
 
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
   const sendMessage = useCallback(
     async (
       messageText?: string,
