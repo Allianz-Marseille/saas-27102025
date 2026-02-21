@@ -40,6 +40,8 @@ interface BotChatProps {
   accentColor?: AccentColor;
   /** Réponses rapides (boutons au-dessus de l'input). Défaut : liste prévoyance. */
   quickReplies?: string[];
+  /** Force le thème sombre (contraste) quand le conteneur a un fond sombre. Par défaut : true si accentColor="blue". */
+  darkContainer?: boolean;
 }
 
 /**
@@ -54,6 +56,7 @@ export function BotChat({
   className,
   accentColor = "default",
   quickReplies = DEFAULT_QUICK_REPLIES,
+  darkContainer: darkContainerProp,
 }: BotChatProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<BotChatMessage[]>([]);
@@ -234,6 +237,8 @@ export function BotChat({
   };
 
   const isBlue = accentColor === "blue";
+  /** Chat avec fond sombre : force les variables dark pour un bon contraste texte/fond */
+  const hasDarkContainer = darkContainerProp ?? isBlue;
   const headerBorderClass = isBlue
     ? "border-b border-blue-500/30 bg-blue-950/20"
     : "border-b bg-muted/30";
@@ -249,6 +254,7 @@ export function BotChat({
     <div
       className={cn(
         "flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden",
+        hasDarkContainer && "dark",
         className
       )}
     >
@@ -261,12 +267,24 @@ export function BotChat({
         <p className="font-medium text-sm">Chat avec {botName}</p>
         <div className="flex items-center gap-2">
           {sessionLabel && (
-            <span className="text-xs text-muted-foreground">{sessionLabel}</span>
+            <span
+              className={cn(
+                "text-xs",
+                hasDarkContainer ? "text-slate-400" : "text-muted-foreground"
+              )}
+            >
+              {sessionLabel}
+            </span>
           )}
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
+            className={cn(
+              "h-8 gap-1.5",
+              hasDarkContainer
+                ? "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
+                : "text-muted-foreground hover:text-foreground"
+            )}
             onClick={handleDownloadSynthèse}
             disabled={messages.length === 0}
             title="Télécharger la synthèse"
@@ -282,7 +300,12 @@ export function BotChat({
         className="flex-1 min-h-[280px] max-h-[420px] overflow-y-auto overflow-x-hidden p-4 space-y-4"
       >
         {messages.length === 0 && !streamingContent && !isLoading && (
-          <p className="text-muted-foreground text-sm">
+          <p
+            className={cn(
+              "text-sm",
+              hasDarkContainer ? "text-slate-400" : "text-muted-foreground"
+            )}
+          >
             Posez votre question à {botName}. Santé et prévoyance TNS.
           </p>
         )}
@@ -396,7 +419,12 @@ export function BotChat({
       )}
 
       {quickReplies.length > 0 && (
-        <div className="border-t px-4 py-2 overflow-x-auto">
+        <div
+          className={cn(
+            "border-t px-4 py-2 overflow-x-auto",
+            hasDarkContainer && "border-slate-600/50"
+          )}
+        >
           <div className="flex gap-2 pb-1">
             {quickReplies.map((label) => (
               <Button
@@ -404,7 +432,11 @@ export function BotChat({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="shrink-0 text-xs h-8"
+                className={cn(
+                  "shrink-0 text-xs h-8",
+                  hasDarkContainer &&
+                    "border-slate-500/60 bg-slate-800/50 text-slate-200 hover:bg-slate-700/60 hover:text-white hover:border-slate-400/60"
+                )}
                 onClick={() => sendMessage(label)}
                 disabled={isLoading}
               >
@@ -418,7 +450,10 @@ export function BotChat({
       <form
         method="post"
         onSubmit={handleSubmit}
-        className="border-t p-4"
+        className={cn(
+          "border-t p-4",
+          hasDarkContainer && "border-slate-600/50"
+        )}
         noValidate
       >
         <input
@@ -436,7 +471,12 @@ export function BotChat({
             type="button"
             variant="ghost"
             size="icon"
-            className="shrink-0 h-11 w-11 text-muted-foreground hover:text-foreground"
+            className={cn(
+              "shrink-0 h-11 w-11",
+              hasDarkContainer
+                ? "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
+                : "text-muted-foreground hover:text-foreground"
+            )}
             onClick={handleAttachClick}
             title="Joindre un fichier (à venir)"
           >
@@ -448,7 +488,11 @@ export function BotChat({
             onChange={(e) => setInput(e.target.value)}
             placeholder="Votre message..."
             rows={2}
-            className="resize-none min-h-[44px] flex-1"
+            className={cn(
+              "resize-none min-h-[44px] flex-1",
+              hasDarkContainer &&
+                "placeholder:text-slate-400 bg-slate-800/50 border-slate-600/50 text-slate-100 focus-visible:border-blue-400/50"
+            )}
             disabled={isLoading}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
