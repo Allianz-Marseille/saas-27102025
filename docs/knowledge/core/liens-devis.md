@@ -1,6 +1,8 @@
 # Liens de Devis et Formulaires — Code Agence H91358
 
-Liste complète des liens de devis et formulaires Allianz pour l'agence (code agence H91358). Ces liens permettent aux clients de réaliser directement des devis en ligne.
+**Référence centralisée (toutes agences)** : [docs/devis/README.md](../../devis/README.md) — index Corniche (H91358) et Rouvière (H92083) avec listes complètes dans [H91358/liens-devis.md](../../devis/H91358/liens-devis.md) et [H92083/liens-devis.md](../../devis/H92083/liens-devis.md).
+
+Liste des liens de devis et formulaires Allianz pour l'agence **Corniche** (code agence H91358). Ces liens permettent aux clients de réaliser directement des devis en ligne.
 
 ## Devis principaux
 

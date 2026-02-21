@@ -592,10 +592,11 @@ Le bot IA peut **proposer automatiquement** des liens vers les tarificateurs en 
 
 **Fonctionnement** :
 - Lorsque le bot identifie un **trou logique** ou une **opportunité commerciale**, il propose le lien du tarificateur correspondant
-- Le lien inclut automatiquement le **code agence H91358** pour attribution
+- Le lien inclut automatiquement le **code agence** (H91358 Corniche ou H92083 Rouvière) pour attribution
+- Liste complète et liens pour **les deux agences** : [docs/devis/README.md](../../devis/README.md) — [Corniche H91358](../../devis/H91358/liens-devis.md), [Rouvière H92083](../../devis/H92083/liens-devis.md)
 - Vous pouvez copier-coller le lien directement dans un mail/SMS au client
 
-**Liste des tarificateurs disponibles** :
+**Liste des tarificateurs disponibles (agence Corniche H91358 ci-dessous ; pour Rouvière voir [devis/H92083](../../devis/H92083/liens-devis.md))** :
 
 | Contrat | Lien tarificateur |
 |---------|-------------------|

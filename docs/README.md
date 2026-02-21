@@ -36,6 +36,14 @@ Grille de pilotage des rémunérations.
 | **grille.md** | Spécification grille de pilotage des rémunérations. |
 | **TODO.md** | Checklist / TODO d'implémentation rémunérations. |
 
+### docs/devis/
+Liens vers les formulaires de devis Allianz par agence (code agence dans l’URL).
+| Dossier / fichier | Rôle |
+|-------------------|------|
+| **README.md** | Index des agences (Corniche H91358, Rouvière H92083). |
+| **H91358/liens-devis.md** | Liste complète des liens devis — Agence de la Corniche. |
+| **H92083/liens-devis.md** | Liste complète des liens devis — Agence de la Rouvière. |
+
 ### docs/assets-gemini/
 Assets et base de connaissances pour les agents IA (cible Gemini).
 | Dossier | Rôle |
@@ -52,6 +60,7 @@ Assets et base de connaissances pour les agents IA (cible Gemini).
 | **process/** | Processus détaillés côté implémentation (ex. workflow M+3). |
 | **boost/** | Spécification de l'outil Boosts + checklist d'implémentation. |
 | **remuneration/** | Spécification de la grille de pilotage des rémunérations. |
+| **devis/** | Liens devis Allianz par agence (H91358 Corniche, H92083 Rouvière). |
 
 ## Références rapides
 
@@ -59,3 +68,4 @@ Assets et base de connaissances pour les agents IA (cible Gemini).
 - **Boost** : [boost/google/BOOST.md](boost/google/BOOST.md)
 - **Rémunérations** : [remuneration/grille.md](remuneration/grille.md)
 - **Process M+3** : [process/m+3/m+3_ia.md](process/m+3/m+3_ia.md)
+- **Liens devis (par agence)** : [devis/README.md](devis/README.md) — Corniche (H91358), Rouvière (H92083)
