@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { login, getUserData } from "@/lib/firebase/auth";
+import { isFirebaseAuthReady } from "@/lib/firebase/config";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -63,8 +64,14 @@ export default function LoginPage() {
           router.push("/dashboard");
         }
       }
-    } catch (error: any) {
-      toast.error(error.message || "Erreur de connexion");
+    } catch (error: unknown) {
+      const msg =
+        error instanceof Error && error.message === "Firebase not initialized"
+          ? "Configuration Firebase manquante. Vérifiez les variables NEXT_PUBLIC_FIREBASE_* sur Vercel (Production) et redéployez."
+          : error instanceof Error
+            ? error.message
+            : "Erreur de connexion";
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
@@ -112,6 +119,15 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {!isFirebaseAuthReady() && (
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+                Configuration Firebase manquante. Vérifiez les variables{" "}
+                <code className="rounded bg-amber-100 px-1 dark:bg-amber-900">
+                  NEXT_PUBLIC_FIREBASE_*
+                </code>{" "}
+                sur Vercel (Production) et redéployez l&apos;application.
+              </div>
+            )}
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -145,7 +161,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 className="w-full bg-[#00529B] hover:bg-[#003d73]"
-                disabled={isLoading}
+                disabled={isLoading || !isFirebaseAuthReady()}
               >
                 {isLoading ? "Connexion..." : "Se connecter"}
               </Button>

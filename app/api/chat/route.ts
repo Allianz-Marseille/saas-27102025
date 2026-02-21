@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
     let fullContent = "";
     const transformStream = new TransformStream({
       async transform(chunk, controller) {
-        const text = new TextDecoder().decode(chunk);
+        const text = typeof chunk === "string" ? chunk : new TextDecoder().decode(chunk);
         const lines = text.split("\n").filter((l) => l.startsWith("data: "));
         for (const line of lines) {
           const data = line.slice(6);

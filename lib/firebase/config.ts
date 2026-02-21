@@ -43,6 +43,8 @@ if (typeof window !== 'undefined') {
   }
 }
 
+export const isFirebaseAuthReady = (): boolean => !!auth;
+
 export { app, auth, db };
 export default app;
 
