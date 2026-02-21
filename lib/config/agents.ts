@@ -1,6 +1,6 @@
 /**
  * Configuration des bots IA — Architecture « Bots Outils »
- * Chaque bot = 1 agent Mistral (ID depuis la console) = 1 objectif précis.
+ * Chaque bot = un objectif précis. Cerveau et base de connaissance à fournir via Gemini (phase ultérieure).
  */
 
 export interface BotConfig {
@@ -13,14 +13,14 @@ export interface BotConfig {
 
 /**
  * Table des bots : botId → config
- * MISTRAL_AGENT_BOB doit être défini dans .env / Vercel (ID agent depuis la console Mistral).
+ * agentId vide tant que les bots Gemini ne sont pas déployés.
  */
 export const BOTS: Record<string, BotConfig> = {
   bob: {
     id: "bob",
     name: "Bob",
-    agentId: process.env.MISTRAL_AGENT_BOB ?? "",
-    model: "mistral-large-latest",
+    agentId: "",
+    model: "",
     description: "Expert santé et prévoyance TNS",
   },
 };

@@ -1,6 +1,6 @@
 # M+3 — Process de suivi client (à ~3 mois)
 
-**Ce document** décrit le **workflow détaillé pour le bot M+3** (étapes, prompts, exemples). Pour la définition métier du processus (objectifs, échéance, critères), voir [docs/knowledge/process/m-plus-3.md](../../knowledge/process/m-plus-3.md).
+**Ce document** décrit le **workflow détaillé pour le bot M+3** (étapes, prompts, exemples). La définition métier (objectifs, échéance, critères) est reprise en introduction ci-dessous.
 
 ## 1. Introduction
 

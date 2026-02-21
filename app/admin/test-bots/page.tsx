@@ -25,12 +25,12 @@ export default function TestBotsPage() {
           </CardTitle>
           <CardDescription>
             Cette page est réservée aux administrateurs pour tester les bots.
-            Bob test utilise MISTRAL_API_KEY et MISTRAL_AGENT_BOB.
+            Migration vers Gemini en cours — le chat retourne un message d&apos;attente.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-6">
-            Chat de test connecté à l&apos;agent Bob (Mistral).
+            Chat de test (Bob). Les réponses seront fournies par Gemini après migration.
           </p>
           <div className="flex items-center gap-4 mb-4">
             <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-blue-500/50 shrink-0 shadow-lg">
@@ -45,7 +45,7 @@ export default function TestBotsPage() {
             <div>
               <h3 className="text-lg font-bold">Bob test</h3>
               <p className="text-sm text-muted-foreground">
-                Expert santé et prévoyance TNS — MISTRAL_AGENT_BOB
+                Expert santé et prévoyance TNS — migration Gemini
               </p>
             </div>
           </div>

@@ -1,9 +1,8 @@
 /**
  * API Route Chat IA — Architecture « Bots Outils »
  *
- * Passerelle sécurisée : reçoit botId + message, appelle l'agent Mistral correspondant.
- * Streaming maintenu. Historique Firestore (optionnel) : conversations/{sessionId}/messages.
- * Si Firebase échoue, l'appel Mistral s'exécute quand même.
+ * Passerelle sécurisée : reçoit botId + message. En attente de migration vers Gemini,
+ * retourne un message de dégradation gracieuse. Historique Firestore (optionnel) : conversations/{sessionId}/messages.
  */
 
 import { NextRequest } from "next/server";
@@ -12,8 +11,8 @@ import { getAdminDbOrNull, Timestamp } from "@/lib/firebase/admin-config";
 import { getBotConfig } from "@/lib/config/agents";
 import type { BotSessionMetadata } from "@/types/bot";
 
-const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
-
+const MIGRATION_MESSAGE =
+  "Les assistants IA sont en cours de migration vers Gemini. Réessayez ultérieurement.";
 
 /**
  * Construit le contexte metadata optionnel pour l'agent (si dossier client ouvert).
@@ -102,6 +101,7 @@ export function GET() {
 /**
  * POST /api/chat
  * Body: { message: string, botId: string, history?: Array<{role, content}>, metadata?: BotSessionMetadata }
+ * En attente de migration vers Gemini : retourne un message de dégradation gracieuse en stream.
  */
 export async function POST(request: NextRequest) {
   console.log("Démarrage de la route /api/chat");
@@ -127,7 +127,6 @@ export async function POST(request: NextRequest) {
 
     const message = typeof body.message === "string" ? body.message : "";
     const botId = typeof body.botId === "string" ? body.botId : "";
-    const history = Array.isArray(body.history) ? body.history : [];
     const metadata = body.metadata as BotSessionMetadata | undefined;
 
     if (!message.trim() || !botId) {
@@ -145,97 +144,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!botConfig.agentId) {
-      return new Response(
-        JSON.stringify({ error: `Agent Mistral non configuré pour le bot: ${botId}` }),
-        { status: 503, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!MISTRAL_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "MISTRAL_API_KEY manquante" }),
-        { status: 503, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
     const sessionId =
       metadata?.client_id ?? `standalone-${auth.userId}-${botId}`;
-    const metadataContext = buildMetadataContext(metadata);
 
     await saveMessageToFirestore(sessionId, "user", message, { botId });
 
-    const messages: Array<{ role: "user" | "assistant" | "system"; content: string }> = [];
-    if (metadataContext) {
-      messages.push({ role: "system", content: metadataContext });
-    }
-    messages.push(
-      ...history
-        .filter((m): m is { role: string; content: string } => typeof m === "object" && m !== null && "role" in m && "content" in m)
-        .map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: String(m.content ?? ""),
-        })),
-      { role: "user", content: message }
-    );
-
-    const requestBody: { agent_id: string; messages: unknown[]; stream?: boolean } = {
-      agent_id: botConfig.agentId,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      stream: true,
-    };
-
-    const streamResponse = await fetch("https://api.mistral.ai/v1/agents/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${MISTRAL_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!streamResponse.ok) {
-      const err = await streamResponse.text();
-      return new Response(
-        JSON.stringify({ error: `Mistral API error: ${streamResponse.status} ${err}` }),
-        { status: streamResponse.status >= 500 ? 502 : 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const reader = streamResponse.body;
-    if (!reader) {
-      return new Response(
-        JSON.stringify({ error: "Pas de stream disponible" }),
-        { status: 502, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    let fullContent = "";
-    const transformStream = new TransformStream({
-      async transform(chunk, controller) {
-        const text = typeof chunk === "string" ? chunk : new TextDecoder().decode(chunk);
-        const lines = text.split("\n").filter((l) => l.startsWith("data: "));
-        for (const line of lines) {
-          const data = line.slice(6);
-          if (data === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(data);
-            const delta = parsed.choices?.[0]?.delta?.content;
-            if (delta) {
-              fullContent += delta;
-              controller.enqueue(new TextEncoder().encode(delta));
-            }
-          } catch {
-            // Ignorer les lignes mal formées
-          }
-        }
-      },
-      async flush() {
-        await saveMessageToFirestore(sessionId, "assistant", fullContent, { botId });
+    // Stub : migration vers Gemini en cours — retourner le message en stream
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(MIGRATION_MESSAGE));
+        controller.close();
       },
     });
 
-    return new Response(reader.pipeThrough(new TextDecoderStream()).pipeThrough(transformStream), {
+    (async () => {
+      await saveMessageToFirestore(sessionId, "assistant", MIGRATION_MESSAGE, { botId });
+    })();
+
+    return new Response(stream, {
       headers: {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",

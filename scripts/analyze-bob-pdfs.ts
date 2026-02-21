@@ -208,7 +208,7 @@ function generateTocMarkdown(mappings: DocumentMapping[]): string {
     lines.push(doc.description || "Document Allianz Prévoyance.");
     if (doc.extractError) {
       lines.push("");
-      lines.push(`*Extraction partielle ou échec : ${doc.extractError} (OCR côté Mistral possible).*`);
+      lines.push(`*Extraction partielle ou échec : ${doc.extractError} (OCR possible).*`);
     }
     if (doc.sections.length > 0) {
       lines.push("");

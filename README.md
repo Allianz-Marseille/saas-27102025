@@ -701,7 +701,6 @@ L'intégration Gemini remplacera Mistral pour alimenter Bob avec cette base tech
 - **Boost** : `docs/boost/BOOST.md` — Spécification du module de déclaration des avis clients
 - **Rémunérations** : `docs/remuneration/grille.md` — Grille de pilotage des rémunérations
 - **Process M+3** : `docs/process/m+3/m+3_ia.md` — Workflow M+3 (suivi client ~3 mois)
-- **Knowledge** : `docs/knowledge/` — Fiches métier (sinistres, santé, compliance, produits, segmentation)
 - **Conventions Firestore** : `firestore.rules` — Règles de sécurité
 
 ## 🤝 Contribution

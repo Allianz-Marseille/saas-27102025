@@ -1,29 +1,17 @@
 /**
- * Génération d'embeddings via l'API OpenAI pour le RAG.
+ * Génération d'embeddings pour le RAG.
+ * En attente de migration vers Gemini — stub qui lance une erreur si appelé.
  */
 
-import type OpenAI from "openai";
-
-const EMBEDDING_MODEL = "text-embedding-3-small";
+const MIGRATION_MSG = "Embeddings en migration vers Gemini. Ingestion suspendue.";
 
 /**
  * Génère un embedding pour un bloc de texte.
- * Utilisé lors de l'ingestion de documents dans la base de connaissance.
+ * Sera réimplémenté avec l'API Gemini.
  */
 export async function generateEmbedding(
-  text: string,
-  openai: OpenAI
+  _text: string,
+  _client?: unknown
 ): Promise<number[]> {
-  const truncated = text.slice(0, 8191);
-  const response = await openai.embeddings.create({
-    model: EMBEDDING_MODEL,
-    input: truncated,
-  });
-
-  const embedding = response.data?.[0]?.embedding;
-  if (!embedding || !Array.isArray(embedding)) {
-    throw new Error("Réponse OpenAI embedding invalide");
-  }
-
-  return embedding as number[];
+  throw new Error(MIGRATION_MSG);
 }

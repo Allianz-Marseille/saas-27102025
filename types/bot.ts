@@ -5,7 +5,7 @@
 export type CurrentStep = "decouverte" | "devis" | "m_plus_3";
 
 /**
- * Metadata de session injectées dans chaque appel API Mistral (optionnel).
+ * Metadata de session injectées dans chaque appel API chat (optionnel).
  * En mode standalone (page Agents IA), client_id et uid_collaborateur peuvent être absents.
  * Depuis un dossier client, ces champs ancrent la conversation au bon dossier.
  */

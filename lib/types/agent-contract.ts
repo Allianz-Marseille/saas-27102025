@@ -1,11 +1,8 @@
 /**
- * Contrat Technique — Échanges UI Next.js ↔ Agents Mistral
+ * Contrat Technique — Échanges UI Next.js ↔ Agents IA (chat)
  *
- * Ce fichier définit strictement les interfaces entre l'interface de chat
- * et les agents (Bob, Nina, Sinistro, etc.) pour garantir la cohérence
- * avec l'architecture bot-agent-ia-standard.md.
- *
- * @see docs/bots-prelude/bot-agent-ia-standard.md
+ * Définit les interfaces entre l'interface de chat et les agents
+ * (Bob, Nina, Sinistro, etc.). Cible future : Gemini.
  */
 
 // —————————————————————————————————————————————————————————————————————————————
@@ -14,7 +11,7 @@
 
 /**
  * Identifiants des bots disponibles.
- * Chaque entrée correspond à un agent Mistral configuré dans lib/config/agents.ts.
+ * Chaque entrée correspond à un bot configuré dans lib/config/agents.ts.
  */
 export enum SupportedBots {
   Bob = "bob",
@@ -37,8 +34,8 @@ export type AttachmentFileType = "image" | "document";
 
 /**
  * Formats MIME supportés pour les pièces jointes.
- * - Images : Vision Mistral (screenshots CRM, JPG, PNG)
- * - Documents : OCR Mistral (PDF, Word, TXT)
+ * - Images : Vision (screenshots CRM, JPG, PNG)
+ * - Documents : OCR (PDF, Word, TXT)
  */
 export const SUPPORTED_MIME_TYPES = {
   image: ["image/jpeg", "image/png", "image/webp", "image/gif"] as const,
@@ -78,7 +75,7 @@ export interface ChatAttachment {
   extraction_status?: ExtractionStatus;
   /** Texte extrait par OCR/Vision (rempli côté serveur) */
   extracted_text?: string;
-  /** Score de confiance OCR 0-1 (optionnel, si fourni par Mistral) */
+  /** Score de confiance OCR 0-1 (optionnel) */
   ocr_confidence?: number;
 }
 
@@ -119,7 +116,7 @@ export interface BotRequest {
 export type CurrentStep = "decouverte" | "devis" | "m_plus_3";
 
 /**
- * Métadonnées de session injectées dans l'appel Mistral.
+ * Métadonnées de session injectées dans l'appel API chat.
  * En mode standalone (page Agents IA), client_id et uid_collaborateur peuvent être absents.
  * Depuis un dossier client, ces champs ancrent la conversation.
  */
