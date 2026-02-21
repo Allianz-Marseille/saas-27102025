@@ -25,11 +25,36 @@ export interface BotChatMessage {
 
 type AccentColor = "default" | "blue";
 
-const DEFAULT_QUICK_REPLIES = [
-  "Calculer gain fiscal Madelin",
-  "Comparer avec un contrat AXA",
-  "Synthèse pour mail client",
-  "Vérifier carences RO",
+/** Label affiché OU { label, message } pour envoyer un message différent. */
+export type QuickReply = string | { label: string; message: string };
+
+function normalizeQuickReply(item: QuickReply): { label: string; message: string } {
+  return typeof item === "string"
+    ? { label: item, message: item }
+    : { label: item.label, message: item.message };
+}
+
+const DEFAULT_QUICK_REPLIES: QuickReply[] = [
+  {
+    label: "Je veux faire un bilan TNS",
+    message:
+      "Je veux faire un bilan TNS. Lance tes questions pas à pas pour collecter les données.",
+  },
+  {
+    label: "Je colle une capture de la fiche Lagon",
+    message:
+      "Je vais coller une capture de la fiche Lagon. Quand je l'envoie : lis les infos (client, chargé de mission de l'agence), extrais ce que tu peux, puis lance ton process pas à pas pour faire le point.",
+  },
+  {
+    label: "Question sur la SSI",
+    message:
+      "J'ai une question sur la SSI. Demande-moi de quoi j'ai besoin : un résumé, une explication générale, ou un point précis ?",
+  },
+  {
+    label: "Quel régime obligatoire ?",
+    message:
+      "Je veux savoir quel régime obligatoire s'applique. Demande-moi le métier, puis donne-moi le nom du RO et demande ce que je souhaite savoir (résumé, explication générale, point précis).",
+  },
 ];
 
 interface BotChatProps {
@@ -38,8 +63,8 @@ interface BotChatProps {
   className?: string;
   /** Identité visuelle : "blue" pour Bob (bulles assistant, bordure header) */
   accentColor?: AccentColor;
-  /** Réponses rapides (boutons au-dessus de l'input). Défaut : liste prévoyance. */
-  quickReplies?: string[];
+  /** Réponses rapides (boutons au-dessus de l'input). string = label et message identiques. Défaut : liste prévoyance. */
+  quickReplies?: QuickReply[];
   /** Force le thème sombre (contraste) quand le conteneur a un fond sombre. Par défaut : true si accentColor="blue". */
   darkContainer?: boolean;
 }
@@ -430,23 +455,26 @@ export function BotChat({
           )}
         >
           <div className="flex gap-2 pb-1">
-            {quickReplies.map((label) => (
-              <Button
-                key={label}
-                type="button"
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "shrink-0 text-xs h-8",
-                  hasDarkContainer &&
-                    "border-slate-500/60 bg-slate-800/50 text-slate-200 hover:bg-slate-700/60 hover:text-white hover:border-slate-400/60"
-                )}
-                onClick={() => sendMessage(label)}
-                disabled={isLoading}
-              >
-                {label}
-              </Button>
-            ))}
+            {quickReplies.map((item) => {
+              const { label, message } = normalizeQuickReply(item);
+              return (
+                <Button
+                  key={label}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "shrink-0 text-xs h-8",
+                    hasDarkContainer &&
+                      "border-slate-500/60 bg-slate-800/50 text-slate-200 hover:bg-slate-700/60 hover:text-white hover:border-slate-400/60"
+                  )}
+                  onClick={() => sendMessage(message)}
+                  disabled={isLoading}
+                >
+                  {label}
+                </Button>
+              );
+            })}
           </div>
         </div>
       )}
