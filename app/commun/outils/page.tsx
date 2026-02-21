@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Users, ArrowRight, Building2, FileText, TrendingUp } from "lucide-react";
+import { Users, ArrowRight, Building2, FileText, TrendingUp, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { motion } from "framer-motion";
@@ -13,6 +13,7 @@ type ColorScheme = {
   iconColor: string;
   border: string;
   badge: string;
+  glow: string;
 };
 
 const colorSchemes: ColorScheme[] = [
@@ -21,18 +22,21 @@ const colorSchemes: ColorScheme[] = [
     iconColor: "text-blue-600 dark:text-blue-400",
     border: "border-l-4 border-blue-500",
     badge: "bg-blue-500/10 text-blue-700 dark:text-blue-300",
+    glow: "shadow-blue-500/20",
   },
   {
     iconBg: "bg-gradient-to-br from-emerald-500 to-teal-600",
     iconColor: "text-emerald-600 dark:text-emerald-400",
     border: "border-l-4 border-emerald-500",
     badge: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    glow: "shadow-emerald-500/20",
   },
   {
     iconBg: "bg-gradient-to-br from-purple-500 to-pink-600",
     iconColor: "text-purple-600 dark:text-purple-400",
     border: "border-l-4 border-purple-500",
     badge: "bg-purple-500/10 text-purple-700 dark:text-purple-300",
+    glow: "shadow-purple-500/20",
   },
 ];
 
@@ -47,6 +51,8 @@ type OutilItem = {
     text: string;
   }[];
   badge?: string;
+  ccnBadge?: boolean;
+  tagline?: string;
 };
 
 export default function OutilsPage() {
@@ -74,8 +80,10 @@ export default function OutilsPage() {
       icon: Building2,
       href: "/commun/outils/societe-entreprise",
       badge: "API Societe.com",
+      ccnBadge: true,
+      tagline: "Spécialité : conventions collectives et Code du travail",
       features: [
-        { icon: FileText, text: "Conventions collectives (CCN) : IDCC + lien direct Code du travail numérique" },
+        { icon: FileText, text: "Conventions collectives (CCN) : IDCC + lien direct Code du travail numérique — atout unique Societe.com" },
         { icon: TrendingUp, text: "Scoring financier et extra-financier" },
         { icon: Building2, text: "Contact, marques, établissements, documents officiels" },
         { icon: Users, text: "Recherche par SIREN, nom ou numéro de TVA" },
@@ -106,16 +114,20 @@ export default function OutilsPage() {
               key={outil.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
               className="h-full"
             >
               <Card
                 className={cn(
                   "group relative overflow-hidden cursor-pointer transition-all duration-300",
-                  "bg-white dark:bg-gray-900",
+                  "bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm",
                   "border border-gray-200 dark:border-gray-800",
                   colors.border,
-                  "hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-700",
+                  "hover:shadow-xl",
+                  index === 0 ? "hover:shadow-blue-500/20" : "hover:shadow-emerald-500/20",
+                  "hover:border-gray-300 dark:hover:border-gray-600",
                   "h-full flex flex-col"
                 )}
                 onClick={() => router.push(outil.href)}
@@ -123,9 +135,9 @@ export default function OutilsPage() {
                 <CardHeader className="pb-3 space-y-2.5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      {/* Icon compact */}
+                      {/* Icon compact with hover glow */}
                       <div className={cn(
-                        "p-2 rounded-lg shrink-0",
+                        "p-2 rounded-lg shrink-0 transition-transform duration-300 group-hover:scale-110",
                         colors.iconBg
                       )}>
                         <Icon className="h-5 w-5 text-white" />
@@ -144,10 +156,20 @@ export default function OutilsPage() {
                             {outil.badge}
                           </span>
                         )}
+                        {outil.ccnBadge && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold shrink-0 mt-0.5 bg-violet-500/20 text-violet-600 dark:text-violet-400 border border-violet-500/30">
+                            CCN
+                          </span>
+                        )}
                           </div>
                           <CardDescription className="text-xs text-muted-foreground leading-relaxed">
                             {outil.description}
                           </CardDescription>
+                          {outil.tagline && (
+                            <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1">
+                              {outil.tagline}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -160,22 +182,51 @@ export default function OutilsPage() {
                 </CardHeader>
 
                 <CardContent className="flex-1 flex flex-col pt-0 pb-3">
-                  {/* Features List compacte */}
+                  {/* Bloc CCN dédié (Societe.com uniquement) */}
+                  {outil.ccnBadge && (
+                    <div className="mb-4 p-3 rounded-lg bg-violet-500/10 dark:bg-violet-500/10 border border-violet-500/20 flex items-start gap-2">
+                      <Scale className="h-4 w-4 text-violet-600 dark:text-violet-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">
+                          Conventions collectives (CCN)
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Identifiez l&apos;IDCC et accédez au Code du travail numérique en un clic.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {/* Features List compacte — première feature CCN mise en avant pour Societe.com */}
                   <div className="space-y-2 mb-3 flex-1">
                     {outil.features.map((feature, featureIndex) => {
                       const FeatureIcon = feature.icon;
+                      const isCcnPriority = outil.ccnBadge && featureIndex === 0;
                       return (
                         <div
                           key={featureIndex}
-                          className="flex items-start gap-2.5"
+                          className={cn(
+                            "flex items-start gap-2.5",
+                            isCcnPriority && "p-2 rounded-lg bg-violet-500/5 dark:bg-violet-500/5 border border-violet-500/15"
+                          )}
                         >
                           <FeatureIcon className={cn(
-                            "h-4 w-4 mt-0.5 shrink-0",
-                            colors.iconColor
+                            "mt-0.5 shrink-0",
+                            isCcnPriority ? "h-4 w-4 text-violet-600 dark:text-violet-400" : "h-4 w-4",
+                            !isCcnPriority && colors.iconColor
                           )} />
-                          <p className="text-xs text-muted-foreground leading-relaxed flex-1 break-words">
-                            {feature.text}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            {isCcnPriority && (
+                              <span className="inline-block text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400 mb-0.5">
+                                Spécificité
+                              </span>
+                            )}
+                            <p className={cn(
+                              "text-muted-foreground leading-relaxed break-words",
+                              isCcnPriority ? "text-sm font-medium text-foreground" : "text-xs"
+                            )}>
+                              {feature.text}
+                            </p>
+                          </div>
                         </div>
                       );
                     })}
