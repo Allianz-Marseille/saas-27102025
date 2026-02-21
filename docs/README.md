@@ -50,6 +50,12 @@ Grille de pilotage des rémunérations.
 | **grille.md** | Spécification grille de pilotage des rémunérations. |
 | **TODO.md** | Checklist / TODO d'implémentation rémunérations. |
 
+### docs/assets-gemini/
+Assets et base de connaissances pour les agents IA (cible Gemini).
+| Dossier | Rôle |
+|---------|------|
+| **bob-prevoyance/** | Base technique Bob : référentiels 2026, régimes (SSI, CARPIMKO, CIPAV, etc.), workflow méthodologique, solutions Allianz/UNIM/UNICED. 15 fichiers `.md` + index. |
+
 ---
 
 ## Structure (résumé)
@@ -60,9 +66,11 @@ Grille de pilotage des rémunérations.
 | **process/** | Processus détaillés côté implémentation (ex. workflow M+3). |
 | **boost/** | Spécification de l'outil Boosts + checklist d'implémentation. |
 | **remuneration/** | Spécification de la grille de pilotage des rémunérations. |
+| **assets-gemini/** | Base de connaissances pour agents IA (Bob prévoyance — cible Gemini). |
 
 ## Références rapides
 
 - **Boost** : [boost/BOOST.md](boost/BOOST.md)
 - **Rémunérations** : [remuneration/grille.md](remuneration/grille.md)
 - **Knowledge** : [knowledge/README.md](knowledge/README.md)
+- **Bob Prévyance (Gemini)** : [assets-gemini/bob-prevoyance/00-table-des-matieres.md](assets-gemini/bob-prevoyance/00-table-des-matieres.md)

@@ -664,9 +664,40 @@ Le fichier `vercel.json` configure les redirections et les routes API.
 
 Le fichier `vercel.json` configure le cron du leaderboard. Pour les variables d'environnement, consultez `.env.example`.
 
+## 🤖 Agents IA — Bots spécialisés
+
+Le projet a connu plusieurs itérations d'agents IA pour assister les collaborateurs (diagnostic prévoyance, santé TNS, sinistres, etc.).
+
+### Essais réalisés
+
+| Plateforme | Usage | État |
+|------------|-------|------|
+| **OpenAI** | Embeddings pour la base de connaissance RAG (ingest PDF) | Utilisé côté admin (ingestion) |
+| **Mistral** | Chat avec agents (Bob prévoyance/santé TNS via `MISTRAL_AGENT_BOB`) | En production actuellement |
+| **Gemini** | — | **Cible actuelle** |
+
+### État actuel (Mistral)
+
+- **Bob** : Expert santé et prévoyance TNS, connecté à l'API Mistral Agents
+- **API** : `POST /api/chat` avec `botId`, `message`, `history`
+- **Config** : `lib/config/agents.ts` — `MISTRAL_API_KEY` et `MISTRAL_AGENT_BOB` requis
+- **Interface** : `/commun/agents-ia/bob`, `/admin/test-bots`
+
+### Migration vers Gemini
+
+La base de connaissances pour Bob est prête dans `docs/assets-gemini/bob-prevoyance/` :
+
+- **Référentiels** : Plafonds 2026 (PASS, PMSS, SMIC), régimes (SSI, CARPIMKO, CIPAV, CARMF, CAVEC, etc.)
+- **Workflow** : `00-workflow-bob-methode.md` — méthodologie d'accueil, collecte, analyse et livrable
+- **Solutions** : Allianz, UNIM, UNICED
+- **Index** : `00-table-des-matieres.md` — 15 fichiers de référence
+
+L'intégration Gemini remplacera Mistral pour alimenter Bob avec cette base technique complète (vision OCR, contexte structuré, calculs prévoyance 2026).
+
 ## 📚 Documentation supplémentaire
 
 - **Docs** : `docs/README.md` — Inventaire et structure de la documentation
+- **Bob Prévyance** : `docs/assets-gemini/bob-prevoyance/` — Base technique pour l'agent Bob (référentiels, régimes, workflow, solutions Allianz/UNIM/UNICED)
 - **Boost** : `docs/boost/BOOST.md` — Spécification du module de déclaration des avis clients
 - **Rémunérations** : `docs/remuneration/grille.md` — Grille de pilotage des rémunérations
 - **Process M+3** : `docs/process/m+3/m+3_ia.md` — Workflow M+3 (suivi client ~3 mois)
