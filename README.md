@@ -245,7 +245,7 @@ Module de déclaration et suivi des avis clients :
 - **Accès** : Tous les rôles (CDC, Santé Indiv/Coll, Gestionnaire sinistre)
 - Page utilisateur : `/commun/boost` — déclaration et classement
 - Page admin : `/admin/boost` — liste, filtres, leaderboard, export
-- Documentation : `docs/boost/BOOST.md`
+- Documentation : `docs/boost/google/BOOST.md`
 
 #### Pappers
 
@@ -698,7 +698,7 @@ L'intégration Gemini remplacera Mistral pour alimenter Bob avec cette base tech
 
 - **Docs** : `docs/README.md` — Inventaire et structure de la documentation
 - **Bob Prévyance** : `docs/assets-gemini/bob-prevoyance/` — Base technique pour l'agent Bob (référentiels, régimes, workflow, solutions Allianz/UNIM/UNICED)
-- **Boost** : `docs/boost/BOOST.md` — Spécification du module de déclaration des avis clients
+- **Boost** : `docs/boost/google/BOOST.md` — Spécification du module de déclaration des avis clients
 - **Rémunérations** : `docs/remuneration/grille.md` — Grille de pilotage des rémunérations
 - **Process M+3** : `docs/process/m+3/m+3_ia.md` — Workflow M+3 (suivi client ~3 mois)
 - **Conventions Firestore** : `firestore.rules` — Règles de sécurité

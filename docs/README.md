@@ -23,10 +23,11 @@ Processus détaillés côté implémentation.
 
 ### docs/boost/
 Spécification de l'outil Boosts (déclaration et suivi).
-| Fichier | Rôle |
-|---------|------|
-| **BOOST.md** | Spécification outil Boosts : contexte, navigation, déclaration, suivi, rôles. |
-| **TODO.md** | Checklist / TODO d'implémentation Boosts. |
+| Dossier / fichier | Rôle |
+|-------------------|------|
+| **google/** | Spéc et TODO pour le type de boost Google. |
+| **google/BOOST.md** | Spécification outil Boosts : contexte, navigation, déclaration, suivi, rôles. |
+| **google/TODO.md** | Checklist / TODO d'implémentation Boosts. |
 
 ### docs/remuneration/
 Grille de pilotage des rémunérations.
@@ -55,6 +56,6 @@ Assets et base de connaissances pour les agents IA (cible Gemini).
 ## Références rapides
 
 - **Bases de connaissance (bots IA)** : [assets-gemini/bob-prevoyance/00-table-des-matieres.md](assets-gemini/bob-prevoyance/00-table-des-matieres.md) — **seul emplacement des bases de connaissance.**
-- **Boost** : [boost/BOOST.md](boost/BOOST.md)
+- **Boost** : [boost/google/BOOST.md](boost/google/BOOST.md)
 - **Rémunérations** : [remuneration/grille.md](remuneration/grille.md)
 - **Process M+3** : [process/m+3/m+3_ia.md](process/m+3/m+3_ia.md)

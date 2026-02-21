@@ -107,7 +107,7 @@ La modale contient des **boutons cliquables** pour choisir le type de boost :
 
 ### Objectif
 
-Permettre à l’admin d’**identifier les réalisations** (boosts) de tous les collaborateurs, d’en suivre le volume et les montants, et de disposer des données pour la rémunération.
+Permettre à l'admin d'**identifier les réalisations** (boosts) de tous les collaborateurs, d'en suivre le volume et les montants, et de disposer des données pour la rémunération.
 
 ### Section Boost sur le Dashboard admin (`/admin`)
 
@@ -133,7 +133,7 @@ Page dédiée pour **identifier et suivre les réalisations** :
 | **Identification des réalisations** | Voir qui a déclaré quoi, avec le nom du client et la note pour contrôle/audit |
 | **Totaux par collaborateur** | Nombre de boosts et rémunération par personne |
 | **Classement** | Leaderboard par type de boost (aligné sur la vue collaborateur) |
-| **Export** | Export CSV/Excel pour paie ou reporting (optionnel, point d’extension) |
+| **Export** | Export CSV/Excel pour paie ou reporting (optionnel, point d'extension) |
 
 ### Admin Sidebar
 
@@ -162,7 +162,7 @@ Page dédiée pour **identifier et suivre les réalisations** :
 - Grille de rémunération par type (configurable)
 - Filtres sur le classement (par période, par agence, etc.)
 - Export CSV/Excel pour paie ou reporting
-- Validation des boosts par l’admin (workflow optionnel)
+- Validation des boosts par l'admin (workflow optionnel)
 
 ---
 
