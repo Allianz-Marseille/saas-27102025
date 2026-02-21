@@ -80,7 +80,8 @@ export default function SocieteEntreprisePage() {
   const { user } = useAuth();
   const [sirenInput, setSirenInput] = useState("");
   const [nomInput, setNomInput] = useState("");
-  const [searchType, setSearchType] = useState<"siren" | "nom">("siren");
+  const [tvaInput, setTvaInput] = useState("");
+  const [searchType, setSearchType] = useState<"siren" | "nom" | "tva">("siren");
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<ApiResponse["data"] | null>(null);
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
@@ -100,6 +101,12 @@ export default function SocieteEntreprisePage() {
     }
   };
 
+  // Validation TVA intracommunautaire (FR + 9 chiffres)
+  const validateTva = (input: string): boolean => {
+    const cleaned = input.trim().toUpperCase().replace(/\s+/g, "");
+    return /^FR\d{9}$/.test(cleaned) || (cleaned.startsWith("FR") && /^\d{9}$/.test(cleaned.replace(/^FR/i, "")));
+  };
+
   const handleSearch = async () => {
     setError(null);
     setResults(null);
@@ -117,6 +124,12 @@ export default function SocieteEntreprisePage() {
         setError("Veuillez saisir un SIREN (9 chiffres) ou un SIRET (14 chiffres) valide");
         return;
       }
+    } else if (searchType === "tva") {
+      const tva = tvaInput.trim().toUpperCase().replace(/\s+/g, "");
+      if (!tva || !validateTva(tvaInput)) {
+        setError("Veuillez saisir un numéro de TVA valide (FR + 9 chiffres, ex. FR56428723266)");
+        return;
+      }
     } else {
       if (!nomInput.trim()) {
         setError("Veuillez saisir un nom d'entreprise");
@@ -129,9 +142,15 @@ export default function SocieteEntreprisePage() {
     try {
       const token = await user.getIdToken();
 
-      const requestBody = searchType === "siren" 
-        ? { siren: validateAndExtractSiren(sirenInput) }
-        : { nom: nomInput.trim() };
+      let requestBody: { siren?: string; nom?: string; tva?: string };
+      if (searchType === "siren") {
+        requestBody = { siren: validateAndExtractSiren(sirenInput) ?? undefined };
+      } else if (searchType === "tva") {
+        const tva = tvaInput.trim().toUpperCase().replace(/\s+/g, "");
+        requestBody = { tva: tva.startsWith("FR") ? tva : `FR${tva}` };
+      } else {
+        requestBody = { nom: nomInput.trim() };
+      }
 
       const response = await fetch("/api/societe/entreprise", {
         method: "POST",
@@ -168,11 +187,9 @@ export default function SocieteEntreprisePage() {
       if (searchType === "nom" && data.searchResults) {
         setSearchResults(data.searchResults);
         toast.success(`${data.searchResults.length} entreprise(s) trouvée(s)`);
-      } 
-      // Sinon, on a directement les données complètes
-      else if (data.data) {
+      } else if (data.data) {
         setResults(data.data);
-        toast.success("Recherche effectuée avec succès");
+        toast.success("Informations récupérées avec succès");
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Une erreur est survenue";
@@ -359,6 +376,7 @@ export default function SocieteEntreprisePage() {
                   onClick={() => {
                     setSearchType("siren");
                     setNomInput("");
+                    setTvaInput("");
                   }}
                   className="flex-1"
                 >
@@ -370,10 +388,23 @@ export default function SocieteEntreprisePage() {
                   onClick={() => {
                     setSearchType("nom");
                     setSirenInput("");
+                    setTvaInput("");
                   }}
                   className="flex-1"
                 >
                   Par nom
+                </Button>
+                <Button
+                  type="button"
+                  variant={searchType === "tva" ? "default" : "outline"}
+                  onClick={() => {
+                    setSearchType("tva");
+                    setSirenInput("");
+                    setNomInput("");
+                  }}
+                  className="flex-1"
+                >
+                  Par TVA
                 </Button>
               </div>
 
@@ -386,6 +417,16 @@ export default function SocieteEntreprisePage() {
                       placeholder="Ex: 123456789 ou 12345678901234"
                       value={sirenInput}
                       onChange={(e) => setSirenInput(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      disabled={isLoading}
+                      className="w-full"
+                    />
+                  ) : searchType === "tva" ? (
+                    <Input
+                      type="text"
+                      placeholder="Ex: FR56428723266"
+                      value={tvaInput}
+                      onChange={(e) => setTvaInput(e.target.value.toUpperCase())}
                       onKeyPress={handleKeyPress}
                       disabled={isLoading}
                       className="w-full"
@@ -407,7 +448,8 @@ export default function SocieteEntreprisePage() {
                   disabled={
                     isLoading ||
                     (searchType === "siren" && !sirenInput.trim()) ||
-                    (searchType === "nom" && !nomInput.trim())
+                    (searchType === "nom" && !nomInput.trim()) ||
+                    (searchType === "tva" && !tvaInput.trim())
                   }
                   className="w-full sm:w-auto"
                 >
@@ -718,7 +760,7 @@ export default function SocieteEntreprisePage() {
                       IDCC et libellé applicables à l&apos;entreprise (source Societe.com)
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {results.infosLegales.idcc && (
                         <div>
@@ -733,6 +775,18 @@ export default function SocieteEntreprisePage() {
                         </p>
                       </div>
                     </div>
+                    {results.infosLegales.idcc && (
+                      <p className="text-sm text-muted-foreground pt-2 border-t">
+                        <a
+                          href={`https://code.travail.gouv.fr/outils/convention-collective#idcc-${results.infosLegales.idcc}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          Voir le texte de la convention sur le Code du travail numérique →
+                        </a>
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               )}
@@ -794,39 +848,49 @@ export default function SocieteEntreprisePage() {
                       <TrendingUp className="h-5 w-5" />
                       Scoring
                     </CardTitle>
+                    <CardDescription>
+                      Indicateurs de risque et performance (Societe.com). Plus le score financier est élevé, plus la situation est favorable.
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {results.scoring.financier && (
-                        <div>
+                        <div className="p-4 rounded-lg border bg-muted/30">
                           <p className="text-sm font-medium text-muted-foreground mb-1">
                             Score financier
                           </p>
-                          <p className="text-2xl font-bold text-primary">
-                            {results.scoring.financier.score?.financier?.toFixed(2) || "Non disponible"}
-                          </p>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-bold text-primary">
+                              {results.scoring.financier.score?.financier != null
+                                ? Number(results.scoring.financier.score.financier).toFixed(2)
+                                : "Non disponible"}
+                            </span>
+                            {results.scoring.financier.score?.financier != null && (
+                              <span className="text-xs text-muted-foreground">/ 20</span>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             Période {results.scoring.financier.periode || ""}
                           </p>
                         </div>
                       )}
                       {results.scoring["extra-financier"] && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground mb-1">
+                        <div className="p-4 rounded-lg border bg-muted/30">
+                          <p className="text-sm font-medium text-muted-foreground mb-2">
                             Score extra-financier
                           </p>
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm">Général:</span>
-                              <span className="font-semibold">{results.scoring["extra-financier"].score?.general || "N/A"}</span>
+                              <span className="text-sm">Général</span>
+                              <span className="font-semibold">{results.scoring["extra-financier"].score?.general ?? "N/A"}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-sm">Social:</span>
-                              <span className="font-semibold">{results.scoring["extra-financier"].score?.social || "N/A"}</span>
+                              <span className="text-sm">Social</span>
+                              <span className="font-semibold">{results.scoring["extra-financier"].score?.social ?? "N/A"}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-sm">Fiscal:</span>
-                              <span className="font-semibold">{results.scoring["extra-financier"].score?.fiscal || "N/A"}</span>
+                              <span className="text-sm">Fiscal</span>
+                              <span className="font-semibold">{results.scoring["extra-financier"].score?.fiscal ?? "N/A"}</span>
                             </div>
                           </div>
                           <p className="text-xs text-muted-foreground mt-2">
@@ -835,6 +899,16 @@ export default function SocieteEntreprisePage() {
                         </div>
                       )}
                     </div>
+                    <p className="text-xs text-muted-foreground border-t pt-2">
+                      <a
+                        href="https://www.societe.com/solutions/api"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        En savoir plus sur les scores Societe.com →
+                      </a>
+                    </p>
                   </CardContent>
                 </Card>
               )}
@@ -1120,8 +1194,11 @@ export default function SocieteEntreprisePage() {
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
 
-              {/* Etablissements */}
+            {/* Onglet Autres */}
+            <TabsContent value="autres" className="space-y-6">
+              {/* Établissements */}
               {results.etablissements?.etablissements && results.etablissements.etablissements.length > 0 && (
                 <Card className="bg-card text-card-foreground rounded-xl border shadow-sm">
                   <CardHeader>
@@ -1172,10 +1249,7 @@ export default function SocieteEntreprisePage() {
                   </CardContent>
                 </Card>
               )}
-            </TabsContent>
 
-            {/* Onglet Autres */}
-            <TabsContent value="autres" className="space-y-6">
               {/* Procédures collectives */}
               {results.procedures?.procedures && results.procedures.procedures.length > 0 && (
                 <Card className="bg-card text-card-foreground rounded-xl border shadow-sm">
@@ -1232,6 +1306,51 @@ export default function SocieteEntreprisePage() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Documents officiels */}
+              {(() => {
+                const docList = Array.isArray(results?.documents)
+                  ? results.documents
+                  : results?.documents?.doc_officiel ?? results?.documents?.documents ?? [];
+                const hasDocs = docList.length > 0;
+                return hasDocs ? (
+                  <Card className="bg-card text-card-foreground rounded-xl border shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-xl">
+                        <FileText className="h-5 w-5" />
+                        Documents officiels ({docList.length})
+                      </CardTitle>
+                      <CardDescription>
+                        Kbis, statuts et autres documents (source Societe.com)
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {docList.map((doc: any, index: number) => (
+                          <div key={index} className="p-3 rounded-lg border bg-muted/30 flex items-center justify-between gap-4 flex-wrap">
+                            <div>
+                              <p className="font-medium">{doc.libelle || doc.type || doc.nom || "Document officiel"}</p>
+                              {doc.date && (
+                                <p className="text-xs text-muted-foreground mt-1">{doc.date}</p>
+                              )}
+                            </div>
+                            {(doc.url || doc.lien || doc.lien_telechargement) && (
+                              <a
+                                href={doc.url || doc.lien || doc.lien_telechargement}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-primary hover:underline shrink-0"
+                              >
+                                Télécharger
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : null;
+              })()}
 
               {/* Marques */}
               {results.marques?.marques && results.marques.marques.length > 0 && (

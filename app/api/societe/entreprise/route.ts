@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les paramètres depuis le body
     const body = await request.json();
-    const { siren, nom, selectedSiren } = body;
+    const { siren, nom, selectedSiren, tva } = body;
 
     // Vérifier la clé API Societe.com
     const apiKey = process.env.SOCIETE_API_KEY;
@@ -57,6 +57,21 @@ export async function POST(request: NextRequest) {
       }
       
       numId = extractedSiren;
+    }
+    // Si recherche par numéro de TVA intracommunautaire (ex. FR56428723266)
+    else if (tva && typeof tva === "string" && tva.trim()) {
+      const tvaClean = tva.trim().toUpperCase().replace(/\s+/g, "");
+      const match = /^FR(\d{9})$/.exec(tvaClean);
+      if (match) {
+        numId = `FR${match[1]}`;
+      } else if (/^FR[A-Z0-9]{9,}$/i.test(tvaClean)) {
+        numId = tvaClean;
+      } else {
+        return NextResponse.json(
+          { error: "Numéro de TVA invalide. Format attendu : FR + 9 chiffres (ex. FR56428723266)." },
+          { status: 400 }
+        );
+      }
     }
     // Si recherche par nom, retourner tous les résultats pour que l'utilisateur choisisse
     else if (nom && !siren) {
@@ -144,7 +159,7 @@ export async function POST(request: NextRequest) {
     // Validation : au moins un paramètre requis
     else {
       return NextResponse.json(
-        { error: "SIREN/SIRET ou nom d'entreprise requis" },
+        { error: "SIREN/SIRET, nom d'entreprise ou numéro de TVA requis" },
         { status: 400 }
       );
     }

@@ -67,6 +67,20 @@ export default function OutilsPage() {
         { icon: TrendingUp, text: "Établissements, filiales et participations" },
       ],
     },
+    {
+      id: "societe-entreprise",
+      title: "Informations entreprise (Societe.com)",
+      description: "Fiche entreprise, convention collective (CCN), scoring, contact, marques et documents via l'API Societe.com.",
+      icon: Building2,
+      href: "/commun/outils/societe-entreprise",
+      badge: "API Societe.com",
+      features: [
+        { icon: FileText, text: "Convention collective (IDCC) et lien Code du travail" },
+        { icon: TrendingUp, text: "Scoring financier et extra-financier" },
+        { icon: Building2, text: "Contact, marques, établissements, documents officiels" },
+        { icon: Users, text: "Recherche par SIREN, nom ou numéro de TVA" },
+      ],
+    },
   ];
 
   return (
