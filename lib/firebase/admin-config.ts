@@ -1,169 +1,226 @@
 /**
  * Configuration Firebase Admin SDK pour les opérations côté serveur
- * 
- * Ce module initialise Firebase Admin SDK pour une utilisation dans :
- * - Server Actions
- * - API Routes
- * - Scripts Node.js
- * 
+ *
+ * Ce module utilise une initialisation LAZY : aucune initialisation au chargement.
+ * getFirestore() / getAdminDb() / getAdminAuth() initialisent à la première utilisation.
+ *
  * NE PAS UTILISER côté client ! Pour le client, utilisez lib/firebase/config.ts
- * 
+ *
  * Usage:
  * ```typescript
- * import { adminAuth, adminDb } from '@/lib/firebase/admin-config';
- * 
- * // Dans une Server Action ou API Route
+ * import { adminDb, adminAuth } from '@/lib/firebase/admin-config';
  * const users = await adminAuth.listUsers();
  * const doc = await adminDb.collection('users').doc(userId).get();
  * ```
  */
 
 import admin from "firebase-admin";
+import { Timestamp as FirestoreTimestamp } from "firebase-admin/firestore";
 
 /**
- * Initialise Firebase Admin SDK de manière paresseuse
- * Utilise les variables d'environnement (Vercel) ou le fichier local (dev)
+ * Nettoie et valide la clé privée Firebase pour éviter l'erreur DECODER routines::unsupported.
+ * Gère : \n textuels → vrais sauts de ligne, guillemets superflus, format PEM.
  */
-function initializeFirebaseAdmin() {
+export function getSafePrivateKey(key: string): string {
+  if (!key || typeof key !== "string") return key;
+  let k = key
+    .replace(/\\n/g, "\n")
+    .replace(/"/g, "")
+    .trim();
+  if (!k.startsWith("-----BEGIN PRIVATE KEY-----")) {
+    console.warn(
+      "FIREBASE_PRIVATE_KEY: format suspect (pas de -----BEGIN PRIVATE KEY-----)"
+    );
+  }
+  return k;
+}
+
+let appInstance: admin.app.App | null = null;
+let initError: Error | null = null;
+
+/**
+ * Initialise Firebase Admin de manière paresseuse.
+ * Ne lance AUCUNE initialisation au chargement du module.
+ */
+function initializeFirebaseAdmin(): admin.app.App | null {
   if (admin.apps.length > 0) {
-    return admin.apps[0];
+    return admin.apps[0] as admin.app.App;
+  }
+  if (initError) {
+    throw initError;
   }
 
-  let serviceAccount: admin.ServiceAccount;
+  try {
+    let serviceAccount: admin.ServiceAccount;
 
-  // Option 1 : Base64 — évite les erreurs DECODER sur la clé privée
-  const base64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
-  if (base64) {
-    try {
+    const base64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+    if (base64) {
       const json = Buffer.from(base64, "base64").toString("utf8");
-      serviceAccount = JSON.parse(json) as admin.ServiceAccount;
-    } catch (error) {
-      console.error("FIREBASE_SERVICE_ACCOUNT_BASE64 invalid:", error);
-      throw new Error("FIREBASE_SERVICE_ACCOUNT_BASE64 is invalid.");
-    }
-  } else if (
-    process.env.FIREBASE_PROJECT_ID &&
-    process.env.FIREBASE_PRIVATE_KEY &&
-    process.env.FIREBASE_CLIENT_EMAIL
-  ) {
-    // Option 2 : Variables d'environnement (Vercel)
-    serviceAccount = {
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    };
-  } else {
-    // Option 3 : Fichier JSON local (dev)
-    try {
+      const parsed = JSON.parse(json) as admin.ServiceAccount & {
+        private_key?: string;
+      };
+      if (parsed.private_key) {
+        parsed.private_key = getSafePrivateKey(parsed.private_key);
+      }
+      serviceAccount = parsed;
+    } else if (
+      process.env.FIREBASE_PROJECT_ID &&
+      process.env.FIREBASE_PRIVATE_KEY &&
+      process.env.FIREBASE_CLIENT_EMAIL
+    ) {
+      serviceAccount = {
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        privateKey: getSafePrivateKey(process.env.FIREBASE_PRIVATE_KEY),
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      };
+    } else {
       const fs = require("fs");
       const path = require("path");
-
       const jsonPath = path.join(
         process.cwd(),
         "saas-27102025-firebase-adminsdk-fbsvc-e5024f4d7c.json"
       );
       const jsonData = fs.readFileSync(jsonPath, "utf8");
-      serviceAccount = JSON.parse(jsonData);
-    } catch (error) {
-      console.error("Firebase Admin credentials missing:", error);
-      throw new Error(
-        "Firebase Admin credentials are missing. Check environment variables or local JSON file."
-      );
+      const parsed = JSON.parse(jsonData) as admin.ServiceAccount & {
+        private_key?: string;
+      };
+      if (parsed.private_key) {
+        parsed.private_key = getSafePrivateKey(parsed.private_key);
+      }
+      serviceAccount = parsed;
     }
-  }
 
-  return admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
+    appInstance = admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+    return appInstance;
+  } catch (e) {
+    initError = e instanceof Error ? e : new Error(String(e));
+    console.error("Firebase Admin init fail:", initError);
+    throw initError;
+  }
 }
 
-// Initialiser l'app
-initializeFirebaseAdmin();
+/**
+ * Retourne Firestore. Initialise si nécessaire (lazy).
+ * Lance une erreur si l'initialisation échoue.
+ */
+export function getFirestore(): admin.firestore.Firestore {
+  const app = appInstance ?? initializeFirebaseAdmin();
+  if (!app) throw new Error("Firebase Admin non initialisé");
+  return app.firestore();
+}
 
 /**
- * Instance Firebase Auth côté serveur
- * Utilisez ceci pour gérer les utilisateurs depuis le serveur
+ * Retourne Firestore ou null si initialisation impossible.
+ * Utile pour les routes qui peuvent continuer sans persistance.
  */
-export const adminAuth = admin.auth();
+export function getAdminDbOrNull(): admin.firestore.Firestore | null {
+  try {
+    return getFirestore();
+  } catch {
+    return null;
+  }
+}
 
 /**
- * Instance Firestore côté serveur
- * Utilisez ceci pour accéder à Firestore depuis le serveur
+ * Retourne Auth. Initialise si nécessaire (lazy).
  */
-export const adminDb = admin.firestore();
+export function getAdminAuth(): admin.auth.Auth {
+  const app = appInstance ?? initializeFirebaseAdmin();
+  if (!app) throw new Error("Firebase Admin non initialisé");
+  return app.auth();
+}
+
+/** Proxy pour rétrocompatibilité — adminDb (lazy) */
+function getAdminDbOrThrow(): admin.firestore.Firestore {
+  return getFirestore();
+}
+
+export const adminDb = new Proxy({} as admin.firestore.Firestore, {
+  get(_, prop: string) {
+    const db = getAdminDbOrThrow();
+    const val = (db as unknown as Record<string, unknown>)[prop];
+    return typeof val === "function" ? (val as (...args: unknown[]) => unknown).bind(db) : val;
+  },
+});
+
+/** Proxy pour rétrocompatibilité — adminAuth (lazy) */
+export const adminAuth = new Proxy({} as admin.auth.Auth, {
+  get(_, prop: string) {
+    const auth = getAdminAuth();
+    const val = (auth as unknown as Record<string, unknown>)[prop];
+    return typeof val === "function" ? (val as (...args: unknown[]) => unknown).bind(auth) : val;
+  },
+});
+
+/** Timestamp Firestore — utilisable sans init */
+export const Timestamp = FirestoreTimestamp;
 
 /**
- * Instance FieldValue pour les opérations Firestore
+ * Instance Storage côté serveur (lazy)
  */
+export function getAdminStorage(): admin.storage.Storage {
+  const app = appInstance ?? initializeFirebaseAdmin();
+  if (!app) throw new Error("Firebase Admin non initialisé");
+  return app.storage();
+}
+
+/** Proxy pour rétrocompatibilité — adminStorage */
+export const adminStorage = new Proxy({} as admin.storage.Storage, {
+  get(_, prop: string) {
+    const storage = getAdminStorage();
+    const val = (storage as unknown as Record<string, unknown>)[prop];
+    return typeof val === "function" ? (val as (...args: unknown[]) => unknown).bind(storage) : val;
+  },
+});
+
 export const FieldValue = admin.firestore.FieldValue;
 
-/**
- * Instance Timestamp pour les opérations Firestore
- */
-export const Timestamp = admin.firestore.Timestamp;
-
-/**
- * Instance Firebase Storage côté serveur
- * Utilisez ceci pour gérer les fichiers depuis le serveur
- */
-export const adminStorage = admin.storage();
-
-/**
- * Obtient le bucket Storage configuré
- * Utilise les variables d'environnement ou le bucket par défaut du projet
- * Priorité au nouveau format Firebase Storage (.firebasestorage.app)
- */
 export function getStorageBucket() {
-  const bucketName = 
-    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 
+  const bucketName =
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
     process.env.FIREBASE_STORAGE_BUCKET ||
     `${process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.firebasestorage.app`;
-  
-  return adminStorage.bucket(bucketName);
+  return getAdminStorage().bucket(bucketName);
 }
 
-/**
- * Vérifie que le bucket Storage est accessible
- * Utile pour le diagnostic
- */
-export async function testStorageBucketAccess(): Promise<{ success: boolean; bucketName: string; error?: string }> {
+export async function testStorageBucketAccess(): Promise<{
+  success: boolean;
+  bucketName: string;
+  error?: string;
+}> {
   try {
     const bucket = getStorageBucket();
     const bucketName = bucket.name;
-    
-    // Vérifier si le bucket existe
     const [exists] = await bucket.exists();
-    
     if (!exists) {
       return {
         success: false,
         bucketName,
-        error: "Le bucket n'existe pas. Vérifiez qu'il est créé dans Firebase Console.",
+        error:
+          "Le bucket n'existe pas. Vérifiez qu'il est créé dans Firebase Console.",
       };
     }
-    
-    // Tester les permissions en listant les fichiers
     try {
       await bucket.getFiles({ maxResults: 1 });
-      return {
-        success: true,
-        bucketName,
-      };
-    } catch (error: any) {
+      return { success: true, bucketName };
+    } catch (error: unknown) {
+      const err = error as { code?: string; message?: string };
       return {
         success: false,
         bucketName,
-        error: `Permissions insuffisantes (${error.code || error.message}). Vérifiez que le service account a le rôle 'Storage Admin'.`,
+        error: `Permissions insuffisantes (${err.code ?? err.message}).`,
       };
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     return {
       success: false,
       bucketName: "unknown",
-      error: error.message || "Erreur inconnue lors de l'accès au bucket",
+      error: err.message ?? "Erreur inconnue lors de l'accès au bucket",
     };
   }
 }
 
 export { admin };
-

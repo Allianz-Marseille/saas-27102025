@@ -1,13 +1,14 @@
 /**
  * API Route Chat IA — Architecture « Bots Outils »
  *
- * Passerelle sécurisée : reçoit botId + message, appelle l'agent Mistral correspondant en un seul appel.
- * Streaming maintenu. Historique Firestore : conversations/{sessionId}/messages.
+ * Passerelle sécurisée : reçoit botId + message, appelle l'agent Mistral correspondant.
+ * Streaming maintenu. Historique Firestore (optionnel) : conversations/{sessionId}/messages.
+ * Si Firebase échoue, l'appel Mistral s'exécute quand même.
  */
 
 import { NextRequest } from "next/server";
 import { verifyAuth } from "@/lib/utils/auth-utils";
-import { adminDb, Timestamp } from "@/lib/firebase/admin-config";
+import { getAdminDbOrNull, Timestamp } from "@/lib/firebase/admin-config";
 import { getBotConfig } from "@/lib/config/agents";
 import type { BotSessionMetadata } from "@/types/bot";
 
@@ -32,8 +33,8 @@ function buildMetadataContext(metadata?: BotSessionMetadata | null): string {
 }
 
 /**
- * Sauvegarde un message dans Firestore.
- * sessionId = client_id si présent, sinon un id de session standalone (ex: uid_collaborateur + botId).
+ * Sauvegarde un message dans Firestore si disponible.
+ * Ne bloque pas si Firebase est indisponible.
  */
 async function saveMessageToFirestore(
   sessionId: string,
@@ -42,7 +43,12 @@ async function saveMessageToFirestore(
   extra?: { botId?: string }
 ): Promise<void> {
   try {
-    const ref = adminDb
+    const db = getAdminDbOrNull();
+    if (!db) {
+      console.warn("Firestore non disponible, message non persisté");
+      return;
+    }
+    const ref = db
       .collection("conversations")
       .doc(sessionId)
       .collection("messages");
@@ -53,13 +59,12 @@ async function saveMessageToFirestore(
       createdAt: Timestamp.now(),
     });
   } catch (error) {
-    console.error("Erreur sauvegarde Firestore conversations:", error);
+    console.error("Firebase fail — message non persisté:", error);
   }
 }
 
 /**
  * OPTIONS /api/chat — preflight CORS (requis quand en-tête Authorization).
- * Sans Access-Control-Allow-Origin, le navigateur peut rejeter la preflight.
  */
 export function OPTIONS(request: NextRequest) {
   const origin =
@@ -78,7 +83,6 @@ export function OPTIONS(request: NextRequest) {
 
 /**
  * GET /api/chat — non supporté.
- * Cache-Control no-store évite qu'un CDN renvoie ce 405 pour des POST.
  */
 export function GET() {
   return new Response(
@@ -99,6 +103,8 @@ export function GET() {
  * Body: { message: string, botId: string, history?: Array<{role, content}>, metadata?: BotSessionMetadata }
  */
 export async function POST(request: NextRequest) {
+  console.log("Démarrage de la route /api/chat");
+
   try {
     const auth = await verifyAuth(request);
     if (!auth.valid || !auth.userId) {
