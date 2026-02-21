@@ -58,6 +58,7 @@ const menuItems: SidebarItem[] = [
     icon: Wrench,
     label: "Outils",
     href: "/commun/outils",
+    badge: "new",
   },
   {
     icon: User,
@@ -92,6 +93,7 @@ const gestionnaireSinistreMenuItems: SidebarItem[] = [
     icon: Wrench,
     label: "Outils",
     href: "/commun/outils",
+    badge: "new",
   },
 ];
 
@@ -234,7 +236,9 @@ export function CommercialSidebar() {
                       "ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold",
                       item.badge === "en formation"
                         ? "bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse"
-                        : "text-xs bg-red-500 text-white"
+                        : item.badge === "new"
+                          ? "bg-emerald-500 text-white shadow-md animate-pulse"
+                          : "text-xs bg-red-500 text-white"
                     )}
                   >
                     {item.badge}

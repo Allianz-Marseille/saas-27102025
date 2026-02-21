@@ -70,12 +70,12 @@ export default function OutilsPage() {
     {
       id: "societe-entreprise",
       title: "Informations entreprise (Societe.com)",
-      description: "Fiche entreprise, convention collective (CCN), scoring, contact, marques et documents via l'API Societe.com.",
+      description: "En plus de la fiche entreprise : conventions collectives (CCN), scoring, contact, marques. Idéal pour identifier l’IDCC et consulter le Code du travail.",
       icon: Building2,
       href: "/commun/outils/societe-entreprise",
       badge: "API Societe.com",
       features: [
-        { icon: FileText, text: "Convention collective (IDCC) et lien Code du travail" },
+        { icon: FileText, text: "Conventions collectives (CCN) : IDCC + lien direct Code du travail numérique" },
         { icon: TrendingUp, text: "Scoring financier et extra-financier" },
         { icon: Building2, text: "Contact, marques, établissements, documents officiels" },
         { icon: Users, text: "Recherche par SIREN, nom ou numéro de TVA" },

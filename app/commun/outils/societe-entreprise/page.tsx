@@ -827,11 +827,19 @@ export default function SocieteEntreprisePage() {
                           </a>
                         </div>
                       )}
-                      {results.contact.voieadr && (
+                      {(results.contact.voieadr || results.contact.codepostal || results.contact.ville) && (
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
                           <span className="text-base">
-                            {results.contact.voieadr}, {results.contact.codepostal} {results.contact.ville}
+                            {(() => {
+                              const voie = results.contact.voieadr?.trim() || "";
+                              const isPlaceholder = /^Address\s*#|_[a-z0-9]+_/i.test(voie);
+                              const cp = results.contact.codepostal || "";
+                              const ville = results.contact.ville || "";
+                              const villePart = [cp, ville].filter(Boolean).join(" ");
+                              if (isPlaceholder || !voie) return villePart || "—";
+                              return villePart ? `${voie}, ${villePart}` : voie;
+                            })()}
                           </span>
                         </div>
                       )}

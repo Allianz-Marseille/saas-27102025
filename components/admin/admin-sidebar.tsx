@@ -56,6 +56,7 @@ const adminNavItems = [
     href: "/commun/outils",
     label: "Outils",
     icon: Wrench,
+    badge: "new",
   },
   {
     href: "/commun/agents-ia",
@@ -203,6 +204,11 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
                     {!isCollapsed && (item as { badge?: string }).badge === "en formation" && (
                       <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse">
                         en formation
+                      </span>
+                    )}
+                    {!isCollapsed && (item as { badge?: string }).badge === "new" && (
+                      <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow-md animate-pulse">
+                        new
                       </span>
                     )}
                   </Button>
