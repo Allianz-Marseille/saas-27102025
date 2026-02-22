@@ -13,7 +13,7 @@ import { getBotRegistryEntry } from "@/lib/ai/bot-loader";
 import { GoogleGenAI } from "@google/genai";
 import type { BotSessionMetadata } from "@/types/bot";
 
-const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 /**
  * Construit le contexte metadata optionnel pour l'agent (si dossier client ouvert).

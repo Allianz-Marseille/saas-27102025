@@ -4,6 +4,12 @@ Référence : [README.md](README.md) (stack technique) et `docs/assets-gemini/` 
 
 ---
 
+## ⚠️ Règle : Collaborateur vs Client
+
+**L'utilisateur des bots est toujours un collaborateur de l'agence.** Les questions de collecte concernent le **client** (prénom/nom du client, date de naissance du client, etc.), jamais l'interlocuteur. Les workflows (`00-workflow-*.md`) doivent formuler les questions explicitement sur le client.
+
+---
+
 ## 📋 État du code — Bob (TNS)
 
 ### Ce qui existe déjà
@@ -139,6 +145,9 @@ Le registre (`docs/assets-gemini/registry-bots.md`) prévoit 5 bots. **Bob**, **
 
 ### UI / Expérience utilisateur
 
+- [x] Bouton « Nouvelle conversation » dans le header du chat (composant partagé `BotChat` — s'applique à tous les bots)
+- [x] Boutons Copier chat / Préparer mail / Préparer note de synthèse (prénom chargé dérivé de l'email, nom client extrait des messages)
+- [x] Boutons d'accroche Bob niveau 1/2 : Bonjour, Question SSI, Régime obligatoire, Loi Madelin ; après Bonjour, 3 boutons colorés (Lagon, Liasse, Questions)
 - [ ] Vérifier que le composant chat envoie bien les `attachments` (images) vers l’API
 - [ ] Tester le flux complet : upload image Lagon → Vision → réponse Bob
 - [ ] Rendu Markdown : tableaux, montants en gras, sources citées (déjà prévus dans le workflow Bob)
@@ -152,6 +161,7 @@ Le registre (`docs/assets-gemini/registry-bots.md`) prévoit 5 bots. **Bob**, **
 
 ## 🔲 Bob — Affinements possibles
 
+- [x] Logique 3 couches TNS : SSI (1ère couche) → RO (2ème couche) → Gap = Besoin − (SSI + RO). Tableau diagnostic expose SSI et RO séparément.
 - [ ] Table des matières : confirmer que le bot consulte bien `00-table-des-matieres.md` pour cibler le régime adapté
 - [ ] Mise à jour annuelle : prévoir la rotation des fichiers 2026 → 2027 (plafonds, régimes)
 

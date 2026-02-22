@@ -6,6 +6,21 @@ Ce document décrit l’**organisation technique commune** à tous les bots (act
 
 ---
 
+## Règle fondamentale : Utilisateur = Collaborateur de l'agence
+
+**L'utilisateur des bots est toujours un collaborateur de l'agence**, jamais le client final.
+
+| Acteur | Rôle |
+|--------|------|
+| **Utilisateur du bot** | Collaborateur de l'agence (conseiller, courtier, etc.) — interlocuteur direct dans le chat |
+| **Client** | Personne ou entreprise dont on collecte les données et pour qui on réalise l'analyse |
+
+- Les bots **ne doivent jamais** demander à l'utilisateur son prénom, nom ou date de naissance.
+- Toutes les questions de collecte portent sur le **client** : « Quel est le prénom et nom du client ? », « Quelle est la date de naissance du client ? », etc.
+- Les workflows et prompts doivent formuler explicitement « du client » pour éviter toute ambiguïté.
+
+---
+
 ## Architecture multi-agents (implémentée)
 
 Le système utilise un **registre** et un **Context Loader** pour charger dynamiquement le contexte de chaque agent.
@@ -50,7 +65,8 @@ Le système utilise un **registre** et un **Context Loader** pour charger dynami
 
 ### 2. Moteur de calcul métier
 
-- **Analyse de gap :** calcul du « manque à gagner » en croisant plafonds sociaux et prestations des régimes / caisses concernés.
+- **Logique TNS (3 couches obligatoires) :** 1) **SSI** (droits de base), 2) **RO** (Régime Obligatoire métier). Manque à gagner = Besoin − (SSI + RO). Ne jamais sauter l'étape SSI.
+- **Analyse de gap :** exposer clairement SSI, RO, puis gap.
 - **Timeline :** modélisation des périodes d’indemnisation et des ruptures de couverture (ex. relais au 91ᵉ jour lorsque cela s’applique au domaine du bot).
 
 ### 3. Simulation fiscale (quand applicable)
@@ -76,6 +92,8 @@ Les bots **doivent pouvoir proposer des liens vers les devis Allianz** dès que 
 ## Interface et expérience utilisateur
 
 - **Chat :** interface conversationnelle avec rendu **Markdown** enrichi et composants **React** pour tableaux, scénarios fiscaux et boutons d’action.
+- **Actions dans le header du chat :** **Copier le chat** (intégralité de l'échange dans le presse-papier), **Préparer un mail** (objet, formule d'appel, corps, signature), **Préparer une note de synthèse** (titre, date, client, chargé, corps). Le **prénom du chargé de clientèle** est dérivé de l'email de connexion ; le **nom du client** est extrait des messages de l'assistant (identité collectée pendant l'échange).
+- **Boutons d'accroche à deux niveaux (optionnel) :** niveau 1 (ex. Bonjour, Question SSI, Régime obligatoire, Loi Madelin) ; après « Bonjour », boutons niveau 2 colorés (Lagon, Liasse, Questions). Config : `quickRepliesLevel1`, `quickRepliesLevel2`, `bonjourTriggerMessage` sur `BotChat`.
 - **Streaming :** réponses diffusées en temps réel via le SDK Google et les API Routes Next.js.
 - **Authentification et données :** **Firebase** pour la session utilisateur et les données métier ; l’UI s’appuie sur le même socle Next.js pour tous les bots.
 
