@@ -162,9 +162,15 @@ export async function POST(request: NextRequest) {
     const history = Array.isArray(body.history)
       ? (body.history as Array<{ role: string; content: string }>)
       : [];
-    const attachments = Array.isArray(body.attachments)
-      ? (body.attachments as Array<{ data?: string; mimeType?: string; fileType?: string }>)
+    const rawAttachments = Array.isArray(body.attachments)
+      ? body.attachments
       : [];
+    const attachments = rawAttachments
+      .filter(
+        (a): a is { data?: string; mimeType: string; fileType?: string } =>
+          a && typeof a === "object" && typeof (a as { mimeType?: string }).mimeType === "string"
+      )
+      .map((a) => ({ data: a.data, mimeType: a.mimeType, fileType: a.fileType }));
     const metadata = body.metadata as BotSessionMetadata | undefined;
 
     if (!message.trim() || !botId) {
