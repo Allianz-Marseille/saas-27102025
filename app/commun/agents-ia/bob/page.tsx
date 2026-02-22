@@ -4,11 +4,48 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronRight } from "lucide-react";
-import { BotChat } from "@/components/chat/bot-chat";
+import { BotChat, type QuickReply } from "@/components/chat/bot-chat";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { getBotConfig } from "@/lib/config/agents";
 
 const BOB_AVATAR = "/agents-ia/bot-tns/bob_sourit.png";
+
+const BOB_QUICK_REPLIES_LEVEL1: QuickReply[] = [
+  { label: "Bonjour", message: "Bonjour" },
+  {
+    label: "J'ai une question sur la SSI",
+    message:
+      "J'ai une question sur la SSI. Demande-moi de quoi j'ai besoin : un résumé, une explication générale, ou un point précis ?",
+  },
+  {
+    label: "Sur un régime obligatoire",
+    message:
+      "Je veux savoir quel régime obligatoire s'applique. Demande-moi le métier du client, puis donne-moi le nom du RO et demande ce que je souhaite savoir (résumé, explication générale, point précis).",
+  },
+  {
+    label: "C'est quoi la loi Madelin",
+    message:
+      "C'est quoi la loi Madelin ? Explique-moi la déductibilité des cotisations prévoyance pour les TNS et l'impact sur l'effort net.",
+  },
+];
+
+const BOB_QUICK_REPLIES_LEVEL2: QuickReply[] = [
+  {
+    label: "Je veux faire une étude pour un TNS",
+    message:
+      "Je veux faire une étude pour un TNS. Lance tes questions pas à pas pour collecter les données.",
+  },
+  {
+    label: "Coller l'image Lagon (CRM)",
+    message:
+      "Je vais coller une capture de la fiche Lagon. Quand je l'envoie : repère tous les éléments exploitables pour ton workflow (8 points), demande-moi de valider ce que tu as compris, puis pose uniquement les questions dont tu n'as pas la réponse.",
+  },
+  {
+    label: "Téléverser liasse fiscale",
+    message:
+      "Je vais téléverser la liasse fiscale (PDF). Quand je l'envoie : repère tous les éléments exploitables, demande-moi de valider ce que tu as compris, puis pose uniquement les questions dont tu n'as pas la réponse.",
+  },
+];
 
 function BobPageContent() {
   const config = getBotConfig("bob");
@@ -76,12 +113,15 @@ function BobPageContent() {
           </div>
         </div>
 
-        {/* Chat — identité bleue (spec bot-agent-ia-standard §4) */}
+        {/* Chat — identité bleue, boutons d'accroche niveau 1 (Bonjour, SSI, RO, Madelin) et niveau 2 (Lagon, Liasse, Questions) */}
         <BotChat
           botId="bob"
           botName={config?.name ?? "Bob"}
           accentColor="blue"
           className="bg-slate-900/80 border-blue-500/30 shadow-xl shadow-blue-500/5"
+          quickRepliesLevel1={BOB_QUICK_REPLIES_LEVEL1}
+          quickRepliesLevel2={BOB_QUICK_REPLIES_LEVEL2}
+          bonjourTriggerMessage="Bonjour"
         />
       </div>
     </div>

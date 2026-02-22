@@ -13,10 +13,14 @@ import {
   Copy,
   Check,
   Paperclip,
-  Download,
   RefreshCw,
+  MessageSquarePlus,
+  Mail,
+  ClipboardList,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MermaidDiagram } from "@/components/chat/mermaid-diagram";
 
 export interface BotChatMessage {
   role: "user" | "assistant";
@@ -65,6 +69,12 @@ interface BotChatProps {
   accentColor?: AccentColor;
   /** Réponses rapides (boutons au-dessus de l'input). string = label et message identiques. Défaut : liste prévoyance. */
   quickReplies?: QuickReply[];
+  /** Boutons de niveau 1 (ex. Bonjour, Question SSI, Régime obligatoire, Loi Madelin). Si fourni avec quickRepliesLevel2 et bonjourTriggerMessage, active le mode deux niveaux. */
+  quickRepliesLevel1?: QuickReply[];
+  /** Boutons de niveau 2 affichés après la réponse à Bonjour (ex. Lagon, Liasse, Questions). Style coloré. */
+  quickRepliesLevel2?: QuickReply[];
+  /** Message envoyé quand on clique sur Bonjour (ex. "Bonjour"), pour afficher le niveau 2. */
+  bonjourTriggerMessage?: string;
   /** Force le thème sombre (contraste) quand le conteneur a un fond sombre. Par défaut : true si accentColor="blue". */
   darkContainer?: boolean;
 }
@@ -75,12 +85,37 @@ interface BotChatProps {
  */
 const SCROLL_THRESHOLD_PX = 80;
 
+/** Dérive le prénom du chargé de clientèle à partir de l'email (ex. jean.dupont@... → Jean). */
+function getPrenomChargeFromEmail(email: string | null | undefined): string {
+  if (!email || !email.includes("@")) return "Collaborateur";
+  const beforeAt = email.split("@")[0].trim();
+  const firstWord = beforeAt.replace(/[^a-zA-ZÀ-ÿ]+/g, " ").trim().split(/\s+/)[0] ?? "";
+  if (!firstWord) return "Collaborateur";
+  return firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase();
+}
+
+/** Extrait le nom du client des messages assistant (ex. "pour le client **Fred Fellous**" ou "client **X**"). */
+function getClientNameFromMessages(messages: BotChatMessage[]): string {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role !== "assistant") continue;
+    const content = messages[i].content;
+    const withBold = /(?:client|pour le client)[\s:]*\*\*([^*]+)\*\*/.exec(content);
+    if (withBold?.[1]) return withBold[1].trim();
+    const withoutBold = /(?:J'ai bien enregistré pour le client|client)[\s:]+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s-]+?)(?:\s*\.|$|\n)/.exec(content);
+    if (withoutBold?.[1]) return withoutBold[1].trim();
+  }
+  return "";
+}
+
 export function BotChat({
   botId,
   botName,
   className,
   accentColor = "default",
   quickReplies = DEFAULT_QUICK_REPLIES,
+  quickRepliesLevel1,
+  quickRepliesLevel2,
+  bonjourTriggerMessage,
   darkContainer: darkContainerProp,
 }: BotChatProps) {
   const { user } = useAuth();
@@ -90,6 +125,7 @@ export function BotChat({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [copiedAction, setCopiedAction] = useState<"chat" | "mail" | "note" | null>(null);
   const [sessionStart, setSessionStart] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -248,25 +284,94 @@ export function BotChat({
     sendMessage(lastUserContent, { historyOverride: truncated });
   }, [messages, sendMessage]);
 
-  const handleDownloadSynthèse = useCallback(() => {
+  const buildSynthèseText = useCallback(() => {
     const lines: string[] = [];
     messages.forEach((m) => {
       const role = m.role === "user" ? "Vous" : botName;
       lines.push(`${role}:\n${m.content}\n`);
     });
-    const text = lines.join("\n---\n\n");
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `synthèse-chat-${botName.replace(/\s/g, "-")}-${new Date().toISOString().slice(0, 10)}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    return lines.join("\n---\n\n");
   }, [messages, botName]);
+
+  const handleCopierChat = useCallback(async () => {
+    const text = buildSynthèseText();
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedAction("chat");
+      setTimeout(() => setCopiedAction(null), 2000);
+    } catch {
+      // Fallback si clipboard non disponible
+    }
+  }, [buildSynthèseText]);
+
+  const handlePreparerMail = useCallback(async () => {
+    const prenomCharge = getPrenomChargeFromEmail(user?.email ?? undefined);
+    const nomClient = getClientNameFromMessages(messages) || "[Nom client]";
+    const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+    const corps = lastAssistant?.content ?? "Aucun contenu.";
+    const lines = [
+      `Objet : Synthèse prévoyance – ${nomClient}`,
+      "",
+      "Bonjour,",
+      "",
+      `Suite à notre échange, je vous adresse ci-dessous la synthèse.`,
+      "",
+      corps,
+      "",
+      `Cordialement,`,
+      prenomCharge,
+    ];
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setCopiedAction("mail");
+      setTimeout(() => setCopiedAction(null), 2000);
+    } catch {
+      // Fallback si clipboard non disponible
+    }
+  }, [messages, user?.email]);
+
+  const handlePreparerNoteSynthèse = useCallback(async () => {
+    const prenomCharge = getPrenomChargeFromEmail(user?.email ?? undefined);
+    const nomClient = getClientNameFromMessages(messages) || "[Nom client]";
+    const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+    const corps = lastAssistant?.content ?? "Aucun contenu.";
+    const dateStr = new Date().toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const lines = [
+      `Note de synthèse – ${nomClient}`,
+      "",
+      `Date : ${dateStr}`,
+      `Client : ${nomClient}`,
+      `Chargé de clientèle : ${prenomCharge}`,
+      "",
+      corps,
+    ];
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setCopiedAction("note");
+      setTimeout(() => setCopiedAction(null), 2000);
+    } catch {
+      // Fallback si clipboard non disponible
+    }
+  }, [messages, user?.email]);
 
   const handleAttachClick = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
+
+  const handleNewConversation = useCallback(() => {
+    if (isLoading) return;
+    setMessages([]);
+    setStreamingContent("");
+    setInput("");
+    setError(null);
+    setSessionStart(null);
+    setCopiedIndex(null);
+    inputRef.current?.focus();
+  }, [isLoading]);
 
   const sessionLabel =
     sessionStart != null
@@ -305,6 +410,130 @@ export function BotChat({
           : "mr-auto bg-muted shadow-sm";
   const userBubbleClass =
     "ml-auto bg-primary text-primary-foreground shadow-sm";
+  const tableHeaderClass =
+    accentColor === "blue"
+      ? "bg-blue-900/60 text-slate-100"
+      : accentColor === "emerald"
+        ? "bg-emerald-900/60 text-slate-100"
+        : accentColor === "orange"
+          ? "bg-orange-900/60 text-slate-100"
+          : "bg-muted text-foreground";
+  const markdownTableComponents = hasDarkContainer
+    ? {
+        table: ({ children }: React.HTMLAttributes<HTMLTableElement>) => (
+          <div className="my-3 overflow-x-auto rounded-lg border border-slate-600/50">
+            <table className="w-full min-w-[400px] border-collapse">
+              {children}
+            </table>
+          </div>
+        ),
+        thead: ({ children }: React.HTMLAttributes<HTMLTableSectionElement>) => (
+          <thead className={tableHeaderClass}>{children}</thead>
+        ),
+        th: ({ children }: React.ThHTMLAttributes<HTMLTableCellElement>) => (
+          <th className="px-3 py-2 text-left text-xs font-semibold">
+            {children}
+          </th>
+        ),
+        tbody: ({ children }: React.HTMLAttributes<HTMLTableSectionElement>) => (
+          <tbody className="divide-y divide-slate-600/30">{children}</tbody>
+        ),
+        tr: ({ children }: React.HTMLAttributes<HTMLTableRowElement>) => (
+          <tr className="even:bg-slate-800/40 odd:bg-transparent">
+            {children}
+          </tr>
+        ),
+        td: ({ children, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) => (
+          <td
+            className="px-3 py-2 text-sm last:bg-amber-950/30 last:font-semibold last:text-amber-200"
+            {...props}
+          >
+            {children}
+          </td>
+        ),
+        blockquote: ({
+          children,
+          ...props
+        }: React.BlockquoteHTMLAttributes<HTMLQuoteElement>) => (
+          <blockquote
+            className="my-2 border-l-4 border-amber-500/60 bg-amber-950/20 pl-3 py-1.5 text-sm italic"
+            {...props}
+          >
+            {children}
+          </blockquote>
+        ),
+        h4: ({
+          children,
+          ...props
+        }: React.HTMLAttributes<HTMLHeadingElement>) => (
+          <h4
+            className="mt-4 mb-2 text-sm font-semibold text-slate-200 first:mt-0"
+            {...props}
+          >
+            {children}
+          </h4>
+        ),
+        hr: () => <hr className="my-4 border-slate-600/50" />,
+        code: ({
+          className,
+          children,
+          ...props
+        }: React.HTMLAttributes<HTMLElement>) => {
+          const lang = className?.replace("language-", "");
+          const code = String(children).replace(/\n$/, "");
+          if (lang === "mermaid") {
+            return <MermaidDiagram code={code} />;
+          }
+          return (
+            <code className={className} {...props}>
+              {children}
+            </code>
+          );
+        },
+      }
+    : {
+        code: ({
+          className,
+          children,
+          ...props
+        }: React.HTMLAttributes<HTMLElement>) => {
+          const lang = className?.replace("language-", "");
+          const code = String(children).replace(/\n$/, "");
+          if (lang === "mermaid") {
+            return <MermaidDiagram code={code} />;
+          }
+          return (
+            <code className={className} {...props}>
+              {children}
+            </code>
+          );
+        },
+      } as const;
+  const useTwoLevels =
+    quickRepliesLevel1 != null &&
+    quickRepliesLevel2 != null &&
+    bonjourTriggerMessage != null &&
+    quickRepliesLevel1.length > 0 &&
+    quickRepliesLevel2.length > 0;
+  const showLevel2 =
+    useTwoLevels &&
+    messages.length >= 2 &&
+    messages[messages.length - 1].role === "assistant" &&
+    messages[messages.length - 2].role === "user" &&
+    messages[messages.length - 2].content.trim() === bonjourTriggerMessage.trim();
+  const effectiveQuickReplies = useTwoLevels
+    ? showLevel2
+      ? quickRepliesLevel2
+      : quickRepliesLevel1
+    : quickReplies;
+  const level2ButtonClass =
+    accentColor === "blue"
+      ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-500"
+      : accentColor === "emerald"
+        ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500"
+        : accentColor === "orange"
+          ? "bg-orange-600 hover:bg-orange-700 text-white border-orange-500"
+          : "bg-primary text-primary-foreground";
   const lastMessageIsUser =
     messages.length > 0 && messages[messages.length - 1].role === "user";
 
@@ -318,12 +547,12 @@ export function BotChat({
     >
       <div
         className={cn(
-          "px-4 py-2 flex items-center justify-between gap-2 flex-wrap",
+          "px-4 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2",
           headerBorderClass
         )}
       >
-        <p className="font-medium text-sm">Chat avec {botName}</p>
-        <div className="flex items-center gap-2">
+        <p className="font-medium text-sm shrink-0">Chat avec {botName}</p>
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end min-w-0">
           {sessionLabel && (
             <span
               className={cn(
@@ -338,17 +567,83 @@ export function BotChat({
             variant="ghost"
             size="sm"
             className={cn(
-              "h-8 gap-1.5",
+              "h-8 gap-1.5 shrink-0",
               hasDarkContainer
                 ? "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
                 : "text-muted-foreground hover:text-foreground"
             )}
-            onClick={handleDownloadSynthèse}
-            disabled={messages.length === 0}
-            title="Télécharger la synthèse"
+            onClick={handleNewConversation}
+            disabled={isLoading}
+            title="Nouvelle conversation"
           >
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Synthèse</span>
+            <MessageSquarePlus className="h-4 w-4 shrink-0" />
+            <span className="hidden md:inline whitespace-nowrap">Nouvelle conversation</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "h-8 gap-1.5 shrink-0",
+              hasDarkContainer
+                ? "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            onClick={handleCopierChat}
+            disabled={!user || messages.length === 0}
+            title="Copier l'intégralité du chat"
+          >
+            {copiedAction === "chat" ? (
+              <Check className="h-4 w-4 shrink-0" />
+            ) : (
+              <ClipboardList className="h-4 w-4 shrink-0" />
+            )}
+            <span className="hidden md:inline whitespace-nowrap">
+              {copiedAction === "chat" ? "Copié !" : "Copier le chat"}
+            </span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "h-8 gap-1.5 shrink-0",
+              hasDarkContainer
+                ? "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            onClick={handlePreparerMail}
+            disabled={!user || messages.length === 0}
+            title="Préparer un mail (objet, corps, signature)"
+          >
+            {copiedAction === "mail" ? (
+              <Check className="h-4 w-4 shrink-0" />
+            ) : (
+              <Mail className="h-4 w-4 shrink-0" />
+            )}
+            <span className="hidden md:inline whitespace-nowrap">
+              {copiedAction === "mail" ? "Copié !" : "Préparer un mail"}
+            </span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "h-8 gap-1.5 shrink-0",
+              hasDarkContainer
+                ? "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            onClick={handlePreparerNoteSynthèse}
+            disabled={!user || messages.length === 0}
+            title="Préparer une note de synthèse"
+          >
+            {copiedAction === "note" ? (
+              <Check className="h-4 w-4 shrink-0" />
+            ) : (
+              <FileText className="h-4 w-4 shrink-0" />
+            )}
+            <span className="hidden md:inline whitespace-nowrap">
+              {copiedAction === "note" ? "Copié !" : "Préparer une note de synthèse"}
+            </span>
           </Button>
         </div>
       </div>
@@ -398,8 +693,11 @@ export function BotChat({
               ) : (
                 <div className="flex items-start gap-2 group/bubble">
                   <div className="flex-1 min-w-0 overflow-x-auto">
-                    <div className="prose prose-invert prose-sm max-w-none dark:prose-invert prose-table:overflow-x-auto prose-td:border prose-th:border prose-td:px-2 prose-th:px-2 prose-td:py-1 prose-th:py-1">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <div className="prose prose-invert prose-sm max-w-none dark:prose-invert [&_table]:my-3 [&_th]:px-3 [&_th]:py-2 [&_td]:px-3 [&_td]:py-2">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={markdownTableComponents}
+                      >
                         {msg.content}
                       </ReactMarkdown>
                     </div>
@@ -459,8 +757,11 @@ export function BotChat({
             )}
           >
             <div className="overflow-x-auto">
-              <div className="prose prose-invert prose-sm max-w-none dark:prose-invert prose-table:overflow-x-auto prose-td:border prose-th:border prose-td:px-2 prose-th:px-2 prose-td:py-1 prose-th:py-1">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <div className="prose prose-invert prose-sm max-w-none dark:prose-invert [&_table]:my-3 [&_th]:px-3 [&_th]:py-2 [&_td]:px-3 [&_td]:py-2">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={markdownTableComponents}
+                >
                   {streamingContent}
                 </ReactMarkdown>
               </div>
@@ -476,7 +777,7 @@ export function BotChat({
         </div>
       )}
 
-      {quickReplies.length > 0 && (
+      {effectiveQuickReplies.length > 0 && (
         <div
           className={cn(
             "border-t px-4 py-2 overflow-x-auto",
@@ -484,17 +785,20 @@ export function BotChat({
           )}
         >
           <div className="flex gap-2 pb-1">
-            {quickReplies.map((item) => {
+            {effectiveQuickReplies.map((item) => {
               const { label, message } = normalizeQuickReply(item);
+              const isLevel2 = useTwoLevels && showLevel2;
               return (
                 <Button
                   key={label}
                   type="button"
-                  variant="outline"
+                  variant={isLevel2 ? "default" : "outline"}
                   size="sm"
                   className={cn(
                     "shrink-0 text-xs h-8",
-                    hasDarkContainer &&
+                    isLevel2 && level2ButtonClass,
+                    !isLevel2 &&
+                      hasDarkContainer &&
                       "border-slate-500/60 bg-slate-800/50 text-slate-200 hover:bg-slate-700/60 hover:text-white hover:border-slate-400/60"
                   )}
                   onClick={() => sendMessage(message)}
