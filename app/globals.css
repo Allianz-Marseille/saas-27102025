@@ -577,6 +577,16 @@
   50% { opacity: 1; }
 }
 
+/* Badge "new" fluo clignotant */
+@keyframes blink-fluo {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(163, 230, 53, 0.8); }
+  50% { opacity: 0.85; box-shadow: 0 0 16px rgba(163, 230, 53, 1); }
+}
+
+.animate-blink-fluo {
+  animation: blink-fluo 1.5s ease-in-out infinite;
+}
+
 /* Accordion animations */
 @keyframes accordion-down {
   from {

@@ -3,8 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Users, ArrowRight, Building2, FileText, TrendingUp, Scale } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Users, ArrowRight, Building2, FileText, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -56,6 +55,8 @@ type OutilItem = {
   badge?: string;
   ccnBadge?: boolean;
   tagline?: string;
+  /** Affiche un badge "new" fluo clignotant */
+  showNewBadge?: boolean;
 };
 
 export default function OutilsPage() {
@@ -71,27 +72,25 @@ export default function OutilsPage() {
       href: "/commun/outils/beneficiaires-effectifs",
       badge: "API Pappers",
       features: [
-        { icon: Building2, text: "Informations légales complètes (SIREN, forme juridique, capital)" },
-        { icon: Users, text: "Bénéficiaires effectifs et dirigeants" },
-        { icon: FileText, text: "Bilans comptables et documents officiels" },
-        { icon: TrendingUp, text: "Établissements, filiales et participations" },
+        { icon: Building2, text: "Légal, dirigeants, bilans, établissements" },
+        { icon: Users, text: "Bénéficiaires effectifs" },
+        { icon: FileText, text: "Documents officiels et participations" },
       ],
     },
     {
       id: "societe-entreprise",
       title: "Informations entreprise (Societe.com)",
-      description: "En plus de la fiche entreprise : conventions collectives (CCN), scoring, contact, marques. Idéal pour identifier l’IDCC et consulter le Code du travail.",
+      description: "Fiche entreprise, CCN, scoring, contact et marques.",
       icon: Building2,
       image: "/Logo_Societe.png",
       href: "/commun/outils/societe-entreprise",
       badge: "API Societe.com",
       ccnBadge: true,
-      tagline: "Spécialité : conventions collectives et Code du travail",
+      showNewBadge: true,
       features: [
-        { icon: FileText, text: "Conventions collectives (CCN) : IDCC + lien direct Code du travail numérique — atout unique Societe.com" },
         { icon: TrendingUp, text: "Scoring financier et extra-financier" },
-        { icon: Building2, text: "Contact, marques, établissements, documents officiels" },
-        { icon: Users, text: "Recherche par SIREN, nom ou numéro de TVA" },
+        { icon: Building2, text: "Contact, marques, établissements" },
+        { icon: Users, text: "Recherche SIREN / nom / TVA" },
       ],
     },
   ];
@@ -137,13 +136,18 @@ export default function OutilsPage() {
                 )}
                 onClick={() => router.push(outil.href)}
               >
+                {outil.showNewBadge && (
+                  <span className="absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full text-[10px] font-bold bg-lime-400 text-slate-900 shadow-lg animate-blink-fluo">
+                    new
+                  </span>
+                )}
                 <CardHeader className="pb-3 space-y-2.5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
                       {/* Icon ou logo */}
                       <div className={cn(
                         "p-2 rounded-lg shrink-0 transition-transform duration-300 group-hover:scale-110 flex items-center justify-center overflow-hidden min-w-[40px] min-h-[40px]",
-                        outil.image ? "bg-white dark:bg-gray-800/80" : colors.iconBg
+                        outil.image ? "bg-white dark:bg-white/95" : colors.iconBg
                       )}>
                         {outil.image ? (
                           <Image
@@ -180,11 +184,6 @@ export default function OutilsPage() {
                           <CardDescription className="text-xs text-muted-foreground leading-relaxed">
                             {outil.description}
                           </CardDescription>
-                          {outil.tagline && (
-                            <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1">
-                              {outil.tagline}
-                            </p>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -197,51 +196,24 @@ export default function OutilsPage() {
                 </CardHeader>
 
                 <CardContent className="flex-1 flex flex-col pt-0 pb-3">
-                  {/* Bloc CCN dédié (Societe.com uniquement) */}
+                  {/* Bandeau CCN (Societe.com uniquement) */}
                   {outil.ccnBadge && (
-                    <div className="mb-4 p-3 rounded-lg bg-violet-500/10 dark:bg-violet-500/10 border border-violet-500/20 flex items-start gap-2">
-                      <Scale className="h-4 w-4 text-violet-600 dark:text-violet-400 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">
-                          Conventions collectives (CCN)
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Identifiez l&apos;IDCC et accédez au Code du travail numérique en un clic.
-                        </p>
-                      </div>
+                    <div className="mb-4 -mx-6 px-4 py-2 bg-violet-500/15 dark:bg-violet-500/15 border-y border-violet-500/20">
+                      <p className="text-xs font-semibold text-violet-700 dark:text-violet-300 text-center">
+                        Conventions collectives (CCN) — IDCC + Code du travail numérique
+                      </p>
                     </div>
                   )}
-                  {/* Features List compacte — première feature CCN mise en avant pour Societe.com */}
+                  {/* Features list simplifiée */}
                   <div className="space-y-2 mb-3 flex-1">
                     {outil.features.map((feature, featureIndex) => {
                       const FeatureIcon = feature.icon;
-                      const isCcnPriority = outil.ccnBadge && featureIndex === 0;
                       return (
-                        <div
-                          key={featureIndex}
-                          className={cn(
-                            "flex items-start gap-2.5",
-                            isCcnPriority && "p-2 rounded-lg bg-violet-500/5 dark:bg-violet-500/5 border border-violet-500/15"
-                          )}
-                        >
-                          <FeatureIcon className={cn(
-                            "mt-0.5 shrink-0",
-                            isCcnPriority ? "h-4 w-4 text-violet-600 dark:text-violet-400" : "h-4 w-4",
-                            !isCcnPriority && colors.iconColor
-                          )} />
-                          <div className="flex-1 min-w-0">
-                            {isCcnPriority && (
-                              <span className="inline-block text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400 mb-0.5">
-                                Spécificité
-                              </span>
-                            )}
-                            <p className={cn(
-                              "text-muted-foreground leading-relaxed break-words",
-                              isCcnPriority ? "text-sm font-medium text-foreground" : "text-xs"
-                            )}>
-                              {feature.text}
-                            </p>
-                          </div>
+                        <div key={featureIndex} className="flex items-start gap-2.5">
+                          <FeatureIcon className={cn("mt-0.5 shrink-0 h-4 w-4", colors.iconColor)} />
+                          <p className="text-xs text-muted-foreground leading-relaxed break-words flex-1 min-w-0">
+                            {feature.text}
+                          </p>
                         </div>
                       );
                     })}
