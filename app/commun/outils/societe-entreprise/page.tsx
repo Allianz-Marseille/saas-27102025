@@ -23,6 +23,7 @@ import {
   Copy,
   Check,
   Scale,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,6 +88,13 @@ export default function SocieteEntreprisePage() {
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
+
+  // CCN (conventions collectives)
+  const [ccnSirenInput, setCcnSirenInput] = useState("");
+  const [ccnResult, setCcnResult] = useState<{ idcc: string; libelle: string | null; entreprise?: { siren: string; denomination: string | null } } | null>(null);
+  const [ccnLoading, setCcnLoading] = useState(false);
+  const [ccnError, setCcnError] = useState<string | null>(null);
+  const [idccInput, setIdccInput] = useState("");
 
   // Validation et conversion SIRET → SIREN
   const validateAndExtractSiren = (input: string): string | null => {
@@ -244,6 +252,67 @@ export default function SocieteEntreprisePage() {
     }
   };
 
+  const handleCcnSearch = async () => {
+    setCcnError(null);
+    setCcnResult(null);
+
+    if (!user) {
+      setCcnError("Vous devez être connecté pour effectuer cette recherche");
+      return;
+    }
+
+    const siren = validateAndExtractSiren(ccnSirenInput);
+    if (!siren) {
+      setCcnError("Veuillez saisir un SIREN (9 chiffres) ou un SIRET (14 chiffres) valide");
+      return;
+    }
+
+    setCcnLoading(true);
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch("/api/conventions-collectives", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ siren }),
+      });
+
+      const json = await response.json();
+
+      if (!response.ok) {
+        throw new Error(json.error || "Erreur lors de la récupération de la CCN");
+      }
+
+      const conv = json.data?.convention_collective;
+      const ent = json.data?.entreprise;
+
+      if (!conv) {
+        setCcnResult({ idcc: "", libelle: "Non disponible", entreprise: ent });
+      } else {
+        setCcnResult({
+          idcc: conv.idcc || "",
+          libelle: conv.libelle || null,
+          entreprise: ent,
+        });
+      }
+    } catch (err) {
+      setCcnError(err instanceof Error ? err.message : "Erreur lors de la recherche CCN");
+    } finally {
+      setCcnLoading(false);
+    }
+  };
+
+  const handleOpenCodeTravailByIdcc = () => {
+    const cleaned = idccInput.replace(/\s+/g, "").replace(/\D/g, "");
+    if (cleaned.length < 3 || cleaned.length > 5) {
+      toast.error("Veuillez saisir un IDCC valide (3 à 5 chiffres, ex. 2752)");
+      return;
+    }
+    window.open(`https://code.travail.gouv.fr/outils/convention-collective#idcc-${cleaned}`, "_blank", "noopener,noreferrer");
+  };
+
   const formatDate = (dateStr: string | undefined): string => {
     if (!dateStr || dateStr.length !== 8) return dateStr || "Non disponible";
     return `${dateStr.substring(6, 8)}/${dateStr.substring(4, 6)}/${dateStr.substring(0, 4)}`;
@@ -350,6 +419,110 @@ export default function SocieteEntreprisePage() {
         <p className="text-muted-foreground">
           Consultez toutes les informations disponibles sur une entreprise (légales, dirigeants, bilans, établissements, etc.)
         </p>
+      </motion.div>
+
+      {/* Bloc Recherche CCN */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.08 }}
+        className="mb-6"
+      >
+        <Card className="bg-card text-card-foreground rounded-xl border shadow-sm border-violet-500/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Scale className="h-5 w-5" />
+              Recherche CCN
+            </CardTitle>
+            <CardDescription>
+              Obtenez la convention collective par SIREN/SIRET ou consultez le Code du travail par IDCC
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Recherche CCN par SIREN/SIRET */}
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-foreground">Par SIREN/SIRET</p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Input
+                  type="text"
+                  placeholder="Ex: 123456789 ou 12345678901234"
+                  value={ccnSirenInput}
+                  onChange={(e) => setCcnSirenInput(e.target.value)}
+                  disabled={ccnLoading}
+                  className="flex-1"
+                />
+                <Button onClick={handleCcnSearch} disabled={ccnLoading}>
+                  {ccnLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Recherche
+                    </>
+                  ) : (
+                    <>
+                      <Scale className="h-4 w-4 mr-2" />
+                      Obtenir la CCN
+                    </>
+                  )}
+                </Button>
+              </div>
+              {ccnError && (
+                <p className="text-sm text-destructive flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  {ccnError}
+                </p>
+              )}
+              {ccnResult && (
+                <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {ccnResult.idcc && (
+                      <span className="font-mono font-semibold text-violet-700 dark:text-violet-300">
+                        IDCC {ccnResult.idcc}
+                      </span>
+                    )}
+                    {ccnResult.libelle && (
+                      <span className="text-muted-foreground">— {ccnResult.libelle}</span>
+                    )}
+                  </div>
+                  {ccnResult.idcc && (
+                    <a
+                      href={`https://code.travail.gouv.fr/outils/convention-collective#idcc-${ccnResult.idcc}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                    >
+                      Voir le texte sur le Code du travail numérique
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                  {!ccnResult.idcc && (
+                    <p className="text-sm text-muted-foreground">Aucune convention collective trouvée pour cette entreprise.</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Consulter par IDCC */}
+            <div className="space-y-3 border-t pt-6">
+              <p className="text-sm font-medium text-foreground">Consulter par IDCC</p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Input
+                  type="text"
+                  placeholder="Ex: 2752, 0043, 3239"
+                  value={idccInput}
+                  onChange={(e) => setIdccInput(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                  className="flex-1 max-w-[140px]"
+                />
+                <Button variant="outline" onClick={handleOpenCodeTravailByIdcc}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Ouvrir le Code du travail
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Saisissez un IDCC (3 à 5 chiffres) pour ouvrir directement la convention sur le Code du travail numérique
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </motion.div>
 
       {/* Formulaire de recherche */}
