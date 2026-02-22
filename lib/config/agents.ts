@@ -9,6 +9,8 @@ export interface BotConfig {
   agentId: string;
   model: string;
   description: string;
+  /** Bot visible uniquement sur la page Test des Bots (admin) tant que true. */
+  inTestMode?: boolean;
 }
 
 /**
@@ -22,6 +24,7 @@ export const BOTS: Record<string, BotConfig> = {
     agentId: "",
     model: "",
     description: "Expert santé et prévoyance TNS",
+    inTestMode: true,
   },
   lea: {
     id: "lea",
@@ -41,4 +44,10 @@ export const BOTS: Record<string, BotConfig> = {
 
 export function getBotConfig(botId: string): BotConfig | null {
   return BOTS[botId] ?? null;
+}
+
+export function getBotsInTestMode(): string[] {
+  return Object.entries(BOTS)
+    .filter(([, config]) => config.inTestMode === true)
+    .map(([botId]) => botId);
 }

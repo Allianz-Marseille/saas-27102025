@@ -5,14 +5,16 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { BotChat } from "@/components/chat/bot-chat";
+import { RouteGuard } from "@/components/auth/route-guard";
 import { getBotConfig } from "@/lib/config/agents";
 
 const BOB_AVATAR = "/agents-ia/bot-tns/bob_sourit.png";
 
-export default function BobPage() {
+function BobPageContent() {
   const config = getBotConfig("bob");
+  const inTestMode = config?.inTestMode === true;
 
-  return (
+  const pageContent = (
     <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-500/10 rounded-full blur-[120px] -z-10" />
@@ -32,23 +34,26 @@ export default function BobPage() {
           </Link>
           <ChevronRight className="h-4 w-4 text-slate-600" />
           <Link
-            href="/commun/agents-ia"
+            href={inTestMode ? "/admin/test-bots" : "/commun/agents-ia"}
             className="hover:text-white transition-colors"
           >
-            Agents IA
+            {inTestMode ? "Test des Bots" : "Agents IA"}
           </Link>
           <ChevronRight className="h-4 w-4 text-slate-600" />
           <span className="text-blue-300 font-medium">Bob Santé</span>
         </nav>
 
         {/* Bouton Retour */}
-        <Link href="/commun/agents-ia" className="inline-block mb-6">
+        <Link
+          href={inTestMode ? "/admin/test-bots" : "/commun/agents-ia"}
+          className="inline-block mb-6"
+        >
           <Button
             variant="ghost"
             className="text-slate-400 hover:text-white hover:bg-white/5 transition-all"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour aux agents
+            {inTestMode ? "Retour au test des bots" : "Retour aux agents"}
           </Button>
         </Link>
 
@@ -81,4 +86,16 @@ export default function BobPage() {
       </div>
     </div>
   );
+
+  if (inTestMode) {
+    return (
+      <RouteGuard allowedRoles={["ADMINISTRATEUR"]}>{pageContent}</RouteGuard>
+    );
+  }
+
+  return pageContent;
+}
+
+export default function BobPage() {
+  return <BobPageContent />;
 }

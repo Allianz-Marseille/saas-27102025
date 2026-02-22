@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Sparkles, Zap, Shield, Brain, MessageCircle } from "lucide-react";
+import { getBotConfig } from "@/lib/config/agents";
 
 const agents = [
   {
@@ -79,6 +80,9 @@ const itemVariants = {
 
 export default function AgentsIAPage() {
   const router = useRouter();
+  const visibleAgents = agents.filter(
+    (a) => !(a.name === "Bob" && getBotConfig("bob")?.inTestMode)
+  );
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
@@ -127,7 +131,7 @@ export default function AgentsIAPage() {
 
           {/* Cartes agents */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {agents.map((agent) => {
+            {visibleAgents.map((agent) => {
               const CardContent = (
                 <div
                   className={`
