@@ -1,5 +1,12 @@
 # 13 - SOLUTIONS ET POINTS FORTS ALLIANZ PRÉVOYANCE
 
+**Sommaire**
+- 1. LES GARANTIES INCONTOURNABLES
+- 2. LES POINTS FORTS TECHNIQUES (L'AVANTAGE ALLIANZ)
+- 3. FISCALITÉ (LOI MADELIN)
+- 4. SIMULATION FISCALE MADELIN (EFFORT RÉEL PAR HYPOTHÈSE TMI)
+- 5. CONSEILS DE BOB POUR LE DEVIS
+
 ## 1. LES GARANTIES INCONTOURNABLES
 - **Indemnités Journalières (IJ) :** Couverture du revenu net + charges sociales.
 - **Rente d'Invalidité :** Versement d'une rente jusqu'à l'âge de la retraite.

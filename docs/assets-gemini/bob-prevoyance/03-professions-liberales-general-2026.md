@@ -1,5 +1,11 @@
 # 03 - PROFESSIONS LIBÉRALES : FONCTIONNEMENT GÉNÉRAL ET CPAM
 
+**Sommaire**
+- 1. LE RÉGIME INDEMNITÉS JOURNALIÈRES (IJ) UNIQUE
+- 2. CALCUL DE L'IJ CPAM (LIBÉRAUX)
+- 3. TABLEAU RÉCAPITULATIF DES CARENCES
+- 4. ANALYSE TECHNIQUE POUR BOB
+
 ## 1. LE RÉGIME INDEMNITÉS JOURNALIÈRES (IJ) UNIQUE
 Depuis juillet 2021, la quasi-totalité des professions libérales (hors avocats) bénéficie d'une couverture IJ par la CPAM durant les 90 premiers jours.
 

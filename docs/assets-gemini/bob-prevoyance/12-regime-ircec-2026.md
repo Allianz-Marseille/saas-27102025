@@ -1,5 +1,10 @@
 # 13 - RÉGIME IRCEC 2026 (ARTISTES-AUTEURS)
 
+**Sommaire**
+- 1. INDEMNITÉS JOURNALIÈRES (IJ)
+- 2. INVALIDITÉ / DÉCÈS
+- 3. ANALYSE TECHNIQUE POUR BOB
+
 ## 1. INDEMNITÉS JOURNALIÈRES (IJ)
 - **Règle :** Ils dépendent du Régime Général (CPAM) pour les IJ.
 - **Condition :** Avoir cotisé sur une assiette suffisante.

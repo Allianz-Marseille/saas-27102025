@@ -1,5 +1,11 @@
 # 05 - RÉGIME CIPAV 2026 (ARCHITECTES, INGÉNIEURS, CONSULTANTS)
 
+**Sommaire**
+- 1. INDEMNITÉS JOURNALIÈRES (IJ) - ARRÊT DE TRAVAIL
+- 2. INVALIDITÉ
+- 3. DÉCÈS
+- 4. ANALYSE TECHNIQUE POUR BOB (L'ALERTE ROUGE)
+
 ## 1. INDEMNITÉS JOURNALIÈRES (IJ) - ARRÊT DE TRAVAIL
 Le régime CIPAV est extrêmement précaire concernant l'arrêt de travail.
 

@@ -1,5 +1,11 @@
 # 08 - RÉGIME CAVEC 2026 (EXPERTS-COMPTABLES)
 
+**Sommaire**
+- 1. INDEMNITÉS JOURNALIÈRES (IJ)
+- 2. INVALIDITÉ
+- 3. DÉCÈS
+- 4. ANALYSE TECHNIQUE POUR BOB
+
 ## 1. INDEMNITÉS JOURNALIÈRES (IJ)
 - **J4 à J90 :** CPAM (Max **197,50 € / jour**).
 - **J91+ :** La CAVEC prend le relais avec une IJ forfaitaire selon la classe de cotisation (souvent liée au niveau de revenus).

@@ -1,5 +1,11 @@
 # 10 - RÉGIME CAVP 2026 (PHARMACIENS)
 
+**Sommaire**
+- 1. INDEMNITÉS JOURNALIÈRES (IJ)
+- 2. INVALIDITÉ
+- 3. DÉCÈS
+- 4. ANALYSE TECHNIQUE POUR BOB
+
 ## 1. INDEMNITÉS JOURNALIÈRES (IJ)
 - **J1 à J3 :** Carence (0 €).
 - **J4 à J90 :** CPAM (Max **197,50 € / jour**).

@@ -1,5 +1,11 @@
 # 07 - RÉGIME CARMF 2026 (MÉDECINS LIBÉRAUX)
 
+**Sommaire**
+- 1. INDEMNITÉS JOURNALIÈRES (IJ)
+- 2. INVALIDITÉ
+- 3. DÉCÈS
+- 4. ANALYSE TECHNIQUE POUR BOB (CONSEIL ALLIANZ)
+
 ## 1. INDEMNITÉS JOURNALIÈRES (IJ)
 Le médecin a un régime en trois temps.
 

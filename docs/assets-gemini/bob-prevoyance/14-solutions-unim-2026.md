@@ -1,5 +1,11 @@
 # 14 - SOLUTIONS UNIM 2026 (PROFESSIONS MÉDICALES ET PARAMÉDICALES)
 
+**Sommaire**
+- 1. CIBLE PRIVILÉGIÉE
+- 2. POINTS FORTS DU CONTRAT UNIM
+- 3. TYPES DE FRANCHISES
+- 4. CONSEIL DE BOB
+
 ## 1. CIBLE PRIVILÉGIÉE
 - Médecins, Chirurgiens-dentistes, Sages-femmes, Pharmaciens, Infirmiers, Kinésithérapeutes, Vétérinaires.
 
