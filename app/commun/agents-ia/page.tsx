@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Sparkles, Zap, Shield, Brain, MessageCircle } from "lucide-react";
@@ -14,14 +15,34 @@ const agents = [
     superpower: "Gérer vos plannings comme si elle avait 8 bras (spoiler : elle en aura bientôt)",
     color: "from-rose-500 via-pink-500 to-fuchsia-500",
     glow: "shadow-rose-500/50",
+    href: null,
   },
   {
     name: "Bob",
-    role: "L'expert santé",
-    image: "/agents-ia/bot-sante/bob_sourit.png",
+    role: "L'expert prévoyance TNS",
+    image: "/agents-ia/bot-tns/bob_sourit.png",
     superpower: "Décoder les mutuelles comme personne. Bientôt : vision laser pour lire les bulletins à 10 m.",
     color: "from-emerald-500 via-teal-500 to-cyan-500",
     glow: "shadow-emerald-500/50",
+    href: "/commun/agents-ia/bob",
+  },
+  {
+    name: "Léa",
+    role: "L'experte santé individuelle",
+    image: "/agents-ia/lea-sante/lea.png",
+    superpower: "Optique, dentaire, hospitalier ? Elle lit les tableaux de garanties mieux que votre opticien. (Et elle ne vous fera pas attendre 2h.)",
+    color: "from-emerald-500 via-green-500 to-teal-500",
+    glow: "shadow-emerald-500/50",
+    href: "/commun/agents-ia/lea",
+  },
+  {
+    name: "John",
+    role: "L'expert des collectives",
+    image: "/agents-ia/john-call/john-call.png",
+    superpower: "Santé, prévoyance, retraite collective : il parle CCN et effectifs comme personne. Prochaine feature : négocier les PER en dormant.",
+    color: "from-amber-500 via-orange-500 to-rose-500",
+    glow: "shadow-amber-500/50",
+    href: "/commun/agents-ia/john",
   },
   {
     name: "Sinistro",
@@ -30,6 +51,7 @@ const agents = [
     superpower: "IRSA, IRCA, IRSI ? Child's play. Prochaine mise à jour : télépathie avec les assureurs.",
     color: "from-amber-500 via-orange-500 to-red-500",
     glow: "shadow-amber-500/50",
+    href: null,
   },
   {
     name: "Pauline",
@@ -38,6 +60,7 @@ const agents = [
     superpower: "Auto, MRH, tout ça. Bientôt elle vendra des contrats en dormant. (Non, on plaisante. Ou pas.)",
     color: "from-violet-500 via-purple-500 to-indigo-500",
     glow: "shadow-violet-500/50",
+    href: null,
   },
 ];
 
@@ -105,7 +128,7 @@ export default function AgentsIAPage() {
               Nos agents IA sont en formation
             </h1>
             <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
-              Nina, Bob, Sinistro et Pauline ont été envoyés en stage intensif
+              Nina, Bob, Léa, John, Sinistro et Pauline ont été envoyés en stage intensif
               <span className="text-violet-400 font-semibold"> « Super-pouvoirs niveau 2.0 »</span>.
               Ils reviennent bientôt, plus puissants que jamais. Promis, on a vérifié les fusibles.
             </p>
@@ -113,12 +136,8 @@ export default function AgentsIAPage() {
 
           {/* Cartes agents */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {agents.map((agent) => (
-              <motion.div
-                key={agent.name}
-                variants={itemVariants}
-                className="group relative"
-              >
+            {agents.map((agent) => {
+              const CardContent = (
                 <div
                   className={`
                     relative overflow-hidden rounded-2xl p-6
@@ -128,11 +147,9 @@ export default function AgentsIAPage() {
                     ${agent.glow} hover:shadow-2xl
                   `}
                 >
-                  {/* Glow effect au hover */}
                   <div
                     className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${agent.color} mix-blend-overlay opacity-10 rounded-2xl`}
                   />
-
                   <div className="relative flex gap-6 items-start">
                     <div className="relative shrink-0">
                       <div
@@ -163,8 +180,23 @@ export default function AgentsIAPage() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
-            ))}
+              );
+              return (
+                <motion.div
+                  key={agent.name}
+                  variants={itemVariants}
+                  className="group relative"
+                >
+                  {agent.href ? (
+                    <Link href={agent.href} className="block">
+                      {CardContent}
+                    </Link>
+                  ) : (
+                    CardContent
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
 
           {/* CTA humoristique */}

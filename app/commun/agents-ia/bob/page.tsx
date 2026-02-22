@@ -7,7 +7,7 @@ import { ArrowLeft, ChevronRight } from "lucide-react";
 import { BotChat } from "@/components/chat/bot-chat";
 import { getBotConfig } from "@/lib/config/agents";
 
-const BOB_AVATAR = "/agents-ia/bot-sante/bob_sourit.png";
+const BOB_AVATAR = "/agents-ia/bot-tns/bob_sourit.png";
 
 export default function BobPage() {
   const config = getBotConfig("bob");
