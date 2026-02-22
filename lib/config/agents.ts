@@ -23,6 +23,20 @@ export const BOTS: Record<string, BotConfig> = {
     model: "",
     description: "Expert santé et prévoyance TNS",
   },
+  lea: {
+    id: "lea",
+    name: "Léa",
+    agentId: "",
+    model: "",
+    description: "Expert Santé Individuelle",
+  },
+  "john-coll": {
+    id: "john-coll",
+    name: "John",
+    agentId: "",
+    model: "",
+    description: "Expert Santé, Prévoyance et Retraite Collectives",
+  },
 };
 
 export function getBotConfig(botId: string): BotConfig | null {
