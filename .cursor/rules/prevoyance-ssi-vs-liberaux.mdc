@@ -1,0 +1,63 @@
+---
+description: Moteurs de calcul Prévoyance distincts (SSI vs Professions Libérales) — ne jamais fusionner
+alwaysApply: true
+---
+
+# Prévoyance : SSI vs Professions Libérales — Deux moteurs distincts
+
+Le module de simulation de protection sociale repose sur **deux régimes différents**. Ne jamais les fusionner dans une seule fonction de calcul.
+
+**Référence pivot :** PASS 2026 = **48 060 €** (4 005 €/mois).
+
+---
+
+## 1. Séparation des services / branches logiques
+
+| Moteur | Fichier de référence | Plafond IJ | Durée CPAM | Cible |
+|--------|----------------------|------------|------------|--------|
+| **Service_SSI** | `docs/assets-gemini/bob-prevoyance/02-regime-ssi-2026.md` | 1 PASS → **65,84 €/j** brut (61,43 € net) | Longue durée (3 ans) | Artisans, Commerçants, Gérants majoritaires |
+| **Service_Libéraux** | `docs/assets-gemini/bob-prevoyance/03-professions-liberales-general-2026.md` | 3 PASS → **197,50 €/j** max | **Arrêt au J90** (CPAM s’arrête) | Professions libérales (médecins, etc.) |
+
+- Créer **deux branches logiques distinctes** (ou deux services) : `Service_SSI` et `Service_Libéraux`.
+- Ne pas créer de fonction générique `calculateIJ()` unique : les formules, plafonds et durées diffèrent.
+
+---
+
+## 2. Variables et règles critiques par moteur
+
+### Service_SSI (02)
+- **RAM (Revenu Annuel Moyen)** : (N-1 + N-2 + N-3) ÷ 3, plafonné à **1 PASS** (48 060 €).
+- **Exclusion totale** : si RAM < **10 % PASS** (4 806 €) → IJ = **0 €**. Vérifier systématiquement ce seuil.
+- **Formule** : IJ brute = RAM plafonné ÷ 730 ; prélèvements 6,7 % (CSG/CRDS).
+- **Délai de carence** : 3 jours (versement à partir du J4).
+- Couverture IJ possible jusqu’à **3 ans** (pas d’arrêt au 90e jour).
+
+### Service_Libéraux (03)
+- **RAM** plafonné à **3 PASS** (144 180 €) → IJ max **197,50 €/j**.
+- **Rupture au J91** : à partir du 91e jour, la CPAM ne verse plus rien. Implémenter une **alerte "rupture de revenus" au J91** dans l’interface utilisateur.
+- **Délai de carence** : 3 jours (J4 à J90 couverts par la CPAM).
+- Relais après J90 : Caisse professionnelle (CARPIMKO, CARMF, etc.) ou rien → prévoyance privée (ex. franchise 90 j) indispensable pour les libéraux.
+
+---
+
+## 3. Data check
+
+- Utiliser la valeur **PASS 2026 = 48 060 €** comme pivot partout (seuils, plafonds, messages).
+- 10 % PASS = 4 806 € (seuil d’exclusion SSI).
+- 3 PASS = 144 180 € (plafond assiette libéraux).
+
+---
+
+## 4. UI/UX et workflow
+
+- Le parcours utilisateur doit **commencer par la sélection du statut professionnel** (SSI vs Libéral) pour router vers le bon moteur de calcul.
+- Ne pas proposer les mêmes garanties de prévoyance privée (ex. Allianz) pour les deux : les besoins de **relais de carence** diffèrent (ex. **franchise 90 jours** indispensable pour les libéraux, pas la même pour les SSI).
+
+---
+
+## 5. À éviter
+
+- Une seule fonction `calculateIJ()` qui appliquerait le même plafond ou la même durée aux deux régimes.
+- Appliquer le plafond 65 €/j aux libéraux (ils ont 197,50 €/j max).
+- Oublier que l’artisan est couvert jusqu’à 3 ans alors que le libéral n’a plus d’IJ CPAM après 90 jours.
+- Oublier l’alerte "rupture de revenus" au J91 pour les libéraux.

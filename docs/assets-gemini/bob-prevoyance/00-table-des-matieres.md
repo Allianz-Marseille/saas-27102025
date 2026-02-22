@@ -7,6 +7,9 @@
 01. **Référentiel Social 2026** ([`01-referentiel-social-plafonds-2026.md`](01-referentiel-social-plafonds-2026.md))
 02. **Régime SSI** ([`02-regime-ssi-2026.md`](02-regime-ssi-2026.md)) — Synthèse prévoyance : IJ (paramètres de calcul, seuils 2026, plafond 65,84 €/j, distinction TNS/salariés), invalidité (conditions d'octroi, catégories 1/2/3, rentes plafonnées), décès (capital forfaitaire, tableau 9 612 € / +2 403 €/enfant / 3 845 € retraité), analyse technique (vigilance, messages clés argumentaire).
 03. **Professions Libérales (CPAM)** ([`03-professions-liberales-general-2026.md`](03-professions-liberales-general-2026.md))
+
+> **Ne pas fusionner :** 02 = moteur SSI (Artisans / Commerçants / Gérants) ; 03 = moteur CPAM Libéraux (J4–J90, arrêt J91). Choisir **l'un** selon le statut du client.
+
 04. **CARPIMKO** ([`04-regime-carpimko-2026.md`](04-regime-carpimko-2026.md))
 05. **CIPAV** ([`05-regime-cipav-2026.md`](05-regime-cipav-2026.md))
 06. **CARMF** ([`06-regime-carmf-2026.md`](06-regime-carmf-2026.md))

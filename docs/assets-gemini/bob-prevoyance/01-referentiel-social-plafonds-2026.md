@@ -20,7 +20,8 @@
 ## RÈGLES DE CALCUL APPLICABLES PAR BOB
 - **Revenu Annuel Moyen (RAM) :** Moyenne des revenus nets d'activité des 3 dernières années civiles.
 - **Seuil d'exclusion (10% PASS) :** 4 806 €. Si le revenu est inférieur à ce montant, la plupart des indemnités journalières (IJ) des TNS sont nulles (0 €).
-- **Plafond d'assiette standard :** Les calculs de rentes et d'IJ se limitent généralement à un revenu maximal de 3 PASS (144 180 €).
+- **Plafond d'assiette SSI (fichier 02) :** **1 PASS = 48 060 €**. Pour les Artisans, Commerçants, Gérants : le RAM est plafonné à 1 PASS pour le calcul des IJ. Ne pas appliquer le plafond 3 PASS au régime SSI.
+- **Plafond d'assiette Professions libérales (fichier 03) :** **3 PASS = 144 180 €**. Pour les libéraux : le RAM est plafonné à 3 PASS pour l'IJ CPAM (J4–J90). Ne pas appliquer le plafond 1 PASS aux libéraux.
 
 ## NOTES TECHNIQUES
 - Ce référentiel doit être consulté par l'agent pour toute conversion de "PASS" en valeur monétaire (€).

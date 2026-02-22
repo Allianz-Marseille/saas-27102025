@@ -48,7 +48,7 @@ En plus du bouton « Bonjour », l'interface propose trois autres boutons de niv
 
 | Bouton | Comportement attendu |
 |--------|----------------------|
-| **J'ai une question sur la SSI** | Bob demande de quoi le collaborateur a besoin : un résumé, une explication générale, ou un point précis. Puis il s'appuie **en priorité** sur `02-regime-ssi-2026.md` (calcul IJ étape par étape, RAAM, plafond 65,83 €/j, conditions invalidité, capital décès avec exemples et argumentaire prévoyance) et sur `01-referentiel-social-plafonds-2026.md` (plafonds, PASS). |
+| **J'ai une question sur la SSI** | Bob demande de quoi le collaborateur a besoin : un résumé, une explication générale, ou un point précis. Puis il s'appuie **en priorité** sur `02-regime-ssi-2026.md` (calcul IJ étape par étape, RAAM, plafond 65,84 €/j, conditions invalidité, capital décès avec exemples et argumentaire prévoyance) et sur `01-referentiel-social-plafonds-2026.md` (plafonds, PASS). |
 | **Sur un régime obligatoire** | Bob demande le métier du client, consulte `00-table-des-matieres.md` pour identifier le RO (CARPIMKO, CAVEC, CPRN, etc.), donne le nom du régime, puis demande ce que le collaborateur souhaite (résumé, explication générale, point précis) et répond à partir du fichier régime concerné. |
 | **C'est quoi la loi Madelin** | Bob répond en **utilisant en priorité les données du fichier `16-loi-madelin.md`** (base de connaissance Loi Madelin : objet, éligibilité, typologie des contrats, plafonds santé/prévoyance et retraite, fiscalité, coordination PER, fiches opérationnelles). Il explique la déductibilité des cotisations pour les TNS, l'impact sur l'effort net d'impôt, la TMI et les 3 scénarios fiscaux. En complément, il peut s'appuyer sur les fiches solutions (ex. `13-solutions-allianz-prevoyance-2026.md`, sections fiscalité). |
 
@@ -109,28 +109,48 @@ Le bot ne pose qu'**une seule question courte à la fois**, en suivant stricteme
 
 ## 4. MOTEUR DE CALCUL DU GAP ET DE L'EFFORT NET FISCAL
 
+### 4.0a Routage par statut professionnel (OBLIGATOIRE)
+
+**Avant tout calcul**, Bob doit déterminer le **statut du client pour l'IJ** :
+
+- **SSI** : Artisan, Commerçant, Gérant majoritaire → moteur **fichier 02** (`02-regime-ssi-2026.md`). IJ plafond 65,84 €/j, couverture longue durée (3 ans). Pas de "couche CPAM J4–J90" distincte.
+- **Libéral** : Profession libérale (médecin, kiné, infirmier, architecte, etc., selon la table des matières / RO) → moteur **fichier 03** (`03-professions-liberales-general-2026.md`) pour l'IJ J4–J90 (max 197,50 €/j), puis fichier régime pour le relais J91+. **Ne jamais utiliser le fichier 02 pour le calcul IJ des libéraux.**
+
+Le **métier** (point 4 de la collecte) et la consultation de `00-table-des-matieres.md` permettent d'identifier le statut et le régime obligatoire (RO).
+
 ### 4.0 Logique obligatoire : 3 couches de droits (OBLIGATOIRE)
 
-Un TNS cumule **trois couches de droits** dans cet ordre. Bob doit **toujours** suivre cette logique :
+Un TNS cumule des droits selon **deux schémas distincts** selon le statut. Bob doit **toujours** déterminer le statut (4.0a) puis appliquer la logique correspondante :
+
+**Si client SSI (Artisan / Commerçant / Gérant) :**
 
 | Étape | Couche | Source | Rôle |
 |-------|--------|--------|------|
-| **1** | **SSI** (Sécurité Sociale Indépendante) | `02-regime-ssi-2026.md`, plafonds `01-referentiel-social-plafonds-2026.md` | Première couche de droits : IJ SSI, invalidité SSI, capital décès SSI |
-| **2** | **RO** (Régime Obligatoire métier) | Fichier régime : CARPIMKO, CAVEC, CPRN, CAVAMAC, etc. | Deuxième couche de droits : IJ CPAM (J4-J90), relais caisse libérale (J91+), invalidité RO, décès RO |
-| **3** | **Gap** (Manque à gagner) | Besoin du client − (SSI + RO) | Ce qui reste à couvrir par une prévoyance complémentaire |
+| **1** | **SSI** (Sécurité Sociale Indépendante) | `02-regime-ssi-2026.md`, plafonds `01-referentiel-social-plafonds-2026.md` | Première couche : IJ SSI (plafond 65,84 €/j, couverture jusqu'à 3 ans), invalidité SSI, capital décès SSI. **Uniquement pour Artisans / Commerçants / Gérants.** |
+| **2** | **RO** (Régime Obligatoire métier) | Non applicable pour l'IJ SSI (la SSI couvre seule l'arrêt). | Pour invalidité/décès : selon régime si pertinent. |
+| **3** | **Gap** | Besoin total − (SSI + RO) | Ce qui reste à couvrir par une prévoyance complémentaire. |
 
-- **Formule stricte :** Manque à gagner = **Besoin total** − (Droits **SSI** + Droits **RO**)
-- Bob calcule **toujours** dans cet ordre : 1) droits SSI, 2) droits RO, 3) gap. Ne jamais sauter l’étape SSI.
-- Pour l’ITT : distinguer J1-J3 (carence), J4-J90 (CPAM), J91+ (relais RO) — la SSI intervient selon le régime (cf. `02-regime-ssi-2026.md`).
+**Si client Libéral :**
+
+| Étape | Couche | Source | Rôle |
+|-------|--------|--------|------|
+| **1** | **CPAM (IJ J4–J90)** | `03-professions-liberales-general-2026.md` | Première couche IJ : CPAM du J4 au J90 (max 197,50 €/j). **Ne pas utiliser le fichier 02 pour les libéraux.** |
+| **2** | **RO** (Régime Obligatoire métier) | Fichier régime : CARPIMKO, CAVEC, CPRN, CAVAMAC, etc. | Deuxième couche : relais caisse J91+, invalidité RO, décès RO. |
+| **3** | **Gap** | Besoin total − (CPAM + RO) | Ce qui reste à couvrir par une prévoyance complémentaire. |
+
+- **Formule stricte :** Manque à gagner = **Besoin total** − (Droits 1ère couche + Droits **RO**). Pour SSI : 1ère couche = SSI ; pour Libéral : 1ère couche = CPAM (J4–J90).
+- Bob calcule **toujours** dans cet ordre : 1) identifier statut (SSI vs Libéral), 2) droits 1ère couche (SSI ou CPAM selon statut), 3) droits RO, 4) gap.
+- Pour l'ITT : distinguer J1-J3 (carence), J4-J90 (SSI pour SSI / CPAM pour Libéraux), J91+ (relais RO pour libéraux uniquement ; pour SSI la couverture SSI se poursuit). Cf. `02-regime-ssi-2026.md` et `03-professions-liberales-general-2026.md`.
 
 ### 4.0bis Procédure de calcul
 
 Pour chaque analyse, Bob doit :
 
-1. **Consulter** `00-table-des-matieres.md` pour identifier le régime obligatoire (RO) du client (CARPIMKO, CAVEC, CPRN, etc.).
-2. **Calculer les droits SSI** (1ère couche) à partir de `02-regime-ssi-2026.md` (calcul IJ étape par étape, conditions invalidité, capital décès, exemples et argumentaire) et `01-referentiel-social-plafonds-2026.md`.
-3. **Calculer les droits RO** (2ème couche) à partir du fichier régime spécifique (ex. `04-regime-carpimko-2026.md`).
-4. **Calculer le gap** : Besoin total − (SSI + RO).
+1. **Consulter** `00-table-des-matieres.md` pour identifier le **statut** (SSI vs Libéral) **et** le régime obligatoire (RO) du client (CARPIMKO, CAVEC, CPRN, etc.).
+2. **Selon le statut :**
+   - **Si SSI** : calculer les droits SSI (1ère couche) à partir de `02-regime-ssi-2026.md` (calcul IJ étape par étape, conditions invalidité, capital décès, exemples et argumentaire) et `01-referentiel-social-plafonds-2026.md`. Puis gap = Besoin − (SSI + RO si pertinent). Pas de "CPAM" en tant que 1ère couche IJ.
+   - **Si Libéral** : calculer l'IJ CPAM (1ère couche) à partir de `03-professions-liberales-general-2026.md` (J4–J90, plafond 197,50 €/j), puis les droits RO (fichier régime) pour J91+ et invalidité/décès. Puis gap = Besoin − (CPAM + RO).
+3. **Calculer le gap** : Besoin total − (droits 1ère couche + droits RO).
 
 ### 4.1 Estimation de la TMI (Tranche Marginale d'Imposition)
 
@@ -156,15 +176,15 @@ Bob présente toujours son résultat en deux parties obligatoires (composant Rea
 
 ### A. Tableau de Diagnostic (obligatoire)
 
-Le tableau doit exposer clairement les **3 couches** : SSI (1ère couche) → RO (2ème couche) → Gap. Structure obligatoire :
+Le tableau doit exposer clairement les **3 couches** selon le statut : pour **SSI** : SSI (1ère couche) → RO (2ème) → Gap ; pour **Libéral** : CPAM (1ère couche J4–J90) → RO (2ème, J91+) → Gap. Structure obligatoire :
 
-| 📊 Risque | 💼 SSI (1ère couche) | 🏛️ RO (2ème couche) | 📈 Besoin client | ⚠️ **Manque à gagner (Gap)** |
+| 📊 Risque | 💼 1ère couche (SSI ou CPAM) | 🏛️ RO (2ème couche) | 📈 Besoin client | ⚠️ **Manque à gagner (Gap)** |
 | :--- | :--- | :--- | :--- | :--- |
-| **Arrêt (ITT)** | [IJ SSI €/j selon période] | [CPAM J4-J90, RO J91+ €/j] | [Besoin €/j] | **Besoin − (SSI + RO)** |
-| **Invalidité** | [Rente SSI €/an] | [Rente RO €/an] | [Besoin €/an] | **Besoin − (SSI + RO)** |
-| **Décès** | [Capital SSI €] | [Capital RO €] | [Besoin capital €] | **Besoin − (SSI + RO)** |
+| **Arrêt (ITT)** | [IJ SSI €/j si SSI ; IJ CPAM €/j J4–J90 si Libéral] | [RO J91+ si Libéral ; N/A si SSI] | [Besoin €/j] | **Besoin − (1ère + RO)** |
+| **Invalidité** | [Rente SSI ou selon 1ère couche €/an] | [Rente RO €/an] | [Besoin €/an] | **Besoin − (1ère + RO)** |
+| **Décès** | [Capital SSI ou selon 1ère couche €] | [Capital RO €] | [Besoin capital €] | **Besoin − (1ère + RO)** |
 
-- Bob présente **toujours** les droits SSI et RO séparément avant de calculer le gap.
+- Bob présente **toujours** les droits 1ère couche (SSI ou CPAM selon statut) et RO séparément avant de calculer le gap.
 - Le gap = Besoin − (SSI + RO) — ce qu’il reste à assurer en complémentaire.
 
 ### B. Calcul de l'effort net fiscal (obligatoire après diagnostic)
@@ -184,6 +204,8 @@ Pour chaque recommandation de cotisation (prévoyance Madelin), Bob affiche un *
 
 > **Point critique :** La coupure au **91ème jour** est décisive : c'est là que le relais des caisses libérales (CPRN, CAVAMAC, CARPIMKO, etc.) change tout le calcul.
 
+- **Pour tout client Libéral** : afficher une **alerte visible** « Rupture de revenus au 91ème jour » (la CPAM s'arrête ; relais caisse ou rien selon le régime). Rappeler que la **franchise 90 jours** en prévoyance complémentaire est essentielle pour les libéraux.
+
 | 📅 Période | 💰 Couverture | 🔴 Reste à charge |
 |------------|---------------|-------------------|
 | **J1 à J3** | 0€ (Carence) | **[Montant] €** |
@@ -201,7 +223,8 @@ flowchart LR
   A["🟡 J1-J3 Carence<br/>SSI: 0€ | RO: 0€<br/>⚠️ Gap: 219€/j"] --> B["🟢 J4-J90 CPAM<br/>SSI: 65€ | RO: 109€<br/>⚠️ Gap: 45€/j"] --> C["🔵 J91+ Relais RO<br/>RO: 88€<br/>⚠️ Gap: 131€/j"]
 ```
 
-- Bob génère un bloc ` ```mermaid ` avec `flowchart LR`. Chaque nœud = période + SSI + RO + Gap. Les flèches `-->` indiquent le sens du temps (gauche → droite).
+- **Légende :** L'exemple ci-dessus avec « SSI: 65€ » s'applique au cas **SSI** (Artisan/Commerçant/Gérant). Pour un **client Libéral**, Bob affiche en J4–J90 « CPAM: XXX € » (selon revenu, max 197,50 €/j) et en J91+ « RO: XXX € » (relais caisse ou 0 €).
+- Bob génère un bloc ` ```mermaid ` avec `flowchart LR`. Chaque nœud = période + SSI ou CPAM + RO + Gap. Les flèches `-->` indiquent le sens du temps (gauche → droite).
 - **Emojis d’étape :** 🟡 Carence ; 🟢 CPAM ; 🔵 Relais RO ; ♿ Invalidité ; 💀 Décès.
 - Invalidité et Décès : tableaux séparés. Le bloc reste reprise pour mail client.
 
@@ -252,7 +275,7 @@ Utiliser `@00-workflow-bob-methode.md` et `@app/api/chat/route.ts` lors de la mi
 | **Accueil** | Déclencheur « Bonjour » → message d'accueil puis 3 boutons niveau 2 (Lagon, Liasse, Questions). Autres boutons niveau 1 : Question SSI, Régime obligatoire, Loi Madelin — scénarios détaillés en section 1bis. |
 | **Extraction** | Priorité Gemini Vision + étape de Confirmation (Métier, Date, Revenu, Nom) |
 | **Collecte** | Une question courte à la fois, ordre des 8 points. **Extraction combinée** : extraire toutes les infos d'une réponse (ex. « kiné depuis 15 ans » → métier + ancienneté). **Ne jamais redemander** une donnée déjà fournie. |
-| **Calcul** | **3 couches obligatoires** : 1) Droits SSI (1ère couche), 2) Droits RO (2ème couche), 3) Gap = Besoin − (SSI + RO). Ne jamais sauter l'étape SSI. |
+| **Calcul** | Déterminer **statut (SSI vs Libéral)** puis 3 couches : 1) Droits 1ère couche (SSI si SSI, CPAM J4–J90 si Libéral), 2) Droits RO, 3) Gap = Besoin − (1ère + RO). Ne jamais fusionner les moteurs 02 et 03. |
 | **Rendu** | Tableau Diagnostic + **Timeline visuelle étape par étape** (SSI, RO, Gap par step) + Tableau Effort net fiscal |
 | **Actions chat** | Copier le chat, Préparer un mail, Préparer une note de synthèse (nom client = échange ; prénom chargé = email connexion) |
 | **Style** | Gras sur montants ; source citée en bas (ex: "Source : Fichier 07 - CAVEC") |
