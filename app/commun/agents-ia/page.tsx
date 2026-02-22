@@ -9,15 +9,6 @@ import { ArrowLeft, Sparkles, Zap, Shield, Brain, MessageCircle } from "lucide-r
 
 const agents = [
   {
-    name: "Nina",
-    role: "La secrétaire ultime",
-    image: "/agents-ia/bot-secretaire/avatar.jpg",
-    superpower: "Gérer vos plannings comme si elle avait 8 bras (spoiler : elle en aura bientôt)",
-    color: "from-rose-500 via-pink-500 to-fuchsia-500",
-    glow: "shadow-rose-500/50",
-    href: null,
-  },
-  {
     name: "Bob",
     role: "L'expert prévoyance TNS",
     image: "/agents-ia/bot-tns/bob_sourit.png",
@@ -128,7 +119,7 @@ export default function AgentsIAPage() {
               Nos agents IA sont en formation
             </h1>
             <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
-              Nina, Bob, Léa, John, Sinistro et Pauline ont été envoyés en stage intensif
+              Bob, Léa, John, Sinistro et Pauline ont été envoyés en stage intensif
               <span className="text-violet-400 font-semibold"> « Super-pouvoirs niveau 2.0 »</span>.
               Ils reviennent bientôt, plus puissants que jamais. Promis, on a vérifié les fusibles.
             </p>
