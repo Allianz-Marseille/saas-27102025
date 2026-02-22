@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Users, ArrowRight, Building2, FileText, TrendingUp, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,8 @@ type OutilItem = {
   title: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
+  /** Logo de l'outil (affiché à la place de l'icône si présent) */
+  image?: string;
   href: string;
   features: {
     icon: React.ComponentType<{ className?: string }>;
@@ -64,6 +67,7 @@ export default function OutilsPage() {
       title: "Informations entreprise (Pappers)",
       description: "Accédez instantanément à toutes les données légales et financières des entreprises françaises via l'API Pappers.",
       icon: Users,
+      image: "/Pappers-logo-blue.png",
       href: "/commun/outils/beneficiaires-effectifs",
       badge: "API Pappers",
       features: [
@@ -78,6 +82,7 @@ export default function OutilsPage() {
       title: "Informations entreprise (Societe.com)",
       description: "En plus de la fiche entreprise : conventions collectives (CCN), scoring, contact, marques. Idéal pour identifier l’IDCC et consulter le Code du travail.",
       icon: Building2,
+      image: "/Logo_Societe.png",
       href: "/commun/outils/societe-entreprise",
       badge: "API Societe.com",
       ccnBadge: true,
@@ -135,12 +140,22 @@ export default function OutilsPage() {
                 <CardHeader className="pb-3 space-y-2.5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      {/* Icon compact with hover glow */}
+                      {/* Icon ou logo */}
                       <div className={cn(
-                        "p-2 rounded-lg shrink-0 transition-transform duration-300 group-hover:scale-110",
-                        colors.iconBg
+                        "p-2 rounded-lg shrink-0 transition-transform duration-300 group-hover:scale-110 flex items-center justify-center overflow-hidden min-w-[40px] min-h-[40px]",
+                        outil.image ? "bg-white dark:bg-gray-800/80" : colors.iconBg
                       )}>
-                        <Icon className="h-5 w-5 text-white" />
+                        {outil.image ? (
+                          <Image
+                            src={outil.image}
+                            alt=""
+                            width={40}
+                            height={40}
+                            className="h-8 w-auto object-contain"
+                          />
+                        ) : (
+                          <Icon className="h-5 w-5 text-white" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0 space-y-1.5">
                         <div className="space-y-1.5">
