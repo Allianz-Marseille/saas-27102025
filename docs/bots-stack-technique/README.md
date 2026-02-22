@@ -6,13 +6,27 @@ Ce document décrit l’**organisation technique commune** à tous les bots (act
 
 ---
 
+## Architecture multi-agents (implémentée)
+
+Le système utilise un **registre** et un **Context Loader** pour charger dynamiquement le contexte de chaque agent.
+
+| Fichier / module | Rôle |
+|------------------|------|
+| `docs/assets-gemini/registry-bots.md` | Index des agents (botId, dossier source, workflow principal) |
+| `lib/ai/bot-loader.ts` | `getBotContext(botId)` charge workflow + connaissances + référentiel global, retourne `systemInstruction` |
+| `app/api/chat/route.ts` | Extrait `botId` + `message` (+ history, attachments), appelle Gemini 1.5 Pro en streaming avec Vision |
+
+**Scalabilité :** ajouter un bot = créer le dossier dans `docs/assets-gemini/` + une ligne dans le registre. Aucun changement de code.
+
+---
+
 ## Stack technique générale
 
 | Couche | Technologie |
 |--------|-------------|
 | **Modèle** | **Gemini 1.5 Pro / Flash** — fenêtre de contexte étendue, traitement natif texte / images / PDF |
-| **Base de connaissances** | Fichiers **Markdown** (`.md`) organisés par index — référentiel unique par bot (plafonds, régimes, solutions produits). Ingestion par **context injection** dans le prompt système. |
-| **Application** | **Next.js 16** (App Router) + **SDK Google Generative AI** — streaming des réponses, API Routes, exécution de fonctions côté serveur |
+| **Base de connaissances** | Markdown dans `docs/assets-gemini/` : registre, référentiel global (plafonds 2026), workflow et fiches par bot. Chargement via **bot-loader**. |
+| **Application** | **Next.js 16** (App Router) + **SDK @google/genai** — streaming, API Routes, Vision pour images Lagon/Liasses |
 | **Backend / Données** | **Firebase** (Auth, Firestore, etc.) pour utilisateurs et données métier |
 | **Hébergement** | **Vercel** — déploiement et exécution des API |
 | **IDE** | **Cursor** — indexation des fichiers de méthode et règles projet pour aligner le code sur les processus métier |
@@ -21,9 +35,9 @@ Ce document décrit l’**organisation technique commune** à tous les bots (act
 
 ## Base de connaissances (RAG light)
 
-- **Structure :** dossiers dédiés par bot (ex. `docs/assets-gemini/<bot>/`) avec table des matières, workflow et fiches métier en Markdown.
-- **Usage :** les fichiers sont injectés dans le contexte (context injection) pour que l’IA s’appuie sur les données à jour plutôt que sur son entraînement.
-- **Évolution :** chaque nouveau bot dispose de son propre dossier de base de connaissances ; la stack (Gemini, Next.js, Firebase, Vercel) reste commune.
+- **Structure :** `docs/assets-gemini/` avec `registry-bots.md`, `01-referentiel-social-plafonds-2026.md` (global), et par bot un dossier (ex. `bob-prevoyance/`) contenant le workflow (`00-workflow-*.md`) et les fiches métier (`.md`).
+- **Usage :** `getBotContext(botId)` charge et concatène les fichiers avant l'appel Gemini.
+- **Évolution :** nouveau bot = nouveau dossier + ligne dans le registre.
 
 ---
 
@@ -72,7 +86,7 @@ Les bots **doivent pouvoir proposer des liens vers les devis Allianz** dès que 
 | Domaine | Choix technique |
 |---------|------------------|
 | **Modèle** | Gemini 1.5 Pro / Flash |
-| **Base de connaissances** | Markdown par bot, context injection |
+| **Base de connaissances** | Markdown dans assets-gemini, bot-loader, registre |
 | **Framework** | Next.js 16, TypeScript |
 | **Backend** | Firebase (Auth, Firestore) |
 | **Hébergement** | Vercel |
