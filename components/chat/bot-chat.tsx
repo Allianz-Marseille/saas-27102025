@@ -23,7 +23,7 @@ export interface BotChatMessage {
   content: string;
 }
 
-type AccentColor = "default" | "blue";
+type AccentColor = "default" | "blue" | "emerald" | "orange";
 
 /** Label affiché OU { label, message } pour envoyer un message différent. */
 export type QuickReply = string | { label: string; message: string };
@@ -281,15 +281,28 @@ export function BotChat({
     sendMessage();
   };
 
-  const isBlue = accentColor === "blue";
+  const isAccent =
+    accentColor === "blue" ||
+    accentColor === "emerald" ||
+    accentColor === "orange";
   /** Chat avec fond sombre : force les variables dark pour un bon contraste texte/fond */
-  const hasDarkContainer = darkContainerProp ?? isBlue;
-  const headerBorderClass = isBlue
-    ? "border-b border-blue-500/30 bg-blue-950/20"
-    : "border-b bg-muted/30";
-  const assistantBubbleClass = isBlue
-    ? "mr-auto bg-blue-950/40 border border-blue-500/20 shadow-sm"
-    : "mr-auto bg-muted shadow-sm";
+  const hasDarkContainer = darkContainerProp ?? isAccent;
+  const headerBorderClass =
+    accentColor === "blue"
+      ? "border-b border-blue-500/30 bg-blue-950/20"
+      : accentColor === "emerald"
+        ? "border-b border-emerald-500/30 bg-emerald-950/20"
+        : accentColor === "orange"
+          ? "border-b border-orange-500/30 bg-orange-950/20"
+          : "border-b bg-muted/30";
+  const assistantBubbleClass =
+    accentColor === "blue"
+      ? "mr-auto bg-blue-950/40 border border-blue-500/20 shadow-sm"
+      : accentColor === "emerald"
+        ? "mr-auto bg-emerald-950/40 border border-emerald-500/20 shadow-sm"
+        : accentColor === "orange"
+          ? "mr-auto bg-orange-950/40 border border-orange-500/20 shadow-sm"
+          : "mr-auto bg-muted shadow-sm";
   const userBubbleClass =
     "ml-auto bg-primary text-primary-foreground shadow-sm";
   const lastMessageIsUser =
