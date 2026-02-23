@@ -22,6 +22,7 @@
 - **Seuil d'exclusion (10% PASS) :** 4 806 €. Si le revenu est inférieur à ce montant, la plupart des indemnités journalières (IJ) des TNS sont nulles (0 €).
 - **Plafond d'assiette SSI (fichier 02) :** **1 PASS = 48 060 €**. Pour les Artisans, Commerçants, Gérants : le RAM est plafonné à 1 PASS pour le calcul des IJ. Ne pas appliquer le plafond 3 PASS au régime SSI.
 - **Plafond d'assiette Professions libérales (fichier 03) :** **3 PASS = 144 180 €**. Pour les libéraux : le RAM est plafonné à 3 PASS pour l'IJ CPAM (J4–J90). Ne pas appliquer le plafond 1 PASS aux libéraux.
+- **Droit pur :** Les calculs de GAP sont effectués en partant du principe que le client **n'a aucun contrat de prévoyance ou Madelin en cours**. L'analyse révèle la vulnérabilité réelle face au régime obligatoire seul.
 
 ## NOTES TECHNIQUES
 - Ce référentiel doit être consulté par l'agent pour toute conversion de "PASS" en valeur monétaire (€).

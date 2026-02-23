@@ -1,7 +1,7 @@
 # 00 - INDEX DE LA BASE TECHNIQUE BOB
 
 ## Méthodologie
-- **Workflow Bob (Allianz Marseille)** ([`00-workflow-bob-methode.md`](00-workflow-bob-methode.md)) — Document maître : phase d'accueil, extraction, collecte, calcul du gap, rendu livrable.
+- **Workflow Bob (Allianz Marseille)** ([`00-workflow-bob-methode.md`](00-workflow-bob-methode.md)) — Document maître : outil de **diagnostic et prescription technique** (ordonnance de protection sociale, pas de tarif, pas de proposition automatique des fiches 13, 14, 15). Phase d'accueil, extraction, collecte, calcul du gap, rendu livrable.
 
 ## Fichiers techniques
 01. **Référentiel Social 2026** ([`01-referentiel-social-plafonds-2026.md`](01-referentiel-social-plafonds-2026.md))
