@@ -26,7 +26,7 @@ const statusStyles: Record<
   },
   ko: {
     label: "KO pour le moment",
-    className: "bg-slate-600/90 text-slate-200 border-slate-500/50",
+    className: "bg-muted text-muted-foreground border-border",
   },
 };
 
@@ -132,9 +132,8 @@ export default function AgentsIAPage() {
       <div
         className={`
           relative overflow-hidden rounded-2xl p-6 h-full flex flex-col
-          bg-slate-900/60 backdrop-blur-xl border
-          border-slate-700/50 hover:border-violet-500/40
-          transition-all duration-500 hover:scale-[1.02]
+          bg-card backdrop-blur-xl border border-border
+          hover:border-violet-500/40 transition-all duration-500 hover:scale-[1.02]
           ${agent.glow} hover:shadow-2xl
         `}
       >
@@ -150,7 +149,7 @@ export default function AgentsIAPage() {
         <div className="relative flex gap-6 items-start flex-1 min-h-0">
           <div className="relative shrink-0">
             <div
-              className={`w-24 h-24 rounded-2xl overflow-hidden border-2 border-slate-600/50 group-hover:border-violet-400/50 transition-colors shadow-xl ${agent.glow}`}
+              className={`w-24 h-24 rounded-2xl overflow-hidden border-2 border-border group-hover:border-violet-400/50 transition-colors shadow-xl ${agent.glow}`}
             >
               <Image
                 src={agent.image}
@@ -165,13 +164,13 @@ export default function AgentsIAPage() {
             />
           </div>
           <div className="flex-1 min-w-0 flex flex-col">
-            <h3 className="text-2xl font-bold text-white mb-1">
+            <h3 className="text-2xl font-bold text-foreground mb-1">
               {agent.name}
             </h3>
             <p className={`text-sm font-medium bg-gradient-to-r ${agent.color} bg-clip-text text-transparent mb-3`}>
               {agent.role}
             </p>
-            <p className="text-slate-400 text-sm leading-relaxed line-clamp-3">
+            <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3">
               {agent.superpower}
             </p>
           </div>
@@ -196,8 +195,8 @@ export default function AgentsIAPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
-      {/* Fond futuriste : grille + gradients */}
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Fond : grille + gradients (thème-aware) */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(139,92,246,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(139,92,246,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-violet-500/10 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-0 right-0 w-[600px] h-[300px] bg-cyan-500/10 rounded-full blur-[100px] -z-10" />
@@ -207,7 +206,7 @@ export default function AgentsIAPage() {
         <Button
           variant="ghost"
           onClick={() => router.back()}
-          className="mb-8 text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+          className="mb-8 text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Retour
@@ -225,17 +224,17 @@ export default function AgentsIAPage() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/20 border border-violet-500/30 text-violet-300 text-sm font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/20 border border-violet-500/30 text-violet-700 dark:text-violet-300 text-sm font-medium"
             >
               <Sparkles className="h-4 w-4" />
               Mise à jour en cours...
             </motion.div>
-            <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-200 to-fuchsia-200">
+            <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-foreground via-violet-600 to-fuchsia-600 dark:from-white dark:via-violet-200 dark:to-fuchsia-200">
               Nos agents IA sont en formation
             </h1>
-            <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Bob, Léa, John, Sinistro et Pauline ont été envoyés en stage intensif
-              <span className="text-violet-400 font-semibold"> « Super-pouvoirs niveau 2.0 »</span>.
+              <span className="text-violet-600 dark:text-violet-400 font-semibold"> « Super-pouvoirs niveau 2.0 »</span>.
               Ils reviennent bientôt, plus puissants que jamais. Promis, on a vérifié les fusibles.
             </p>
           </motion.div>
@@ -251,7 +250,7 @@ export default function AgentsIAPage() {
           <div className="space-y-6">
             <motion.h2
               variants={itemVariants}
-              className="text-2xl md:text-3xl font-bold text-white border-b border-slate-700/50 pb-3"
+              className="text-2xl md:text-3xl font-bold text-foreground border-b border-border pb-3"
             >
               Mes inspecteurs IA
             </motion.h2>
@@ -263,26 +262,26 @@ export default function AgentsIAPage() {
           {/* CTA humoristique */}
           <motion.div
             variants={itemVariants}
-            className="text-center p-8 rounded-2xl bg-slate-900/40 border border-slate-700/50 backdrop-blur-sm"
+            className="text-center p-8 rounded-2xl bg-card border border-border backdrop-blur-sm"
           >
-            <p className="text-slate-400 text-lg mb-4">
+            <p className="text-muted-foreground text-lg mb-4">
               En attendant, continuez à faire comme d&apos;habitude. Ou profitez pour prendre un café.
               On dit que ça aide à patienter.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <span className="inline-flex items-center gap-2 text-sm text-slate-500">
+              <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                 <Brain className="h-4 w-4" />
                 Neurones en surchauffe
               </span>
-              <span className="inline-flex items-center gap-2 text-sm text-slate-500">
+              <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                 <Zap className="h-4 w-4" />
                 Circuits en upgrade
               </span>
-              <span className="inline-flex items-center gap-2 text-sm text-slate-500">
+              <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                 <Shield className="h-4 w-4" />
                 Super-pouvoirs en test
               </span>
-              <span className="inline-flex items-center gap-2 text-sm text-slate-500">
+              <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                 <MessageCircle className="h-4 w-4" />
                 Blagues en préparation
               </span>

@@ -434,180 +434,142 @@ export function BotChat({
     accentColor === "blue" ||
     accentColor === "emerald" ||
     accentColor === "orange";
-  /** Chat avec fond sombre : force les variables dark pour un bon contraste texte/fond */
-  const hasDarkContainer = darkContainerProp ?? isAccent;
   const headerBorderClass =
     accentColor === "blue"
-      ? "border-b border-blue-500/30 bg-blue-950/20"
+      ? "border-b border-blue-500/30 bg-blue-500/10 dark:bg-blue-950/20"
       : accentColor === "emerald"
-        ? "border-b border-emerald-500/30 bg-emerald-950/20"
+        ? "border-b border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/20"
         : accentColor === "orange"
-          ? "border-b border-orange-500/30 bg-orange-950/20"
-          : "border-b bg-muted/30";
+          ? "border-b border-orange-500/30 bg-orange-500/10 dark:bg-orange-950/20"
+          : "border-b border-border bg-muted/30";
   const assistantBubbleClass =
     accentColor === "blue"
-      ? "mr-auto bg-blue-950/40 border border-blue-500/20 shadow-sm"
+      ? "mr-auto bg-muted border border-blue-500/30 dark:bg-blue-950/40 dark:border-blue-500/20 shadow-sm"
       : accentColor === "emerald"
-        ? "mr-auto bg-emerald-950/40 border border-emerald-500/20 shadow-sm"
+        ? "mr-auto bg-muted border border-emerald-500/30 dark:bg-emerald-950/40 dark:border-emerald-500/20 shadow-sm"
         : accentColor === "orange"
-          ? "mr-auto bg-orange-950/40 border border-orange-500/20 shadow-sm"
-          : "mr-auto bg-muted shadow-sm";
+          ? "mr-auto bg-muted border border-orange-500/30 dark:bg-orange-950/40 dark:border-orange-500/20 shadow-sm"
+          : "mr-auto bg-muted border border-border shadow-sm";
   const userBubbleClass =
     "ml-auto bg-primary text-primary-foreground shadow-sm";
   const tableHeaderClass =
     accentColor === "blue"
-      ? "bg-blue-900/60 text-slate-100"
+      ? "bg-muted dark:bg-blue-900/60 text-foreground dark:text-slate-100"
       : accentColor === "emerald"
-        ? "bg-emerald-900/60 text-slate-100"
+        ? "bg-muted dark:bg-emerald-900/60 text-foreground dark:text-slate-100"
         : accentColor === "orange"
-          ? "bg-orange-900/60 text-slate-100"
+          ? "bg-muted dark:bg-orange-900/60 text-foreground dark:text-slate-100"
           : "bg-muted text-foreground";
-  const markdownTableComponents = hasDarkContainer
-    ? {
-        table: ({ children }: React.HTMLAttributes<HTMLTableElement>) => (
-          <div className="my-3 overflow-x-auto rounded-lg border border-slate-600/50">
-            <table className="w-full min-w-[400px] border-collapse">
-              {children}
-            </table>
-          </div>
-        ),
-        thead: ({ children }: React.HTMLAttributes<HTMLTableSectionElement>) => (
-          <thead className={tableHeaderClass}>{children}</thead>
-        ),
-        th: ({ children }: React.ThHTMLAttributes<HTMLTableCellElement>) => (
-          <th className="px-3 py-2 text-left text-xs font-semibold">
-            {children}
-          </th>
-        ),
-        tbody: ({ children }: React.HTMLAttributes<HTMLTableSectionElement>) => (
-          <tbody className="divide-y divide-slate-600/30">{children}</tbody>
-        ),
-        tr: ({ children }: React.HTMLAttributes<HTMLTableRowElement>) => (
-          <tr className="even:bg-slate-800/40 odd:bg-transparent">
-            {children}
-          </tr>
-        ),
-        td: ({ children, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) => (
-          <td
-            className="px-3 py-2 text-sm last:bg-amber-950/30 last:font-semibold last:text-amber-200"
-            {...props}
-          >
-            {children}
-          </td>
-        ),
-        blockquote: ({
-          children,
-          ...props
-        }: React.BlockquoteHTMLAttributes<HTMLQuoteElement>) => (
-          <blockquote
-            className="my-2 border-l-4 border-amber-500/60 bg-amber-950/20 pl-3 py-1.5 text-sm italic"
-            {...props}
-          >
-            {children}
-          </blockquote>
-        ),
-        h2: ({
-          children,
-          ...props
-        }: React.HTMLAttributes<HTMLHeadingElement>) => (
-          <h2
-            className="mt-6 mb-3 flex items-center gap-2 text-base font-semibold text-slate-100 first:mt-0"
-            {...props}
-          >
-            <BookOpen className="h-4 w-4 shrink-0 text-blue-400" aria-hidden />
-            {children}
-          </h2>
-        ),
-        h3: ({
-          children,
-          ...props
-        }: React.HTMLAttributes<HTMLHeadingElement>) => (
-          <h3
-            className="mt-4 mb-2 flex items-center gap-2 text-sm font-semibold text-slate-200"
-            {...props}
-          >
-            <ListChecks className="h-3.5 w-3.5 shrink-0 text-blue-400/80" aria-hidden />
-            {children}
-          </h3>
-        ),
-        h4: ({
-          children,
-          ...props
-        }: React.HTMLAttributes<HTMLHeadingElement>) => (
-          <h4
-            className="mt-4 mb-2 flex items-center gap-2 text-sm font-semibold text-slate-200 first:mt-0"
-            {...props}
-          >
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-blue-400/70" aria-hidden />
-            {children}
-          </h4>
-        ),
-        p: ({ children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => (
-          <p className="mb-3 leading-relaxed last:mb-0" {...props}>
-            {children}
-          </p>
-        ),
-        ul: ({ children, ...props }: React.HTMLAttributes<HTMLUListElement>) => (
-          <ul className="my-3 space-y-1 pl-4" {...props}>
-            {children}
-          </ul>
-        ),
-        ol: ({ children, ...props }: React.HTMLAttributes<HTMLOListElement>) => (
-          <ol className="my-3 list-decimal space-y-1 pl-4" {...props}>
-            {children}
-          </ol>
-        ),
-        hr: () => <hr className="my-4 border-slate-600/50" />,
-        code: ({
-          className,
-          children,
-          ...props
-        }: React.HTMLAttributes<HTMLElement>) => {
-          const lang = className?.replace("language-", "");
-          const code = String(children).replace(/\n$/, "");
-          if (lang === "mermaid") {
-            return <MermaidDiagram code={code} />;
-          }
-          return (
-            <code className={className} {...props}>
-              {children}
-            </code>
-          );
-        },
+  const markdownTableComponents = {
+    table: ({ children }: React.HTMLAttributes<HTMLTableElement>) => (
+      <div className="my-3 overflow-x-auto rounded-lg border border-border">
+        <table className="w-full min-w-[400px] border-collapse">
+          {children}
+        </table>
+      </div>
+    ),
+    thead: ({ children }: React.HTMLAttributes<HTMLTableSectionElement>) => (
+      <thead className={tableHeaderClass}>{children}</thead>
+    ),
+    th: ({ children }: React.ThHTMLAttributes<HTMLTableCellElement>) => (
+      <th className="px-3 py-2 text-left text-xs font-semibold text-foreground">
+        {children}
+      </th>
+    ),
+    tbody: ({ children }: React.HTMLAttributes<HTMLTableSectionElement>) => (
+      <tbody className="divide-y divide-border">{children}</tbody>
+    ),
+    tr: ({ children }: React.HTMLAttributes<HTMLTableRowElement>) => (
+      <tr className="even:bg-muted/50 odd:bg-transparent">{children}</tr>
+    ),
+    td: ({ children, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) => (
+      <td
+        className="px-3 py-2 text-sm text-foreground last:bg-amber-500/20 last:font-semibold last:text-amber-900 dark:last:bg-amber-950/30 dark:last:text-amber-200"
+        {...props}
+      >
+        {children}
+      </td>
+    ),
+    blockquote: ({
+      children,
+      ...props
+    }: React.BlockquoteHTMLAttributes<HTMLQuoteElement>) => (
+      <blockquote
+        className="my-2 border-l-4 border-amber-500/60 bg-amber-500/10 dark:bg-amber-950/20 pl-3 py-1.5 text-sm italic text-foreground"
+        {...props}
+      >
+        {children}
+      </blockquote>
+    ),
+    h2: ({
+      children,
+      ...props
+    }: React.HTMLAttributes<HTMLHeadingElement>) => (
+      <h2
+        className="mt-6 mb-3 flex items-center gap-2 text-base font-semibold text-foreground first:mt-0"
+        {...props}
+      >
+        <BookOpen className="h-4 w-4 shrink-0 text-blue-500 dark:text-blue-400" aria-hidden />
+        {children}
+      </h2>
+    ),
+    h3: ({
+      children,
+      ...props
+    }: React.HTMLAttributes<HTMLHeadingElement>) => (
+      <h3
+        className="mt-4 mb-2 flex items-center gap-2 text-sm font-semibold text-foreground"
+        {...props}
+      >
+        <ListChecks className="h-3.5 w-3.5 shrink-0 text-blue-500/80 dark:text-blue-400/80" aria-hidden />
+        {children}
+      </h3>
+    ),
+    h4: ({
+      children,
+      ...props
+    }: React.HTMLAttributes<HTMLHeadingElement>) => (
+      <h4
+        className="mt-4 mb-2 flex items-center gap-2 text-sm font-semibold text-foreground first:mt-0"
+        {...props}
+      >
+        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-blue-500/70 dark:text-blue-400/70" aria-hidden />
+        {children}
+      </h4>
+    ),
+    p: ({ children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => (
+      <p className="mb-3 leading-relaxed text-foreground last:mb-0" {...props}>
+        {children}
+      </p>
+    ),
+    ul: ({ children, ...props }: React.HTMLAttributes<HTMLUListElement>) => (
+      <ul className="my-3 space-y-1 pl-4 text-foreground" {...props}>
+        {children}
+      </ul>
+    ),
+    ol: ({ children, ...props }: React.HTMLAttributes<HTMLOListElement>) => (
+      <ol className="my-3 list-decimal space-y-1 pl-4 text-foreground" {...props}>
+        {children}
+      </ol>
+    ),
+    hr: () => <hr className="my-4 border-border" />,
+    code: ({
+      className,
+      children,
+      ...props
+    }: React.HTMLAttributes<HTMLElement>) => {
+      const lang = className?.replace("language-", "");
+      const code = String(children).replace(/\n$/, "");
+      if (lang === "mermaid") {
+        return <MermaidDiagram code={code} />;
       }
-    : {
-        p: ({ children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => (
-          <p className="mb-3 leading-relaxed last:mb-0" {...props}>
-            {children}
-          </p>
-        ),
-        ul: ({ children, ...props }: React.HTMLAttributes<HTMLUListElement>) => (
-          <ul className="my-3 space-y-1 pl-4" {...props}>
-            {children}
-          </ul>
-        ),
-        ol: ({ children, ...props }: React.HTMLAttributes<HTMLOListElement>) => (
-          <ol className="my-3 list-decimal space-y-1 pl-4" {...props}>
-            {children}
-          </ol>
-        ),
-        code: ({
-          className,
-          children,
-          ...props
-        }: React.HTMLAttributes<HTMLElement>) => {
-          const lang = className?.replace("language-", "");
-          const code = String(children).replace(/\n$/, "");
-          if (lang === "mermaid") {
-            return <MermaidDiagram code={code} />;
-          }
-          return (
-            <code className={className} {...props}>
-              {children}
-            </code>
-          );
-        },
-      } as const;
+      return (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    },
+  } as const;
   const useTwoLevels =
     quickRepliesLevel1 != null &&
     quickRepliesLevel2 != null &&
@@ -639,8 +601,7 @@ export function BotChat({
   return (
     <div
       className={cn(
-        "flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden",
-        hasDarkContainer && "dark",
+        "flex flex-col rounded-xl border border-border bg-card text-card-foreground shadow-sm overflow-hidden",
         className
       )}
     >
@@ -656,7 +617,7 @@ export function BotChat({
             <span
               className={cn(
                 "text-xs",
-                hasDarkContainer ? "text-slate-400" : "text-muted-foreground"
+                "text-muted-foreground"
               )}
             >
               {sessionLabel}
@@ -665,12 +626,7 @@ export function BotChat({
           <Button
             variant="ghost"
             size="sm"
-            className={cn(
-              "h-8 gap-1.5 shrink-0",
-              hasDarkContainer
-                ? "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
-                : "text-muted-foreground hover:text-foreground"
-            )}
+            className="h-8 gap-1.5 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
             onClick={handleNewConversation}
             disabled={isLoading}
             title="Nouvelle conversation"
@@ -681,12 +637,7 @@ export function BotChat({
           <Button
             variant="ghost"
             size="sm"
-            className={cn(
-              "h-8 gap-1.5 shrink-0",
-              hasDarkContainer
-                ? "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
-                : "text-muted-foreground hover:text-foreground"
-            )}
+            className="h-8 gap-1.5 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
             onClick={handleCopierChat}
             disabled={!user || messages.length === 0}
             title="Copier l'intégralité du chat"
@@ -703,12 +654,7 @@ export function BotChat({
           <Button
             variant="ghost"
             size="sm"
-            className={cn(
-              "h-8 gap-1.5 shrink-0",
-              hasDarkContainer
-                ? "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
-                : "text-muted-foreground hover:text-foreground"
-            )}
+            className="h-8 gap-1.5 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
             onClick={handlePreparerMail}
             disabled={!user || messages.length === 0}
             title="Préparer un mail (objet, corps, signature)"
@@ -725,12 +671,7 @@ export function BotChat({
           <Button
             variant="ghost"
             size="sm"
-            className={cn(
-              "h-8 gap-1.5 shrink-0",
-              hasDarkContainer
-                ? "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
-                : "text-muted-foreground hover:text-foreground"
-            )}
+            className="h-8 gap-1.5 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
             onClick={handlePreparerNoteSynthèse}
             disabled={!user || messages.length === 0}
             title="Préparer une note de synthèse"
@@ -755,7 +696,7 @@ export function BotChat({
           <p
             className={cn(
               "text-sm",
-              hasDarkContainer ? "text-slate-400" : "text-muted-foreground"
+              "text-muted-foreground"
             )}
           >
             Posez votre question à {botName}.{inputPlaceholderSubtitle ? ` ${inputPlaceholderSubtitle}.` : ""}
@@ -843,7 +784,7 @@ export function BotChat({
                     <span
                       className={cn(
                         "flex items-center gap-1.5 text-xs shrink-0",
-                        hasDarkContainer ? "text-slate-400" : "text-muted-foreground"
+                        "text-muted-foreground"
                       )}
                     >
                       <MessageCircle className="h-3.5 w-3.5" aria-hidden />
@@ -855,11 +796,7 @@ export function BotChat({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className={cn(
-                          "h-8 text-xs shrink-0",
-                          hasDarkContainer &&
-                            "border-slate-500/60 bg-slate-800/40 text-slate-200 hover:bg-slate-700/60 hover:text-white hover:border-slate-400/60"
-                        )}
+                        className="h-8 text-xs shrink-0 border-border bg-muted text-foreground hover:bg-muted/80"
                         onClick={() => sendMessage(label)}
                         disabled={isLoading}
                         title={`Envoyer le thème ${idx + 1}`}
@@ -878,7 +815,7 @@ export function BotChat({
                     <span
                       className={cn(
                         "w-full flex items-center gap-1.5 text-xs shrink-0 mb-1",
-                        hasDarkContainer ? "text-slate-400" : "text-muted-foreground"
+                        "text-muted-foreground"
                       )}
                     >
                       Lancer directement :
@@ -965,7 +902,7 @@ export function BotChat({
         <div
           className={cn(
             "border-t px-4 py-2 overflow-x-auto",
-            hasDarkContainer && "border-slate-600/50"
+            "border-border"
           )}
         >
           <div className="flex gap-2 pb-1">
@@ -981,9 +918,7 @@ export function BotChat({
                   className={cn(
                     "shrink-0 text-xs h-8",
                     isLevel2 && level2ButtonClass,
-                    !isLevel2 &&
-                      hasDarkContainer &&
-                      "border-slate-500/60 bg-slate-800/50 text-slate-200 hover:bg-slate-700/60 hover:text-white hover:border-slate-400/60"
+                    !isLevel2 && "border-border bg-muted/50 text-foreground hover:bg-muted"
                   )}
                   onClick={() => sendMessage(message)}
                   disabled={isLoading}
@@ -1001,7 +936,7 @@ export function BotChat({
         onSubmit={handleSubmit}
         className={cn(
           "border-t p-4",
-          hasDarkContainer && "border-slate-600/50"
+          "border-border"
         )}
         noValidate
       >
@@ -1020,12 +955,7 @@ export function BotChat({
             type="button"
             variant="ghost"
             size="icon"
-            className={cn(
-              "shrink-0 h-11 w-11",
-              hasDarkContainer
-                ? "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
-                : "text-muted-foreground hover:text-foreground"
-            )}
+            className="shrink-0 h-11 w-11 text-muted-foreground hover:text-foreground hover:bg-muted"
             onClick={handleAttachClick}
             title="Joindre un fichier (à venir)"
           >
@@ -1038,11 +968,7 @@ export function BotChat({
             onChange={(e) => setInput(e.target.value)}
             placeholder="Votre message..."
             rows={2}
-            className={cn(
-              "resize-none min-h-[44px] flex-1",
-              hasDarkContainer &&
-                "placeholder:text-slate-400 bg-slate-800/50 border-slate-600/50 text-slate-100 focus-visible:border-blue-400/50"
-            )}
+            className="resize-none min-h-[44px] flex-1 bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
             disabled={isLoading}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {

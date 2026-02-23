@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, FileText, User, Coins, Workflow, Wrench, Zap } from "lucide-react";
+import { Home, FileText, User, Coins, Workflow, Wrench, Zap, Bot } from "lucide-react";
 import { CommercialSidebar } from "@/components/dashboard/commercial-sidebar";
 import { MobileMenu } from "@/components/navigation/mobile-menu";
 import { ResponsiveHeader } from "@/components/navigation/responsive-header";
@@ -43,9 +43,16 @@ const commercialNavItems = [
     href: "/commun/process",
   },
   {
+    icon: Bot,
+    label: "Mes agents IA",
+    href: "/commun/agents-ia",
+    badge: "en formation",
+  },
+  {
     icon: Wrench,
     label: "Outils",
     href: "/commun/outils",
+    badge: "new",
   },
   {
     icon: User,
@@ -72,9 +79,16 @@ const gestionnaireSinistreNavItems = [
     href: "/commun/process",
   },
   {
+    icon: Bot,
+    label: "Mes agents IA",
+    href: "/commun/agents-ia",
+    badge: "en formation",
+  },
+  {
     icon: Wrench,
     label: "Outils",
     href: "/commun/outils",
+    badge: "new",
   },
 ];
 
@@ -142,6 +156,7 @@ export default function DashboardLayout({
             onLogout={handleLogout}
             userData={userData}
             onNavigate={handleMobileNavigation}
+            showNotifications={!isGestionnaireSinistreUser}
           />
         </MobileMenu>
 

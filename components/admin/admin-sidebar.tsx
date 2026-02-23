@@ -250,7 +250,7 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
             
             <div className="p-4 space-y-2">
               <div className={cn("flex gap-2", isCollapsed && "flex-col")}>
-                <ThemeToggle />
+                <ThemeToggle showLabel={!isCollapsed} />
                 {!isCollapsed && (
                   <Button
                     variant="outline"

@@ -574,6 +574,7 @@ export default function CommunLayout({
             onLogout={handleLogout}
             userData={userData}
             onNavigate={handleMobileNavigation}
+            showNotifications={showNotifications}
           />
         </MobileMenu>
 

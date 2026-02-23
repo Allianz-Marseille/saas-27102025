@@ -294,7 +294,7 @@ export function CommercialSidebar() {
             {!isGestionnaireSinistre && (
               <>
                 <NotificationCenter />
-                <ThemeToggle />
+                <ThemeToggle showLabel={!isCollapsed} />
               </>
             )}
           {!isCollapsed && (

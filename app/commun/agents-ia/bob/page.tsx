@@ -52,7 +52,7 @@ function BobPageContent() {
   const inTestMode = config?.inTestMode === true;
 
   const pageContent = (
-    <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-500/10 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-0 right-0 w-[600px] h-[300px] bg-blue-400/10 rounded-full blur-[100px] -z-10" />
@@ -60,24 +60,24 @@ function BobPageContent() {
       <div className="relative w-full max-w-none mx-auto py-8 px-4 lg:px-6">
         {/* Fil d'Ariane */}
         <nav
-          className="flex items-center gap-2 text-sm text-slate-400 mb-6"
+          className="flex items-center gap-2 text-sm text-muted-foreground mb-6"
           aria-label="Fil d'Ariane"
         >
           <Link
             href="/dashboard"
-            className="hover:text-white transition-colors"
+            className="hover:text-foreground transition-colors"
           >
             Accueil
           </Link>
-          <ChevronRight className="h-4 w-4 text-slate-600" />
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
           <Link
             href={inTestMode ? "/admin/test-bots" : "/commun/agents-ia"}
-            className="hover:text-white transition-colors"
+            className="hover:text-foreground transition-colors"
           >
             {inTestMode ? "Test des Bots" : "Agents IA"}
           </Link>
-          <ChevronRight className="h-4 w-4 text-slate-600" />
-          <span className="text-blue-300 font-medium">Bob TNS</span>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <span className="text-blue-600 dark:text-blue-300 font-medium">Bob TNS</span>
         </nav>
 
         {/* Bouton Retour */}
@@ -87,7 +87,7 @@ function BobPageContent() {
         >
           <Button
             variant="ghost"
-            className="text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+            className="text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             {inTestMode ? "Retour au test des bots" : "Retour aux agents"}
@@ -106,8 +106,8 @@ function BobPageContent() {
             />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Bob TNS</h1>
-            <p className="text-slate-400 text-sm">
+            <h1 className="text-2xl font-bold text-foreground">Bob TNS</h1>
+            <p className="text-muted-foreground text-sm">
               {config?.description ?? "Expert en prévoyance"}
             </p>
           </div>
@@ -118,7 +118,7 @@ function BobPageContent() {
           botId="bob"
           botName={config?.name ?? "Bob TNS"}
           accentColor="blue"
-          className="bg-slate-900/80 border-blue-500/30 shadow-xl shadow-blue-500/5"
+          className="bg-card border border-blue-500/30 dark:border-blue-500/30 shadow-xl shadow-blue-500/5"
           quickRepliesLevel1={BOB_QUICK_REPLIES_LEVEL1}
           quickRepliesLevel2={BOB_QUICK_REPLIES_LEVEL2}
           bonjourTriggerMessage="Bonjour"

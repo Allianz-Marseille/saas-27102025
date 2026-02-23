@@ -1,17 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTheme } from "next-themes";
 import mermaid from "mermaid";
-
-mermaid.initialize({
-  startOnLoad: false,
-  theme: "dark",
-  flowchart: {
-    useMaxWidth: true,
-    htmlLabels: true,
-    curve: "basis",
-  },
-});
 
 interface MermaidDiagramProps {
   code: string;
@@ -22,6 +13,20 @@ export function MermaidDiagram({ code, className = "" }: MermaidDiagramProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [rendered, setRendered] = useState<string | null>(null);
+  const { resolvedTheme } = useTheme();
+
+  useEffect(() => {
+    const theme = resolvedTheme === "dark" ? "dark" : "default";
+    mermaid.initialize({
+      startOnLoad: false,
+      theme,
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true,
+        curve: "basis",
+      },
+    });
+  }, [resolvedTheme]);
 
   useEffect(() => {
     if (!code?.trim()) return;
@@ -38,7 +43,7 @@ export function MermaidDiagram({ code, className = "" }: MermaidDiagramProps) {
       .catch((err) => {
         setError(err?.message ?? "Erreur rendu diagramme");
       });
-  }, [code]);
+  }, [code, resolvedTheme]);
 
   useEffect(() => {
     if (!rendered || !containerRef.current) return;
@@ -66,7 +71,7 @@ export function MermaidDiagram({ code, className = "" }: MermaidDiagramProps) {
 
   if (error) {
     return (
-      <div className="my-3 rounded-lg border border-amber-500/50 bg-amber-950/20 p-3 text-sm text-amber-200">
+      <div className="my-3 rounded-lg border border-amber-500/50 bg-amber-500/10 dark:bg-amber-950/20 p-3 text-sm text-amber-800 dark:text-amber-200">
         Diagramme non rendu : {error}
       </div>
     );

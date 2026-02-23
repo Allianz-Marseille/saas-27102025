@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/dashboard/theme-toggle";
+import { NotificationCenter } from "@/components/dashboard/notification-center";
 
 interface NavItem {
   href: string;
@@ -13,6 +15,7 @@ interface NavItem {
   exact?: boolean;
   separator?: boolean;
   comingSoon?: boolean;
+  badge?: string;
 }
 
 interface NavigationItemsProps {
@@ -24,7 +27,9 @@ interface NavigationItemsProps {
     email: string;
     role?: string;
   } | null;
-  onNavigate?: () => void; // Callback pour fermer le menu mobile après navigation
+  onNavigate?: () => void;
+  /** Afficher le centre de notifications (ex. commerciaux). */
+  showNotifications?: boolean;
 }
 
 export function NavigationItems({
@@ -34,6 +39,7 @@ export function NavigationItems({
   onLogout,
   userData,
   onNavigate,
+  showNotifications = false,
 }: NavigationItemsProps) {
   const variantConfig = {
     admin: {
@@ -112,6 +118,20 @@ export function NavigationItems({
                   >
                     <Icon className="h-5 w-5 shrink-0" />
                     <span className="font-medium">{item.label}</span>
+                    {item.badge && !item.comingSoon && (
+                      <span
+                        className={cn(
+                          "ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold",
+                          item.badge === "en formation"
+                            ? "bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse"
+                            : item.badge === "new"
+                              ? "bg-emerald-500 text-white shadow-md animate-pulse"
+                              : "bg-red-500 text-white"
+                        )}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
                   </Button>
                 </Link>
               )}
@@ -153,6 +173,14 @@ export function NavigationItems({
             </div>
           </div>
         )}
+
+        {/* Actions : thème + notifications (aligné sidebar desktop) */}
+        <div className="p-4 border-b border-border">
+          <div className="flex flex-wrap items-center gap-2">
+            {showNotifications && <NotificationCenter />}
+            <ThemeToggle showLabel={true} />
+          </div>
+        </div>
 
         {/* Bouton Déconnexion */}
         <div className="p-4">
