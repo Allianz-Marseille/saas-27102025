@@ -119,9 +119,10 @@ Le registre (`docs/assets-gemini/registry-bots.md`) prévoit 5 bots. **Bob**, **
 
 ### Sinistro (Gestion & Analyse de sinistres)
 
-- [ ] Créer `docs/assets-gemini/sinistro/`
-- [ ] Créer `00-workflow-sinistro.md`
-- [ ] Créer les fiches métier (types de sinistres, process, acteurs)
+- [x] Créer `docs/assets-gemini/sinistro/`
+- [x] Créer `00-workflow-sinistro.md`
+- [x] Base de connaissance : résumé conventions (racine), guide complet + table des matières dans `md-sinistro/`, `pdf-sinistro/` pour les PDF
+- [ ] Créer les fiches métier (types de sinistres, process, acteurs) + Cas IRSA pour analyse de constat
 - [ ] Ajouter Sinistro dans `lib/config/agents.ts`
 - [ ] Créer la page `app/commun/agents-ia/sinistro/page.tsx`
 
