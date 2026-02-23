@@ -38,10 +38,14 @@ export function MermaidDiagram({ code, className = "" }: MermaidDiagramProps) {
     mermaid
       .render(id, code.trim())
       .then(({ svg }) => {
+        if (svg && /syntax error|mermaid version/i.test(svg)) {
+          setError("Erreur de syntaxe dans le diagramme Mermaid.");
+          return;
+        }
         setRendered(svg);
       })
       .catch((err) => {
-        setError(err?.message ?? "Erreur rendu diagramme");
+        setError(err?.message ?? "Erreur de rendu du diagramme.");
       });
   }, [code, resolvedTheme]);
 
