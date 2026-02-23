@@ -18,9 +18,9 @@ const BOB_QUICK_REPLIES_LEVEL1: QuickReply[] = [
       "Quelle est la différence entre la SSI et la sécurité sociale pour un TNS ?",
   },
   {
-    label: "Sur un régime obligatoire",
+    label: "J'ai besoin d'infos sur un RO",
     message:
-      "Je veux savoir quel régime obligatoire s'applique. Demande-moi le métier du client, puis donne-moi le nom du RO et demande ce que je souhaite savoir (résumé, explication générale, point précis).",
+      "J'ai besoin d'infos sur un régime obligatoire. Demande-moi le métier du client, puis donne-moi le nom du RO et ce que je souhaite savoir (résumé, explication générale, point précis).",
   },
   {
     label: "C'est quoi la loi Madelin",

@@ -55,7 +55,7 @@ En plus du bouton « Bonjour », l'interface propose trois autres boutons de niv
 | Bouton | Comportement attendu |
 |--------|----------------------|
 | **Quelle différence entre SSI et sécurité sociale pour un TNS ?** | Bob répond directement à la question en s'appuyant **en priorité** sur `02-regime-ssi-2026.md` (rôle de la SSI pour les TNS, calcul IJ, RAAM, plafond 65,84 €/j, invalidité, capital décès) et sur `01-referentiel-social-plafonds-2026.md` (plafonds, PASS). Il clarifie la distinction entre régime général / salariés et SSI (artisans, commerçants, gérants). |
-| **Sur un régime obligatoire** | Bob demande le métier du client, consulte `00-table-des-matieres.md` pour identifier le RO (CARPIMKO, CAVEC, CPRN, etc.), donne le nom du régime, puis demande ce que le collaborateur souhaite (résumé, explication générale, point précis) et répond à partir du fichier régime concerné. |
+| **J'ai besoin d'infos sur un RO** | Bob demande le métier du client, consulte `00-table-des-matieres.md` pour identifier le RO (CARPIMKO, CAVEC, CPRN, etc.), donne le nom du régime, puis demande ce que le collaborateur souhaite (résumé, explication générale, point précis) et répond à partir du fichier régime concerné. |
 | **C'est quoi la loi Madelin** | Bob répond en **utilisant en priorité les données du fichier `16-loi-madelin.md`** (base de connaissance Loi Madelin : objet, éligibilité, typologie des contrats, plafonds santé/prévoyance et retraite, fiscalité, coordination PER, fiches opérationnelles). Il explique la déductibilité des cotisations pour les TNS, l'impact sur l'effort net d'impôt, la TMI et les 3 scénarios fiscaux (base pédagogique 100 €). Les fiches solutions (13, 14, 15) ne sont fournies **que sur demande explicite** du collaborateur. |
 
 ## 2. LOGIQUE D'EXTRACTION ET VALIDATION (GEMINI VISION & OCR)
@@ -345,7 +345,7 @@ Utiliser `@00-workflow-bob-methode.md` et `@app/api/chat/route.ts` lors de la mi
 
 | Phase | Instruction |
 |-------|-------------|
-| **Accueil** | Déclencheur « Bonjour » → message d'accueil puis **une seule ligne** de boutons niveau 2 (Lagon, Liasse, Questions). Autres boutons niveau 1 : « Quelle différence entre SSI et sécurité sociale pour un TNS ? », Régime obligatoire, Loi Madelin — scénarios détaillés en section 1bis. |
+| **Accueil** | Déclencheur « Bonjour » → message d'accueil puis **une seule ligne** de boutons niveau 2 (Lagon, Liasse, Questions). Autres boutons niveau 1 : « Quelle différence entre SSI et sécurité sociale pour un TNS ? », « J'ai besoin d'infos sur un RO », Loi Madelin — scénarios détaillés en section 1bis. |
 | **Extraction** | Priorité Gemini Vision + étape de Confirmation. Extraire les 6 points (Identité, Âge, Famille, Métier, Revenu & Besoin, Frais Généraux). |
 | **Collecte** | Une question courte à la fois, **ordre strict 1 à 6**. **Extraction combinée** : extraire tout ce qui correspond aux 6 points dans une réponse ; **ne jamais redemander** une donnée déjà fournie. En fin de collecte : Bilan final (diagnostic existant, analyse GAP, visualisation). |
 | **Calcul** | Déterminer **statut (SSI vs Libéral)** puis 3 couches : 1) Droits 1ère couche (SSI si SSI, CPAM J4–J90 si Libéral), 2) Droits RO, 3) Gap = Besoin − (1ère + RO). SSI = moteur 02 ; Libéral = moteur 03 (J4–J90 CPAM + relais J91+ RO). **Toujours** inclure le tableau d'effort fiscal base 100 € après le diagnostic. |
