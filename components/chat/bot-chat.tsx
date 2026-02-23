@@ -102,15 +102,21 @@ function getPrenomChargeFromEmail(email: string | null | undefined): string {
 
 /** Extrait jusqu'à 3 suggestions "Pour aller plus loin" en fin de message (liste markdown). */
 function extractSuggestions(content: string): string[] {
-  const idx = content.search(/\*\*(?:Pour aller plus loin|À creuser)\*\*\s*:?/i);
+  const normalized = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const idx = normalized.search(
+    /(\*\*)?(?:Pour aller plus loin|À creuser)(\*\*)?\s*:?\s*\n/i
+  );
   if (idx === -1) return [];
-  const after = content.slice(idx);
+  const after = normalized.slice(idx);
   const lines = after.split(/\n/).slice(1);
   const items: string[] = [];
   for (const line of lines) {
-    const m = line.match(/^\s*[-*]\s+(.+)$/) || line.match(/^\s*\d+\.\s+(.+)$/);
-    if (m?.[1]) items.push(m[1].trim());
-    if (items.length >= 3) break;
+    const m =
+      line.match(/^\s*[-*•]\s+(.+)$/) || line.match(/^\s*\d+\.\s+(.+)$/);
+    if (m?.[1]) {
+      items.push(m[1].trim());
+      if (items.length >= 3) break;
+    }
   }
   return items.slice(0, 3);
 }
