@@ -13,9 +13,9 @@ const BOB_AVATAR = "/agents-ia/bot-tns/bob_sourit.png";
 const BOB_QUICK_REPLIES_LEVEL1: QuickReply[] = [
   { label: "Bonjour", message: "Bonjour" },
   {
-    label: "J'ai une question sur la SSI",
+    label: "Quelle différence entre SSI et sécurité sociale pour un TNS ?",
     message:
-      "J'ai une question sur la SSI. Demande-moi de quoi j'ai besoin : un résumé, une explication générale, ou un point précis ?",
+      "Quelle est la différence entre la SSI et la sécurité sociale pour un TNS ?",
   },
   {
     label: "Sur un régime obligatoire",
@@ -31,19 +31,19 @@ const BOB_QUICK_REPLIES_LEVEL1: QuickReply[] = [
 
 const BOB_QUICK_REPLIES_LEVEL2: QuickReply[] = [
   {
-    label: "Je veux faire une étude pour un TNS et répondre à mes questions",
+    label: "Je veux faire une étude pour un TNS et répondre à tes questions",
     message:
-      "Je veux faire une étude pour un TNS et répondre à tes questions. Lance tes questions pas à pas pour collecter les données (Blocs 1 à 6).",
+      "Je veux faire une étude pour un TNS et répondre à tes questions. Lance tes questions pas à pas (ordre strict : Identité, Âge, Famille, Métier, Revenu & Besoin, Frais Généraux). Une question courte à la fois, extraction combinée, ne jamais redemander ce qui a été cité.",
   },
   {
     label: "Coller l'image Lagon (CRM)",
     message:
-      "Je vais coller une capture de la fiche Lagon. Quand je l'envoie : repère tous les éléments exploitables pour ton workflow (8 points), demande-moi de valider ce que tu as compris, puis pose uniquement les questions dont tu n'as pas la réponse.",
+      "Je vais coller une capture de la fiche Lagon. Quand je l'envoie : repère tous les éléments exploitables pour ton workflow (6 points), demande-moi de valider ce que tu as compris, puis pose uniquement les questions pour les points manquants, dans l'ordre 1 à 6.",
   },
   {
     label: "Téléverser une liasse fiscale",
     message:
-      "Je vais téléverser la liasse fiscale (PDF). Quand je l'envoie : repère tous les éléments exploitables, demande-moi de valider ce que tu as compris, puis pose uniquement les questions dont tu n'as pas la réponse.",
+      "Je vais téléverser la liasse fiscale (PDF). Quand je l'envoie : repère tous les éléments exploitables (6 points), demande-moi de valider ce que tu as compris, puis pose uniquement les questions pour les points manquants, dans l'ordre 1 à 6.",
   },
 ];
 

@@ -22,13 +22,22 @@ import {
   ListChecks,
   ChevronRight,
   MessageCircle,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MermaidDiagram } from "@/components/chat/mermaid-diagram";
 
+/** Pièce jointe (image ou PDF) pour envoi et affichage. */
+export interface ChatAttachment {
+  data: string;
+  mimeType: string;
+  fileName?: string;
+}
+
 export interface BotChatMessage {
   role: "user" | "assistant";
   content: string;
+  attachments?: ChatAttachment[];
 }
 
 type AccentColor = "default" | "blue" | "emerald" | "orange";
@@ -155,10 +164,113 @@ export function BotChat({
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [copiedAction, setCopiedAction] = useState<"chat" | "mail" | "note" | null>(null);
   const [sessionStart, setSessionStart] = useState<number | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const MAX_ATTACHMENTS = 4;
+  const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 Mo
+
+  const fileToAttachment = useCallback((file: File): Promise<ChatAttachment> => {
+    return new Promise((resolve, reject) => {
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        reject(new Error(`Fichier trop volumineux (max ${MAX_FILE_SIZE_BYTES / 1024 / 1024} Mo)`));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64 = result.includes(",") ? result.split(",")[1] : result;
+        if (!base64) {
+          reject(new Error("Lecture du fichier impossible"));
+          return;
+        }
+        resolve({ data: base64, mimeType: file.type, fileName: file.name });
+      };
+      reader.onerror = () => reject(reader.error ?? new Error("Erreur lecture fichier"));
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
+  const handleFileSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files?.length) return;
+      const accepted: ChatAttachment[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file) continue;
+        const isImage = file.type.startsWith("image/");
+        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+        if (!isImage && !isPdf) continue;
+        try {
+          const att = await fileToAttachment(file);
+          accepted.push(att);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Erreur lors de l'ajout du fichier");
+        }
+      }
+      if (accepted.length > 0) {
+        setPendingAttachments((prev) => [...prev, ...accepted].slice(0, MAX_ATTACHMENTS));
+        if (accepted.length + pendingAttachments.length > MAX_ATTACHMENTS) {
+          setError(`Maximum ${MAX_ATTACHMENTS} pièces jointes. Les derniers ajoutés sont conservés.`);
+        }
+      }
+      e.target.value = "";
+    },
+    [fileToAttachment, pendingAttachments.length]
+  );
+
+  const handleRemoveAttachment = useCallback((index: number) => {
+    setPendingAttachments((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  /** Récupère un fichier image depuis le presse-papier (files ou items, selon le navigateur). */
+  const getImageFileFromClipboard = useCallback(
+    (clipboardData: DataTransfer | null): File | null => {
+      if (!clipboardData) return null;
+      const files = clipboardData.files;
+      if (files?.length) {
+        const img = Array.from(files).find((f) => f.type.startsWith("image/"));
+        if (img) return img;
+      }
+      const items = clipboardData.items;
+      if (!items?.length) return null;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+          const blob = item.getAsFile();
+          if (blob) return new File([blob], "image-collée.png", { type: blob.type });
+        }
+      }
+      return null;
+    },
+    []
+  );
+
+  const handlePaste = useCallback(
+    async (e: React.ClipboardEvent) => {
+      const imageFile = getImageFileFromClipboard(e.clipboardData);
+      if (!imageFile) return;
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        const att = await fileToAttachment(imageFile);
+        setPendingAttachments((prev) => {
+          const next = [...prev, att].slice(0, MAX_ATTACHMENTS);
+          if (next.length === MAX_ATTACHMENTS && prev.length < MAX_ATTACHMENTS) {
+            setError(`Maximum ${MAX_ATTACHMENTS} pièces jointes.`);
+          }
+          return next;
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erreur lors du collage de l'image");
+      }
+    },
+    [fileToAttachment, getImageFileFromClipboard]
+  );
 
   const handleCopy = async (content: string, index: number) => {
     try {
@@ -211,7 +323,13 @@ export function BotChat({
       options?: { historyOverride?: BotChatMessage[] }
     ) => {
       let text = (messageText ?? input.trim()).trim();
-      if (!text || !user || isLoading) return;
+      const hasAttachments = pendingAttachments.length > 0;
+      if (!user || isLoading) return;
+      if (!text && !hasAttachments) return;
+
+      if (!text && hasAttachments) {
+        text = "[Capture ou fichier joint]";
+      }
 
       const historyToUse = options?.historyOverride ?? messages;
       if (
@@ -232,9 +350,14 @@ export function BotChat({
 
       setInput("");
       setError(null);
+      const attachmentsToSend = hasAttachments ? [...pendingAttachments] : undefined;
       if (!options?.historyOverride) {
-        setMessages((prev) => [...prev, { role: "user", content: text }]);
+        setMessages((prev) => [
+          ...prev,
+          { role: "user", content: text, attachments: attachmentsToSend },
+        ]);
       }
+      if (hasAttachments) setPendingAttachments([]);
       if (!sessionStart) setSessionStart(Date.now());
       setIsLoading(true);
       setStreamingContent("");
@@ -263,6 +386,15 @@ export function BotChat({
             message: text,
             botId,
             history,
+            ...(attachmentsToSend?.length
+              ? {
+                  attachments: attachmentsToSend.map((a) => ({
+                    data: a.data,
+                    mimeType: a.mimeType,
+                    fileType: a.fileName,
+                  })),
+                }
+              : {}),
           }),
         });
 
@@ -310,6 +442,7 @@ export function BotChat({
       isLoading,
       messages,
       sessionStart,
+      pendingAttachments,
     ]
   );
 
@@ -414,6 +547,7 @@ export function BotChat({
     setError(null);
     setSessionStart(null);
     setCopiedIndex(null);
+    setPendingAttachments([]);
     inputRef.current?.focus();
   }, [isLoading]);
 
@@ -690,7 +824,12 @@ export function BotChat({
 
       <div
         ref={scrollContainerRef}
-        className="flex-1 min-h-[280px] max-h-[420px] overflow-y-auto overflow-x-hidden p-4 space-y-4"
+        role="region"
+        aria-label="Zone de conversation — cliquer puis coller une image (Ctrl+V)"
+        tabIndex={-1}
+        className="flex-1 min-h-[280px] max-h-[420px] overflow-y-auto overflow-x-hidden p-4 space-y-4 focus:outline-none cursor-text"
+        onClick={() => scrollContainerRef.current?.focus()}
+        onPaste={handlePaste}
       >
         {messages.length === 0 && !streamingContent && !isLoading && (
           <p
@@ -699,7 +838,7 @@ export function BotChat({
               "text-muted-foreground"
             )}
           >
-            Posez votre question à {botName}.{inputPlaceholderSubtitle ? ` ${inputPlaceholderSubtitle}.` : ""}
+            Posez votre question à {botName}.{inputPlaceholderSubtitle ? ` ${inputPlaceholderSubtitle}.` : ""} Vous pouvez aussi coller une image ici (Ctrl+V).
           </p>
         )}
         <AnimatePresence initial={false}>
@@ -710,14 +849,6 @@ export function BotChat({
               !isLoading &&
               !streamingContent;
             const suggestions = isLastAssistant ? extractSuggestions(msg.content) : [];
-            const isWelcomeWithThreeThemes =
-              useTwoLevels &&
-              msg.role === "assistant" &&
-              i === 1 &&
-              messages[0]?.role === "user" &&
-              messages[0]?.content.trim() === bonjourTriggerMessage?.trim() &&
-              quickRepliesLevel2 &&
-              quickRepliesLevel2.length >= 3;
             return (
               <div key={`${i}-${msg.content.slice(0, 20)}`} className="space-y-2">
                 <motion.div
@@ -732,19 +863,51 @@ export function BotChat({
                   )}
                 >
                   {msg.role === "user" ? (
-                    <div className="flex items-start gap-2">
-                      <span className="flex-1 min-w-0">{msg.content}</span>
+                    <div className="flex flex-col gap-2 min-w-0">
+                      {(msg.content || msg.attachments?.length) ? (
+                        <>
+                          {msg.content ? (
+                            <span className="flex-1 min-w-0">{msg.content}</span>
+                          ) : null}
+                          {msg.attachments && msg.attachments.length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5 mt-1">
+                              {msg.attachments.map((att, idx) =>
+                                att.mimeType.startsWith("image/") ? (
+                                  <img
+                                    key={`att-${i}-${idx}`}
+                                    src={`data:${att.mimeType};base64,${att.data}`}
+                                    alt={att.fileName ?? "Image"}
+                                    className="max-h-20 max-w-[120px] rounded object-cover border border-border"
+                                  />
+                                ) : (
+                                  <div
+                                    key={`att-${i}-${idx}`}
+                                    className="flex items-center gap-1 rounded border border-border bg-muted/50 px-2 py-1 text-xs"
+                                  >
+                                    <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                    <span className="truncate max-w-[100px]" title={att.fileName}>
+                                      {att.fileName ?? "PDF"}
+                                    </span>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          ) : null}
+                        </>
+                      ) : null}
                       {lastMessageIsUser && i === messages.length - 1 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-                          onClick={handleRegenerate}
-                          disabled={isLoading}
-                          title="Régénérer la réponse"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                            onClick={handleRegenerate}
+                            disabled={isLoading}
+                            title="Régénérer la réponse"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </Button>
+                        </div>
                       )}
                     </div>
                   ) : (
@@ -804,37 +967,6 @@ export function BotChat({
                         {idx + 1}. {label}
                       </Button>
                     ))}
-                  </motion.div>
-                )}
-                {isWelcomeWithThreeThemes && quickRepliesLevel2 && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex flex-wrap gap-2 pl-1"
-                  >
-                    <span
-                      className={cn(
-                        "w-full flex items-center gap-1.5 text-xs shrink-0 mb-1",
-                        "text-muted-foreground"
-                      )}
-                    >
-                      Lancer directement :
-                    </span>
-                    {quickRepliesLevel2.slice(0, 3).map((item) => {
-                      const { label, message } = normalizeQuickReply(item);
-                      return (
-                        <Button
-                          key={label}
-                          type="button"
-                          size="sm"
-                          className={cn("h-8 text-xs shrink-0", level2ButtonClass)}
-                          onClick={() => sendMessage(message)}
-                          disabled={isLoading}
-                        >
-                          {label}
-                        </Button>
-                      );
-                    })}
                   </motion.div>
                 )}
               </div>
@@ -934,6 +1066,7 @@ export function BotChat({
       <form
         method="post"
         onSubmit={handleSubmit}
+        onPaste={handlePaste}
         className={cn(
           "border-t p-4",
           "border-border"
@@ -944,12 +1077,47 @@ export function BotChat({
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept="image/*,.pdf,.doc,.docx"
+          accept="image/*,.pdf"
           aria-hidden
-          onChange={() => {
-            // Préparé pour future intégration upload / OCR
-          }}
+          multiple
+          onChange={handleFileSelect}
         />
+        {pendingAttachments.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {pendingAttachments.map((att, index) => (
+              <div
+                key={`${att.fileName ?? index}-${index}`}
+                className="relative flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-2"
+              >
+                {att.mimeType.startsWith("image/") ? (
+                  <img
+                    src={`data:${att.mimeType};base64,${att.data}`}
+                    alt={att.fileName ?? "Image"}
+                    className="h-12 w-12 object-cover rounded"
+                  />
+                ) : (
+                  <div className="h-12 w-12 flex items-center justify-center rounded bg-muted">
+                    <FileText className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                )}
+                <span className="text-xs text-muted-foreground max-w-[120px] truncate" title={att.fileName}>
+                  {att.fileName ?? "Fichier"}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                  onClick={() => handleRemoveAttachment(index)}
+                  title="Retirer"
+                  aria-label="Retirer la pièce jointe"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex gap-2">
           <Button
             type="button"
@@ -957,7 +1125,7 @@ export function BotChat({
             size="icon"
             className="shrink-0 h-11 w-11 text-muted-foreground hover:text-foreground hover:bg-muted"
             onClick={handleAttachClick}
-            title="Joindre un fichier (à venir)"
+            title="Joindre une capture ou un PDF"
           >
             <Paperclip className="h-4 w-4" />
           </Button>
@@ -979,7 +1147,7 @@ export function BotChat({
           />
           <Button
             type="button"
-            disabled={!input.trim() || isLoading}
+            disabled={(!input.trim() && !pendingAttachments.length) || isLoading}
             size="icon"
             className="shrink-0 h-11 w-11"
             onClick={() => sendMessage()}

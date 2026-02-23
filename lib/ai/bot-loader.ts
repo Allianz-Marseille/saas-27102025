@@ -11,6 +11,7 @@ import path from "path";
 const ASSETS_BASE = path.join(process.cwd(), "docs", "assets-gemini");
 const REGISTRY_PATH = path.join(ASSETS_BASE, "registry-bots.md");
 const GLOBAL_REFERENTIEL = "01-referentiel-social-plafonds-2026.md";
+const LAGON_RUBRIQUES = "lagon/fiche-lagon-rubriques.md";
 
 export interface BotRegistryEntry {
   botId: string;
@@ -149,6 +150,13 @@ export function getBotContext(botId: string): string {
   const referentielContent = loadGlobalReferentiel(botFolderPath);
   if (referentielContent) {
     parts.push(`\n## RÉFÉRENTIEL GLOBAL (Inclus pour tous les bots)\n\n${referentielContent}`);
+  }
+
+  // 4. Fiche Lagon — rubriques à extraire des captures/PDF (pour tous les bots)
+  const lagonPath = path.join(ASSETS_BASE, LAGON_RUBRIQUES);
+  const lagonContent = readFileIfExists(lagonPath);
+  if (lagonContent) {
+    parts.push(`\n## FICHE LAGON — RUBRIQUES À EXTRAIRE\n\n${lagonContent}`);
   }
 
   const systemInstruction = parts.join("\n---\n");
