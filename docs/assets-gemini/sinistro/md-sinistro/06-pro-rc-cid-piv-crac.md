@@ -1,38 +1,43 @@
-# 06 – Pro et RC – CID-PIV et CRAC
+# 06 – Risques Pro & RC : CID-PIV et CRAC
 
-Conventions **CID-PIV** (Convention d’Indemnisation Directe – Pertes Indirectes et Vol) et **CRAC** (Convention de Règlement de l’Assurance Construction) : champs d’application, assureur gestionnaire, recours.
+Cette fiche couvre les conventions spécifiques aux **entreprises**, au **vol** et au secteur de la **construction**.
 
 **Sommaire**
 - 1. CID-PIV (pertes indirectes et vol)
-- 2. CRAC (construction)
-- 3. Champ d’application
-- 4. Recours
+- 2. CRAC (assurance construction)
+- 3. Instructions pour Sinistro (IA) et synthèse vigilance
 
 ---
 
-## 1. CID-PIV (pertes indirectes et vol)
+## 1. CID-PIV (Pertes Indirectes et Vol)
 
-- **CID-PIV** : Convention d’**Indemnisation Directe** – **Pertes Indirectes** et **Vol**.
-- Elle concerne les sinistres liés aux **pertes indirectes** (ex. perte d’exploitation, perte de chiffre d’affaires) et au **vol** (vol de marchandises, de matériel, etc.) dans un contexte professionnel ou assurantiel concernant plusieurs parties.
-- **Assureur gestionnaire** et règles d’indemnisation directe : à compléter à partir des documents officiels (conventions dans `pdf-sinistro/`).
+- **Définition :** Convention d’**Indemnisation Directe** pour les **Pertes Indirectes** et le **Vol**.
+- **Usage :** S’applique principalement dans un **contexte professionnel** pour accélérer le règlement des **préjudices financiers** (pertes d’exploitation, perte de chiffre d’affaires) et des **vols** de marchandises ou de matériels.
+- **Assureur gestionnaire** et règles d’indemnisation directe : détaillés dans les conventions officielles (documents dans `../pdf-sinistro/`).
 
----
-
-## 2. CRAC (construction)
-
-- **CRAC** : Convention de **Règlement de l’Assurance Construction**.
-- Elle régit le règlement des sinistres en **construction** : dommages aux ouvrages, responsabilités des différents acteurs (maître d’ouvrage, constructeurs, sous-traitants, assureurs décennale, etc.).
-- Elle permet de coordonner les assureurs et de répartir les coûts selon les responsabilités (à compléter avec les détails de la convention).
+**Mots-clés pour extraction :** CID-PIV, pertes indirectes, pertes d’exploitation, vol, professionnel.
 
 ---
 
-## 3. Champ d’application
+## 2. CRAC (Assurance Construction)
 
-- **CID-PIV** : situations où plusieurs assureurs sont en cause (assuré victime de vol ou de pertes indirectes, recours contre un tiers assuré).
-- **CRAC** : sinistres survenant pendant ou après des travaux de construction, impliquant des polices **construction** (RC décennale, dommages-ouvrage, etc.).
+- **Définition :** Convention de **Règlement de l’Assurance Construction**.
+- **Cible :** Organise les recours entre les assureurs **Dommages-Ouvrage (DO)** et les assureurs de **Responsabilité Civile Décennale** des constructeurs.
+- **Utilité pour Sinistro :** Le bot doit **identifier si le sinistre survient après réception des travaux** pour orienter vers la **garantie décennale** et la convention CRAC (délai de prescription décennale, responsabilité des constructeurs).
+
+**Mots-clés pour extraction :** CRAC, DO, dommages-ouvrage, RC décennale, construction, réception des travaux.
 
 ---
 
-## 4. Recours
+## 3. Instructions pour Sinistro (IA) et synthèse vigilance
 
-- Dans les deux conventions, les **recours entre assureurs** permettent de répartir les coûts selon la responsabilité de chaque partie assurée. Les barèmes et procédures sont définis par les conventions (à compléter à partir des supports PDF).
+Pour les sinistres **professionnels** et **construction**, Sinistro doit adopter une **posture de vigilance accrue** :
+
+1. **Alerte Décennale :** Pour tout **dommage bâtiment / construction**, vérifier la **date d’achèvement ou de réception des travaux** pour l’application de la **CRAC** et de la garantie décennale.
+
+**Synthèse des instructions pour l’Agent IA (fiches 05 et 06)**  
+Pour les dossiers **corporel** (fiche 05) et **pro / construction** (fiche 06), Sinistro doit :
+
+- **Alerte AIPP** (fiche 05) : Pour tout accident auto avec blessé, demander si une expertise médicale est prévue pour évaluer l’AIPP (seuil IRCA vs PAOS).
+- **Alerte Décennale** (fiche 06) : Pour tout dommage bâtiment pro, vérifier la date d’achèvement des travaux pour l’application de la CRAC.
+- **Priorité victime** (fiche 05) : Rappeler que les délais de provision (PAOS) sont prioritaires sur la discussion des responsabilités finales.

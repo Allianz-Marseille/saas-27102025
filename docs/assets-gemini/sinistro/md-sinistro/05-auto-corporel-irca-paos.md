@@ -1,39 +1,41 @@
-# 05 – Auto corporel – IRCA et PAOS
+# 05 – Auto Corporel : IRCA et PAOS
 
-Conventions **IRCA** (Indemnisation et Recours Corporels Automobiles) et **PAOS** (Protocole d’Accord d’Offre de Services) : dommages corporels légers vs graves, seuils AIPP, provisions, assureur gestionnaire et recours.
+Cette fiche traite des **dommages corporels** subis lors d’un accident de la route. La gestion est dictée par la **gravité des blessures**, mesurée par le taux d’**AIPP** (Atteinte à l’Intégrité Physique et Psychique).
 
 **Sommaire**
-- 1. IRCA (corporel léger)
-- 2. PAOS (corporel grave)
-- 3. Seuils (AIPP, provisions)
-- 4. Assureur gestionnaire et recours
+- 1. IRCA (indemnisation et recours corporels automobiles)
+- 2. PAOS (protocole d’accord d’offre de services)
+- 3. Instructions pour Sinistro (IA) et vigilance
 
 ---
 
-## 1. IRCA (corporel léger)
+## 1. IRCA (Indemnisation et Recours Corporels Automobiles)
 
-- **IRCA** gère les **dommages corporels légers** consécutifs à un accident de la route.
-- En pratique : en général **AIPP (Atteinte à l’Intégrité Physique et Psychique) < 5 %** (seuil à confirmer selon la convention en vigueur).
-- Chaque assureur indemnise sa victime (son assuré ou le tiers qu’il prend en charge), puis les recours entre assureurs se règlent selon les règles IRCA.
+- **Champ d’application :** Gère les dommages corporels dits **« légers »**.
+- **Seuil technique :** S’applique généralement lorsque le taux d’**AIPP** est **inférieur à 5 %** (à confirmer selon la convention en vigueur – France Assureurs, documents dans `../pdf-sinistro/`).
+- **Objectif :** Permettre à l’assureur de la victime d’**indemniser rapidement** son client et de **récupérer les fonds** auprès de l’assureur du responsable via un barème simplifié.
 
----
-
-## 2. PAOS (corporel grave)
-
-- **PAOS** (Protocole d’Accord d’Offre de Services) s’applique aux accidents corporels **plus graves**.
-- Objectif : coordination entre assureurs pour verser des **provisions** à la victime rapidement, sans attendre la détermination définitive des responsabilités.
-- Les assureurs signataires du protocole s’engagent à offrir des services (provisions, avances) pour faciliter l’indemnisation de la victime.
+**Mots-clés pour extraction :** IRCA, AIPP, 5 %, corporel léger, barème simplifié.
 
 ---
 
-## 3. Seuils (AIPP, provisions)
+## 2. PAOS (Protocole d’Accord d’Offre de Services)
 
-- **AIPP** : Atteinte à l’Intégrité Physique et Psychique ; évaluation du taux d’incapacité permanente. En général, en dessous d’un certain seuil (ex. 5 %), le sinistre relève de l’**IRCA** ; au-dessus, des dispositifs comme le **PAOS** ou une indemnisation plus lourde peuvent s’appliquer. Les seuils exacts sont à compléter à partir des conventions (France Assureurs, documents dans `pdf-sinistro/`).
-- **Provisions** : dans le cadre PAOS, les assureurs peuvent verser des provisions à la victime avant liquidation définitive du préjudice.
+- **Champ d’application :** Concerne les accidents corporels **graves** (AIPP généralement ≥ 5 % ou préjudice important).
+- **Mécanisme des provisions :** Les assureurs **collaborent** pour verser des **provisions** (avances sur indemnisation) à la victime **sans attendre** le règlement final des responsabilités.
+- **Priorité victime :** Les **délais de provision** (PAOS) sont **prioritaires** sur la discussion des responsabilités finales ; l’indemnisation de la victime ne doit pas être retardée par les recours entre assureurs.
+
+**Rôle de l’IA :** Sinistro doit rappeler l’importance de **collecter les certificats médicaux initiaux** pour déterminer si le dossier bascule en IRCA (léger) ou en PAOS (grave).
+
+**Mots-clés pour extraction :** PAOS, provisions, corporel grave, certificats médicaux.
 
 ---
 
-## 4. Assureur gestionnaire et recours
+## 3. Instructions pour Sinistro (IA) et vigilance
 
-- **Assureur gestionnaire** : selon les cas, l’assureur du responsable ou celui de la victime peut être désigné pour gérer le dossier (expertise, propositions d’indemnisation). Les règles précises dépendent de la convention (IRCA ou PAOS).
-- **Recours** : une fois la responsabilité établie, l’assureur du responsable rembourse (ou contribue à) l’assureur qui a indemnisé la victime, selon les barèmes et accords inter-assureurs.
+Pour les sinistres **auto corporel**, Sinistro doit adopter une **posture de vigilance accrue** :
+
+1. **Alerte AIPP :** Pour tout accident auto avec **blessé**, demander immédiatement si une **expertise médicale** est prévue (ou a eu lieu) pour évaluer l’AIPP, afin d’aiguiller vers **IRCA** (léger, AIPP &lt; 5 %) ou **PAOS** (grave).
+2. **Priorité victime :** Rappeler systématiquement que les **délais de provision** (PAOS) sont **prioritaires** sur la discussion des responsabilités finales ; ne jamais laisser entendre que la victime doit attendre la fin du recours pour être indemnisée.
+
+Voir aussi la fiche 06 pour l’**alerte Décennale** (sinistres construction) : [`06-pro-rc-cid-piv-crac.md`](06-pro-rc-cid-piv-crac.md).

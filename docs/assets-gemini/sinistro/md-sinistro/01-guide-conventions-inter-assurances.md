@@ -1,103 +1,88 @@
-# Guide des Conventions Inter-Assurances pour Sinistro
+# 01 – Guide Maître des Conventions Inter-Assurances (Sinistro)
 
-Ce document est la **base de connaissance** des accords passés entre compagnies (sous l'égide de **France Assureurs**, ex-FSA) pour accélérer l'indemnisation des victimes et simplifier les recours. Sinistro doit s'y référer pour qualifier les sinistres et indiquer les règles applicables.
+Ce document centralise les accords de la profession (**France Assureurs**, ex-FSA) visant à accélérer l’indemnisation et simplifier les recours entre compagnies. Il sert de référence pour la qualification des sinistres et l’application des conventions (IRSA, IDA, IRSI, CIDE-COP, etc.).
 
-> **Important :** Ces conventions ne sont **pas opposables aux tiers** (clients, victimes). Elles servent uniquement à régler les comptes **entre** assureurs. Sinistro doit toujours distinguer : **droit commun** (ce qu'on doit au client) vs **convention** (ce que l'assureur récupère en recours).
+> **RÈGLE D’OR JURIDIQUE :** Les conventions sont des accords **internes à la profession** ; elles ne sont **jamais opposables aux tiers** (assurés, victimes), qui conservent leurs droits issus du **droit commun** (contrat, loi).
 
 **Sommaire**
-- Liens utiles (sites officiels et référence)
-- 1. Sinistres Automobiles (matériels et corporels)
-- 2. Sinistres Habitation (dégâts des eaux et incendie)
-- 3. Risques professionnels et responsabilité civile
-- 4. Comment Sinistro doit utiliser ces infos
-- 5. Rappel juridique
+- 1. Domaine Automobile (matériel et corporel)
+- 2. Domaine Habitation (dégâts des eaux et incendie)
+- 3. Risques professionnels et construction
+- 4. Protocole d’analyse Sinistro
+- Liens de référence rapide
 
 ---
 
-## Liens utiles (sites officiels et référence)
+## 1. Domaine Automobile (matériel et corporel)
 
-| Ressource | URL |
-|-----------|-----|
-| **France Assureurs** – fédération professionnelle (ex-FFSA/GEMA) | [www.franceassureurs.fr](https://www.franceassureurs.fr) |
-| **e-constat auto** – application officielle constat amiable (DARVA, même valeur que le papier) | [www.e-constat-auto.fr](https://www.e-constat-auto.fr) |
-| **France Assureurs – Démarches en cas de sinistre** (tempête, inondation, etc.) | [Demarches sinistre](https://www.franceassureurs.fr/lassurance-protege-finance-et-emploie/lassurance-protege/les-demarches-en-cas-de-sinistre/tempete-questions-reponses-sur-votre-assurance/) |
-| **INC – Les conventions de règlement des sinistres entre assureurs** (grand public) | [inc-conso.fr](https://www.inc-conso.fr/content/les-conventions-de-reglement-des-sinistres-entre-assureurs) |
+Indispensable pour la gestion des sinistres survenant sur la voie publique entre **véhicules terrestres à moteur**.
 
----
+| Convention | Nom et spécificité | Champ d’application |
+|------------|--------------------|----------------------|
+| **IRSA** | Indemnisation Directe et de Recours entre Sociétés d’Assurance | **Standard matériel.** Utilise des « Cas » (ex. Cas 10, 13, 15, 17, 20, 40) basés sur le constat amiable pour répartir les responsabilités. |
+| **IDA** | Indemnisation Directe de l’Assuré | **Volet opérationnel de l’IRSA.** Permet à l’assureur de payer son client sans attendre l’encaissement du recours. |
+| **IRCA** | Indemnisation et Recours Corporels Automobiles | Dommages corporels **légers** (généralement **AIPP &lt; 5 %**). |
+| **PAOS** | Protocole d’Accord d’Offre de Services | Dommages corporels **graves**. Coordination pour le versement rapide de **provisions** à la victime. |
 
-## 1. Sinistres Automobiles (matériels et corporels)
-
-Cœur d'activité pour un agent général ou un courtier.
-
-| Convention | Nom complet | Champ d'application |
-|------------|-------------|---------------------|
-| **IRSA** | Indemnisation Directe et de Recours entre Sociétés d'Assurance | **La plus courante.** Gère les accidents **matériels** entre deux véhicules (ou plus). Définit les fameux **« Cas »** (Cas 10, 13, 21…) pour déterminer les responsabilités. |
-| **IDA** | Indemnisation Directe de l'Assuré | Volet de l'IRSA : l'assureur **direct** indemnise son propre client sans attendre le recours. |
-| **IRCA** | Indemnisation et Recours Corporels Automobiles | Gère les **dommages corporels légers** (AIPP < 5 % en général) suite à un accident de la route. |
-| **PAOS** | Protocole d'Accord d'Offre de Services | Accidents corporels **plus graves** : les assureurs collaborent pour verser des **provisions** à la victime. |
+**Mots-clés pour extraction :** IRSA, IDA, Cas 10, Cas 13, constat amiable, AIPP 5 %, PAOS, provisions.
 
 ---
 
-## 2. Sinistres Habitation (dégâts des eaux et incendie)
+## 2. Domaine Habitation (dégâts des eaux et incendie)
 
-Depuis 2018 (réforme majeure), référence pour le gestionnaire MRH.
+### IRSI (Indemnisation et Recours des Sinistres Immeuble)
 
-### IRSI – Indemnisation et Recours des Sinistres Immeuble
+En vigueur depuis le **01/06/2018** (remplace la **CIDRE**). S’applique aux sinistres **dégâts des eaux** et **incendie** en immeuble, avec dommages **≤ 5 000 € HT** par local.
 
-Remplace l'ancienne **CIDRE**. Cruciale pour Sinistro :
+**Tranche 1 — Dommages &lt; 1 600 € HT**
 
-- **Tranche 1 (sinistre < 1 600 € HT)**  
-  L'assureur gestionnaire (souvent celui de l'occupant) paie tout **sans recours**. Pas de recherche de responsabilité.
+- **Assureur gestionnaire :** Souvent celui de l’**occupant** (locataire ou propriétaire du local sinistré).
+- **Recours :** **Aucun** recours possible entre assureurs. L’indemnisation est définitive.
 
-- **Tranche 2 (entre 1 600 € et 5 000 € HT)**  
-  L'assureur gestionnaire indemnise, mais peut exercer un **recours** contre le responsable selon un barème précis.
+**Tranche 2 — 1 600 € ≤ Dommages ≤ 5 000 € HT**
 
-- **Au-delà de 5 000 €**  
-  On sort de l'IRSI pour entrer dans la convention **CIDE-COP**.
+- **Expertise :** **Unique** et pour le **compte commun** des assureurs.
+- **Assureur gestionnaire :** Celui du local sinistré / occupant ; il indemnise puis applique le barème.
+- **Recours :** Exercé selon un **barème de responsabilités** conventionnel.
 
-### CIDE-COP
+**Mots-clés pour extraction :** IRSI, Tranche 1, Tranche 2, 1 600 € HT, 5 000 € HT, assureur gestionnaire, recours, expertise pour compte commun, CIDRE, 01/06/2018.
 
-- **Usage :** Gros dégâts des eaux ou incendies en **copropriété** (montants élevés).
-- **Principe :** Mise en cause des responsabilités plus fine, recours entre assureurs plus complexes.
+### CIDE-COP (Copropriété)
+
+- **Seuil :** S’applique dès que les dommages dépassent **5 000 € HT** (ou sinistres complexes en copropriété).
+- **Usage :** Sinistres **dégâts des eaux** ou **incendie** en **copropriété** impliquant plusieurs lots ou les **parties communes**.
+
+**Mots-clés pour extraction :** CIDE-COP, 5 000 € HT, copropriété, parties communes, parties privatives.
 
 ---
 
-## 3. Risques professionnels et responsabilité civile
+## 3. Risques professionnels et construction
 
 | Convention | Usage |
 |------------|--------|
-| **CID-PIV** | Convention d'Indemnisation Directe – Pertes Indirectes et Vol. |
-| **CRAC** | Convention de Règlement de l'Assurance Construction. |
+| **CID-PIV** | Indemnisation directe pour les **pertes indirectes** (ex. pertes d’exploitation) et le **vol**. |
+| **CRAC** | Convention spécifique à l’**assurance construction**. Organise les recours entre assureurs **Dommages-Ouvrage (DO)** et **RC Décennale**. |
+
+**Mots-clés pour extraction :** CID-PIV, CRAC, pertes indirectes, vol, DO, RC Décennale.
 
 ---
 
-## 4. Comment Sinistro doit utiliser ces infos
+## 4. Protocole d’analyse Sinistro
 
-Logique à suivre dans le SaaS :
+Pour chaque dossier, l’IA doit suivre cet arbre logique (détail dans le fichier **08** – [`08-logique-qualification-seuils.md`](08-logique-qualification-seuils.md)) :
 
-1. **Qualification**  
-   « Est-ce un dégât des eaux ou un accident auto ? » → choix de la convention (IRSA/IRCA/PAOS vs IRSI/CIDE-COP).
-
-2. **Seuil**  
-   « Le montant estimé est-il de 1 200 € ou 8 000 € ? »  
-   Indispensable pour choisir **IRSI Tranche 1**, **IRSI Tranche 2** ou **CIDE-COP**.
-
-3. **Localisation**  
-   Copropriété, maison individuelle ou locatif → impact sur assureur gestionnaire et recours.
-
-4. **Action**  
-   Sinistro indique :
-   - qui est l’**Assureur Gestionnaire** ;
-   - s’il y a un **Recours** possible et dans quel cadre (convention + barème si applicable).
+1. **Qualification métier :** Définir la nature (Auto matériel, Auto corporel, Habitation, Pro, RC).
+2. **Vérification des seuils :** Est-on en **IRSI Tranche 1**, **IRSI Tranche 2** ou **CIDE-COP** ? (Seuils : &lt; 1 600 € HT ; 1 600 € – 5 000 € HT ; &gt; 5 000 € HT.)
+3. **Désignation de la gestion :** Qui est l’**assureur gestionnaire** selon la convention ?
+4. **Détermination du recours :** Existe-t-il une base de recours (barème IRSA ou IRSI Tranche 2) ?
 
 ---
 
-## 5. Rappel juridique
+## Liens de référence rapide
 
-- **Droit commun** : ce que l'assuré ou la victime peut exiger de son assureur (contrat, loi).
-- **Convention** : règles entre assureurs pour répartir les coûts (recours, gestionnaire).  
-Sinistro ne doit jamais présenter la convention comme un droit opposable au client ; il l’utilise pour expliquer **qui paie, qui recourt**, et **selon quels seuils**.
-
----
-
-*Document à compléter : **Cas IRSA** (détail des responsabilités par cas pour l’analyse de constat amiable).*
+| Ressource | URL |
+|-----------|-----|
+| **Portail pro – France Assureurs** | [franceassureurs.fr](https://www.franceassureurs.fr) |
+| **Outil terrain – e-constat auto** | [e-constat-auto.fr](https://www.e-constat-auto.fr) |
+| **Démarches sinistre (tempête, inondation)** | [France Assureurs – Démarches](https://www.franceassureurs.fr/lassurance-protege-finance-et-emploie/lassurance-protege/les-demarches-en-cas-de-sinistre/tempete-questions-reponses-sur-votre-assurance/) |
+| **INC – Conventions entre assureurs (grand public)** | [inc-conso.fr](https://www.inc-conso.fr/content/les-conventions-de-reglement-des-sinistres-entre-assureurs) |
