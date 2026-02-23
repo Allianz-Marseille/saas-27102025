@@ -6,7 +6,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Sparkles, Zap, Shield, Brain, MessageCircle } from "lucide-react";
-import { getBotConfig } from "@/lib/config/agents";
+import { useAuth } from "@/lib/firebase/use-auth";
+import { isAdmin } from "@/lib/utils/roles";
 
 type StatusVariant = "ok" | "enCours" | "ko";
 
@@ -121,11 +122,12 @@ const itemVariants = {
 
 export default function AgentsIAPage() {
   const router = useRouter();
-  const visibleBots = agentsBots.filter(
-    (a) => !(a.href === "/commun/agents-ia/bob" && getBotConfig("bob")?.inTestMode)
-  );
+  const { userData } = useAuth();
+  const admin = isAdmin(userData);
 
   const renderAgentCard = (agent: (typeof agentsBots)[0] | (typeof inspecteursIA)[0]) => {
+    const isAccessible =
+      agent.href === "/commun/agents-ia/bob" || admin;
     const status = (agent as { status?: StatusVariant }).status ?? "ko";
     const style = statusStyles[status];
     const CardContent = (
@@ -133,8 +135,9 @@ export default function AgentsIAPage() {
         className={`
           relative overflow-hidden rounded-2xl p-6 h-full flex flex-col
           bg-card backdrop-blur-xl border border-border
-          hover:border-violet-500/40 transition-all duration-500 hover:scale-[1.02]
-          ${agent.glow} hover:shadow-2xl
+          transition-all duration-500
+          ${isAccessible ? "hover:border-violet-500/40 hover:scale-[1.02] " : "opacity-60 cursor-not-allowed "}
+          ${agent.glow} ${isAccessible ? "hover:shadow-2xl" : ""}
         `}
       >
         <span
@@ -144,12 +147,12 @@ export default function AgentsIAPage() {
           {style.label}
         </span>
         <div
-          className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${agent.color} mix-blend-overlay opacity-10 rounded-2xl`}
+          className={`absolute inset-0 opacity-0 transition-opacity duration-500 bg-gradient-to-br ${agent.color} mix-blend-overlay opacity-10 rounded-2xl ${isAccessible ? "group-hover:opacity-100" : ""}`}
         />
         <div className="relative flex gap-6 items-start flex-1 min-h-0">
           <div className="relative shrink-0">
             <div
-              className={`w-24 h-24 rounded-2xl overflow-hidden border-2 border-border group-hover:border-violet-400/50 transition-colors shadow-xl ${agent.glow}`}
+              className={`w-24 h-24 rounded-2xl overflow-hidden border-2 border-border shadow-xl ${agent.glow} ${isAccessible ? "group-hover:border-violet-400/50 transition-colors" : ""}`}
             >
               <Image
                 src={agent.image}
@@ -160,7 +163,7 @@ export default function AgentsIAPage() {
               />
             </div>
             <div
-              className={`absolute -inset-1 bg-gradient-to-r ${agent.color} opacity-0 group-hover:opacity-20 blur-xl rounded-2xl transition-opacity duration-500`}
+              className={`absolute -inset-1 bg-gradient-to-r ${agent.color} opacity-0 blur-xl rounded-2xl transition-opacity duration-500 ${isAccessible ? "group-hover:opacity-20" : ""}`}
             />
           </div>
           <div className="flex-1 min-w-0 flex flex-col">
@@ -183,12 +186,14 @@ export default function AgentsIAPage() {
         variants={itemVariants}
         className="group relative h-full"
       >
-        {agent.href ? (
+        {isAccessible && agent.href ? (
           <Link href={agent.href} className="block h-full">
             {CardContent}
           </Link>
         ) : (
-          CardContent
+          <div className="block h-full pointer-events-none" aria-disabled="true">
+            {CardContent}
+          </div>
         )}
       </motion.div>
     );
@@ -242,7 +247,7 @@ export default function AgentsIAPage() {
           {/* Section 1 : les 4 bots */}
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-              {visibleBots.map((agent) => renderAgentCard(agent))}
+              {agentsBots.map((agent) => renderAgentCard(agent))}
             </div>
           </div>
 

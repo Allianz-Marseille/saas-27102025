@@ -53,9 +53,25 @@ export function RouteGuard({
     }
 
     // Vérifier l'accès selon le chemin
-    // Les pages /commun/* sont accessibles à tous les utilisateurs authentifiés
-    if (pathname.startsWith("/commun")) {
-      // Pas de restriction, accessible à tous les utilisateurs authentifiés
+    // Les pages /commun/* sont accessibles à tous les utilisateurs authentifiés sauf si allowedRoles est fourni
+    if (pathname.startsWith("/commun") && (!allowedRoles || allowedRoles.length === 0)) {
+      return;
+    }
+
+    if (pathname.startsWith("/commun") && allowedRoles && allowedRoles.length > 0) {
+      const hasValidRole = allowedRoles.some((role) => {
+        if (role === "ADMINISTRATEUR") return isAdmin(userData);
+        if (role === "CDC_COMMERCIAL") return isCommercial(userData);
+        if (role === "COMMERCIAL_SANTE_INDIVIDUEL") return isCommercialSanteIndividuel(userData);
+        if (role === "COMMERCIAL_SANTE_COLLECTIVE") return isCommercialSanteCollective(userData);
+        if (role === "GESTIONNAIRE_SINISTRE") return isGestionnaireSinistre(userData);
+        return false;
+      });
+      if (!hasValidRole) {
+        toast.error("Vous n'avez pas les droits nécessaires pour accéder à cette page");
+        router.push("/commun/agents-ia");
+        return;
+      }
       return;
     }
     
@@ -152,9 +168,19 @@ export function RouteGuard({
       return null;
     }
 
-    // Les pages /commun/* sont accessibles à tous les utilisateurs authentifiés
+    // Les pages /commun/* : vérifier allowedRoles si fourni
     if (pathname.startsWith("/commun")) {
-      // Pas de restriction
+      if (allowedRoles && allowedRoles.length > 0) {
+        const hasValidRole = allowedRoles.some((role) => {
+          if (role === "ADMINISTRATEUR") return isAdmin(userData);
+          if (role === "CDC_COMMERCIAL") return isCommercial(userData);
+          if (role === "COMMERCIAL_SANTE_INDIVIDUEL") return isCommercialSanteIndividuel(userData);
+          if (role === "COMMERCIAL_SANTE_COLLECTIVE") return isCommercialSanteCollective(userData);
+          if (role === "GESTIONNAIRE_SINISTRE") return isGestionnaireSinistre(userData);
+          return false;
+        });
+        if (!hasValidRole) return null;
+      }
       return <>{children}</>;
     }
 

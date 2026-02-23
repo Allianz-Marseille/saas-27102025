@@ -4,13 +4,15 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { BotChat } from "@/components/chat/bot-chat";
+import { RouteGuard } from "@/components/auth/route-guard";
 import { getBotConfig } from "@/lib/config/agents";
 
 export default function LeaPage() {
   const config = getBotConfig("lea");
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <RouteGuard allowedRoles={["ADMINISTRATEUR"]}>
+      <div className="min-h-screen bg-background relative overflow-hidden">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(34,197,94,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(34,197,94,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-emerald-500/10 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-0 right-0 w-[600px] h-[300px] bg-emerald-400/10 rounded-full blur-[100px] -z-10" />
@@ -60,6 +62,6 @@ export default function LeaPage() {
           className="bg-card border border-emerald-500/30 shadow-xl shadow-emerald-500/5"
         />
       </div>
-    </div>
+    </RouteGuard>
   );
 }

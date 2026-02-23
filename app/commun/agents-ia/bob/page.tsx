@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { BotChat, type QuickReply } from "@/components/chat/bot-chat";
-import { RouteGuard } from "@/components/auth/route-guard";
 import { getBotConfig } from "@/lib/config/agents";
 
 const BOB_AVATAR = "/agents-ia/bot-tns/bob_sourit.png";
@@ -127,12 +126,6 @@ function BobPageContent() {
       </div>
     </div>
   );
-
-  if (inTestMode) {
-    return (
-      <RouteGuard allowedRoles={["ADMINISTRATEUR"]}>{pageContent}</RouteGuard>
-    );
-  }
 
   return pageContent;
 }

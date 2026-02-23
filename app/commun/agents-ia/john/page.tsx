@@ -4,13 +4,15 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { BotChat } from "@/components/chat/bot-chat";
+import { RouteGuard } from "@/components/auth/route-guard";
 import { getBotConfig } from "@/lib/config/agents";
 
 export default function JohnPage() {
   const config = getBotConfig("john-coll");
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <RouteGuard allowedRoles={["ADMINISTRATEUR"]}>
+      <div className="min-h-screen bg-background relative overflow-hidden">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(249,115,22,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(249,115,22,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-orange-500/10 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-0 right-0 w-[600px] h-[300px] bg-amber-400/10 rounded-full blur-[100px] -z-10" />
@@ -60,6 +62,6 @@ export default function JohnPage() {
           className="bg-card border border-orange-500/30 shadow-xl shadow-orange-500/5"
         />
       </div>
-    </div>
+    </RouteGuard>
   );
 }
