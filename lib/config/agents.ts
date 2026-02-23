@@ -24,7 +24,7 @@ export const BOTS: Record<string, BotConfig> = {
     agentId: "",
     model: "",
     description: "Expert santé et prévoyance TNS",
-    inTestMode: true,
+    inTestMode: false,
   },
   lea: {
     id: "lea",
