@@ -20,10 +20,10 @@ export interface BotConfig {
 export const BOTS: Record<string, BotConfig> = {
   bob: {
     id: "bob",
-    name: "Bob",
+    name: "Bob TNS",
     agentId: "",
     model: "",
-    description: "Expert santé et prévoyance TNS",
+    description: "Expert en prévoyance",
     inTestMode: false,
   },
   lea: {
@@ -39,6 +39,13 @@ export const BOTS: Record<string, BotConfig> = {
     agentId: "",
     model: "",
     description: "Expert Santé, Prévoyance et Retraite Collectives",
+  },
+  dede: {
+    id: "dede",
+    name: "Dédé",
+    agentId: "",
+    model: "",
+    description: "Expert marchés du professionnel : artisans, commerçants et professions libérales",
   },
 };
 

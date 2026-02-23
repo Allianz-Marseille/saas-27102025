@@ -15,7 +15,7 @@ export default function JohnPage() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-orange-500/10 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-0 right-0 w-[600px] h-[300px] bg-amber-400/10 rounded-full blur-[100px] -z-10" />
 
-      <div className="relative container mx-auto py-8 px-4 max-w-2xl">
+      <div className="relative w-full max-w-none mx-auto py-8 px-4 lg:px-6">
         <nav
           className="flex items-center gap-2 text-sm text-slate-400 mb-6"
           aria-label="Fil d'Ariane"

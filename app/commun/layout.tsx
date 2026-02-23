@@ -33,8 +33,7 @@ import {
   BarChart3,
   Wrench,
   Zap,
-  Bot,
-  FlaskConical
+  Bot
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -253,11 +252,6 @@ const adminNavItems = [
     label: "Mes agents IA",
     icon: Bot,
     badge: "en formation",
-  },
-  {
-    href: "/admin/test-bots",
-    label: "Test des Bots",
-    icon: FlaskConical,
   },
   {
     href: "/admin/commissions-agence",

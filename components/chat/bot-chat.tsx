@@ -18,6 +18,10 @@ import {
   Mail,
   ClipboardList,
   FileText,
+  BookOpen,
+  ListChecks,
+  ChevronRight,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MermaidDiagram } from "@/components/chat/mermaid-diagram";
@@ -77,6 +81,8 @@ interface BotChatProps {
   bonjourTriggerMessage?: string;
   /** Force le thème sombre (contraste) quand le conteneur a un fond sombre. Par défaut : true si accentColor="blue". */
   darkContainer?: boolean;
+  /** Sous-texte du placeholder de l'input (ex. "Expert en prévoyance"). Optionnel. */
+  inputPlaceholderSubtitle?: string;
 }
 
 /**
@@ -92,6 +98,21 @@ function getPrenomChargeFromEmail(email: string | null | undefined): string {
   const firstWord = beforeAt.replace(/[^a-zA-ZÀ-ÿ]+/g, " ").trim().split(/\s+/)[0] ?? "";
   if (!firstWord) return "Collaborateur";
   return firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase();
+}
+
+/** Extrait jusqu'à 3 suggestions "Pour aller plus loin" en fin de message (liste markdown). */
+function extractSuggestions(content: string): string[] {
+  const idx = content.search(/\*\*(?:Pour aller plus loin|À creuser)\*\*\s*:?/i);
+  if (idx === -1) return [];
+  const after = content.slice(idx);
+  const lines = after.split(/\n/).slice(1);
+  const items: string[] = [];
+  for (const line of lines) {
+    const m = line.match(/^\s*[-*]\s+(.+)$/) || line.match(/^\s*\d+\.\s+(.+)$/);
+    if (m?.[1]) items.push(m[1].trim());
+    if (items.length >= 3) break;
+  }
+  return items.slice(0, 3);
 }
 
 /** Extrait le nom du client des messages assistant (ex. "pour le client **Fred Fellous**" ou "client **X**"). */
@@ -117,6 +138,7 @@ export function BotChat({
   quickRepliesLevel2,
   bonjourTriggerMessage,
   darkContainer: darkContainerProp,
+  inputPlaceholderSubtitle,
 }: BotChatProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<BotChatMessage[]>([]);
@@ -182,12 +204,28 @@ export function BotChat({
       messageText?: string,
       options?: { historyOverride?: BotChatMessage[] }
     ) => {
-      const text = (messageText ?? input.trim()).trim();
+      let text = (messageText ?? input.trim()).trim();
       if (!text || !user || isLoading) return;
+
+      const historyToUse = options?.historyOverride ?? messages;
+      if (
+        historyToUse.length > 0 &&
+        historyToUse[historyToUse.length - 1].role === "assistant"
+      ) {
+        const suggestions = extractSuggestions(
+          historyToUse[historyToUse.length - 1].content
+        );
+        if (
+          suggestions.length === 3 &&
+          ["1", "2", "3"].includes(text)
+        ) {
+          const idx = parseInt(text, 10) - 1;
+          if (idx >= 0 && idx < 3) text = suggestions[idx];
+        }
+      }
 
       setInput("");
       setError(null);
-      const historyToUse = options?.historyOverride ?? messages;
       if (!options?.historyOverride) {
         setMessages((prev) => [...prev, { role: "user", content: text }]);
       }
@@ -462,16 +500,56 @@ export function BotChat({
             {children}
           </blockquote>
         ),
+        h2: ({
+          children,
+          ...props
+        }: React.HTMLAttributes<HTMLHeadingElement>) => (
+          <h2
+            className="mt-6 mb-3 flex items-center gap-2 text-base font-semibold text-slate-100 first:mt-0"
+            {...props}
+          >
+            <BookOpen className="h-4 w-4 shrink-0 text-blue-400" aria-hidden />
+            {children}
+          </h2>
+        ),
+        h3: ({
+          children,
+          ...props
+        }: React.HTMLAttributes<HTMLHeadingElement>) => (
+          <h3
+            className="mt-4 mb-2 flex items-center gap-2 text-sm font-semibold text-slate-200"
+            {...props}
+          >
+            <ListChecks className="h-3.5 w-3.5 shrink-0 text-blue-400/80" aria-hidden />
+            {children}
+          </h3>
+        ),
         h4: ({
           children,
           ...props
         }: React.HTMLAttributes<HTMLHeadingElement>) => (
           <h4
-            className="mt-4 mb-2 text-sm font-semibold text-slate-200 first:mt-0"
+            className="mt-4 mb-2 flex items-center gap-2 text-sm font-semibold text-slate-200 first:mt-0"
             {...props}
           >
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-blue-400/70" aria-hidden />
             {children}
           </h4>
+        ),
+        p: ({ children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => (
+          <p className="mb-3 leading-relaxed last:mb-0" {...props}>
+            {children}
+          </p>
+        ),
+        ul: ({ children, ...props }: React.HTMLAttributes<HTMLUListElement>) => (
+          <ul className="my-3 space-y-1 pl-4" {...props}>
+            {children}
+          </ul>
+        ),
+        ol: ({ children, ...props }: React.HTMLAttributes<HTMLOListElement>) => (
+          <ol className="my-3 list-decimal space-y-1 pl-4" {...props}>
+            {children}
+          </ol>
         ),
         hr: () => <hr className="my-4 border-slate-600/50" />,
         code: ({
@@ -492,6 +570,21 @@ export function BotChat({
         },
       }
     : {
+        p: ({ children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => (
+          <p className="mb-3 leading-relaxed last:mb-0" {...props}>
+            {children}
+          </p>
+        ),
+        ul: ({ children, ...props }: React.HTMLAttributes<HTMLUListElement>) => (
+          <ul className="my-3 space-y-1 pl-4" {...props}>
+            {children}
+          </ul>
+        ),
+        ol: ({ children, ...props }: React.HTMLAttributes<HTMLOListElement>) => (
+          <ol className="my-3 list-decimal space-y-1 pl-4" {...props}>
+            {children}
+          </ol>
+        ),
         code: ({
           className,
           children,
@@ -659,66 +752,151 @@ export function BotChat({
               hasDarkContainer ? "text-slate-400" : "text-muted-foreground"
             )}
           >
-            Posez votre question à {botName}. Santé et prévoyance TNS.
+            Posez votre question à {botName}.{inputPlaceholderSubtitle ? ` ${inputPlaceholderSubtitle}.` : ""}
           </p>
         )}
         <AnimatePresence initial={false}>
-          {messages.map((msg, i) => (
-            <motion.div
-              key={`${i}-${msg.content.slice(0, 20)}`}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className={cn(
-                "rounded-xl px-3 py-2.5 text-sm max-w-[85%]",
-                msg.role === "user" ? userBubbleClass : assistantBubbleClass
-              )}
-            >
-              {msg.role === "user" ? (
-                <div className="flex items-start gap-2">
-                  <span className="flex-1 min-w-0">{msg.content}</span>
-                  {lastMessageIsUser && i === messages.length - 1 && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-                      onClick={handleRegenerate}
-                      disabled={isLoading}
-                      title="Régénérer la réponse"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
+          {messages.map((msg, i) => {
+            const isLastAssistant =
+              msg.role === "assistant" &&
+              i === messages.length - 1 &&
+              !isLoading &&
+              !streamingContent;
+            const suggestions = isLastAssistant ? extractSuggestions(msg.content) : [];
+            const isWelcomeWithThreeThemes =
+              useTwoLevels &&
+              msg.role === "assistant" &&
+              i === 1 &&
+              messages[0]?.role === "user" &&
+              messages[0]?.content.trim() === bonjourTriggerMessage?.trim() &&
+              quickRepliesLevel2 &&
+              quickRepliesLevel2.length >= 3;
+            return (
+              <div key={`${i}-${msg.content.slice(0, 20)}`} className="space-y-2">
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className={cn(
+                    "rounded-xl text-sm max-w-[85%]",
+                    msg.role === "user"
+                      ? `px-3 py-2.5 ${userBubbleClass}`
+                      : `px-4 py-3.5 ${assistantBubbleClass}`
                   )}
-                </div>
-              ) : (
-                <div className="flex items-start gap-2 group/bubble">
-                  <div className="flex-1 min-w-0 overflow-x-auto">
-                    <div className="prose prose-invert prose-sm max-w-none dark:prose-invert [&_table]:my-3 [&_th]:px-3 [&_th]:py-2 [&_td]:px-3 [&_td]:py-2">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={markdownTableComponents}
-                      >
-                        {msg.content}
-                      </ReactMarkdown>
+                >
+                  {msg.role === "user" ? (
+                    <div className="flex items-start gap-2">
+                      <span className="flex-1 min-w-0">{msg.content}</span>
+                      {lastMessageIsUser && i === messages.length - 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                          onClick={handleRegenerate}
+                          disabled={isLoading}
+                          title="Régénérer la réponse"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0 opacity-70 group-hover/bubble:opacity-100 text-muted-foreground hover:text-foreground"
-                    onClick={() => handleCopy(msg.content, i)}
-                    title="Copier"
+                  ) : (
+                    <div className="flex items-start gap-2 group/bubble">
+                      <div className="flex-1 min-w-0 overflow-x-auto">
+                        <div className="prose prose-invert prose-sm max-w-none dark:prose-invert leading-relaxed [&_table]:my-3 [&_th]:px-3 [&_th]:py-2 [&_td]:px-3 [&_td]:py-2">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={markdownTableComponents}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0 opacity-70 group-hover/bubble:opacity-100 text-muted-foreground hover:text-foreground"
+                        onClick={() => handleCopy(msg.content, i)}
+                        title="Copier"
+                      >
+                        {copiedIndex === i ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </motion.div>
+                {suggestions.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex flex-wrap gap-2 pl-1"
                   >
-                    {copiedIndex === i ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              )}
-            </motion.div>
-          ))}
+                    <span
+                      className={cn(
+                        "flex items-center gap-1.5 text-xs shrink-0",
+                        hasDarkContainer ? "text-slate-400" : "text-muted-foreground"
+                      )}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" aria-hidden />
+                      Pour aller plus loin (tapez 1, 2 ou 3 pour lancer) :
+                    </span>
+                    {suggestions.map((label, idx) => (
+                      <Button
+                        key={label}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "h-8 text-xs shrink-0",
+                          hasDarkContainer &&
+                            "border-slate-500/60 bg-slate-800/40 text-slate-200 hover:bg-slate-700/60 hover:text-white hover:border-slate-400/60"
+                        )}
+                        onClick={() => sendMessage(label)}
+                        disabled={isLoading}
+                        title={`Envoyer le thème ${idx + 1}`}
+                      >
+                        {idx + 1}. {label}
+                      </Button>
+                    ))}
+                  </motion.div>
+                )}
+                {isWelcomeWithThreeThemes && quickRepliesLevel2 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex flex-wrap gap-2 pl-1"
+                  >
+                    <span
+                      className={cn(
+                        "w-full flex items-center gap-1.5 text-xs shrink-0 mb-1",
+                        hasDarkContainer ? "text-slate-400" : "text-muted-foreground"
+                      )}
+                    >
+                      Lancer directement :
+                    </span>
+                    {quickRepliesLevel2.slice(0, 3).map((item) => {
+                      const { label, message } = normalizeQuickReply(item);
+                      return (
+                        <Button
+                          key={label}
+                          type="button"
+                          size="sm"
+                          className={cn("h-8 text-xs shrink-0", level2ButtonClass)}
+                          onClick={() => sendMessage(message)}
+                          disabled={isLoading}
+                        >
+                          {label}
+                        </Button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </div>
+            );
+          })}
         </AnimatePresence>
 
         {isLoading && !streamingContent && (
@@ -752,12 +930,12 @@ export function BotChat({
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             className={cn(
-              "rounded-xl px-3 py-2.5 text-sm max-w-[85%]",
+              "rounded-xl px-4 py-3.5 text-sm max-w-[85%]",
               assistantBubbleClass
             )}
           >
             <div className="overflow-x-auto">
-              <div className="prose prose-invert prose-sm max-w-none dark:prose-invert [&_table]:my-3 [&_th]:px-3 [&_th]:py-2 [&_td]:px-3 [&_td]:py-2">
+              <div className="prose prose-invert prose-sm max-w-none dark:prose-invert leading-relaxed [&_table]:my-3 [&_th]:px-3 [&_th]:py-2 [&_td]:px-3 [&_td]:py-2">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={markdownTableComponents}

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote, LogOut, ChevronLeft, User, Zap, Bot, FlaskConical } from "lucide-react";
+import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote, LogOut, ChevronLeft, User, Zap, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import Image from "next/image";
@@ -63,11 +63,6 @@ const adminNavItems = [
     label: "Mes agents IA",
     icon: Bot,
     badge: "en formation",
-  },
-  {
-    href: "/admin/test-bots",
-    label: "Test des Bots",
-    icon: FlaskConical,
   },
   {
     href: "/admin/commissions-agence",

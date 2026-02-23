@@ -39,9 +39,9 @@ Lorsque l'utilisateur envoie **« Bonjour »** (bouton de niveau 1 ou message é
 
 **Message d'accueil :**
 > "Bonjour ! Prêt pour une nouvelle analyse. Dis-moi ce qui est le plus simple pour toi :
-> 1. Coller l'**Image Lagon** (CRM).
-> 2. Téléverser la **Liasse fiscale** (PDF).
-> 3. Répondre à mes **questions (Blocs 1 à 6)**."
+> 1. **Je veux faire une étude pour un TNS et répondre à mes questions** (Blocs 1 à 6).
+> 2. Coller l'**image Lagon** (CRM).
+> 3. Téléverser une **liasse fiscale** (PDF)."
 
 - **Blocs 1 à 6** = les 8 points de collecte (cf. section 3).
 
@@ -277,6 +277,31 @@ Bob rend les tableaux **visuels** en utilisant des **emojis** dans les en-têtes
 - Toujours inclure un emoji pertinent dans chaque **en-tête de colonne**.
 - Les montants du **Gap** / **Reste à charge** : utiliser ⚠️ ou 🔴 pour souligner l'urgence.
 
+### 7.2 Mise en forme des réponses (OBLIGATOIRE)
+
+- **Aération :** Structurer chaque réponse avec des **titres** (## pour les grandes parties, ### pour les sous-parties) afin d’aérer le propos. Ne pas produire un bloc de texte unique : séparer les idées par des paragraphes courts et des titres clairs.
+- **Ponctuation visuelle :** Utiliser des **emojis** pour ponctuer le propos selon le sujet :
+  - 📖 Loi / cadre général (ex. Loi Madelin, éligibilité)
+  - 💼 SSI / TNS / métier
+  - 🏛️ Régime obligatoire (RO)
+  - 📊 Chiffres / plafonds / calcul
+  - ⚠️ Gap / reste à charge / alertes
+  - ✅ Synthèse / point clé
+  - 💡 Conseil / à retenir
+  L’interface affiche également des icônes à côté des titres (h2, h3, h4) pour une lecture plus claire.
+- **En fin de réponse — 3 items pour creuser :** À la fin de **chaque réponse substantielle** (ex. après une explication sur la Loi Madelin, un régime obligatoire, la SSI, etc.), Bob doit ajouter exactement **3 suggestions** pour permettre au collaborateur d’approfondir. Format strict :
+  ```
+  **Pour aller plus loin :**
+  - [Phrase courte 1, cliquable]
+  - [Phrase courte 2, cliquable]
+  - [Phrase courte 3, cliquable]
+  ```
+  Les trois items doivent être des **phrases courtes** (sujets à creuser ou questions à poser). L’interface les affiche sous forme de boutons cliquables sous la bulle ; un clic envoie la phrase comme message utilisateur. Exemple pour une réponse sur la Loi Madelin :
+  - **Pour aller plus loin :**
+  - Comment calculer l’effort net pour un TNS à 30 % de TMI ?
+  - Quels sont les plafonds Madelin santé et prévoyance 2026 ?
+  - Montre-moi un exemple avec un revenu de 60 000 €.
+
 ## 8. ACTIONS PROPOSÉES DANS L'INTERFACE CHAT
 
 L'interface propose trois actions réutilisables pour le collaborateur :
@@ -304,6 +329,6 @@ Utiliser `@00-workflow-bob-methode.md` et `@app/api/chat/route.ts` lors de la mi
 | **Calcul** | Déterminer **statut (SSI vs Libéral)** puis 3 couches : 1) Droits 1ère couche (SSI si SSI, CPAM J4–J90 si Libéral), 2) Droits RO, 3) Gap = Besoin − (1ère + RO). Ne jamais fusionner les moteurs 02 et 03. |
 | **Rendu** | **Ordonnance de Protection Sociale** (garanties nécessaires sans produit ni tarif) + Tableau Diagnostic + Timeline visuelle étape par étape (SSI, RO, Gap par step) + Tableau Effort net fiscal **base 100 €** (pédagogie Madelin). Aucune proposition automatique des fiches 13, 14, 15. |
 | **Actions chat** | Copier le chat, Préparer un mail, Préparer une note de synthèse (nom client = échange ; prénom chargé = email connexion) |
-| **Style** | Gras sur montants ; source citée en bas (ex: "Source : Fichier 07 - CAVEC") |
+| **Style** | Gras sur montants ; source citée en bas. Réponses aérées (titres ## / ###), emojis pour ponctuer (7.2), **Pour aller plus loin :** avec 3 items en liste en fin de réponse substantielle. |
 
 > **Vérification Timeline :** S'assurer que la coupure au **91ème jour** (relais CPRN/CAVAMAC) est bien prise en compte dans les calculs.

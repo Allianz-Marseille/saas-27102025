@@ -8,15 +8,38 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Sparkles, Zap, Shield, Brain, MessageCircle } from "lucide-react";
 import { getBotConfig } from "@/lib/config/agents";
 
-const agents = [
+type StatusVariant = "ok" | "enCours" | "ko";
+
+const statusStyles: Record<
+  StatusVariant,
+  { label: string; className: string }
+> = {
+  ok: {
+    label: "Ok, on y va !",
+    className:
+      "bg-emerald-500/90 text-white border-emerald-400/50 shadow-emerald-500/30",
+  },
+  enCours: {
+    label: "En cours",
+    className:
+      "bg-amber-500/90 text-white border-amber-400/50 shadow-amber-500/30",
+  },
+  ko: {
+    label: "KO pour le moment",
+    className: "bg-slate-600/90 text-slate-200 border-slate-500/50",
+  },
+};
+
+const agentsBots = [
   {
-    name: "Bob",
-    role: "L'expert prévoyance TNS",
+    name: "Bob TNS",
+    role: "Expert en prévoyance",
     image: "/agents-ia/bot-tns/bob_sourit.png",
     superpower: "Décoder les mutuelles comme personne. Bientôt : vision laser pour lire les bulletins à 10 m.",
     color: "from-emerald-500 via-teal-500 to-cyan-500",
     glow: "shadow-emerald-500/50",
     href: "/commun/agents-ia/bob",
+    status: "ok" as StatusVariant,
   },
   {
     name: "Léa",
@@ -26,6 +49,7 @@ const agents = [
     color: "from-emerald-500 via-green-500 to-teal-500",
     glow: "shadow-emerald-500/50",
     href: "/commun/agents-ia/lea",
+    status: "ko" as StatusVariant,
   },
   {
     name: "John",
@@ -35,6 +59,7 @@ const agents = [
     color: "from-amber-500 via-orange-500 to-rose-500",
     glow: "shadow-amber-500/50",
     href: "/commun/agents-ia/john",
+    status: "ko" as StatusVariant,
   },
   {
     name: "Sinistro",
@@ -44,6 +69,21 @@ const agents = [
     color: "from-amber-500 via-orange-500 to-red-500",
     glow: "shadow-amber-500/50",
     href: null,
+    status: "enCours" as StatusVariant,
+  },
+];
+
+const inspecteursIA = [
+  {
+    name: "Dédé",
+    role: "Le pro artisans, commerçants et professions libérales",
+    image: "/agents-ia/bot-dede-le-pro/dede.png",
+    imagePosition: "object-[50%_35%]",
+    superpower: "Spécialisé sur les marchés du professionnel : artisans, commerçants et professions libérales.",
+    color: "from-slate-500 via-blue-500 to-indigo-500",
+    glow: "shadow-slate-500/50",
+    href: "/commun/agents-ia/dede",
+    status: "ko" as StatusVariant,
   },
   {
     name: "Pauline",
@@ -53,6 +93,7 @@ const agents = [
     color: "from-violet-500 via-purple-500 to-indigo-500",
     glow: "shadow-violet-500/50",
     href: null,
+    status: "ko" as StatusVariant,
   },
 ];
 
@@ -80,9 +121,79 @@ const itemVariants = {
 
 export default function AgentsIAPage() {
   const router = useRouter();
-  const visibleAgents = agents.filter(
-    (a) => !(a.name === "Bob" && getBotConfig("bob")?.inTestMode)
+  const visibleBots = agentsBots.filter(
+    (a) => !(a.href === "/commun/agents-ia/bob" && getBotConfig("bob")?.inTestMode)
   );
+
+  const renderAgentCard = (agent: (typeof agentsBots)[0] | (typeof inspecteursIA)[0]) => {
+    const status = (agent as { status?: StatusVariant }).status ?? "ko";
+    const style = statusStyles[status];
+    const CardContent = (
+      <div
+        className={`
+          relative overflow-hidden rounded-2xl p-6 h-full flex flex-col
+          bg-slate-900/60 backdrop-blur-xl border
+          border-slate-700/50 hover:border-violet-500/40
+          transition-all duration-500 hover:scale-[1.02]
+          ${agent.glow} hover:shadow-2xl
+        `}
+      >
+        <span
+          className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-medium border shadow-sm ${style.className}`}
+          aria-label={`État : ${style.label}`}
+        >
+          {style.label}
+        </span>
+        <div
+          className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${agent.color} mix-blend-overlay opacity-10 rounded-2xl`}
+        />
+        <div className="relative flex gap-6 items-start flex-1 min-h-0">
+          <div className="relative shrink-0">
+            <div
+              className={`w-24 h-24 rounded-2xl overflow-hidden border-2 border-slate-600/50 group-hover:border-violet-400/50 transition-colors shadow-xl ${agent.glow}`}
+            >
+              <Image
+                src={agent.image}
+                alt={agent.name}
+                width={96}
+                height={96}
+                className={`w-full h-full object-cover ${(agent as { imagePosition?: string }).imagePosition ?? ""}`}
+              />
+            </div>
+            <div
+              className={`absolute -inset-1 bg-gradient-to-r ${agent.color} opacity-0 group-hover:opacity-20 blur-xl rounded-2xl transition-opacity duration-500`}
+            />
+          </div>
+          <div className="flex-1 min-w-0 flex flex-col">
+            <h3 className="text-2xl font-bold text-white mb-1">
+              {agent.name}
+            </h3>
+            <p className={`text-sm font-medium bg-gradient-to-r ${agent.color} bg-clip-text text-transparent mb-3`}>
+              {agent.role}
+            </p>
+            <p className="text-slate-400 text-sm leading-relaxed line-clamp-3">
+              {agent.superpower}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+    return (
+      <motion.div
+        key={agent.name}
+        variants={itemVariants}
+        className="group relative h-full"
+      >
+        {agent.href ? (
+          <Link href={agent.href} className="block h-full">
+            {CardContent}
+          </Link>
+        ) : (
+          CardContent
+        )}
+      </motion.div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
@@ -129,69 +240,24 @@ export default function AgentsIAPage() {
             </p>
           </motion.div>
 
-          {/* Cartes agents */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {visibleAgents.map((agent) => {
-              const CardContent = (
-                <div
-                  className={`
-                    relative overflow-hidden rounded-2xl p-6
-                    bg-slate-900/60 backdrop-blur-xl border
-                    border-slate-700/50 hover:border-violet-500/40
-                    transition-all duration-500 hover:scale-[1.02]
-                    ${agent.glow} hover:shadow-2xl
-                  `}
-                >
-                  <div
-                    className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${agent.color} mix-blend-overlay opacity-10 rounded-2xl`}
-                  />
-                  <div className="relative flex gap-6 items-start">
-                    <div className="relative shrink-0">
-                      <div
-                        className={`w-24 h-24 rounded-2xl overflow-hidden border-2 border-slate-600/50 group-hover:border-violet-400/50 transition-colors shadow-xl ${agent.glow}`}
-                      >
-                        <Image
-                          src={agent.image}
-                          alt={agent.name}
-                          width={96}
-                          height={96}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div
-                        className={`absolute -inset-1 bg-gradient-to-r ${agent.color} opacity-0 group-hover:opacity-20 blur-xl rounded-2xl transition-opacity duration-500`}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-2xl font-bold text-white mb-1">
-                        {agent.name}
-                      </h3>
-                      <p className={`text-sm font-medium bg-gradient-to-r ${agent.color} bg-clip-text text-transparent mb-3`}>
-                        {agent.role}
-                      </p>
-                      <p className="text-slate-400 text-sm leading-relaxed">
-                        {agent.superpower}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-              return (
-                <motion.div
-                  key={agent.name}
-                  variants={itemVariants}
-                  className="group relative"
-                >
-                  {agent.href ? (
-                    <Link href={agent.href} className="block">
-                      {CardContent}
-                    </Link>
-                  ) : (
-                    CardContent
-                  )}
-                </motion.div>
-              );
-            })}
+          {/* Section 1 : les 4 bots */}
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+              {visibleBots.map((agent) => renderAgentCard(agent))}
+            </div>
+          </div>
+
+          {/* Section 2 : Mes inspecteurs IA (Pauline, Dédé) */}
+          <div className="space-y-6">
+            <motion.h2
+              variants={itemVariants}
+              className="text-2xl md:text-3xl font-bold text-white border-b border-slate-700/50 pb-3"
+            >
+              Mes inspecteurs IA
+            </motion.h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+              {inspecteursIA.map((agent) => renderAgentCard(agent))}
+            </div>
           </div>
 
           {/* CTA humoristique */}

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Bob Santé - Assistant Prévoyance",
-  description: "Expert santé et prévoyance TNS. Mutuelles, SSI, CARPIMKO, CAVEC.",
+  title: "Bob TNS - Assistant Prévoyance",
+  description: "Expert en prévoyance. Mutuelles, SSI, CARPIMKO, CAVEC.",
 };
 
 export default function BobLayout({

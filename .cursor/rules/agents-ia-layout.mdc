@@ -1,0 +1,32 @@
+---
+description: Pages des agents IA (chat bot) — utiliser toute la largeur disponible hors sidebar
+globs: app/commun/agents-ia/**/page.tsx
+alwaysApply: false
+---
+
+# Layout des pages agents IA (chat bot)
+
+Les pages de chat des bots (Bob, Léa, John, etc.) doivent **occuper toute la largeur disponible** dans la zone principale (à droite de la sidebar). Le contenu ne doit pas être limité par une largeur max type `max-w-2xl` ou `container` qui restreindrait l'affichage.
+
+## Règle
+
+- Le conteneur principal de la page (celui qui enveloppe fil d'Ariane, bouton Retour, header du bot et `BotChat`) doit utiliser les classes :
+  - `w-full max-w-none mx-auto py-8 px-4 lg:px-6`
+- Ne pas utiliser `container` ni `max-w-2xl` (ou autre `max-w-*`) sur ce conteneur pour les pages **d'un bot individuel** sous `app/commun/agents-ia/<botId>/page.tsx`.
+
+## Exemple
+
+```tsx
+// Bon — pleine largeur
+<div className="relative w-full max-w-none mx-auto py-8 px-4 lg:px-6">
+  {/* fil d'Ariane, Retour, header, BotChat */}
+</div>
+
+// À éviter sur une page de chat bot
+<div className="relative container mx-auto py-8 px-4 max-w-2xl">
+```
+
+## Scope
+
+- S'applique aux pages **d'un agent** : `app/commun/agents-ia/bob/page.tsx`, `lea/page.tsx`, `john/page.tsx`, et tout futur bot ajouté dans `agents-ia/<botId>/page.tsx`.
+- Ne s'applique pas à la page liste « Mes agents IA » (`app/commun/agents-ia/page.tsx`), qui peut garder un `max-w-6xl` ou autre pour la grille de cartes.
