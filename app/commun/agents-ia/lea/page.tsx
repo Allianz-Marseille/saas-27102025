@@ -62,6 +62,7 @@ export default function LeaPage() {
           className="bg-card border border-emerald-500/30 shadow-xl shadow-emerald-500/5"
         />
       </div>
+      </div>
     </RouteGuard>
   );
 }

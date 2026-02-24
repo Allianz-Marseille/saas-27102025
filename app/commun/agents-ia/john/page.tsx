@@ -62,6 +62,7 @@ export default function JohnPage() {
           className="bg-card border border-orange-500/30 shadow-xl shadow-orange-500/5"
         />
       </div>
+      </div>
     </RouteGuard>
   );
 }

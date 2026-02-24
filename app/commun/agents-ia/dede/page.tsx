@@ -71,6 +71,7 @@ export default function DedePage() {
           className="bg-card border border-blue-500/30 shadow-xl shadow-blue-500/5"
         />
       </div>
+      </div>
     </RouteGuard>
   );
 }
