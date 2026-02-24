@@ -12,9 +12,10 @@ const DEDE_AVATAR = "/agents-ia/bot-dede-le-pro/dede.png";
 
 export default function DedePage() {
   const config = getBotConfig("dede");
+  const isOpenToAllRoles = config?.status === "ok";
 
   return (
-    <RouteGuard allowedRoles={["ADMINISTRATEUR"]}>
+    <RouteGuard allowedRoles={isOpenToAllRoles ? undefined : ["ADMINISTRATEUR"]}>
       <div className="min-h-screen bg-background relative overflow-hidden">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-500/10 rounded-full blur-[120px] -z-10" />

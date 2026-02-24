@@ -9,6 +9,8 @@ export interface BotConfig {
   agentId: string;
   model: string;
   description: string;
+  /** Statut d'ouverture du bot dans l'UI agents IA. */
+  status?: "ok" | "enCours" | "ko";
   /** Bot visible uniquement sur la page Test des Bots (admin) tant que true. */
   inTestMode?: boolean;
 }
@@ -24,6 +26,7 @@ export const BOTS: Record<string, BotConfig> = {
     agentId: "",
     model: "",
     description: "Expert en prévoyance",
+    status: "ok",
     inTestMode: false,
   },
   lea: {
@@ -32,6 +35,7 @@ export const BOTS: Record<string, BotConfig> = {
     agentId: "",
     model: "",
     description: "Expert Santé Individuelle",
+    status: "ko",
   },
   "john-coll": {
     id: "john-coll",
@@ -39,6 +43,7 @@ export const BOTS: Record<string, BotConfig> = {
     agentId: "",
     model: "",
     description: "Expert Santé, Prévoyance et Retraite Collectives",
+    status: "ko",
   },
   dede: {
     id: "dede",
@@ -46,6 +51,7 @@ export const BOTS: Record<string, BotConfig> = {
     agentId: "",
     model: "",
     description: "Expert marchés du professionnel : artisans, commerçants et professions libérales",
+    status: "ko",
   },
   sinistro: {
     id: "sinistro",
@@ -53,6 +59,7 @@ export const BOTS: Record<string, BotConfig> = {
     agentId: "",
     model: "",
     description: "Expert gestion & analyse de sinistres",
+    status: "ok",
     inTestMode: false,
   },
 };

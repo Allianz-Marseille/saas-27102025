@@ -9,9 +9,10 @@ import { getBotConfig } from "@/lib/config/agents";
 
 export default function JohnPage() {
   const config = getBotConfig("john-coll");
+  const isOpenToAllRoles = config?.status === "ok";
 
   return (
-    <RouteGuard allowedRoles={["ADMINISTRATEUR"]}>
+    <RouteGuard allowedRoles={isOpenToAllRoles ? undefined : ["ADMINISTRATEUR"]}>
       <div className="min-h-screen bg-background relative overflow-hidden">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(249,115,22,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(249,115,22,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-orange-500/10 rounded-full blur-[120px] -z-10" />

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Sparkles, Zap, Shield, Brain, MessageCircle } from "lucide-react";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { isAdmin } from "@/lib/utils/roles";
+import { getBotConfig } from "@/lib/config/agents";
 
 type StatusVariant = "ok" | "enCours" | "ko";
 
@@ -27,7 +28,8 @@ const statusStyles: Record<
   },
   ko: {
     label: "KO pour le moment",
-    className: "bg-muted text-muted-foreground border-border",
+    className:
+      "bg-red-500/90 text-white border-red-400/50 shadow-red-500/30",
   },
 };
 
@@ -40,7 +42,7 @@ const agentsBots = [
     color: "from-emerald-500 via-teal-500 to-cyan-500",
     glow: "shadow-emerald-500/50",
     href: "/commun/agents-ia/bob",
-    status: "ok" as StatusVariant,
+    status: (getBotConfig("bob")?.status ?? "ok") as StatusVariant,
   },
   {
     name: "Léa",
@@ -50,7 +52,7 @@ const agentsBots = [
     color: "from-emerald-500 via-green-500 to-teal-500",
     glow: "shadow-emerald-500/50",
     href: "/commun/agents-ia/lea",
-    status: "ko" as StatusVariant,
+    status: (getBotConfig("lea")?.status ?? "ko") as StatusVariant,
   },
   {
     name: "John",
@@ -60,7 +62,7 @@ const agentsBots = [
     color: "from-amber-500 via-orange-500 to-rose-500",
     glow: "shadow-amber-500/50",
     href: "/commun/agents-ia/john",
-    status: "ko" as StatusVariant,
+    status: (getBotConfig("john-coll")?.status ?? "ko") as StatusVariant,
   },
   {
     name: "Sinistro",
@@ -70,7 +72,7 @@ const agentsBots = [
     color: "from-amber-500 via-orange-500 to-red-500",
     glow: "shadow-amber-500/50",
     href: "/commun/agents-ia/sinistro",
-    status: "ok" as StatusVariant,
+    status: (getBotConfig("sinistro")?.status ?? "ok") as StatusVariant,
   },
 ];
 
@@ -84,7 +86,7 @@ const inspecteursIA = [
     color: "from-slate-500 via-blue-500 to-indigo-500",
     glow: "shadow-slate-500/50",
     href: "/commun/agents-ia/dede",
-    status: "ko" as StatusVariant,
+    status: (getBotConfig("dede")?.status ?? "ko") as StatusVariant,
   },
   {
     name: "Pauline",
@@ -126,12 +128,8 @@ export default function AgentsIAPage() {
   const admin = isAdmin(userData);
 
   const renderAgentCard = (agent: (typeof agentsBots)[0] | (typeof inspecteursIA)[0]) => {
-    const isAccessible = Boolean(agent.href) && (
-      agent.href === "/commun/agents-ia/bob" ||
-      agent.href === "/commun/agents-ia/sinistro" ||
-      admin
-    );
     const status = (agent as { status?: StatusVariant }).status ?? "ko";
+    const isAccessible = Boolean(agent.href) && (status === "ok" || admin);
     const style = statusStyles[status];
     const CardContent = (
       <div
