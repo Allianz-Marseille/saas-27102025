@@ -239,6 +239,19 @@ function buildSinistroRuntimeInstruction(
   };
 }
 
+function buildBobRuntimeInstruction(): string {
+  const sections: string[] = [
+    "## GARDE-FOUS RUNTIME BOB SANTE",
+    "- Distinguer strictement le besoin de maintien de revenu personnel et le besoin de frais professionnels.",
+    "- Produire des gaps separes: maintien de revenu (ITT), invalidite, frais professionnels.",
+    "- Demander et appliquer un horizon explicite (1 an ou 3 ans) pour maintien revenu/invalidite et pour frais professionnels.",
+    "- Respecter la separation des moteurs: SSI pour artisans/commercants/gerants; CPAM J4-J90 puis RO pour liberaux.",
+    "- Pour les liberaux, rappeler la rupture CPAM au J91 dans l'analyse de maintien de revenu.",
+    "- Ne jamais fusionner revenu et frais professionnels dans une seule ligne de besoin ou de gap.",
+  ];
+  return sections.join("\n");
+}
+
 function inferInsightsFromAssistantContent(content: string): SinistroConversationInsights {
   const normalized = normalizeForMatch(content);
   const irsaCase = extractIrsaCaseFromText(content);
@@ -421,6 +434,9 @@ export async function POST(request: NextRequest) {
       const runtimeInstruction = buildSinistroRuntimeInstruction(message);
       systemInstruction += `\n\n${runtimeInstruction.extraInstruction}`;
       sinistroInsights = runtimeInstruction.insights;
+    }
+    if (botId.toLowerCase() === "bob") {
+      systemInstruction += `\n\n${buildBobRuntimeInstruction()}`;
     }
 
     const sessionId = metadata?.client_id ?? `standalone-${auth.userId}-${botId}`;

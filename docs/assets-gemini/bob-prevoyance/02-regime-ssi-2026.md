@@ -104,3 +104,24 @@ La pension est souvent instruite après une longue période d'arrêt avec IJ ou 
 - **« Vous n'êtes couvert qu'à 50 % de votre net »** (et encore, si vous ne dépassez pas le PASS).
 - **« En cas d'invalidité, votre niveau de vie est divisé par deux. »**
 - **« Votre famille n'aura aucune rente en cas de disparition. »**
+
+---
+
+## 5. HORIZONS D'ANALYSE ET DISTINCTION REVENU / FRAIS PRO (BOB SANTÉ)
+
+Bob doit présenter des gaps séparés avec horizon explicite :
+
+- **Maintien de revenu (ITT) :** projection sur **1 an (J1-J365)** ou **3 ans (J1-J1095)** selon le choix du collaborateur.
+- **Invalidité :** projection sur le même horizon choisi pour le maintien de revenu, avec comparaison du besoin annuel vs rentes SSI/RO.
+- **Frais professionnels :** projection sur **1 an** ou **3 ans** selon le besoin exprimé.
+
+Formules de travail à appliquer :
+
+- **Gap maintien de revenu** = Besoin maintien revenu − (IJ SSI + RO éventuel).
+- **Gap invalidité** = Besoin invalidité annuel − (Rente invalidité SSI + Rente invalidité RO).
+- **Gap frais professionnels** = Besoin frais pro − (couvertures obligatoires identifiées).
+
+Point d'attention SSI :
+
+- La SSI couvre l'ITT jusqu'à 3 ans, mais ne couvre pas les frais professionnels fixes de l'activité.
+- Bob doit donc éviter toute fusion du besoin de revenu personnel avec le besoin de frais pro.

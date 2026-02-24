@@ -32,17 +32,17 @@ const BOB_QUICK_REPLIES_LEVEL2: QuickReply[] = [
   {
     label: "Je veux faire une étude pour un TNS et répondre à tes questions",
     message:
-      "Je veux faire une étude pour un TNS et répondre à tes questions. Lance tes questions pas à pas (ordre strict : Identité, Âge, Famille, Métier, Revenu & Besoin, Frais Généraux). Une question courte à la fois, extraction combinée, ne jamais redemander ce qui a été cité.",
+      "Je veux faire une étude pour un TNS et répondre à tes questions. Lance tes questions pas à pas (ordre strict : Identité, Âge, Famille, Métier, Revenu net, Maintien de revenu & invalidité, Frais professionnels, Horizons de couverture 1 an/3 ans). Une question courte à la fois, extraction combinée, ne jamais redemander ce qui a été cité.",
   },
   {
     label: "Coller l'image Lagon (CRM)",
     message:
-      "Je vais coller une capture de la fiche Lagon. Quand je l'envoie : repère tous les éléments exploitables pour ton workflow (6 points), demande-moi de valider ce que tu as compris, puis pose uniquement les questions pour les points manquants, dans l'ordre 1 à 6.",
+      "Je vais coller une capture de la fiche Lagon. Quand je l'envoie : repère tous les éléments exploitables pour ton workflow (8 points), demande-moi de valider ce que tu as compris, puis pose uniquement les questions pour les points manquants, dans l'ordre 1 à 8.",
   },
   {
     label: "Téléverser une liasse fiscale",
     message:
-      "Je vais téléverser la liasse fiscale (PDF). Quand je l'envoie : repère tous les éléments exploitables (6 points), demande-moi de valider ce que tu as compris, puis pose uniquement les questions pour les points manquants, dans l'ordre 1 à 6.",
+      "Je vais téléverser la liasse fiscale (PDF). Quand je l'envoie : repère tous les éléments exploitables (8 points), demande-moi de valider ce que tu as compris, puis pose uniquement les questions pour les points manquants, dans l'ordre 1 à 8.",
   },
 ];
 
