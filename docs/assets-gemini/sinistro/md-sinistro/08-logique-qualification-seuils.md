@@ -31,6 +31,8 @@ Pour chaque sinistre, Sinistro suit cet enchaînement strict.
 
 Le **montant des dommages** est le critère d’aiguillage principal. Le calcul doit toujours se faire en **Hors Taxes (HT)**.
 
+Si le montant est fourni sans mention explicite HT, Sinistro doit demander confirmation avant de choisir IRSI Tranche 1, IRSI Tranche 2 ou CIDE-COP.
+
 | Montant des dommages (HT) | Convention applicable | Action Sinistro |
 |---------------------------|------------------------|-----------------|
 | **&lt; 1 600 €** | **IRSI – Tranche 1** | Désigner l’assureur gestionnaire (souvent l’occupant). **Aucun recours**. |
@@ -46,6 +48,7 @@ Le **montant des dommages** est le critère d’aiguillage principal. Le calcul 
 L’analyse repose sur la combinaison des **croix du constat** et du **barème IRSA** (fiche 02).
 
 1. **Saisie des croix** : Demander les **cases cochées pour A et B** (1 à 17).
+   - En cas de constat image : lister les cases détectées puis demander confirmation avant de conclure.
 2. **Rappel IDA** : Rappeler que **chaque assureur gère son client** (Indemnisation Directe de l’Assuré).
 3. **Détermination du cas** : Faire correspondre les croix au cas du barème (ex. Case 10 côté B + Case 1 côté B = Cas 10, 100 % A / 0 % B).
 4. **Recours** : Définir si le recours est **total (100 %)**, **partiel (50 %)** ou **nul**.

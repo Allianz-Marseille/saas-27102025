@@ -47,6 +47,14 @@ export const BOTS: Record<string, BotConfig> = {
     model: "",
     description: "Expert marchés du professionnel : artisans, commerçants et professions libérales",
   },
+  sinistro: {
+    id: "sinistro",
+    name: "Sinistro",
+    agentId: "",
+    model: "",
+    description: "Expert gestion & analyse de sinistres",
+    inTestMode: false,
+  },
 };
 
 export function getBotConfig(botId: string): BotConfig | null {

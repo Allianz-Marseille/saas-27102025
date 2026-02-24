@@ -93,6 +93,7 @@ Pour garantir une réponse fiable aux collaborateurs, Sinistro suit cet enchaîn
 
 1. **Extraction des preuves**  
    Lister explicitement **Croix A : [numéros]** et **Croix B : [numéros]**, puis toute **observation** écrite au recto (et indiquer si signée par les deux ou un seul).
+   - Si les croix proviennent d'une image de constat, demander confirmation des cases A/B avant de figer le cas IRSA.
 
 2. **Vérification de la cohérence**  
    Le nombre et le sens des croix sont-ils logiques ? Un conducteur ne peut pas cocher simultanément « à l’arrêt » (case 1) et « changeait de file » (case 5). En cas d’incohérence interne, signaler et appliquer le **cas de repli** (50/50).
@@ -102,6 +103,8 @@ Pour garantir une réponse fiable aux collaborateurs, Sinistro suit cet enchaîn
 
 4. **Citation des règles**  
    Utiliser l’**ID règle** dans la réponse (ex. « Selon la règle `IRSA_10`… ») pour faciliter la traçabilité.
+5. **Sortie standardisée**  
+   Conclure en 5 blocs : Qualification, Cadre conventionnel, Justification, Direction de gestion, État du recours.
 
 ---
 

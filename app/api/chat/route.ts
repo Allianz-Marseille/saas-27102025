@@ -10,10 +10,18 @@ import { NextRequest } from "next/server";
 import { verifyAuth } from "@/lib/utils/auth-utils";
 import { getAdminDbOrNull, Timestamp } from "@/lib/firebase/admin-config";
 import { getBotRegistryEntry } from "@/lib/ai/bot-loader";
+import { qualifySinister, type IrsaCaseCode, type SinisterInput } from "@/lib/sinistro";
 import { GoogleGenAI } from "@google/genai";
 import type { BotSessionMetadata } from "@/types/bot";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
+const SINISTRO_IRSA_CASES = [10, 13, 15, 17, 20, 21, 40] as const;
+
+type SinistroConversationInsights = {
+  resolvedConvention?: string;
+  resolvedSinisterType?: string;
+  resolvedIrsaCase?: number;
+};
 
 /**
  * Construit le contexte metadata optionnel pour l'agent (si dossier client ouvert).
@@ -59,6 +67,207 @@ async function saveMessageToFirestore(
   } catch (error) {
     console.error("Firebase fail — message non persisté:", error);
   }
+}
+
+/**
+ * Sauvegarde des insights de conversation au niveau session (traces métier Sinistro).
+ */
+async function saveConversationInsights(
+  sessionId: string,
+  insights: SinistroConversationInsights
+): Promise<void> {
+  if (!insights.resolvedConvention && !insights.resolvedSinisterType && !insights.resolvedIrsaCase) {
+    return;
+  }
+  try {
+    const db = getAdminDbOrNull();
+    if (!db) return;
+    await db.collection("conversations").doc(sessionId).set(
+      {
+        ...insights,
+        updatedAt: Timestamp.now(),
+      },
+      { merge: true }
+    );
+  } catch (error) {
+    console.error("Firebase fail — insights conversation non persistés:", error);
+  }
+}
+
+function normalizeForMatch(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function parseAmountInEuros(text: string): number | undefined {
+  const match = text.match(/(\d[\d\s.,]{1,18})\s*(?:€|euros?)/i);
+  if (!match) return undefined;
+  const sanitized = match[1]
+    .replace(/\s/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  const amount = Number.parseFloat(sanitized);
+  return Number.isFinite(amount) ? amount : undefined;
+}
+
+function hasExplicitHtMention(text: string): boolean {
+  return /\bht\b|hors\s+taxes?/i.test(text);
+}
+
+function extractIrsaCaseFromText(text: string): IrsaCaseCode | undefined {
+  const match = text.match(/\b(?:cas(?:\s+irsa)?\s*)?(10|13|15|17|20|21|40)\b/i);
+  if (!match?.[1]) return undefined;
+  const value = Number.parseInt(match[1], 10);
+  if (SINISTRO_IRSA_CASES.includes(value as (typeof SINISTRO_IRSA_CASES)[number])) {
+    return value as IrsaCaseCode;
+  }
+  return undefined;
+}
+
+function inferSinisterInputFromMessage(message: string): SinisterInput | null {
+  const normalized = normalizeForMatch(message);
+  const irsaCase = extractIrsaCaseFromText(message);
+  const amountEstimate = parseAmountInEuros(message);
+
+  if (
+    normalized.includes("auto") &&
+    (normalized.includes("materiel") ||
+      normalized.includes("constat") ||
+      normalized.includes("irsa") ||
+      normalized.includes("collision"))
+  ) {
+    return {
+      type: "auto_materiel",
+      irsaCase,
+    };
+  }
+
+  if (normalized.includes("auto") && normalized.includes("corporel")) {
+    return { type: "auto_corporel" };
+  }
+
+  if (normalized.includes("degats des eaux") || normalized.includes("degat des eaux")) {
+    return {
+      type: "degats_eaux",
+      amountEstimate,
+    };
+  }
+
+  if (normalized.includes("incendie")) {
+    return {
+      type: "incendie_immeuble",
+      amountEstimate,
+    };
+  }
+
+  if (normalized.includes("construction")) {
+    return { type: "construction" };
+  }
+
+  if (normalized.includes("pertes indirectes") || normalized.includes("vol")) {
+    return { type: "pertes_indirectes_vol" };
+  }
+
+  if (irsaCase) {
+    return {
+      type: "auto_materiel",
+      irsaCase,
+    };
+  }
+
+  return null;
+}
+
+function canRunDeterministicSinistroQualification(
+  input: SinisterInput,
+  message: string
+): boolean {
+  if (input.type === "auto_materiel") {
+    return typeof input.irsaCase === "number";
+  }
+  if (input.type === "degats_eaux" || input.type === "incendie_immeuble") {
+    return (
+      typeof input.amountEstimate === "number" &&
+      hasExplicitHtMention(message)
+    );
+  }
+  return false;
+}
+
+function buildSinistroRuntimeInstruction(
+  message: string
+): { extraInstruction: string; insights?: SinistroConversationInsights } {
+  const sections: string[] = [
+    "## GARDE-FOUS RUNTIME SINISTRO",
+    "- Format obligatoire en 5 blocs: Qualification, Cadre conventionnel, Justification, Direction de gestion, Etat du recours.",
+    "- En habitation, demander confirmation HT si le montant n'est pas explicitement HT avant de conclure IRSI/CIDE-COP.",
+    "- En constat image, lister d'abord les cases A/B (1-17), demander confirmation, puis seulement donner le cas IRSA final.",
+    "- Toujours distinguer Convention (entre assureurs) et Droit commun (droits du client).",
+  ];
+
+  const input = inferSinisterInputFromMessage(message);
+  if (!input || !canRunDeterministicSinistroQualification(input, message)) {
+    return { extraInstruction: sections.join("\n") };
+  }
+
+  const result = qualifySinister(input);
+  sections.push(
+    "",
+    "## RESULTAT MOTEUR DETERMINISTE SINISTRO (prioritaire)",
+    `- Convention suggeree: ${result.convention}`,
+    `- Type de sinistre: ${result.sinisterType}`,
+    result.irsaCase ? `- Cas IRSA: ${result.irsaCase}` : "- Cas IRSA: non applicable",
+    result.irsaCaseLabel ? `- Libelle IRSA: ${result.irsaCaseLabel}` : "- Libelle IRSA: non applicable",
+    result.assureurGestionnaire?.summary
+      ? `- Gestion: ${result.assureurGestionnaire.summary}`
+      : "- Gestion: a preciser selon le contexte",
+    result.recourse?.summary
+      ? `- Recours: ${result.recourse.summary}`
+      : "- Recours: a determiner selon convention",
+    `- Rappel droit commun: ${result.droitCommunRappel}`
+  );
+
+  return {
+    extraInstruction: sections.join("\n"),
+    insights: {
+      resolvedConvention: result.convention,
+      resolvedSinisterType: result.sinisterType,
+      resolvedIrsaCase: result.irsaCase,
+    },
+  };
+}
+
+function inferInsightsFromAssistantContent(content: string): SinistroConversationInsights {
+  const normalized = normalizeForMatch(content);
+  const irsaCase = extractIrsaCaseFromText(content);
+
+  let resolvedConvention: string | undefined;
+  if (normalized.includes("irsa") || normalized.includes("ida")) resolvedConvention = "IRSA_IDA";
+  else if (normalized.includes("irsi")) resolvedConvention = "IRSI";
+  else if (normalized.includes("cide-cop")) resolvedConvention = "CIDE_COP";
+  else if (normalized.includes("irca")) resolvedConvention = "IRCA";
+  else if (normalized.includes("paos")) resolvedConvention = "PAOS";
+  else if (normalized.includes("cid-piv")) resolvedConvention = "CID_PIV";
+  else if (normalized.includes("crac")) resolvedConvention = "CRAC";
+
+  let resolvedSinisterType: string | undefined;
+  if (normalized.includes("auto materiel")) resolvedSinisterType = "auto_materiel";
+  else if (normalized.includes("auto corporel")) resolvedSinisterType = "auto_corporel";
+  else if (normalized.includes("degats des eaux") || normalized.includes("degat des eaux")) {
+    resolvedSinisterType = "degats_eaux";
+  } else if (normalized.includes("incendie")) resolvedSinisterType = "incendie_immeuble";
+  else if (normalized.includes("construction")) resolvedSinisterType = "construction";
+  else if (normalized.includes("pertes indirectes") || normalized.includes("vol")) {
+    resolvedSinisterType = "pertes_indirectes_vol";
+  }
+
+  return {
+    resolvedConvention,
+    resolvedSinisterType,
+    resolvedIrsaCase: irsaCase,
+  };
 }
 
 /**
@@ -201,10 +410,17 @@ export async function POST(request: NextRequest) {
 
     const { getBotContext } = await import("@/lib/ai/bot-loader");
     let systemInstruction = getBotContext(botId);
+    let sinistroInsights: SinistroConversationInsights | undefined;
 
     const metadataContext = buildMetadataContext(metadata);
     if (metadataContext) {
       systemInstruction += `\n\n${metadataContext}`;
+    }
+
+    if (botId.toLowerCase() === "sinistro") {
+      const runtimeInstruction = buildSinistroRuntimeInstruction(message);
+      systemInstruction += `\n\n${runtimeInstruction.extraInstruction}`;
+      sinistroInsights = runtimeInstruction.insights;
     }
 
     const sessionId = metadata?.client_id ?? `standalone-${auth.userId}-${botId}`;
@@ -246,6 +462,17 @@ export async function POST(request: NextRequest) {
       await saveMessageToFirestore(sessionId, "assistant", fullContent, {
         botId,
       });
+      if (botId.toLowerCase() === "sinistro") {
+        const inferredFromAssistant = inferInsightsFromAssistantContent(fullContent);
+        await saveConversationInsights(sessionId, {
+          resolvedConvention:
+            sinistroInsights?.resolvedConvention ?? inferredFromAssistant.resolvedConvention,
+          resolvedSinisterType:
+            sinistroInsights?.resolvedSinisterType ?? inferredFromAssistant.resolvedSinisterType,
+          resolvedIrsaCase:
+            sinistroInsights?.resolvedIrsaCase ?? inferredFromAssistant.resolvedIrsaCase,
+        });
+      }
     })();
 
     return new Response(readable, {

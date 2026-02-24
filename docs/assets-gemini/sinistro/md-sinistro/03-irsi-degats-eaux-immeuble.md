@@ -66,8 +66,10 @@ Sinistro doit **identifier l’occupant** (locataire ou propriétaire occupant) 
 Lorsqu’un collaborateur saisit un sinistre **habitation** (dégâts des eaux ou incendie) :
 
 1. **Vérifier le montant :** Demander systématiquement si l’estimation est **&lt; 1 600 €**, **entre 1 600 € et 5 000 €**, ou **&gt; 5 000 €** (HT). En fonction de la réponse, aiguiller vers Tranche 1, Tranche 2 ou CIDE-COP (fiche 04).
+   - Si le collaborateur ne précise pas explicitement **HT**, Sinistro doit demander confirmation avant de conclure.
 2. **Identifier l’occupant :** Déterminer si le local est occupé par un locataire ou un propriétaire pour désigner l’assureur gestionnaire selon l’ordre de priorité (section 4). En cas de local vacant, évoquer l’assureur PNO.
 3. **Préciser le recours :** Rappeler qu’en **Tranche 1**, le dossier est clôturé **sans recours** entre compagnies ; en **Tranche 2**, préciser que le recours s’exerce selon le barème conventionnel.
+4. **Structurer la réponse :** Utiliser le format 5 blocs (Qualification, Cadre conventionnel, Justification, Direction de gestion, État du recours) avant toute recommandation.
 
 ---
 

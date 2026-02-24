@@ -101,6 +101,28 @@ function listKnowledgeFiles(folderPath: string, excludeWorkflow: string): string
 }
 
 /**
+ * Charge les fichiers .md d'un sous-dossier de connaissance (ex: md-sinistro/).
+ */
+function loadKnowledgeSubfolder(
+  parts: string[],
+  botFolderPath: string,
+  subfolder: string
+): boolean {
+  const subfolderPath = path.join(botFolderPath, subfolder);
+  const subfolderFiles = listKnowledgeFiles(subfolderPath, "");
+  if (subfolderFiles.length === 0) return false;
+
+  for (const file of subfolderFiles) {
+    const content = readFileIfExists(path.join(subfolderPath, file));
+    if (content) {
+      parts.push(`### ${subfolder}/${file}\n\n${content}\n\n`);
+    }
+  }
+
+  return true;
+}
+
+/**
  * Récupère l'entrée du registre pour un botId.
  */
 export function getBotRegistryEntry(botId: string): BotRegistryEntry | null {
@@ -135,15 +157,34 @@ export function getBotContext(botId: string): string {
   parts.push(`## WORKFLOW ET MÉTHODOLOGIE (${entry.nom})\n\n${workflowContent}`);
 
   // 2. Fichiers de connaissances (régimes, solutions, etc.)
+  let hasKnowledge = false;
   const knowledgeFiles = listKnowledgeFiles(botFolderPath, entry.workflowPrincipal);
-  if (knowledgeFiles.length > 0) {
+  const filteredKnowledgeFiles =
+    botId.toLowerCase() === "sinistro"
+      ? knowledgeFiles.filter(
+          (file) =>
+            file !== "benchmark-bots-sinistres-marche.md" &&
+            file !== "scenarios-test.md"
+        )
+      : knowledgeFiles;
+  if (filteredKnowledgeFiles.length > 0) {
+    hasKnowledge = true;
     parts.push("\n## BASE DE CONNAISSANCES\n\n");
-    for (const file of knowledgeFiles) {
+    for (const file of filteredKnowledgeFiles) {
       const content = readFileIfExists(path.join(botFolderPath, file));
       if (content) {
         parts.push(`### ${file}\n\n${content}\n\n`);
       }
     }
+  }
+
+  // Sinistro : inclure aussi les fiches détaillées dans md-sinistro/
+  if (botId.toLowerCase() === "sinistro") {
+    if (!hasKnowledge) {
+      parts.push("\n## BASE DE CONNAISSANCES\n\n");
+      hasKnowledge = true;
+    }
+    loadKnowledgeSubfolder(parts, botFolderPath, "md-sinistro");
   }
 
   // 3. Référentiel global (PASS, PMSS, IJ CPAM)

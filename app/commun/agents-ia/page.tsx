@@ -69,8 +69,8 @@ const agentsBots = [
     superpower: "IRSA, IRCA, IRSI ? Child's play. Prochaine mise à jour : télépathie avec les assureurs.",
     color: "from-amber-500 via-orange-500 to-red-500",
     glow: "shadow-amber-500/50",
-    href: null,
-    status: "enCours" as StatusVariant,
+    href: "/commun/agents-ia/sinistro",
+    status: "ok" as StatusVariant,
   },
 ];
 
@@ -126,8 +126,11 @@ export default function AgentsIAPage() {
   const admin = isAdmin(userData);
 
   const renderAgentCard = (agent: (typeof agentsBots)[0] | (typeof inspecteursIA)[0]) => {
-    const isAccessible =
-      agent.href === "/commun/agents-ia/bob" || admin;
+    const isAccessible = Boolean(agent.href) && (
+      agent.href === "/commun/agents-ia/bob" ||
+      agent.href === "/commun/agents-ia/sinistro" ||
+      admin
+    );
     const status = (agent as { status?: StatusVariant }).status ?? "ko";
     const style = statusStyles[status];
     const CardContent = (

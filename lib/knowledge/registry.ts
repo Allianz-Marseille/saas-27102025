@@ -15,6 +15,11 @@ const KNOWLEDGE_BASES: KnowledgeBaseConfig[] = [
     name: "Bob Santé — Prévoyance TNS",
     firestoreCollection: "knowledge_bob_sante",
   },
+  {
+    id: "sinistro",
+    name: "Sinistro — Conventions inter-assurances",
+    firestoreCollection: "knowledge_sinistro",
+  },
 ];
 
 export function getKnowledgeBaseById(id: string): KnowledgeBaseConfig | null {
