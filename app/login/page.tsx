@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,6 +31,8 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isFirebaseReady, setIsFirebaseReady] = useState(false);
   const router = useRouter();
   const {
     register: registerField,
@@ -40,7 +42,19 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
+  useEffect(() => {
+    setIsMounted(true);
+    setIsFirebaseReady(isFirebaseAuthReady());
+  }, []);
+
   const onSubmit = async (data: LoginFormData) => {
+    if (!isFirebaseReady) {
+      toast.error(
+        "Configuration Firebase manquante. Vérifiez les variables NEXT_PUBLIC_FIREBASE_* sur Vercel (Production) et redéployez."
+      );
+      return;
+    }
+
     setIsLoading(true);
     try {
       const firebaseUser = await login(data.email, data.password);
@@ -119,7 +133,7 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {!isFirebaseAuthReady() && (
+            {isMounted && !isFirebaseReady && (
               <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
                 Configuration Firebase manquante. Vérifiez les variables{" "}
                 <code className="rounded bg-amber-100 px-1 dark:bg-amber-900">
@@ -161,7 +175,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 className="w-full bg-[#00529B] hover:bg-[#003d73]"
-                disabled={isLoading || !isFirebaseAuthReady()}
+                disabled={isLoading || (isMounted && !isFirebaseReady)}
               >
                 {isLoading ? "Connexion..." : "Se connecter"}
               </Button>

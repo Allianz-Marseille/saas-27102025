@@ -32,7 +32,7 @@ const BOB_QUICK_REPLIES_LEVEL2: QuickReply[] = [
   {
     label: "Je veux faire une étude pour un TNS et répondre à tes questions",
     message:
-      "Je veux faire une étude pour un TNS et répondre à tes questions. Lance tes questions pas à pas (ordre strict : Identité, Âge, Famille, Métier, Revenu net, Maintien de revenu & invalidité, Frais professionnels, Horizons de couverture 1 an/3 ans). Une question courte à la fois, extraction combinée, ne jamais redemander ce qui a été cité.",
+      "Je veux faire une étude pour un TNS et répondre à tes questions. Lance tes questions pas à pas (ordre strict : Identité, Âge, Famille, Métier, Revenu net, Maintien de revenu & invalidité, Frais professionnels). Applique directement ITT 3 ans avec relais invalidité et frais professionnels 1 an, sans me demander de choisir ces options. Une question courte à la fois, extraction combinée, ne jamais redemander ce qui a été cité.",
   },
   {
     label: "Coller l'image Lagon (CRM)",
