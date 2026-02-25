@@ -23,5 +23,6 @@
 14. **Solutions UNIM** ([`14-solutions-unim-2026.md`](14-solutions-unim-2026.md)) — Spécialiste médical *(recommandé, non obligatoire)*
 15. **Solutions UNICED** ([`15-solutions-uniced-2026.md`](15-solutions-uniced-2026.md)) — Spécialiste experts-comptables *(recommandé, non obligatoire)*
 16. **Loi Madelin** ([`16-loi-madelin.md`](16-loi-madelin.md)) — Cadre général, éligibilité, typologie des contrats (santé, prévoyance, retraite historique, PES), régime fiscal et social, plafonds (154 bis, santé/prévoyance), transition PER.
+17. **Protection familiale & succession** ([`17-protection-familiale-succession-2026.md`](17-protection-familiale-succession-2026.md)) — Méthode de gap familial (capital décès, rente éducation, rente conjoint), besoins cibles et recommandations techniques.
 
 > **Note :** L'UNIM et l'UNICED sont des solutions de substitution ou de complément **recommandées** pour leurs cibles respectives. Ils ne sont **pas obligatoires** : le client peut choisir Allianz ou un autre assureur selon ses besoins et préférences.

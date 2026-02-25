@@ -239,7 +239,20 @@ function buildSinistroRuntimeInstruction(
   };
 }
 
-function buildBobRuntimeInstruction(): string {
+function buildBobRuntimeInstruction(message: string): string {
+  const normalized = normalizeForMatch(message);
+  const asksMailTemplate =
+    normalized.includes("preparer un mail") ||
+    normalized.includes("prepare un mail") ||
+    normalized.includes("mail client") ||
+    normalized.includes("template mail");
+  const mentionsFamilyContext =
+    normalized.includes("conjoint") ||
+    normalized.includes("enfant") ||
+    normalized.includes("famille") ||
+    normalized.includes("marie") ||
+    normalized.includes("pacse");
+
   const sections: string[] = [
     "## GARDE-FOUS RUNTIME BOB SANTE",
     "- Distinguer strictement le besoin de maintien de revenu personnel et le besoin de frais professionnels.",
@@ -248,7 +261,33 @@ function buildBobRuntimeInstruction(): string {
     "- Respecter la separation des moteurs: SSI pour artisans/commercants/gerants; CPAM J4-J90 puis RO pour liberaux.",
     "- Pour les liberaux, rappeler la rupture CPAM au J91 dans l'analyse de maintien de revenu.",
     "- Ne jamais fusionner revenu et frais professionnels dans une seule ligne de besoin ou de gap.",
+    "- Pour les frais professionnels: limiter l'analyse a 12 mois en securisation court terme. Au-dela de 12 mois, afficher Gap_Frais_Pros = 0 dans la projection.",
+    "- Structurer le rendu final en sections exportables: A Validation client, B Couverture obligatoire, C Gap revenus/frais pro, D Fiscalite Madelin, E Protection du foyer (si applicable), F Ordonnance de protection.",
+    "- Ouvrir l'audit par le titre: AUDIT DE PROTECTION : [NOM DU CLIENT], puis un resume de 3 points cles.",
+    "- Utiliser des tableaux Markdown pour tous les chiffres et mettre en gras tous les montants financiers.",
+    "- Ajouter une visualisation textuelle des gaps en barres ASCII (ex: [##########------] 60% non couverts).",
+    "- Ajouter une ligne de conclusion source: Source des donnees : Referentiel [Nom du Regime] 2026.",
+    "- Ajouter une signature de fin: Diagnostic realise par Bob, votre expert Allianz Marseille, base sur les baremes [Nom du RO] 2026.",
   ];
+
+  if (mentionsFamilyContext) {
+    sections.push(
+      "",
+      "## VOLET FAMILIAL (declenchement contextuel)",
+      "- Si conjoint/enfants detectes, activer l'alerte protection familiale et le tableau Gap Famille (Capital Deces, Rente Education, Rente Conjoint).",
+      "- Utiliser en priorite le fichier 17-protection-familiale-succession-2026.md pour chiffrer les besoins."
+    );
+  }
+
+  if (asksMailTemplate) {
+    sections.push(
+      "",
+      "## TEMPLATE MAIL (sur demande explicite)",
+      "- Produire un mail pret a copier-coller avec: Objet, formule d'appel, synthese audit, points de vigilance, prochaine etape, signature commerciale.",
+      "- Garder un ton professionnel et actionnable, sans code block."
+    );
+  }
+
   return sections.join("\n");
 }
 
@@ -436,7 +475,7 @@ export async function POST(request: NextRequest) {
       sinistroInsights = runtimeInstruction.insights;
     }
     if (botId.toLowerCase() === "bob") {
-      systemInstruction += `\n\n${buildBobRuntimeInstruction()}`;
+      systemInstruction += `\n\n${buildBobRuntimeInstruction(message)}`;
     }
 
     const sessionId = metadata?.client_id ?? `standalone-${auth.userId}-${botId}`;

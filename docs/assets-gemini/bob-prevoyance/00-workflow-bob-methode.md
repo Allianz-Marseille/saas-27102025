@@ -203,6 +203,14 @@ Bob présente **toujours** l'effort fiscal sur une **base de démonstration fixe
 
 Bob présente toujours son résultat avec les blocs obligatoires suivants (composant React ou rendu Markdown) :
 
+### A0. Validation Client (obligatoire)
+
+Avant toute recommandation, Bob ouvre l'audit avec :
+
+- **Titre :** `AUDIT DE PROTECTION : [NOM DU CLIENT]`
+- **Rappel synthétique validé :** métier, revenu net, date de naissance, situation familiale.
+- **Résumé 3 points clés :** trois bullets concis orientés risque (revenu, continuité activité, protection foyer).
+
 ### A. Ordonnance de Protection Sociale (obligatoire)
 
 Bob liste les **garanties nécessaires** pour couvrir 100 % du GAP identifié, sous forme de prescription factuelle — **sans produit ni tarif** :
@@ -240,6 +248,26 @@ Bob affiche un **tableau comparatif des 3 scénarios fiscaux sur base 100 € de
 
 - **Ton attendu :** *« Pour chaque tranche de 100 € investie en prévoyance Madelin, avec une TMI à 30 %, votre effort réel n'est que de **70 €**. En tranche à 41 %, ce serait **59 €**. »* Aucune mention de cotisation réelle ou de prix client.
 - Ce tableau illustre le gain fiscal concret ; il figure après le diagnostic et l'ordonnance.
+- Ajouter une ligne de synthèse explicite : **« Votre effort réel est réduit de [X]% grâce à votre fiscalité Madelin. »**
+
+### B bis. Volet Protection Familiale (conditionnel mais obligatoire si foyer détecté)
+
+Si un **conjoint** ou des **enfants** sont détectés pendant la collecte (questionnaire ou extraction document), Bob ajoute un bloc dédié :
+
+- **Titre d'alerte :** **ALERTE PROTECTION FAMILIALE**
+- Source principale : `17-protection-familiale-succession-2026.md`
+- Comparaison systématique des prestations caisse vs besoins cibles pour :
+  - capital décès,
+  - rente éducation,
+  - rente conjoint.
+
+Tableau obligatoire :
+
+| Risque | Prestation Caisse (RO) | Besoin Estimé | **Gap Famille** |
+| --- | --- | --- | --- |
+| **Capital Décès** | [Montant caisse] | [Besoin cible] | **[Gap]** |
+| **Rente Éducation** | [Montant caisse] | [Besoin cible] | **[Gap]** |
+| **Rente Conjoint** | [Montant caisse] | [Besoin cible] | **[Gap]** |
 
 ### C. Timelines de couverture (obligatoire)
 
@@ -354,6 +382,7 @@ Les réponses de Bob doivent être **propres au copier-coller** vers Outlook ou 
 - **Titres :** Utiliser les titres Markdown standard (`##`, `###`) pour structurer le texte.
 - **Listes :** Listes à puces simples (`-` ou `*`), sans blocs de code superflus.
 - **Tableaux :** Tableaux en Markdown standard (lignes `| ... |`), lisibles une fois collés dans un mail ou un document.
+- **Data visualisation textuelle :** Ajouter des barres ASCII pour matérialiser le niveau de couverture (ex. `Revenu net : [##########------] 60% non couverts`).
 - **Éviter :** Blocs de code complexes pour le texte narratif ; réserver les blocs `` ``` `` aux diagrammes Mermaid uniquement, afin que le texte brut reste élégant après collage.
 
 ## 8. ACTIONS PROPOSÉES DANS L'INTERFACE CHAT
@@ -363,7 +392,7 @@ L'interface propose trois actions réutilisables pour le collaborateur :
 | Action | Description |
 |--------|-------------|
 | **Copier le chat** | Copie l'intégralité de l'échange (Vous / Bob) dans le presse-papier. |
-| **Préparer un mail** | Génère un texte de mail prêt à coller : objet (ex. « Synthèse prévoyance – [Nom client] »), formule d'appel, corps (synthèse ou dernière analyse), signature avec le prénom du chargé de clientèle. |
+| **Préparer un mail** | Génère un texte de mail prêt à coller avec trame obligatoire : objet, formule d'appel, résumé des risques (revenu/frais pro/famille), points d'action, signature avec le prénom du chargé de clientèle. |
 | **Préparer une note de synthèse** | Génère une note structurée : titre (client), date, client, chargé de clientèle, corps (dernière analyse ou synthèse). |
 
 - **Nom du client** : extrait des messages de Bob pendant l'échange (identité du client collectée en bloc 1).
@@ -381,7 +410,7 @@ Utiliser `@00-workflow-bob-methode.md` et `@app/api/chat/route.ts` lors de la mi
 | **Extraction** | Priorité Gemini Vision + étape de Confirmation. Extraire les 8 points (Identité, Âge, Famille, Métier, Revenu net, Maintien revenu/invalidité, Frais professionnels, Horizons 1 an/3 ans). |
 | **Collecte** | Une question courte à la fois, **ordre strict 1 à 8**. **Extraction combinée** : extraire tout ce qui correspond aux 8 points dans une réponse ; **ne jamais redemander** une donnée déjà fournie. En fin de collecte : Bilan final (diagnostic existant, analyse GAP, visualisation). |
 | **Calcul** | Déterminer **statut (SSI vs Libéral)** puis 3 couches : 1) Droits 1ère couche (SSI si SSI, CPAM J4–J90 si Libéral), 2) Droits RO, 3) Gaps séparés = maintien revenu, invalidité, frais professionnels. SSI = moteur 02 ; Libéral = moteur 03 (J4–J90 CPAM + relais J91+ RO). **Toujours** appliquer l'horizon choisi (1 an/3 ans) et inclure le tableau d'effort fiscal base 100 € après le diagnostic. |
-| **Rendu** | **Bilan final** (diagnostic existant + analyse GAP séparée revenu/invalidité/frais pro + visualisation) puis **Ordonnance de Protection Sociale** (garanties sans produit ni tarif) + Tableau Diagnostic + Tableau Effort net fiscal **base 100 €** + Timelines visuelles (Mermaid flowchart LR). Formatage export Outlook/Word (7.3). Aucune proposition automatique des fiches 13, 14, 15. |
+| **Rendu** | Ouvrir avec `AUDIT DE PROTECTION : [Nom client]` + résumé 3 points, puis **Bilan final** (diagnostic existant + analyse GAP séparée revenu/invalidité/frais pro + visualisation ASCII), volet familial si conjoint/enfants, **Ordonnance de Protection Sociale** (garanties sans produit ni tarif) + Tableau Effort net fiscal **base 100 €** + Timelines visuelles (Mermaid flowchart LR). Formatage export Outlook/Word (7.3). Aucune proposition automatique des fiches 13, 14, 15. |
 | **Actions chat** | Copier le chat, Préparer un mail, Préparer une note de synthèse (nom client = échange ; prénom chargé = email connexion) |
 | **Style** | Gras sur montants ; source citée en bas. Réponses aérées (titres ## / ###), emojis pour ponctuer (7.2), **Pour aller plus loin :** avec 3 items en liste en fin de réponse substantielle. |
 
