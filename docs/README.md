@@ -20,6 +20,7 @@ Processus détaillés côté implémentation.
 | Fichier | Rôle |
 |---------|------|
 | **m+3/m+3_ia.md** | Workflow M+3 (implémentation). |
+| **m+3/m+3_guide_impl.md** | Guide opérationnel de cadrage et implémentation M+3. |
 
 ### docs/boost/
 Spécification de l'outil Boosts (déclaration et suivi).
@@ -68,4 +69,5 @@ Assets et base de connaissances pour les agents IA (cible Gemini).
 - **Boost** : [boost/google/BOOST.md](boost/google/BOOST.md)
 - **Rémunérations** : [remuneration/grille.md](remuneration/grille.md)
 - **Process M+3** : [process/m+3/m+3_ia.md](process/m+3/m+3_ia.md)
+- **Guide M+3** : [process/m+3/m+3_guide_impl.md](process/m+3/m+3_guide_impl.md)
 - **Liens devis (par agence)** : [devis/README.md](devis/README.md) — Corniche (H91358), Rouvière (H92083)

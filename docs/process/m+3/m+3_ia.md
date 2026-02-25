@@ -1,296 +1,255 @@
-# M+3 — Process de suivi client (à ~3 mois)
+# M+3 — Process de suivi client (a ~3 mois)
 
-**Ce document** décrit le **workflow détaillé pour le bot M+3** (étapes, prompts, exemples). La définition métier (objectifs, échéance, critères) est reprise en introduction ci-dessous.
+Ce document decrit le workflow M+3 a implementer dans le bot, avec une posture obligatoire en deux temps : administratif puis rebond commercial.
 
-## 1. Introduction
+## 1. Cadrage metier
 
-### Pourquoi on le fait
+### Pourquoi le M+3 existe
 
-Transformer un client « besoin ponctuel » (auto, MRH, etc.) en **relation globale** + sécuriser la **qualité du dossier** + générer des **opportunités concrètes** pour atteindre l'objectif **« client complet »**.
+Le client entre souvent par un besoin ponctuel. Le M+3 sert a :
 
-### Quand / pour qui
+1. Renforcer la relation de confiance.
+2. Mettre le dossier client et les contrats en conformite.
+3. Ouvrir un bilan global sans effet de vente forcee.
 
-- Tous les **nouveaux clients** (origine : chalandise, reco, lead Allianz, site, salarié d'une boîte assurée, franchisé, etc.).
-- Déclenché autour de **M+3** après la souscription.
+### Quand et pour qui
 
-### Finalité — Définition « Client complet »
+- Cible : toutes les affaires nouvelles (chalandise, recommandation, apporteurs, leads).
+- Timing : environ 3 mois apres la souscription initiale.
 
-Un M+3 est **réussi** si :
+### Definition d’un M+3 reussi
 
-1. **Fiche CRM à jour**
-2. **Contrats finalisés** (signatures + pièces)
-3. **Bilan global fait**
-4. **Actions commerciales tracées** (devis / RDV / relances)
+1. Fiche client a jour.
+2. Contrats valides administrativement (signature + pieces).
+3. Contrats externes identifies + manques clarifies.
+4. Plan d’action trace (devis, RDV, relances, responsable, date).
 
----
+## 2. Regles de conduite incontournables
 
-## 2. Workflow utilisateur — Le cœur du document
+1. Toujours commencer par l’administratif.
+2. Ne lancer le rebond commercial qu’apres validation administrative.
+3. Utiliser un langage de service ("mise a jour dossier"), pas de pression commerciale.
+4. Si le client n’est pas disponible, basculer vers une prise de rendez-vous.
+5. Limiter les priorites commerciales a 2-3 axes max par appel.
 
-### Phase 1 : Préparation (CDC seul, avant l'appel)
+## 3. Workflow cible (agent + bot)
 
-#### Démarrage
+## 3.1 Phase preparation (avant appel)
 
-**Clic sur "Bonjour"** : Le CDC clique sur le bouton "Bonjour" dans l'interface pour lancer le workflow M+3.
+Objectif : savoir exactement ce qu’il manque avant de contacter le client.
 
-**Le bot vous demande** :
-- De coller la **fiche client Lagon**
-- De coller la **fiche contrat** (masque des contrats en cours)
+Entrees :
+- Fiche client Lagon
+- Contrats actifs chez nous
+- Statut signature/pieces
 
-**Exemple de message initial du bot :**
+Sorties :
+- Checklist "a confirmer"
+- Checklist "manquant"
+- Questions prioritaires pretes a poser
 
-> Bonjour ! Je vais vous accompagner pour réaliser un M+3.  
-> Pour commencer, veuillez **copier-coller la fiche client Lagon** dans cette conversation.
+## 3.2 Phase contact
 
-#### Import des données
+Script d’ouverture type :
 
-**Vous copiez-collez** dans le chat :
-1. **Fiche client Lagon** (copier/coller)
-2. **Masque des contrats en cours** (copier/coller) — tous les contrats actifs "chez nous"
+1. Presentation :
+   - "Bonjour [prenom], [prenom agent], votre agence Allianz."
+2. Recontextualisation :
+   - "Nous assurons votre [auto/maison/etc.] depuis environ 3 mois."
+3. Variante vendeur :
+   - Soit "c’etait avec moi que vous aviez fait le contrat"
+   - Soit "c’etait avec [prenom collegue]"
+4. Autorisation :
+   - "Est-ce que vous avez 5 minutes ? J’ai besoin de mettre a jour votre dossier client."
 
-Le bot extrait et structure automatiquement les données.
+Decision :
+- Reponse oui -> poursuivre.
+- Reponse non -> prise de rendez-vous + trace.
 
-#### Analyse automatique et feedback
+## 3.3 Etape administrative 1 — Mise a jour fiche client
 
-Le bot analyse les données et vous présente **3 éléments clés** :
+Verifier/mettre a jour :
+- Nom, prenom, adresse d’envoi
+- Telephone, email
+- Situation matrimoniale
+- Situation professionnelle
+- Si pro/entreprise : SIREN, NAF, activite
 
-##### ✅ Ce qui est présent mais à confirmer
+Regle TNS :
+- Si TNS detecte, meme avec un contrat particulier uniquement :
+  - fiche etiquetee pro/TNS
+  - charge de clientele renseigne correctement
 
-- **Données client** : champs présents mais à vérifier avec le client (ex. : adresse, téléphone, situation familiale)
-- **Contrats** : nature détectée mais à valider (ex. : "J'ai détecté un contrat Auto, confirmez-vous ?")
-- **Pièces** : mentionnées mais statut incertain (signatures, documents)
+## 3.4 Etape administrative 2 — Validation contrats
 
-**Format** : liste avec indicateurs ⚠️ "À confirmer avec le client"
+Verifier avec le client :
+- Signature des contrats
+- Pieces administratives attendues
+- Comprehension de ce qui est souscrit (reformulation utile et contextuelle)
 
-##### ❌ Ce qui est absent et à compléter
+Sortie :
+- Contrats "OK"
+- Contrats "a completer" + plan de recuperation (canal + echeance)
 
-- **Champs manquants** selon le type de client (personne physique vs personne morale)
-- **Pièces manquantes** selon la nature des contrats détectés
-- **Informations critiques** pour la qualité du dossier (DER)
+## 3.5 Rebond commercial (apres administratif uniquement)
 
-**Format** : liste avec indicateurs ❌ "À compléter" + questions prêtes à poser au client
+Phrase pivot :
+- "Merci pour votre confiance. Pour les contrats que vous n’avez pas chez Allianz, qui sont vos autres assureurs ?"
 
-##### 🎯 Axes commerciaux prioritaires
+Conduite :
+- Se taire, laisser repondre.
+- Cartographier les contrats ailleurs.
+- Identifier les manques structurants (ex : PJ, GAV, retraite, prevoyance).
+- Proposer un bilan global des contrats externes + completions utiles.
 
-Le bot analyse **"qui est le client"** + **"contrats chez nous"** et détermine les axes de développement prioritaires :
+## 3.6 Cloture
 
-- **Trous logiques identifiés** : ce qui manque selon sa situation (famille, biens, activité, protection)
-- **Opportunités commerciales** : recommandations TOP 3 basées sur le profil client
-- **Questions clés à poser** : pour identifier les besoins non couverts
-- **Plan d'action suggéré** : devis à faire, RDV à caler, docs à demander
+Produire un plan d’action date :
+- Devis a produire
+- RDV bilan a fixer
+- Relances a programmer
+- Proprietaire de chaque action
 
-**Exemple de sortie :**
+## 4. Specification prete code
 
-> **Client détecté** : Personne physique, 35 ans, marié, 2 enfants, salarié cadre  
-> **Contrats chez nous** : Auto uniquement  
-> **Axes à privilégier** :
-> 1. Habitation (pas de contrat détecté)
-> 2. Santé/Prévoyance (famille avec enfants)
-> 3. Protection juridique (salarié cadre)
+## 4.1 Machine d’etats
 
-#### Validation interactive
+```mermaid
+flowchart TD
+  preparation[Preparation] --> contactAttempt[ContactAttempt]
+  contactAttempt -->|Disponible| adminStep1[AdminStep1_ProfileUpdate]
+  contactAttempt -->|Indisponible| scheduledCallback[ScheduledCallback]
+  scheduledCallback --> contactAttempt
+  adminStep1 --> adminStep2[AdminStep2_ContractValidation]
+  adminStep2 --> rebound[CommercialRebound]
+  rebound --> actionPlan[ActionPlan]
+  actionPlan --> closed[Closed]
+```
 
-**Le bot pose des questions ciblées** pour compléter/valider les informations manquantes.
+## 4.2 Etat des donnees (suggestion)
 
-**Boutons cliquables** : Le bot propose des boutons interactifs pour fluidifier l'interaction :
+```ts
+type M3WorkflowState =
+  | "preparation"
+  | "contact_attempt"
+  | "scheduled_callback"
+  | "admin_profile_update"
+  | "admin_contract_validation"
+  | "commercial_rebound"
+  | "action_plan"
+  | "closed";
 
-- **Questions binaires** : "Le client est propriétaire ?" → [OUI] [NON]
-- **Choix multiples** : "Situation matrimoniale ?" → [Célibataire] [Marié(e)] [Pacsé(e)] [Divorcé(e)] [Veuf(ve)]
-- **Validation rapide** : "Le contrat Auto est signé ?" → [✅ Valider] [❌ Rejeter] [⚠️ À modifier]
+type ContactAvailability = "available_now" | "not_available";
 
-**Gain de temps** : Pas besoin de taper, clic direct sur les boutons.
+type ContractAdministrativeStatus = "complete" | "missing_signature" | "missing_documents";
+```
+
+## 4.3 Donnees minimales a persister
+
+- `clientIdentity`: nom, prenom, contact, adresse.
+- `clientSituation`: familiale + professionnelle.
+- `businessData`: siren, naf, activite si pro.
+- `contactAttempt`: date, agent, resultat (dispo/rdv).
+- `contractAdministrativeChecks`: contrat, signature, pieces, manquants.
+- `externalInsurers`: liste des assureurs/contrats hors Allianz.
+- `coverageGaps`: protections manquantes prioritaires.
+- `actionPlan`: actions, dueDate, owner, status.
 
-#### Résultat de la préparation
+## 4.4 Handlers par etape
 
-**Vous disposez maintenant de** :
-- ✅ **Checklist qualité** : ce qui est OK / à confirmer / à compléter
-- 🎯 **Feuille de route commerciale** : axes prioritaires + questions clés
-- 📋 **Plan d'action** : étapes structurées pour l'appel
+- `buildPreparationChecklist(input)` : construit a_confirmer / manquant / questions.
+- `handleContactAvailability(answer)` : route vers appel direct ou RDV.
+- `validateClientProfileStep(payload)` : met a jour la fiche client.
+- `validateContractAdministrativeStep(payload)` : valide signatures/pieces.
+- `runCommercialRebound(payload)` : capte contrats externes + manques.
+- `buildActionPlan(payload)` : genere devis/RDV/relances dates.
 
-**Vous êtes prêt** pour l'appel client avec un dossier préparé et des objectifs clairs.
+Chaque handler doit :
+- valider les donnees entrantes,
+- retourner un resultat explicite,
+- produire des erreurs lisibles en cas d’entree invalide.
 
----
+## 5. Prompts conversationnels par etape
 
-### Phase 2 : Appel client
+## 5.1 Prompt systeme (extrait)
 
-#### Accroche (téléphone ou RDV)
+"Tu es un assistant M+3 pour conseiller Allianz. Tu respectes strictement l’ordre suivant : preparation, administratif etape 1, administratif etape 2, puis rebond commercial. Tu n’autorises jamais le rebond commercial avant validation complete des deux etapes administratives."
 
-**Prétexte** : « admin / mise à jour dossier ». Peut être fait par **un autre CDC** que celui qui a vendu.
+## 5.2 Prompt d’ouverture appel
 
-**Exemple d'intro :**
+"Propose une introduction courte, chaleureuse et professionnelle. Mentionne le contrat souscrit il y a environ 3 mois. Demande explicitement si le client a 5 minutes. Si non, propose un RDV."
 
-> « C'est Julien qui a mis en place votre contrat auto. Moi je vais vous suivre et gérer votre dossier. Vous avez 3 minutes, sinon on cale un RDV téléphonique ? »
+## 5.3 Prompt etape administrative 1
 
-#### Mise à jour en temps réel
+"Fais verifier les champs identite et situation client. Si profil professionnel detecte, demande SIREN, NAF et activite. Si TNS, force la verification du rattachement pro."
 
-**Pendant l'appel, vous mettez à jour** les informations manquantes directement dans le chat avec le bot.
+## 5.4 Prompt etape administrative 2
 
-**Boutons rapides** : Le bot propose des boutons pour valider rapidement les réponses du client :
+"Fais valider signatures et pieces contrat par contrat. Reformule de facon utile ce qui a ete souscrit pour valider la comprehension et la pertinence."
 
-- "Le client confirme son adresse ?" → [OUI] [NON] [À modifier]
-- "Contrat signé ?" → [OUI] [NON] [En attente]
-- "Le client a une assurance habitation ailleurs ?" → [OUI] [NON] [Ne sait pas]
+## 5.5 Prompt rebond commercial
 
-**Le bot peut** :
-- Noter les réponses du client
-- Mettre à jour la checklist en temps réel
-- Suggérer des questions de relance selon les réponses
+"Quand les deux etapes administratives sont terminees, remercie le client et pose la question sur les autres assureurs. Laisse une pause dans la formulation. Identifie 2 a 3 manques prioritaires maximum et propose un bilan global."
 
-#### Objectifs de l'appel
+## 6. Specification UI minimale
 
-##### Objectif 1 — Dossier carré dans Lagon (qualité données)
+## 6.1 Blocs interface
 
-**But** : fiche CRM propre, complète, bien affectée — image « agence sérieuse ».
+1. `PreparationPanel`
+   - tableaux : "a confirmer", "manquant", "questions a poser"
+2. `CallScriptPanel`
+   - script d’ouverture + variante vendeur/collegue + statut disponibilite
+3. `AdministrativeChecklistPanel`
+   - onglet fiche client
+   - onglet validation contrats
+4. `CommercialReboundPanel`
+   - contrats ailleurs
+   - manques prioritaires
+5. `ActionPlanPanel`
+   - devis, RDV, relances, responsabilites
 
-**Vous vérifiez / complétez selon le type** :
-- **Particulier** : adresse, date **et lieu** de naissance, tel, email, situation familiale, situation pro…
-- **Pro** : SIRET, NAF, activité, CA, effectif…
-- **Entreprise** : idem + contact « gestion assurances » si besoin.
+## 6.2 Boutons standard
 
-**Vous vérifiez** : agence / point de vente / chargé de clientèle bien renseignés.
+- Disponibilite : `5 min maintenant`, `Rappeler plus tard`
+- Fiche client : `Confirme`, `Modifie`, `Non repondu`
+- Conformite contrat : `Signe`, `Piece manquante`, `A relancer`
+- Rebond : `Contrat ailleurs`, `Pas de couverture`, `A creuser`
+- Action : `Creer devis`, `Planifier RDV`, `Programmer relance`
 
-**Résultat attendu** : fiche Lagon complète (base DER + traçabilité).
+## 6.3 Regles UX
 
-##### Objectif 2 — Contrats « finalisés » (signatures + pièces)
+- Afficher l’etape courante en permanence.
+- Bloquer l’acces au rebond tant que les deux etapes admin ne sont pas valides.
+- Montrer un resume de progression (ex : 2/5 etapes).
+- Proposer des textes courts pre-remplis, modifiables par l’agent.
 
-**But** : éviter les contrats « pas clean » (risque conformité / gestion / sinistre).
+## 7. Sorties attendues
 
-**Vous vérifiez** :
-- Que tout est **signé** (DP, devis/projet selon cas)
-- Les **pièces** (ex. : carte grise, permis, CNI, bail, etc.)
-- Ce qui manque + plan de récupération (mail/SMS, relance, échéance)
+1. `resume_m3`
+   - qualite fiche client
+   - statut administratif des contrats
+   - contrats ailleurs identifies
+2. `mail_client`
+   - synthese de l’appel
+   - prochaines etapes
+3. `action_plan`
+   - devis / RDV / relances, dates et responsables
+4. `quality_checklist`
+   - champs/pieces manquants
+   - niveau de completion
 
-**Résultat attendu** : contrat(s) sécurisés + dossier complet.
+## 8. Critere de validation fonctionnelle
 
-##### Objectif 3 — Bilan global (développement)
+Le process est conforme si :
+- l’ordre admin1 -> admin2 -> rebond est respecte sans exception,
+- la branche indisponible cree un RDV planifie,
+- la fiche client est completee avant toute proposition commerciale,
+- les manques de couverture sont limites et priorises,
+- un plan d’action concret est trace en sortie.
 
-C'est le moment « commercial intelligent ».
+## 9. Annexes techniques (references pour le bot)
 
-**Phrase déclencheur type :**
-
-> « On est maintenant votre assureur pour l'auto. Qui sont vos autres assureurs ? »
-
-**Vous identifiez** :
-- Ce qu'il a chez nous / ailleurs
-- Les trous logiques selon sa situation (famille, biens, activité, protection…)
-
-**Vous définissez un plan d'action** :
-- devis à faire
-- RDV à caler
-- docs à envoyer
-- relances
-
-**Résultat attendu** : opportunités concrètes + prochaines étapes datées.
-
-#### Analyse finale
-
-**À la fin de l'appel**, le bot refait une analyse complète avec toutes les informations mises à jour.
-
-**Priorités finales** : Détermination des axes commerciaux en connaissance de cause, basés sur toutes les informations collectées.
-
----
-
-### Phase 3 : Sorties (selon besoin du CDC)
-
-Selon votre demande et le contexte, le workflow M+3 peut aboutir à l'une ou plusieurs de ces sorties :
-
-#### DER (conformité documentaire)
-
-**Fourniture d'une fiche client exhaustive et conforme** aux exigences de conformité (DDA/RGPD).
-
-- Vérification et traçabilité des données collectées
-- Document prêt pour la conformité réglementaire
-
-#### Mail avec préconisations
-
-**Génération d'un mail** (copiable, exportable) synthétisant la situation client à M+3.
-
-**Contenu du mail** :
-
-1. **Synthèse M+3** : Bilan de la qualité du dossier, situation actuelle
-2. **Opportunités commerciales TOP 3** : Recommandations basées sur le profil client
-3. **Liens tarificateurs automatiques** : Selon les opportunités identifiées, le bot inclut les liens vers les tarificateurs en ligne Allianz avec le code agence H91358
-4. **Plan d'action daté** : Devis à faire, nouveaux RDV, relances avec échéances
-
-**Exemple de mail généré :**
-
-> Objet : Synthèse M+3 — [Nom du client]
->
-> Bonjour [Nom],
->
-> Suite à notre échange, voici la synthèse de votre situation d'assurance à M+3 :
->
-> **Situation actuelle** :
-> - Contrat Auto : ✅ Actif et à jour
-> - Fiche client : ✅ Complète
->
-> **Opportunités identifiées** :
-> 1. **Habitation** : Vous n'avez pas d'assurance habitation détectée. Pour réaliser un devis personnalisé : [Devis Habitation](https://www.allianz.fr/forms/api/context/sharing/fast-quotes/household?codeAgence=H91358)
-> 2. **Santé/Prévoyance** : Pour votre famille, une complémentaire santé pourrait être pertinente : [Devis Santé](https://www.allianz.fr/assurance-particulier/formulaire/devis-sante.html?codeAgence=H91358)
-> 3. **Protection juridique** : En tant que salarié cadre, une protection juridique pourrait vous être utile : [Devis Protection Juridique](https://www.allianz.fr/assurance-particulier/famille-loisirs/protection-juridique/mes-droits-au-quotidien/devis-contact.html?codeAgence=H91358)
->
-> **Plan d'action** :
-> - [Date] : Envoi devis habitation
-> - [Date] : Relance si pas de retour
-> - [Date] : RDV de suivi si intéressé
->
-> N'hésitez pas si vous avez des questions.
->
-> Cordialement,  
-> [Votre nom]
-
-#### Checklist qualité
-
-**Rapport de validation** des fiches (client/contrat) : identification précise des champs et pièces manquants ou à compléter.
-
-- Suivi du statut de complétude et conformité par objectif ou par typologie
-- Document de contrôle pour validation finale
-
-**À retenir** : Le choix et la production de l'une ou plusieurs de ces sorties dépendent de votre besoin. Le chatbot facilite la collecte et la structuration mais la validation finale (pour la conformité) reste de votre ressort, garantissant toujours traçabilité et respect des obligations (DDA/RGPD).
-
----
-
-## 3. Ergonomie et interface utilisateur
-
-### Boutons cliquables dans le chat
-
-#### Principe
-
-Le bot propose des **boutons interactifs** pour fluidifier l'interaction et réduire le temps de saisie.
-
-#### Types de boutons
-
-- **OUI/NON** pour questions binaires
-- **Choix multiples** pour sélections (situation matrimoniale, type contrat, etc.)
-- **Validation rapide** (✅ Valider, ❌ Rejeter, ⚠️ À modifier)
-
-#### Avantages
-
-- **Gain de temps** : Pas besoin de taper, clic direct
-- **Réduction des erreurs de saisie** : Pas de fautes de frappe ou d'erreurs de format
-- **Expérience utilisateur fluide** : Interaction rapide et intuitive
-
-#### Exemples d'utilisation
-
-**Phase préparation** : Validation des données extraites
-
-> Bot : "J'ai détecté que le client est propriétaire. Confirmez-vous ?"  
-> Boutons : [OUI] [NON] [À vérifier]
-
-**Phase appel** : Mise à jour rapide des infos client
-
-> Bot : "Le client confirme son numéro de téléphone ?"  
-> Boutons : [OUI] [NON] [À modifier]
-
-**Génération sorties** : Choix du type de sortie souhaité
-
-> Bot : "Quel type de sortie souhaitez-vous générer ?"  
-> Boutons : [DER] [Mail avec préconisations] [Checklist qualité] [Tout]
-
----
-
-## 4. Annexes techniques (références pour le bot)
-
-### Annexe A : Champs à vérifier
+### Annexe A : Champs a verifier
 
 #### Personne physique — Champs nécessaires
 

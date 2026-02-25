@@ -200,19 +200,19 @@ export default function MPlus3ProcessPage() {
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-1 shrink-0" />
                     <span className="text-foreground text-sm">
-                      <strong>Période d'adaptation</strong> : Le client a eu le temps de vivre avec son contrat
+                      <strong>Le client a souscrit ses premiers contrats</strong> : la relation est lancée sur une base concrète.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-1 shrink-0" />
                     <span className="text-foreground text-sm">
-                      <strong>Moment optimal</strong> : Assez tôt pour maintenir l'engagement, assez tard pour avoir du recul
+                      <strong>Le dossier est normalement validé</strong> : signatures et pièces ont pu être finalisées.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-1 shrink-0" />
                     <span className="text-foreground text-sm">
-                      <strong>Opportunité commerciale</strong> : Le client est encore "chaud" et réceptif
+                      <strong>Les premiers paiements sont passés</strong> : c'est le bon moment pour consolider et élargir la relation.
                     </span>
                   </li>
                 </ul>
@@ -274,55 +274,6 @@ export default function MPlus3ProcessPage() {
                     Un client qui a tous ses contrats chez nous, selon sa situation et ses besoins.
                   </p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Quand effectuer un M+3 ? */}
-        <motion.div variants={itemVariants}>
-          <Card className="border-2 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border-emerald-200 dark:border-emerald-800">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                Quand effectuer un M+3 ?
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-emerald-200 dark:border-emerald-800">
-                <h4 className="font-semibold text-emerald-900 dark:text-emerald-100 mb-3">
-                  Critères d'éligibilité
-                </h4>
-                <ul className="space-y-2">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-1 shrink-0" />
-                    <span className="text-foreground text-sm">
-                      Il a souscrit un contrat <strong>Affaire Nouvelle (AN)</strong> il y a <strong>3 mois</strong> (± 1 semaine)
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-1 shrink-0" />
-                    <span className="text-foreground text-sm">
-                      Aucun M+3 n'a encore été réalisé pour ce contrat
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-1 shrink-0" />
-                    <span className="text-foreground text-sm">
-                      Le contrat est toujours actif
-                    </span>
-                  </li>
-                </ul>
-              </div>
-              <div className="p-4 rounded-lg bg-emerald-100/50 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700">
-                <h4 className="font-semibold text-emerald-900 dark:text-emerald-100 mb-2">
-                  Exemple de calcul
-                </h4>
-                <p className="text-sm text-foreground">
-                  Contrat souscrit le <strong>15 janvier 2025</strong> (date d'effet)<br />
-                  M+3 à réaliser autour du <strong>15 avril 2025</strong> (± 1 semaine)<br />
-                  <span className="font-semibold">Fenêtre optimale : 8 avril - 22 avril 2025</span>
-                </p>
               </div>
             </CardContent>
           </Card>
@@ -690,7 +641,7 @@ export default function MPlus3ProcessPage() {
                   À privilégier
                 </h4>
                 <ul className="text-sm text-foreground space-y-1 ml-4">
-                  <li>• Respecter la fenêtre de 3 mois (± 1 semaine)</li>
+                  <li>• Respecter le déclenchement à 3 mois</li>
                   <li>• Suivre les 3 objectifs dans l'ordre</li>
                   <li>• Documenter tout dans le système</li>
                   <li>• Planifier les actions de suivi immédiatement</li>
