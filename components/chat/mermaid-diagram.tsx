@@ -35,8 +35,8 @@ export function MermaidDiagram({ code, className = "" }: MermaidDiagramProps) {
     setError(null);
     setRendered(null);
 
-    mermaid
-      .render(id, code.trim())
+    Promise.resolve(mermaid.parse(code.trim()))
+      .then(() => mermaid.render(id, code.trim()))
       .then(({ svg }) => {
         if (svg && /syntax error|mermaid version/i.test(svg)) {
           setError("Erreur de syntaxe dans le diagramme Mermaid.");
@@ -45,7 +45,7 @@ export function MermaidDiagram({ code, className = "" }: MermaidDiagramProps) {
         setRendered(svg);
       })
       .catch((err) => {
-        setError(err?.message ?? "Erreur de rendu du diagramme.");
+        setError(err?.message ?? "Erreur de syntaxe dans le diagramme Mermaid.");
       });
   }, [code, resolvedTheme]);
 
@@ -55,7 +55,8 @@ export function MermaidDiagram({ code, className = "" }: MermaidDiagramProps) {
     const svgEl = containerRef.current.querySelector("svg");
     if (svgEl) {
       svgEl.setAttribute("style", "max-width: 100%; height: auto;");
-      // Contraste : sur fonds clairs (carence J1–J3, CPAM J4–J90, relais J91+), forcer le texte en sombre
+      // Contraste : sur fonds clairs (carence J1–J3, CPAM J4–J90, relais J91+),
+      // forcer le texte en sombre pour labels SVG ET htmlLabels (foreignObject).
       const lightFillPatterns = ["fff3cd", "d4edda", "cce5ff", "255, 243, 205", "212, 237, 218", "204, 229, 255"];
       const textColorDark = "#1e293b";
       svgEl.querySelectorAll("rect").forEach((rect) => {
@@ -67,6 +68,17 @@ export function MermaidDiagram({ code, className = "" }: MermaidDiagramProps) {
           const node = rect.closest(".node") ?? rect.closest("g") ?? rect.parentElement;
           node?.querySelectorAll("text, tspan").forEach((el) => {
             el.setAttribute("fill", textColorDark);
+            el.setAttribute("opacity", "1");
+          });
+          node?.querySelectorAll(".label, .label *, foreignObject, foreignObject *, span, p, div").forEach((el) => {
+            if (el instanceof HTMLElement) {
+              el.style.color = textColorDark;
+              el.style.fill = textColorDark;
+              el.style.opacity = "1";
+            } else {
+              el.setAttribute("fill", textColorDark);
+              el.setAttribute("opacity", "1");
+            }
           });
         }
       });
