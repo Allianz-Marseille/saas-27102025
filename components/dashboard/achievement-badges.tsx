@@ -103,9 +103,9 @@ export function AchievementBadges({ kpi }: AchievementBadgesProps) {
               >
                 <div
                   className={cn(
-                    "relative rounded-xl p-4 border-2 transition-all cursor-pointer",
+                    "relative rounded-2xl p-4 border-2 transition-all cursor-pointer",
                     isUnlocked
-                      ? `bg-gradient-to-br ${badge.gradient} border-white/30 shadow-lg`
+                      ? `bg-gradient-to-br ${badge.gradient} border-white/30 shadow-lg shadow-amber-500/20 dark:ring-1 dark:ring-white/[0.08]`
                       : "bg-muted/50 border-muted opacity-40 hover:opacity-60"
                   )}
                 >

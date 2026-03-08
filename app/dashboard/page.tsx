@@ -96,8 +96,8 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
-      <header className="border-b bg-white dark:bg-slate-950 sticky top-16 lg:top-0 z-10 shadow-md">
-        <div className="container mx-auto px-6 py-4">
+      <header className="border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-16 lg:top-0 z-10 shadow-md">
+        <div className="container mx-auto px-6 py-4 max-w-7xl">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
@@ -115,7 +115,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-6 py-6">
+      <div className="container mx-auto px-6 py-6 max-w-7xl">
         {/* Welcome Banner */}
         <WelcomeBanner kpi={kpi} />
 
