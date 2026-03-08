@@ -79,20 +79,11 @@ function initializeFirebaseAdmin(): admin.app.App | null {
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       };
     } else {
-      const fs = require("fs");
-      const path = require("path");
-      const jsonPath = path.join(
-        process.cwd(),
-        "saas-27102025-firebase-adminsdk-fbsvc-e5024f4d7c.json"
+      throw new Error(
+        "Firebase Admin : credentials manquants. " +
+        "Définir FIREBASE_SERVICE_ACCOUNT_BASE64 (recommandé) " +
+        "ou FIREBASE_PROJECT_ID + FIREBASE_PRIVATE_KEY + FIREBASE_CLIENT_EMAIL."
       );
-      const jsonData = fs.readFileSync(jsonPath, "utf8");
-      const parsed = JSON.parse(jsonData) as admin.ServiceAccount & {
-        private_key?: string;
-      };
-      if (parsed.private_key) {
-        parsed.private_key = getSafePrivateKey(parsed.private_key);
-      }
-      serviceAccount = parsed;
     }
 
     appInstance = admin.initializeApp({

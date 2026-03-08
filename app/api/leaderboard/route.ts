@@ -9,15 +9,21 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin-config";
+import { verifyAuth } from "@/lib/utils/auth-utils";
 
 /**
  * GET /api/leaderboard
- * 
+ *
  * Query params:
  * - monthKey: format YYYY-MM (défaut: mois en cours)
  * - limit: nombre de résultats (défaut: 10)
  */
 export async function GET(request: NextRequest) {
+  const auth = await verifyAuth(request);
+  if (!auth.valid) {
+    return NextResponse.json({ error: auth.error }, { status: 401 });
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams;
     

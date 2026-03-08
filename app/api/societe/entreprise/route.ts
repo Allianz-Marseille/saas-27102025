@@ -106,7 +106,6 @@ export async function POST(request: NextRequest) {
         }
 
         const searchData = await searchResponse.json();
-        console.log("Réponse recherche Societe.com:", JSON.stringify(searchData, null, 2));
         
         // Selon la documentation, la structure est : data.results[]
         const results = searchData.data?.results || [];

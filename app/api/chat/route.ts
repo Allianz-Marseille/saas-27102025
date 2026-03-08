@@ -11,6 +11,8 @@ import { verifyAuth } from "@/lib/utils/auth-utils";
 import { getAdminDbOrNull, Timestamp } from "@/lib/firebase/admin-config";
 import { getBotRegistryEntry } from "@/lib/ai/bot-loader";
 import { qualifySinister, type IrsaCaseCode, type SinisterInput } from "@/lib/sinistro";
+import { calculatePrevoyance, formatResultatForBob } from "@/lib/prevoyance";
+import type { PrevoyanceInput, CaissePro } from "@/lib/prevoyance";
 import { GoogleGenAI } from "@google/genai";
 import type { BotSessionMetadata } from "@/types/bot";
 
@@ -239,7 +241,78 @@ function buildSinistroRuntimeInstruction(
   };
 }
 
-function buildBobRuntimeInstruction(message: string): string {
+const REGIME_SSI_KEYWORDS = ["ssi", "artisan", "commercant", "gerant", "tns", "tnsi", "micro-entrepreneur"];
+const REGIME_LIBERAL_KEYWORDS = ["liberal", "liberale", "carpimko", "carmf", "cipav", "cavec", "carcdsf", "medecin", "kine", "kinesitherapeute", "infirmier", "architecte", "ingenieur", "consultant", "pharmacien", "dentiste", "sage-femme"];
+const CAISSE_KEYWORDS: Record<string, CaissePro> = {
+  carpimko: "CARPIMKO",
+  carmf: "CARMF",
+  cipav: "CIPAV",
+  cavec: "CAVEC",
+  carcdsf: "CARCDSF",
+  cavp: "CAVP",
+  ircec: "IRCEC",
+};
+
+/**
+ * Tente d'extraire les données d'entrée prévoyance depuis le message et/ou la metadata.
+ * Retourne null si les informations sont insuffisantes (RAM ou régime inconnu).
+ */
+function inferPrevoyanceInput(
+  message: string,
+  metadata?: BotSessionMetadata | null
+): PrevoyanceInput | null {
+  const normalized = normalizeForMatch(message);
+  const contextPro = (metadata?.context_pro ?? {}) as Record<string, unknown>;
+
+  // ── Détermination du régime ────────────────────────────────────────────
+  const regimeCtx = typeof contextPro.regime === "string" ? contextPro.regime.toUpperCase() : null;
+  let regime: "SSI" | "LIBERAL" | null =
+    regimeCtx === "SSI" ? "SSI" : regimeCtx === "LIBERAL" ? "LIBERAL" : null;
+
+  if (!regime) {
+    if (REGIME_SSI_KEYWORDS.some((k) => normalized.includes(k))) regime = "SSI";
+    else if (REGIME_LIBERAL_KEYWORDS.some((k) => normalized.includes(k))) regime = "LIBERAL";
+  }
+  if (!regime) return null;
+
+  // ── Détermination du RAM ───────────────────────────────────────────────
+  const ramCtx = typeof contextPro.ram === "number" ? contextPro.ram : null;
+  const ramMsg = parseAmountInEuros(message);
+  const ram = ramCtx ?? ramMsg;
+  if (!ram || ram <= 0) return null;
+
+  // ── Données optionnelles ───────────────────────────────────────────────
+  const besoinMaintienRevenu =
+    typeof contextPro.besoin_maintien_revenu === "number"
+      ? contextPro.besoin_maintien_revenu
+      : ram / 12; // fallback : revenu mensuel moyen
+
+  const besoinFraisPro =
+    typeof contextPro.besoin_frais_pro === "number" ? contextPro.besoin_frais_pro : 0;
+
+  const nbEnfants =
+    typeof contextPro.nb_enfants === "number" ? contextPro.nb_enfants : 0;
+
+  // Caisse pro (libéraux uniquement)
+  let caissePro: CaissePro = "AUTRE";
+  const caisseCtx = typeof contextPro.caisse_pro === "string"
+    ? contextPro.caisse_pro.toLowerCase()
+    : null;
+  if (caisseCtx && CAISSE_KEYWORDS[caisseCtx]) {
+    caissePro = CAISSE_KEYWORDS[caisseCtx];
+  } else {
+    for (const [kw, val] of Object.entries(CAISSE_KEYWORDS)) {
+      if (normalized.includes(kw)) { caissePro = val; break; }
+    }
+  }
+
+  if (regime === "SSI") {
+    return { regime: "SSI", ram, besoinMaintienRevenu, besoinFraisPro, nbEnfants };
+  }
+  return { regime: "LIBERAL", ram, besoinMaintienRevenu, besoinFraisPro, nbEnfants, caissePro };
+}
+
+function buildBobRuntimeInstruction(message: string, metadata?: BotSessionMetadata | null): string {
   const normalized = normalizeForMatch(message);
   const asksMailTemplate =
     normalized.includes("preparer un mail") ||
@@ -303,6 +376,19 @@ function buildBobRuntimeInstruction(message: string): string {
       "- Produire un mail pret a copier-coller avec: Objet, formule d'appel, synthese audit, points de vigilance, prochaine etape, signature commerciale.",
       "- Garder un ton professionnel et actionnable, sans code block."
     );
+  }
+
+  // ── Moteur déterministe prévoyance ──────────────────────────────────────
+  // Si le RAM et le régime sont identifiables, on injecte les valeurs calculées
+  // pour que Gemini ne les réinvente pas.
+  const prevoyanceInput = inferPrevoyanceInput(message, metadata);
+  if (prevoyanceInput) {
+    try {
+      const resultat = calculatePrevoyance(prevoyanceInput);
+      sections.push(formatResultatForBob(resultat));
+    } catch {
+      // Silencieux : si le calcul échoue, Bob continue sans bloc déterministe
+    }
   }
 
   return sections.join("\n");
@@ -382,13 +468,27 @@ function buildContents(
   return contents;
 }
 
+const ALLOWED_ORIGINS = [
+  process.env.NEXT_PUBLIC_BASE_URL,
+  "http://localhost:3000",
+  "http://localhost:3001",
+].filter(Boolean) as string[];
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  return ALLOWED_ORIGINS.some((allowed) => origin === allowed);
+}
+
 export function OPTIONS(request: NextRequest) {
-  const origin = request.headers.get("origin") ?? new URL(request.url).origin;
+  const origin = request.headers.get("origin");
+  if (!isAllowedOrigin(origin)) {
+    return new Response(null, { status: 403 });
+  }
   return new Response(null, {
     status: 204,
     headers: {
       Allow: "POST, OPTIONS",
-      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Origin": origin!,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers":
         "Content-Type, Authorization, X-Requested-With",
@@ -492,7 +592,7 @@ export async function POST(request: NextRequest) {
       sinistroInsights = runtimeInstruction.insights;
     }
     if (botId.toLowerCase() === "bob") {
-      systemInstruction += `\n\n${buildBobRuntimeInstruction(message)}`;
+      systemInstruction += `\n\n${buildBobRuntimeInstruction(message, metadata)}`;
     }
 
     const sessionId = metadata?.client_id ?? `standalone-${auth.userId}-${botId}`;

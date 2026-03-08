@@ -1,24 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin-config";
+import { verifyAuth } from "@/lib/utils/auth-utils";
 
 /**
- * API route pour vérifier l'unicité d'un numéro de contrat
- * Utilise Firebase Admin SDK pour avoir accès à tous les actes
- * Vérifie UNIQUEMENT les affaires nouvelles dans TOUTES les collections :
- * - acts (commerciaux CDC) : kind === "AN"
+ * API route pour vérifier l'unicité d'un numéro de contrat.
+ * Vérifie UNIQUEMENT les affaires nouvelles dans les 3 collections :
+ * - acts (CDC) : kind === "AN"
  * - health_acts (santé individuelle) : kind === "AFFAIRE_NOUVELLE"
- * - health_collective_acts (santé collective) : types *_AN_*
+ * - health_collective_acts (santé collective) : kind in HEALTH_COLLECTIVE_AN_TYPES
+ *
+ * Les 3 requêtes sont lancées en parallèle. Chaque collection est filtrée
+ * côté Firestore sur le kind avant de vérifier le numéro en mémoire.
  */
+
+const HEALTH_COLLECTIVE_AN_TYPES = [
+  "IND_AN_SANTE",
+  "IND_AN_PREVOYANCE",
+  "IND_AN_RETRAITE",
+  "COLL_AN_SANTE",
+  "COLL_AN_PREVOYANCE",
+  "COLL_AN_RETRAITE",
+] as const;
+
 export async function POST(request: NextRequest) {
+  const auth = await verifyAuth(request);
+  if (!auth.valid) {
+    return NextResponse.json({ error: auth.error }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { numeroContrat, actId, collection: collectionName } = body;
 
     if (!numeroContrat || typeof numeroContrat !== "string") {
-      return NextResponse.json(
-        { error: "Numéro de contrat requis" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Numéro de contrat requis" }, { status: 400 });
     }
 
     const normalizedNumber = numeroContrat.trim().toLowerCase();
@@ -26,84 +41,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ exists: false });
     }
 
-    // Types d'affaires nouvelles pour health_collective_acts
-    const healthCollectiveANTypes = [
-      "IND_AN_SANTE",
-      "IND_AN_PREVOYANCE",
-      "IND_AN_RETRAITE",
-      "COLL_AN_SANTE",
-      "COLL_AN_PREVOYANCE",
-      "COLL_AN_RETRAITE",
-    ];
+    // Les 3 requêtes en parallèle — filtrées sur kind côté Firestore
+    const [actsSnap, healthActsSnap, healthCollectiveSnap] = await Promise.all([
+      adminDb.collection("acts").where("kind", "==", "AN").get(),
+      adminDb.collection("health_acts").where("kind", "==", "AFFAIRE_NOUVELLE").get(),
+      adminDb
+        .collection("health_collective_acts")
+        .where("kind", "in", HEALTH_COLLECTIVE_AN_TYPES)
+        .get(),
+    ]);
 
-    // Vérifier l'unicité dans TOUTES les collections, UNIQUEMENT pour les affaires nouvelles
-    // 1. Collection acts (commerciaux CDC) - uniquement kind === "AN"
-    const actsSnapshot = await adminDb
-      .collection("acts")
-      .where("kind", "==", "AN")
-      .get();
+    const matchesNumber = (
+      docId: string,
+      data: FirebaseFirestore.DocumentData,
+      targetCollection: string
+    ): boolean => {
+      // En mode modification, exclure l'acte en cours d'édition
+      if (actId && collectionName === targetCollection && docId === actId) return false;
+      const existing = (data.numeroContrat as string | undefined)?.trim().toLowerCase();
+      return existing === normalizedNumber;
+    };
 
-    const existsInActs = actsSnapshot.docs.some((doc) => {
-      const actData = doc.data();
-      if (!actData) return false;
-      const existingNumber = actData.numeroContrat?.trim().toLowerCase();
-      return existingNumber === normalizedNumber;
-    });
+    const exists =
+      actsSnap.docs.some((d) => matchesNumber(d.id, d.data(), "acts")) ||
+      healthActsSnap.docs.some((d) => matchesNumber(d.id, d.data(), "health_acts")) ||
+      healthCollectiveSnap.docs.some((d) =>
+        matchesNumber(d.id, d.data(), "health_collective_acts")
+      );
 
-    if (existsInActs) {
-      return NextResponse.json({ exists: true });
-    }
-
-    // 2. Collection health_acts (santé individuelle) - uniquement kind === "AFFAIRE_NOUVELLE"
-    const healthActsSnapshot = await adminDb
-      .collection("health_acts")
-      .where("kind", "==", "AFFAIRE_NOUVELLE")
-      .get();
-
-    const existsInHealthActs = healthActsSnapshot.docs.some((doc) => {
-      // Exclure l'acte actuel si on est en mode modification
-      if (actId && collectionName === "health_acts" && doc.id === actId) {
-        return false;
-      }
-
-      const actData = doc.data();
-      if (!actData) return false;
-      const existingNumber = actData.numeroContrat?.trim().toLowerCase();
-      return existingNumber === normalizedNumber;
-    });
-
-    if (existsInHealthActs) {
-      return NextResponse.json({ exists: true });
-    }
-
-    // 3. Collection health_collective_acts (santé collective) - uniquement types *_AN_*
-    const healthCollectiveActsSnapshot = await adminDb
-      .collection("health_collective_acts")
-      .get();
-
-    const existsInHealthCollectiveActs = healthCollectiveActsSnapshot.docs.some((doc) => {
-      // Exclure l'acte actuel si on est en mode modification
-      if (actId && collectionName === "health_collective_acts" && doc.id === actId) {
-        return false;
-      }
-
-      const actData = doc.data();
-      if (!actData) return false;
-
-      // Vérifier uniquement si c'est une affaire nouvelle
-      if (!healthCollectiveANTypes.includes(actData.kind)) {
-        return false;
-      }
-
-      const existingNumber = actData.numeroContrat?.trim().toLowerCase();
-      return existingNumber === normalizedNumber;
-    });
-
-    if (existsInHealthCollectiveActs) {
-      return NextResponse.json({ exists: true });
-    }
-
-    return NextResponse.json({ exists: false });
+    return NextResponse.json({ exists });
   } catch (error) {
     console.error("Erreur lors de la vérification du numéro de contrat:", error);
     return NextResponse.json(
@@ -112,4 +78,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

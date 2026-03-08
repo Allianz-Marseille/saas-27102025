@@ -14,7 +14,12 @@ interface AuthResult {
 
 /**
  * Fallback : vérifie le token via l'API REST Firebase lorsque Admin SDK échoue.
- * Utilise accounts:lookup qui valide le token et retourne les infos utilisateur.
+ * Utilise accounts:lookup qui valide le token côté Firebase et retourne les infos utilisateur.
+ *
+ * Sécurité : NEXT_PUBLIC_FIREBASE_API_KEY doit être restreinte dans la Google Cloud Console
+ * aux domaines autorisés (ex: allianz-nogaro.fr, localhost) pour limiter les abus.
+ * Ce fallback est déclenché uniquement si Admin SDK est mal initialisé (ex: clé mal formatée).
+ * En production normale (FIREBASE_SERVICE_ACCOUNT_BASE64 correctement défini), il n'est jamais utilisé.
  */
 async function verifyIdTokenViaRestApi(idToken: string): Promise<AuthResult | null> {
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
