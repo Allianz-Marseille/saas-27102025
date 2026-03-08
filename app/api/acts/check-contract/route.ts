@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin-config";
+import { verifyAuth } from "@/lib/utils/auth-utils";
 
 /**
  * API route pour vérifier l'unicité d'un numéro de contrat
  * Utilise Firebase Admin SDK pour avoir accès à tous les actes
  */
 export async function POST(request: NextRequest) {
-  try {
+  const auth = await verifyAuth(request);
+  if (!auth.valid) {
+    return NextResponse.json({ error: auth.error }, { status: 401 });
+  }
 
+  try {
     const body = await request.json();
     const { numeroContrat } = body;
 
@@ -49,4 +54,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

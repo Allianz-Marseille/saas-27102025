@@ -14,6 +14,90 @@ export interface AuthState {
   loading: boolean;
 }
 
+type ValidRole = UserData["role"];
+
+const VALID_ROLES: ValidRole[] = [
+  "ADMINISTRATEUR",
+  "CDC_COMMERCIAL",
+  "COMMERCIAL_SANTE_INDIVIDUEL",
+  "COMMERCIAL_SANTE_COLLECTIVE",
+  "GESTIONNAIRE_SINISTRE",
+];
+
+/** Convertit un champ createdAt Firestore en Date JS. */
+function parseCreatedAt(value: unknown): Date {
+  if (value && typeof (value as { toDate?: unknown }).toDate === "function") {
+    return (value as { toDate: () => Date }).toDate();
+  }
+  if (value instanceof Date) return value;
+  if (value) return new Date(value as string);
+  return new Date();
+}
+
+/**
+ * Construit un UserData à partir des données Firestore brutes.
+ * Retourne null si les données sont incohérentes (rôle absent/invalide, id ou email manquant).
+ */
+function buildUserData(
+  data: Record<string, unknown>,
+  fallbackUid: string,
+  fallbackEmail: string | null
+): UserData | null {
+  const id = String(data.id || fallbackUid);
+  const email = String(data.email || fallbackEmail || "");
+
+  if (!id || !email) {
+    console.error("❌ Données minimales manquantes (id ou email) pour:", fallbackUid);
+    return null;
+  }
+
+  const roleString = String(data.role || "");
+  if (!VALID_ROLES.includes(roleString as ValidRole)) {
+    console.error(
+      `❌ Rôle absent ou invalide pour: ${fallbackUid} (valeur: "${roleString}") — accès refusé.`
+    );
+    return null;
+  }
+
+  return {
+    id,
+    email,
+    role: roleString as ValidRole,
+    active: typeof data.active === "boolean" ? data.active : true,
+    createdAt: parseCreatedAt(data.createdAt),
+  };
+}
+
+/**
+ * Lance le log de connexion en fire-and-forget.
+ * N'attend pas la résolution pour ne pas bloquer le chargement de l'UI.
+ */
+function fireAndForgetLogin(
+  uid: string,
+  email: string,
+  loginRef: { current: boolean }
+): void {
+  if (loginRef.current || !email) return;
+  loginRef.current = true;
+  retryAsync(() => logUserLogin(uid, email), {
+    maxAttempts: 3,
+    initialDelay: 1000,
+    backoffFactor: 2,
+    shouldRetry: isFirebaseRetryableError,
+    onRetry: (attempt, error) => {
+      console.warn(
+        `⚠️ Échec log connexion (tentative ${attempt}/3):`,
+        error instanceof Error ? error.message : error
+      );
+    },
+  }).catch((logError) => {
+    console.error(
+      "❌ Échec définitif du log de connexion après 3 tentatives:",
+      logError instanceof Error ? logError.message : logError
+    );
+  });
+}
+
 export function useAuth(): AuthState {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -31,240 +115,48 @@ export function useAuth(): AuthState {
 
       if (firebaseUser && db) {
         try {
-          // Récupérer les données utilisateur depuis Firestore
           const userDocRef = doc(db, "users", firebaseUser.uid);
           const userDocSnap = await getDoc(userDocRef);
 
-          if (userDocSnap.exists()) {
-            const data = userDocSnap.data();
-            console.log("📋 Données Firestore récupérées pour:", {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              hasData: !!data,
-              dataKeys: data ? Object.keys(data) : [],
-              dataId: data?.id,
-              dataEmail: data?.email,
-              dataRole: data?.role,
-              dataActive: data?.active,
-            });
-            
-            // Valider que tous les champs requis sont présents
-            if (!data.id || !data.email || !data.role || data.active === undefined) {
-              console.error("❌ Données utilisateur incomplètes dans Firestore:", {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email,
-                hasId: !!data.id,
-                hasEmail: !!data.email,
-                hasRole: !!data.role,
-                hasActive: data.active !== undefined,
-                dataKeys: Object.keys(data),
-                fullData: data,
-              });
-              
-              // Essayer de récupérer les données manquantes depuis Firebase Auth
-              const authEmail = firebaseUser.email;
-              const authUid = firebaseUser.uid;
-              
-              // Si email manque, utiliser celui de Firebase Auth
-              const email = data.email || authEmail || "";
-              // Si id manque, utiliser l'uid
-              const id = data.id || authUid;
-              // Si role manque, utiliser une valeur par défaut
-              const role = data.role || "CDC_COMMERCIAL";
-              // Si active manque, utiliser true par défaut
-              const active = data.active !== undefined ? data.active : true;
-              
-              // Si on a au moins un email et un id, on peut continuer
-              if (email && id) {
-                console.warn("⚠️ Utilisation de valeurs par défaut pour les champs manquants:", {
-                  email,
-                  id,
-                  role,
-                  active,
-                });
-                
-                // Gérer createdAt
-                let createdAt: Date;
-                if (data.createdAt && typeof data.createdAt.toDate === 'function') {
-                  createdAt = data.createdAt.toDate();
-                } else if (data.createdAt instanceof Date) {
-                  createdAt = data.createdAt;
-                } else if (data.createdAt) {
-                  createdAt = new Date(data.createdAt);
-                } else {
-                  createdAt = new Date();
-                }
-                
-                // Valider et typer le rôle
-                type ValidRole = UserData["role"];
-                const validRoles: ValidRole[] = [
-                  "ADMINISTRATEUR",
-                  "CDC_COMMERCIAL",
-                  "COMMERCIAL_SANTE_INDIVIDUEL",
-                  "COMMERCIAL_SANTE_COLLECTIVE",
-                  "GESTIONNAIRE_SINISTRE",
-                ];
-                const roleString = String(role);
-                const validRole: ValidRole = validRoles.includes(roleString as ValidRole)
-                  ? (roleString as ValidRole)
-                  : "CDC_COMMERCIAL";
-                
-                setUserData({
-                  id: String(id),
-                  email: String(email),
-                  role: validRole,
-                  active: typeof active === 'boolean' ? active : true,
-                  createdAt,
-                });
-                
-                // Logger la connexion (une seule fois par session) avec retry automatique
-                if (!hasLoggedLogin.current && email) {
-                  hasLoggedLogin.current = true;
-                  
-                  // Utiliser retryAsync pour gérer les échecs réseau temporaires
-                  await retryAsync(
-                    () => logUserLogin(firebaseUser.uid, email),
-                    {
-                      maxAttempts: 3,
-                      initialDelay: 1000,
-                      backoffFactor: 2,
-                      shouldRetry: isFirebaseRetryableError,
-                      onRetry: (attempt, error) => {
-                        console.warn(
-                          `⚠️ Échec de l'enregistrement du log (tentative ${attempt}/3):`,
-                          error instanceof Error ? error.message : error
-                        );
-                      },
-                    }
-                  )
-                    .then(() => {
-                      console.log("✅ Log de connexion enregistré pour:", email);
-                    })
-                    .catch((logError) => {
-                      // Après 3 tentatives, l'erreur est définitive
-                      console.error(
-                        "❌ Échec définitif de l'enregistrement du log de connexion après 3 tentatives:",
-                        logError instanceof Error ? logError.message : logError
-                      );
-                      console.error(
-                        "   Ceci peut indiquer un problème de connexion réseau ou de configuration Firestore."
-                      );
-                    });
-                }
-              } else {
-                console.error("❌ Impossible de récupérer les données minimales. Données utilisateur:", data);
-                setUserData(null);
-                setLoading(false);
-                return;
-              }
-            } else {
-              // Données complètes - traitement normal
-              // Gérer createdAt : soit un Timestamp Firebase, soit déjà une Date
-              let createdAt: Date;
-              if (data.createdAt && typeof data.createdAt.toDate === 'function') {
-                createdAt = data.createdAt.toDate();
-              } else if (data.createdAt instanceof Date) {
-                createdAt = data.createdAt;
-              } else if (data.createdAt) {
-                createdAt = new Date(data.createdAt);
-              } else {
-                createdAt = new Date();
-              }
-              
-              // S'assurer que active est un booléen
-              const active = typeof data.active === 'boolean' ? data.active : true;
-              
-              // Valider et typer le rôle
-              type ValidRole = UserData["role"];
-              const validRoles: ValidRole[] = [
-                "ADMINISTRATEUR",
-                "CDC_COMMERCIAL",
-                "COMMERCIAL_SANTE_INDIVIDUEL",
-                "COMMERCIAL_SANTE_COLLECTIVE",
-                "GESTIONNAIRE_SINISTRE",
-              ];
-              const roleString = String(data.role);
-              const role: ValidRole = validRoles.includes(roleString as ValidRole)
-                ? (roleString as ValidRole)
-                : "CDC_COMMERCIAL"; // Valeur par défaut si le rôle n'est pas valide
-              
-              setUserData({
-                id: String(data.id),
-                email: String(data.email),
-                role: role,
-                active,
-                createdAt,
-              });
-
-              // Logger la connexion (une seule fois par session) avec retry automatique
-              if (!hasLoggedLogin.current && data.email) {
-              hasLoggedLogin.current = true;
-              
-              // Utiliser retryAsync pour gérer les échecs réseau temporaires
-              await retryAsync(
-                () => logUserLogin(firebaseUser.uid, data.email),
-                {
-                  maxAttempts: 3,
-                  initialDelay: 1000,
-                  backoffFactor: 2,
-                  shouldRetry: isFirebaseRetryableError,
-                  onRetry: (attempt, error) => {
-                    console.warn(
-                      `⚠️ Échec de l'enregistrement du log (tentative ${attempt}/3):`,
-                      error instanceof Error ? error.message : error
-                    );
-                  },
-                }
-              )
-                .then(() => {
-                  console.log("✅ Log de connexion enregistré pour:", data.email);
-                })
-                .catch((logError) => {
-                  // Après 3 tentatives, l'erreur est définitive
-                  console.error(
-                    "❌ Échec définitif de l'enregistrement du log de connexion après 3 tentatives:",
-                    logError instanceof Error ? logError.message : logError
-                  );
-                  console.error(
-                    "   Ceci peut indiquer un problème de connexion réseau ou de configuration Firestore."
-                  );
-                });
-              }
-            }
-          } else {
-            console.error("❌ Document Firestore n'existe pas pour l'utilisateur:", {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-            });
+          if (!userDocSnap.exists()) {
+            console.error("❌ Document Firestore introuvable pour:", firebaseUser.uid);
             setUserData(null);
+            setLoading(false);
+            return;
+          }
+
+          const data = userDocSnap.data() as Record<string, unknown>;
+          const parsed = buildUserData(data, firebaseUser.uid, firebaseUser.email);
+
+          setUserData(parsed);
+          setLoading(false); // débloque l'UI immédiatement, sans attendre le log
+
+          // Log de connexion en arrière-plan (ne bloque pas le rendu)
+          if (parsed) {
+            fireAndForgetLogin(firebaseUser.uid, parsed.email, hasLoggedLogin);
           }
         } catch (error) {
           const firebaseError = error as { code?: string; message?: string };
-          const errorCode = firebaseError?.code ?? (error instanceof Error ? "unknown" : "non-Error");
+          const errorCode = firebaseError?.code ?? "unknown";
           const errorMessage =
             firebaseError?.message ?? (error instanceof Error ? error.message : String(error));
 
-          console.error(
-            `❌ Erreur lors de la récupération des données utilisateur [${errorCode}]: ${errorMessage}`,
-            { uid: firebaseUser.uid, email: firebaseUser.email, error }
-          );
+          console.error(`❌ Erreur récupération données utilisateur [${errorCode}]: ${errorMessage}`);
 
           if (errorCode === "permission-denied") {
             console.error(
-              "   → Vérifiez que le document users/" +
-                firebaseUser.uid +
-                " existe dans Firestore et que les règles autorisent la lecture."
+              `   → Vérifiez que users/${firebaseUser.uid} existe et que les règles Firestore autorisent la lecture.`
             );
           }
 
           setUserData(null);
+          setLoading(false);
         }
       } else {
         setUserData(null);
-        hasLoggedLogin.current = false; // Reset pour la prochaine connexion
+        hasLoggedLogin.current = false;
+        setLoading(false);
       }
-
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -272,4 +164,3 @@ export function useAuth(): AuthState {
 
   return { user, userData, loading };
 }
-
