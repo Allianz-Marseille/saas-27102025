@@ -1,9 +1,35 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, animate } from "framer-motion";
+
+function AnimatedCounter({ value, duration = 1.2 }: { value: string | number; duration?: number }) {
+  const numericValue = parseFloat(String(value).replace(/[^0-9.]/g, '')) || 0;
+  const hasPrefix = String(value).match(/^[^0-9]*/)?.[0] || '';
+  const hasSuffix = String(value).match(/[^0-9.]*$/)?.[0] || '';
+  const motionValue = useMotionValue(0);
+  const [display, setDisplay] = useState('0');
+
+  useEffect(() => {
+    const controls = animate(motionValue, numericValue, {
+      duration,
+      ease: [0.25, 0.46, 0.45, 0.94],
+      onUpdate: (latest) => {
+        if (numericValue % 1 !== 0) {
+          setDisplay(latest.toFixed(1));
+        } else {
+          setDisplay(Math.round(latest).toLocaleString('fr-FR'));
+        }
+      },
+    });
+    return controls.stop;
+  }, [numericValue, duration, motionValue]);
+
+  return <span>{hasPrefix}{display}{hasSuffix}</span>;
+}
 
 interface KPICardProps {
   title: string;
@@ -68,7 +94,7 @@ export function KPICard({ title, value, subtitle, icon: Icon, trend, colorScheme
       transition={{ duration: 0.3, delay }}
     >
       <Card className={cn(
-        "overflow-hidden transition-all hover:shadow-2xl hover:scale-[1.03] group cursor-pointer relative h-full",
+        "overflow-hidden transition-all hover:shadow-2xl hover:scale-[1.03] group cursor-pointer relative h-full rounded-2xl dark:ring-1 dark:ring-white/[0.08]",
         colors.border
       )}>
         {/* Gradient Background on Hover */}
@@ -99,7 +125,7 @@ export function KPICard({ title, value, subtitle, icon: Icon, trend, colorScheme
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: delay + 0.2, type: "spring", stiffness: 200 }}
                 >
-                  {value}
+                  <AnimatedCounter value={value} />
                 </motion.div>
               </div>
               <div className="mt-auto">

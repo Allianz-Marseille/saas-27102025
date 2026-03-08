@@ -46,7 +46,7 @@ export function WelcomeBanner({ kpi }: WelcomeBannerProps) {
         </div>
 
         {/* Particules flottantes */}
-        <div className="absolute inset-0 overflow-hidden">
+        <div className="hidden md:block absolute inset-0 overflow-hidden">
           {[...Array(5)].map((_, i) => (
             <motion.div
               key={i}
@@ -101,7 +101,7 @@ export function WelcomeBanner({ kpi }: WelcomeBannerProps) {
               <div className="flex flex-wrap gap-3">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
-                  className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-white/30"
+                  className="flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-2xl px-4 py-2.5 border border-white/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
                 >
                   <Target className="h-5 w-5" />
                   <div>
@@ -116,7 +116,7 @@ export function WelcomeBanner({ kpi }: WelcomeBannerProps) {
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.5, type: "spring" }}
                     whileHover={{ scale: 1.05 }}
-                    className="flex items-center gap-2 bg-green-500/30 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-green-400/50"
+                    className="flex items-center gap-2 bg-green-500/25 backdrop-blur-md rounded-2xl px-4 py-2.5 border border-green-400/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
                   >
                     <Trophy className="h-5 w-5" />
                     <div>
@@ -128,7 +128,7 @@ export function WelcomeBanner({ kpi }: WelcomeBannerProps) {
 
                 <motion.div
                   whileHover={{ scale: 1.05 }}
-                  className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-white/30"
+                  className="flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-2xl px-4 py-2.5 border border-white/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
                 >
                   <TrendingUp className="h-5 w-5" />
                   <div>

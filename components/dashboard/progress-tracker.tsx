@@ -50,7 +50,7 @@ export function ProgressTracker({ kpi }: ProgressTrackerProps) {
               initial={{ width: 0 }}
               animate={{ width: `${progression}%` }}
               transition={{ duration: 1.5, ease: "easeOut", delay: 0.3 }}
-              className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 rounded-full shadow-lg"
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 rounded-full shadow-lg shadow-[0_0_12px_rgba(251,146,60,0.4)]"
             />
             {/* Effet de brillance animé */}
             <motion.div
@@ -84,7 +84,7 @@ export function ProgressTracker({ kpi }: ProgressTrackerProps) {
                   className={cn(
                     "relative text-center p-3 rounded-lg transition-all border-2",
                     isUnlocked
-                      ? "bg-gradient-to-br from-amber-500 to-orange-600 text-white scale-105 shadow-lg border-amber-400"
+                      ? "bg-gradient-to-br from-amber-500 to-orange-600 text-white scale-105 shadow-lg shadow-amber-500/20 border-amber-400"
                       : isNext
                       ? "bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 animate-pulse"
                       : "bg-white/50 dark:bg-black/20 text-muted-foreground border-transparent"

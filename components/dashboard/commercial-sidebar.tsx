@@ -137,14 +137,14 @@ export function CommercialSidebar() {
       className={cn(
           "border-r h-screen fixed left-0 top-0 z-40 transition-all duration-300",
           "bg-gradient-to-b from-white via-blue-50/30 to-purple-50/30",
-          "dark:from-slate-950 dark:via-blue-950/10 dark:to-purple-950/10",
+          "dark:from-slate-900 dark:via-blue-950/10 dark:to-purple-950/10",
           "hidden lg:block", // Masquer sur mobile/tablette
         isCollapsed ? "w-16" : "w-64"
       )}
     >
       <div className="flex flex-col h-full">
       {/* Header avec logo */}
-      <div className="p-4 border-b flex items-center justify-between bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-600/20 dark:via-purple-600/20 dark:to-pink-600/20 backdrop-blur-sm">
+      <div className="p-4 border-b flex items-center justify-between bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-500/25 dark:via-purple-500/25 dark:to-pink-500/25 backdrop-blur-sm">
         {!isCollapsed ? (
           <div className="flex flex-col gap-1 flex-1">
             <div className="relative group">
@@ -226,7 +226,7 @@ export function CommercialSidebar() {
                   <span className="font-medium">{item.label}</span>
                 )}
                 {!isCollapsed && item.comingSoon && (
-                  <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse">
+                  <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse [animation-iteration-count:3]">
                     à venir
                   </span>
                 )}
@@ -235,9 +235,9 @@ export function CommercialSidebar() {
                     className={cn(
                       "ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold",
                       item.badge === "en formation"
-                        ? "bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse"
+                        ? "bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse [animation-iteration-count:3]"
                         : item.badge === "new"
-                          ? "bg-emerald-500 text-white shadow-md animate-pulse"
+                          ? "bg-emerald-500 text-white shadow-md animate-pulse [animation-iteration-count:3]"
                           : "text-xs bg-red-500 text-white"
                     )}
                   >
@@ -251,7 +251,7 @@ export function CommercialSidebar() {
       </nav>
 
       {/* Footer avec utilisateur connecté, notifications, thème et déconnexion */}
-      <div className="mt-auto border-t bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 dark:from-blue-600/10 dark:via-purple-600/10 dark:to-pink-600/10">
+      <div className="mt-auto border-t dark:border-white/[0.06] bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 dark:from-blue-600/10 dark:via-purple-600/10 dark:to-pink-600/10">
         {/* Info utilisateur */}
         {userData && !isCollapsed && (
           <div className="p-4 border-b">

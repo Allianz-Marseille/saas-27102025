@@ -125,7 +125,7 @@ export default function SanteIndividuelleLayout({
       <div className="flex h-screen overflow-hidden">
         {/* Sidebar Desktop - masquée sur mobile/tablette */}
         <aside className={cn(
-          "bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex-col transition-all duration-300 relative",
+          "bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col transition-all duration-300 relative",
           "hidden lg:flex", // Masquer sur mobile/tablette
           isCollapsed ? "w-16" : "w-64"
         )}>

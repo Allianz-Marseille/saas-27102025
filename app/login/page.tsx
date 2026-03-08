@@ -16,6 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { ROLES } from "@/lib/utils/roles";
 import { isEmailDomainAllowed, getInvalidDomainErrorMessage, ALLOWED_EMAIL_DOMAINS } from "@/lib/config/auth-config";
 
@@ -123,7 +124,12 @@ export default function LoginPage() {
           />
         </div>
         
-        <Card className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-md shadow-2xl">
+        <motion.div
+          initial={{ opacity: 0, y: 24, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+        >
+        <Card className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl shadow-premium-lg border-white/20 rounded-2xl">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">
               Connexion
@@ -174,7 +180,7 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full bg-[#00529B] hover:bg-[#003d73]"
+                className="w-full bg-[#00529B] hover:bg-[#003d73] hover:-translate-y-0.5 active:scale-[0.97] shadow-lg shadow-blue-800/20 hover:shadow-blue-800/30 transition-all duration-200"
                 disabled={isLoading || (isMounted && !isFirebaseReady)}
               >
                 {isLoading ? "Connexion..." : "Se connecter"}
@@ -182,6 +188,7 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
+        </motion.div>
       </div>
     </div>
   );
