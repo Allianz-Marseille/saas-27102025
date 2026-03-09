@@ -10,40 +10,10 @@ import Image from "next/image";
 
 export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const subtitleRef = useRef<HTMLParagraphElement>(null);
-  const ctaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Animation du titre
-      gsap.from(titleRef.current, {
-        opacity: 0,
-        y: 50,
-        duration: 1,
-        ease: "power3.out",
-        delay: 0.3,
-      });
-
-      // Animation du sous-texte
-      gsap.from(subtitleRef.current, {
-        opacity: 0,
-        y: 30,
-        duration: 1,
-        ease: "power3.out",
-        delay: 0.6,
-      });
-
-      // Animation du CTA
-      gsap.from(ctaRef.current, {
-        opacity: 0,
-        y: 20,
-        duration: 0.8,
-        ease: "power3.out",
-        delay: 0.9,
-      });
-
-      // Animation du logo
+      // Animation du logo uniquement
       gsap.from(".logo-animation", {
         scale: 0,
         rotation: -180,
@@ -91,39 +61,47 @@ export default function HomePage() {
               Marseille
             </span>
           </div>
+          <Link href="/login">
+            <Button variant="outline" className="border-white/60 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm">
+              Se connecter
+            </Button>
+          </Link>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-20">
         <div ref={heroRef} className="max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
+          <motion.h1
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
+            className="text-5xl md:text-7xl font-bold mb-6 text-white drop-shadow-2xl"
           >
-            <h1
-              ref={titleRef}
-              className="text-5xl md:text-7xl font-bold mb-6 text-white drop-shadow-2xl"
-            >
-              SaaS Agence
-            </h1>
-          </motion.div>
+            SaaS Agence
+          </motion.h1>
 
-          <p
-            ref={subtitleRef}
+          <motion.p
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease: "easeOut", delay: 0.6 }}
             className="text-xl md:text-2xl text-white/90 mb-12 max-w-2xl mx-auto drop-shadow-lg"
           >
             Gestion complète de votre agence : actes commerciaux, commissions
             et indicateurs en temps réel.
-          </p>
+          </motion.p>
 
-          <div ref={ctaRef} className="flex flex-col sm:flex-row gap-4 justify-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.9 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
+          >
             <Link href="/login">
               <Button size="lg" className="bg-[#00529B] hover:bg-[#003d73] text-white shadow-2xl hover:shadow-blue-500/50 transition-all hover:scale-105">
                 Accéder à mon espace
               </Button>
             </Link>
-          </div>
+          </motion.div>
         </div>
 
         <div className="mt-32 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
