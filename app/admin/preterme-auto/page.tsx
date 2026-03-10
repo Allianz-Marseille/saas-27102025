@@ -20,6 +20,7 @@ import {
   getPretermeClients,
   getSocietesAValider,
   getPretermeImport,
+  getAllPretermeImports,
 } from "@/lib/firebase/preterme";
 import { ConfigurationStep } from "@/components/preterme/ConfigurationStep";
 import { UploadStep } from "@/components/preterme/UploadStep";
@@ -291,6 +292,14 @@ export default function PretermeAutoPage() {
       if (imp) setActiveImport(imp);
     }).catch(() => {});
   }, [activeImportId]);
+
+  // Charger TOUS les imports historiques quand on arrive sur l'onglet KPI
+  useEffect(() => {
+    if (step !== "kpi") return;
+    getAllPretermeImports()
+      .then(setAllImports)
+      .catch(() => toast.error("Impossible de charger les KPI historiques"));
+  }, [step]);
 
   const handleClassifySuccess = useCallback(async (result: {
     nbSocietesAValider: number;

@@ -143,6 +143,39 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "date", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "preterme_configs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "moisKey", "order": "ASCENDING" },
+        { "fieldPath": "valide", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "preterme_imports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "moisKey", "order": "ASCENDING" },
+        { "fieldPath": "agence", "order": "ASCENDING" },
+        { "fieldPath": "branche", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "preterme_clients",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "importId", "order": "ASCENDING" },
+        { "fieldPath": "conserve", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "preterme_clients",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "importId", "order": "ASCENDING" },
+        { "fieldPath": "typeEntite", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

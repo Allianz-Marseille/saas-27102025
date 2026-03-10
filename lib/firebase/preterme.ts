@@ -6,6 +6,7 @@ import {
   collection,
   query,
   where,
+  orderBy,
   getDocs,
   getDoc,
   doc,
@@ -151,7 +152,25 @@ export async function getPretermeImportsByMois(moisKey: string): Promise<Preterm
       createdAt: toDate(data.createdAt),
       updatedAt: toDate(data.updatedAt),
     } as PretermeImport;
-  }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }).sort((a, b) => (b.createdAt as Date).getTime() - (a.createdAt as Date).getTime());
+}
+
+export async function getAllPretermeImports(): Promise<PretermeImport[]> {
+  assertDb();
+  const q = query(
+    collection(db!, "preterme_imports"),
+    orderBy("moisKey", "desc")
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      ...data,
+      createdAt: toDate(data.createdAt),
+      updatedAt: toDate(data.updatedAt),
+    } as PretermeImport;
+  });
 }
 
 export async function updatePretermeImport(
@@ -299,5 +318,5 @@ export async function getPretermeLogsByImport(importId: string): Promise<Preterm
       ...data,
       createdAt: toDate(data.createdAt),
     } as PretermeLog;
-  }).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  }).sort((a, b) => (a.createdAt as Date).getTime() - (b.createdAt as Date).getTime());
 }
