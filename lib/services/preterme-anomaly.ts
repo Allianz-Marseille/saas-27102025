@@ -22,6 +22,12 @@ export function doitEtreConserve(
   seuilEtp: number,
   seuilVariation: number
 ): boolean {
+  // Cas métier explicite : seuils à 0 = tout conserver
+  // (y compris les lignes où ETP/variation ne sont pas renseignés)
+  if (seuilEtp <= 0 && seuilVariation <= 0) {
+    return true;
+  }
+
   const etpOk =
     client.etp !== null &&
     client.etp !== undefined &&

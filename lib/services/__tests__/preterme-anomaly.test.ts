@@ -47,6 +47,12 @@ describe("doitEtreConserve", () => {
   it("conserve si TauxVariation >= seuil même avec ETP null", () => {
     expect(doitEtreConserve({ etp: null, tauxVariation: 25 }, SEUIL_ETP, SEUIL_VARIATION)).toBe(true);
   });
+
+  it("conserve tout quand les deux seuils sont à 0", () => {
+    expect(doitEtreConserve({ etp: null, tauxVariation: null }, 0, 0)).toBe(true);
+    expect(doitEtreConserve({ etp: null, tauxVariation: 0 }, 0, 0)).toBe(true);
+    expect(doitEtreConserve({ etp: 0, tauxVariation: null }, 0, 0)).toBe(true);
+  });
 });
 
 describe("calculerStatsConservation", () => {
