@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import {
   Upload, FileSpreadsheet, CheckCircle2, AlertTriangle,
-  RefreshCw, X, Info, Building2
+  RefreshCw, X, Info, Building2, PlusCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,16 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import type { AgenceCode } from "@/types/preterme";
 import { AGENCES } from "@/types/preterme";
@@ -267,6 +277,18 @@ interface UploadStepProps {
 export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: UploadStepProps) {
   const [files, setFiles] = useState<FileUploadState[]>([]);
 
+  // Contrôle visibilité dropzone
+  const [dropzoneVisible, setDropzoneVisible] = useState(true);
+
+  // Dialog "Voulez-vous en télécharger un autre ?"
+  const [showAnotherDialog, setShowAnotherDialog] = useState(false);
+
+  // Dialog confirmation remplacement agence déjà importée
+  const [replaceConfirm, setReplaceConfirm] = useState<{
+    idx: number;
+    agence: AgenceCode;
+  } | null>(null);
+
   const detectAgence = (filename: string): AgenceCode | null => {
     if (filename.includes("H91358") || filename.includes("h91358")) return "H91358";
     if (filename.includes("H92083") || filename.includes("h92083")) return "H92083";
@@ -309,7 +331,7 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
     setFiles((prev) => prev.map((f, i) => (i === idx ? { ...f, ...patch } : f)));
   };
 
-  const uploadFile = async (idx: number) => {
+  const doUpload = async (idx: number) => {
     const state = files[idx];
     const agence = state.agenceSelectionnee ?? state.agenceDetectee;
     if (!agence) return;
@@ -341,11 +363,33 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
       updateFile(idx, { status: "success", progress: 100, result: data });
       toast.success(`Import réussi — ${data.nbLignesValides} clients chargés`);
       onImportSuccess?.(data.importId, agence);
+
+      // Ouvrir le dialog "Voulez-vous en télécharger un autre ?"
+      setShowAnotherDialog(true);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur réseau";
       updateFile(idx, { status: "error", errorMessage: msg, progress: 0 });
       toast.error(msg);
     }
+  };
+
+  const uploadFile = (idx: number) => {
+    const state = files[idx];
+    const agence = state.agenceSelectionnee ?? state.agenceDetectee;
+    if (!agence) return;
+
+    // Vérifier si cette agence a déjà un import réussi (hors le fichier courant)
+    const alreadyImported = files.some(
+      (f, i) => i !== idx && f.status === "success" &&
+        (f.agenceDetectee ?? f.agenceSelectionnee) === agence
+    );
+
+    if (alreadyImported) {
+      setReplaceConfirm({ idx, agence });
+      return;
+    }
+
+    doUpload(idx);
   };
 
   // Résumé global
@@ -372,8 +416,24 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
         </div>
       )}
 
-      {/* Drop zone */}
-      <DropZone onFiles={addFiles} disabled={!configValide} />
+      {/* Drop zone (visible selon état) */}
+      {dropzoneVisible && (
+        <DropZone onFiles={addFiles} disabled={!configValide} />
+      )}
+
+      {/* Bouton "Ajouter un fichier" quand dropzone masquée et agences manquantes */}
+      {!dropzoneVisible && agencesManquantes.length > 0 && configValide && (
+        <button
+          onClick={() => setDropzoneVisible(true)}
+          className="w-full flex items-center justify-center gap-2 border border-dashed border-slate-600 rounded-xl p-4 text-sm text-slate-400 hover:border-sky-500 hover:text-sky-400 transition-colors"
+        >
+          <PlusCircle className="h-4 w-4" />
+          Ajouter un fichier
+          <span className="text-xs text-slate-500">
+            ({agencesManquantes.map((a) => AGENCES[a].label).join(", ")} manquante{agencesManquantes.length > 1 ? "s" : ""})
+          </span>
+        </button>
+      )}
 
       {/* Info agences */}
       {files.length === 0 && configValide && (
@@ -437,6 +497,76 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
           </CardContent>
         </Card>
       )}
+
+      {/* ── Dialog : Voulez-vous télécharger un autre fichier ? ── */}
+      <AlertDialog open={showAnotherDialog} onOpenChange={setShowAnotherDialog}>
+        <AlertDialogContent className="bg-slate-900 border-slate-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-slate-100">
+              Télécharger un autre fichier ?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              {agencesManquantes.length > 0
+                ? `Il manque encore ${agencesManquantes.map((a) => AGENCES[a].label).join(", ")}. Voulez-vous importer un autre fichier ?`
+                : "Les deux agences ont été importées. Voulez-vous néanmoins importer un fichier supplémentaire ?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+              onClick={() => setDropzoneVisible(false)}
+            >
+              Non, continuer
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-sky-600 hover:bg-sky-500"
+              onClick={() => setDropzoneVisible(true)}
+            >
+              Oui, ajouter un fichier
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Dialog : Confirmation remplacement agence déjà importée ── */}
+      <AlertDialog open={!!replaceConfirm} onOpenChange={(open) => { if (!open) setReplaceConfirm(null); }}>
+        <AlertDialogContent className="bg-slate-900 border-slate-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-slate-100">
+              Agence déjà importée
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              Un import existe déjà pour{" "}
+              <strong className="text-slate-200">
+                {replaceConfirm ? AGENCES[replaceConfirm.agence].label : ""}
+              </strong>{" "}
+              ce mois-ci. Réimporter remplacera toutes les données existantes pour cette agence.
+              <br /><br />
+              Voulez-vous continuer ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+              onClick={() => setReplaceConfirm(null)}
+            >
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-700 hover:bg-red-600"
+              onClick={() => {
+                if (replaceConfirm) {
+                  const idx = replaceConfirm.idx;
+                  setReplaceConfirm(null);
+                  doUpload(idx);
+                }
+              }}
+            >
+              Oui, remplacer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

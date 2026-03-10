@@ -207,6 +207,24 @@ Même grille de rémunération que la santé individuelle (0%, 2%, 3%, 4%, 6%).
 - Calcul des charges et résultats
 - Prélèvements associés
 
+#### Prétermes Auto (outil admin)
+
+Outil d'automatisation du traitement mensuel des exports de prétermes Allianz :
+- **Parcours guidé en 6 étapes** : période → configuration → upload → filtrage → sociétés → dispatch
+- **Import multi-fichiers** : upload guidé avec dialog de confirmation entre chaque fichier, détection automatique de l'agence (H91358 / H92083), alerte explicite en cas de doublon ou de remplacement d'agence
+- **Filtrage métier** : seuils configurables ETP (≥ 120) et Taux de variation (≥ 20%), sliders dynamiques avec preview temps réel
+- **Classification Gemini** : détection personne physique vs société via API Gemini (batch 50, fallback `a_valider`)
+- **Validation des sociétés** : saisie du nom gérant pour le routage correct
+- **Routage CDC** : répartition par tranche de lettres, gestion des absences avec remplaçant
+- **Dispatch Trello** : création de cartes CRM dans le tableau de chaque chargé de clientèle, idempotence complète
+- **Synthèse Slack** : message de pilotage automatique en fin de traitement
+- **KPI historiques** : graphiques Recharts par mois, agence et collaborateur
+- **Branche** : `main` — Accès : `/admin/preterme-auto`
+
+Collections Firestore associées : `preterme_configs`, `preterme_imports`, `preterme_clients`, `preterme_trello_logs`
+
+Spec complète : `docs/preterme-auto.md`
+
 #### Leaderboard
 - Classement des commerciaux
 - Mise à jour automatique via cron
@@ -409,6 +427,9 @@ NEXT_PUBLIC_BASE_URL=
 
 # Crons — Bearer secret pour routes protégées (/api/cron/*)
 CRON_SECRET=
+
+# Prétermes Auto — Classification Gemini
+GEMINI_API_KEY=
 ```
 
 #### Configuration Firebase
@@ -441,6 +462,10 @@ Les règles Firestore sont définies dans `firestore.rules`. Les collections pri
 - `message_replies` : Réponses aux messages
 - `sinistres` : Sinistres (lecture admin, gestionnaire sinistre, CDC)
 - `sinistres_metadata` : Métadonnées des imports de sinistres
+- `preterme_configs` : Configuration mensuelle préterme (moisKey unique)
+- `preterme_imports` : Historique des imports (moisKey + agence + branche)
+- `preterme_clients` : Lignes clients par import
+- `preterme_trello_logs` : Journal de création des cartes Trello
 
 **⚠️ Important** : Les règles de sécurité ont été renforcées pour protéger les données personnelles. Voir `firestore.rules` pour les règles détaillées.
 
@@ -816,6 +841,6 @@ Pour toute question ou support, contacter l'équipe de développement.
 
 ---
 
-**Version** : 0.1.0  
-**Dernière mise à jour** : Février 2026
+**Version** : 0.1.0
+**Dernière mise à jour** : Mars 2026
 

@@ -42,6 +42,31 @@ L'objectif est d'automatiser le traitement mensuel des exports de prétermes (fa
 - Exemple : si l'on est en **mars**, on traite le préterme d'**avril**.
 - La période proposée par défaut dans l'interface doit donc être `mois courant + 1` (modifiable par l'admin si besoin).
 
+### 2.3. Flow de téléchargement des fichiers (multi-import guidé)
+
+Le parcours d'upload suit un flow séquentiel avec confirmation explicite entre chaque fichier.
+
+#### Étape 1 — Premier upload
+1. L'admin dépose ou sélectionne un fichier Excel.
+2. L'agence est auto-détectée (nom de fichier contenant `H91358` ou `H92083`), ou sélectionnée manuellement.
+3. L'import démarre ; en cas de succès, une **alerte système** (dialog) s'affiche :
+   > _"Voulez-vous en télécharger un autre ?"_ **Oui / Non**
+
+#### Étape 2a — Réponse "Oui"
+- La dropzone reste active pour un second fichier.
+- **Erreurs gérées :**
+  - **Même nom de fichier** → toast d'avertissement : _"Ce fichier a déjà été ajouté."_
+  - **Même agence, fichier différent** → alerte bloquante : _"Un import existe déjà pour [agence] ce mois-ci. Réimporter remplacera les données existantes."_ + confirmation requise.
+
+#### Étape 2b — Réponse "Non"
+- La dropzone est masquée ; le process avance vers l'étape suivante.
+- Un bouton **"Ajouter un fichier"** reste visible si des agences sont encore manquantes, permettant de revenir à l'upload sans repartir du début.
+- Si l'admin tente d'uploader un second fichier pour la **même agence** → alerte explicite (pas de remplacement silencieux).
+
+#### Règles invariantes
+- **1 seul fichier par agence par mois par branche** — garanti côté serveur (idempotence/purge) ET côté client (alerte explicite).
+- Ce flow s'applique identiquement aux branches **IRD** et **M+3** (à venir).
+
 ### 2.1. Préalables obligatoires avant import
 - Le système connaît les 2 agences cibles : `H91358` et `H92083`.
 - Pour chaque agence, l'admin valide la liste des **prénoms des chargés de clientèle** actifs pour la période.
@@ -281,10 +306,17 @@ Une fois les données traitées et réparties :
 - À chaque relance sur ce triplet, effectuer une purge propre des données précédentes avant réimport.
 - Prévoir également la purge des cartes Trello associées si elles avaient déjà été générées.
 
-### 7.5. Critères d'acceptation / tests
+### 7.5. Flow multi-import (upload guidé)
+- Règle confirmée : **dialog de confirmation** après chaque upload réussi ("Voulez-vous en télécharger un autre ?").
+- Doublon par **nom de fichier** → toast avertissement côté client.
+- Doublon par **agence** (fichier différent) → alerte explicite avec confirmation avant remplacement (pas de remplacement silencieux).
+- Si l'admin répond "Non", un bouton "Ajouter un fichier" reste disponible tant que toutes les agences ne sont pas couvertes.
+- Ce comportement est identique pour les branches IRD et M+3 (à venir).
+
+### 7.6. Critères d'acceptation / tests
 - Maintenir une checklist de recette couvrant au minimum : parsing, seuils, routing lettres, validation société, création Trello, synthèse Slack et KPI.
 
-### 7.6. Mapping agence
+### 7.7. Mapping agence
 - Confirmé et figé : `Kennedy = Corniche = H91358`.
 
 ## 8. Mode opératoire Claude Code (document utilisable comme prompt)
