@@ -7,6 +7,8 @@
 
 import ExcelJS from "exceljs";
 import type { AgenceCode } from "@/types/preterme";
+import { detectAgenceFromFilename } from "@/lib/utils/preterme-agence";
+export { detectAgenceFromFilename } from "@/lib/utils/preterme-agence";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -132,12 +134,6 @@ function excelDateToISO(v: ExcelJS.CellValue): string {
 }
 
 // ─── Détection agence ─────────────────────────────────────────────────────────
-
-export function detectAgenceFromFilename(filename: string): AgenceCode | null {
-  if (filename.includes("H91358") || filename.includes("h91358")) return "H91358";
-  if (filename.includes("H92083") || filename.includes("h92083")) return "H92083";
-  return null;
-}
 
 // ─── Parser principal ─────────────────────────────────────────────────────────
 

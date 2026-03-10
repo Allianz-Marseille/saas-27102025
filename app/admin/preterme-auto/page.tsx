@@ -201,6 +201,14 @@ export default function PretermeAutoPage() {
     setStep("filtrage");
   }, [loadImportClients, moisKey]);
 
+  // Charger activeImport depuis Firestore quand activeImportId change
+  useEffect(() => {
+    if (!activeImportId) return;
+    getPretermeImport(activeImportId).then((imp) => {
+      if (imp) setActiveImport(imp);
+    }).catch(() => {});
+  }, [activeImportId]);
+
   const handleClassifySuccess = useCallback(async (result: {
     nbSocietesAValider: number;
   }) => {
@@ -220,7 +228,8 @@ export default function PretermeAutoPage() {
     if (s === "periode" || s === "configuration") return true;
     if (s === "upload") return isConfigValide;
     if (s === "filtrage" || s === "societes" || s === "dispatch") return !!activeImportId;
-    if (s === "synthese" || s === "kpi") return !!activeImportId;
+    if (s === "synthese") return !!activeImportId;
+    if (s === "kpi") return allImports.length > 0 || !!activeImportId;
     return false;
   };
 
@@ -540,9 +549,12 @@ export default function PretermeAutoPage() {
                     onDispatchSuccess={async () => {
                       toast.success("Dispatch terminé ! Consultation de la synthèse.");
                       if (activeImportId) {
-                        const imp = await getPretermeImport(activeImportId).catch(() => null);
+                        const [imp] = await Promise.all([
+                          getPretermeImport(activeImportId).catch(() => null),
+                          loadImportClients(activeImportId),
+                          getPretermeImportsByMois(moisKey).then(setAllImports).catch(() => {}),
+                        ]);
                         if (imp) setActiveImport(imp);
-                        getPretermeImportsByMois(moisKey).then(setAllImports).catch(() => {});
                       }
                       setStep("synthese");
                     }}

@@ -167,12 +167,21 @@ export async function updatePretermeImport(
   });
 }
 
-/** Purge un import (et ses clients) pour idempotence */
+/** Purge un import (clients + logs Trello + import) pour idempotence */
 export async function purgePretermeImport(
   moisKey: string,
   agence: AgenceCode
 ): Promise<void> {
   assertDb();
+
+  // Récupérer les IDs d'imports existants pour purger les logs
+  const importQ = query(
+    collection(db!, "preterme_imports"),
+    where("moisKey", "==", moisKey),
+    where("agence", "==", agence)
+  );
+  const importSnap = await getDocs(importQ);
+  const importIds = importSnap.docs.map((d) => d.id);
 
   // Supprimer les clients associés
   const clientsQ = query(
@@ -181,16 +190,23 @@ export async function purgePretermeImport(
     where("agence", "==", agence)
   );
   const clientsSnap = await getDocs(clientsQ);
-  await Promise.all(clientsSnap.docs.map((d) => deleteDoc(d.ref)));
 
-  // Supprimer l'import
-  const importQ = query(
-    collection(db!, "preterme_imports"),
-    where("moisKey", "==", moisKey),
-    where("agence", "==", agence)
+  // Supprimer les logs Trello pour chaque import
+  const logsSnaps = await Promise.all(
+    importIds.map((id) =>
+      getDocs(query(
+        collection(db!, "preterme_trello_logs"),
+        where("importId", "==", id)
+      ))
+    )
   );
-  const importSnap = await getDocs(importQ);
-  await Promise.all(importSnap.docs.map((d) => deleteDoc(d.ref)));
+  const allLogDocs = logsSnaps.flatMap((s) => s.docs);
+
+  await Promise.all([
+    ...clientsSnap.docs.map((d) => deleteDoc(d.ref)),
+    ...allLogDocs.map((d) => deleteDoc(d.ref)),
+    ...importSnap.docs.map((d) => deleteDoc(d.ref)),
+  ]);
 }
 
 // ─── PretermeClient ──────────────────────────────────────────────────────────
