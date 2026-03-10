@@ -145,8 +145,9 @@ const STEPS: { id: Step; label: string; icon: React.ElementType; phase: number }
   { id: "periode",       label: "Période",            icon: Calendar,      phase: 1 },
   { id: "configuration", label: "Configuration",      icon: Settings2,     phase: 1 },
   { id: "upload",        label: "Upload fichiers",    icon: Upload,        phase: 2 },
-  { id: "filtrage",      label: "Filtrage & IA",      icon: Filter,        phase: 3 },
-  { id: "societes",      label: "Valid. sociétés",    icon: Building2,     phase: 3 },
+  { id: "filtrage",          label: "Filtrage & IA",      icon: Filter,            phase: 3 },
+  { id: "validation-types", label: "Valid. types",        icon: ArrowRightLeft,    phase: 3 },
+  { id: "societes",          label: "Gérants sociétés",   icon: Building2,         phase: 3 },
   { id: "dispatch",      label: "Dispatch Trello",    icon: Send,          phase: 4 },
   { id: "synthese",      label: "Synthèse Slack",     icon: MessageSquare, phase: 5 },
   { id: "kpi",           label: "KPI historiques",    icon: BarChart3,     phase: 5 },
@@ -303,11 +304,16 @@ export default function PretermeAutoPage() {
       .catch(() => toast.error("Impossible de charger les KPI historiques"));
   }, [step]);
 
-  const handleClassifySuccess = useCallback(async (result: {
-    nbSocietesAValider: number;
-  }) => {
+  const handleClassifySuccess = useCallback(async (_result: unknown) => {
     if (!activeImportId) return;
-    if (result.nbSocietesAValider > 0) {
+    // Recharger les clients avec typeEntite frais depuis Gemini
+    await loadImportClients(activeImportId);
+    setStep("validation-types");
+  }, [activeImportId, loadImportClients]);
+
+  const handleTypeValidationDone = useCallback(async (nbEntreprises: number) => {
+    if (!activeImportId) return;
+    if (nbEntreprises > 0) {
       await loadSocietes(activeImportId);
       setStep("societes");
     } else {
@@ -321,7 +327,7 @@ export default function PretermeAutoPage() {
   const canAccessStep = (s: Step): boolean => {
     if (s === "periode" || s === "configuration") return true;
     if (s === "upload") return isConfigValide;
-    if (s === "filtrage" || s === "societes" || s === "dispatch") return !!activeImportId;
+    if (s === "filtrage" || s === "validation-types" || s === "societes" || s === "dispatch") return !!activeImportId;
     if (s === "synthese") return !!activeImportId;
     if (s === "kpi") return allImports.length > 0 || !!activeImportId;
     return false;
@@ -331,21 +337,19 @@ export default function PretermeAutoPage() {
   const Breadcrumb = ({ current }: { current: string }) => (
     <div className="flex items-center gap-2 text-sm text-slate-400">
       <button onClick={() => setStep("periode")} className="hover:text-slate-200">Période</button>
-      {["configuration", "upload", "filtrage", "societes"].includes(step) && (
+      {["configuration", "upload", "filtrage", "validation-types", "societes"].includes(step) && (
         <><span>/</span><button onClick={() => setStep("configuration")} className="hover:text-slate-200">Config</button></>
       )}
-      {["upload", "filtrage", "societes"].includes(step) && (
+      {["upload", "filtrage", "validation-types", "societes"].includes(step) && (
         <><span>/</span><button onClick={() => setStep("upload")} className="hover:text-slate-200">Upload</button></>
       )}
-      {["filtrage", "societes"].includes(step) && (
+      {["filtrage", "validation-types", "societes"].includes(step) && (
         <><span>/</span><button onClick={() => setStep("filtrage")} className="hover:text-slate-200">Filtrage</button></>
       )}
       {step === "societes" && (
-        <><span>/</span><span className="text-white font-medium">{current}</span></>
+        <><span>/</span><button onClick={() => setStep("validation-types")} className="hover:text-slate-200">Valid. types</button></>
       )}
-      {step !== "societes" && (
-        <><span>/</span><span className="text-white font-medium">{current}</span></>
-      )}
+      <><span>/</span><span className="text-white font-medium">{current}</span></>
     </div>
   );
 
@@ -581,11 +585,11 @@ export default function PretermeAutoPage() {
             </div>
           )}
 
-          {/* ── Validation sociétés ── */}
-          {step === "societes" && activeImportId && (
+          {/* ── Validation types (particulier / entreprise) ── */}
+          {step === "validation-types" && activeImportId && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Breadcrumb current="Validation sociétés" />
+                <Breadcrumb current="Validation des types" />
                 <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("filtrage")}>
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour filtrage
                 </Button>
@@ -593,8 +597,34 @@ export default function PretermeAutoPage() {
               <Card className="bg-slate-900 border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
+                    <ArrowRightLeft className="h-4 w-4 text-sky-400" />
+                    Vérification de la classification IA
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <TypeValidationStep
+                    clients={importedClients.filter((c) => c.conserve)}
+                    onValidated={handleTypeValidationDone}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* ── Validation sociétés ── */}
+          {step === "societes" && activeImportId && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Breadcrumb current="Gérants sociétés" />
+                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("validation-types")}>
+                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour validation types
+                </Button>
+              </div>
+              <Card className="bg-slate-900 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
                     <Building2 className="h-4 w-4 text-sky-400" />
-                    Validation des sociétés détectées
+                    Saisie des gérants d&apos;entreprise
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
