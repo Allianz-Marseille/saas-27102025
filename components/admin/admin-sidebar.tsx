@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote, LogOut, ChevronLeft, User, Zap, Bot } from "lucide-react";
+import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote, LogOut, ChevronLeft, User, Zap, Bot, Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import Image from "next/image";
@@ -41,6 +41,11 @@ const adminNavItems = [
     href: "/admin/sinistre",
     label: "Sinistre",
     icon: AlertTriangle,
+  },
+  {
+    href: "/admin/preterme-auto",
+    label: "Prétermes Auto",
+    icon: Car,
   },
   {
     href: "/admin/boost",
