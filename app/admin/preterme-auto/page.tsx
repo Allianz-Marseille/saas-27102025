@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import {
-  Calendar, ChevronLeft, ChevronRight, Settings2, Upload,
-  CheckCircle2, Clock, History, Car
+  Calendar, ChevronLeft, ChevronRight, Settings2, Upload, Filter,
+  Building2, CheckCircle2, Clock, History, Car
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,10 +17,16 @@ import {
   upsertPretermeConfig,
   getPretermeConfig,
   getAllPretermeConfigs,
+  getPretermeClients,
+  getSocietesAValider,
 } from "@/lib/firebase/preterme";
 import { ConfigurationStep } from "@/components/preterme/ConfigurationStep";
 import { UploadStep } from "@/components/preterme/UploadStep";
-import type { PretermeConfig, AgenceConfig, AgenceCode } from "@/types/preterme";
+import { ThresholdsStep } from "@/components/preterme/ThresholdsStep";
+import { SocietesValidationStep } from "@/components/preterme/SocietesValidationStep";
+import type {
+  PretermeConfig, AgenceConfig, AgenceCode, PretermeClient,
+} from "@/types/preterme";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -32,8 +38,8 @@ function getMoisCible(): string {
 
 function formatMoisLabel(moisKey: string): string {
   const [year, month] = moisKey.split("-");
-  const date = new Date(Number(year), Number(month) - 1, 1);
-  return date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  return new Date(Number(year), Number(month) - 1, 1)
+    .toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 }
 
 function navigateMois(moisKey: string, delta: number): string {
@@ -47,10 +53,10 @@ function defaultAgences(): AgenceConfig[] {
     {
       code: "H91358",
       charges: [
-        { id: uuidv4(), prenom: "Corentin",  lettresDebut: "A", lettresFin: "C", trello: null },
-        { id: uuidv4(), prenom: "Emma",      lettresDebut: "D", lettresFin: "F", trello: null },
-        { id: uuidv4(), prenom: "Matthieu",  lettresDebut: "G", lettresFin: "M", trello: null },
-        { id: uuidv4(), prenom: "Donia",     lettresDebut: "N", lettresFin: "Z", trello: null },
+        { id: uuidv4(), prenom: "Corentin",   lettresDebut: "A", lettresFin: "C", trello: null },
+        { id: uuidv4(), prenom: "Emma",       lettresDebut: "D", lettresFin: "F", trello: null },
+        { id: uuidv4(), prenom: "Matthieu",   lettresDebut: "G", lettresFin: "M", trello: null },
+        { id: uuidv4(), prenom: "Donia",      lettresDebut: "N", lettresFin: "Z", trello: null },
       ],
     },
     {
@@ -65,12 +71,14 @@ function defaultAgences(): AgenceConfig[] {
 
 // ─── Steps ──────────────────────────────────────────────────────────────────
 
-type Step = "periode" | "configuration" | "upload";
+type Step = "periode" | "configuration" | "upload" | "filtrage" | "societes";
 
 const STEPS: { id: Step; label: string; icon: React.ElementType; phase: number }[] = [
-  { id: "periode",       label: "Période",       icon: Calendar,  phase: 1 },
-  { id: "configuration", label: "Configuration", icon: Settings2, phase: 1 },
-  { id: "upload",        label: "Upload fichiers", icon: Upload,   phase: 2 },
+  { id: "periode",       label: "Période",         icon: Calendar,  phase: 1 },
+  { id: "configuration", label: "Configuration",   icon: Settings2, phase: 1 },
+  { id: "upload",        label: "Upload fichiers", icon: Upload,    phase: 2 },
+  { id: "filtrage",      label: "Filtrage & IA",   icon: Filter,    phase: 3 },
+  { id: "societes",      label: "Validation sociétés", icon: Building2, phase: 3 },
 ];
 
 // ─── Page principale ─────────────────────────────────────────────────────────
@@ -78,13 +86,20 @@ const STEPS: { id: Step; label: string; icon: React.ElementType; phase: number }
 export default function PretermeAutoPage() {
   const { user } = useAuth();
 
-  const [step, setStep] = useState<Step>("periode");
-  const [moisKey, setMoisKey] = useState<string>(getMoisCible());
+  const [step, setStep]         = useState<Step>("periode");
+  const [moisKey, setMoisKey]   = useState<string>(getMoisCible());
   const [isSaving, setIsSaving] = useState(false);
-  const [existingConfig, setExistingConfig] = useState<PretermeConfig | null>(null);
-  const [historique, setHistorique] = useState<PretermeConfig[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(true);
-  const [idToken, setIdToken] = useState<string>("");
+  const [idToken, setIdToken]   = useState<string>("");
+
+  const [existingConfig, setExistingConfig]   = useState<PretermeConfig | null>(null);
+  const [historique, setHistorique]           = useState<PretermeConfig[]>([]);
+  const [loadingHistory, setLoadingHistory]   = useState(true);
+
+  // Import actif (après upload)
+  const [activeImportId, setActiveImportId]   = useState<string | null>(null);
+  const [activeAgence, setActiveAgence]       = useState<AgenceCode | null>(null);
+  const [importedClients, setImportedClients] = useState<PretermeClient[]>([]);
+  const [societesAValider, setSocietesAValider] = useState<PretermeClient[]>([]);
 
   const [config, setConfig] = useState<
     Omit<PretermeConfig, "id" | "createdAt" | "updatedAt" | "createdBy" | "valide">
@@ -97,12 +112,12 @@ export default function PretermeAutoPage() {
     slackChannelId: "",
   });
 
-  // Récupérer le token Firebase pour les appels API
+  // Token Firebase
   useEffect(() => {
     user?.getIdToken().then(setIdToken).catch(() => {});
   }, [user]);
 
-  // Charger l'historique au montage
+  // Historique
   useEffect(() => {
     getAllPretermeConfigs()
       .then(setHistorique)
@@ -110,25 +125,42 @@ export default function PretermeAutoPage() {
       .finally(() => setLoadingHistory(false));
   }, []);
 
-  // Charger la config du mois sélectionné (si existante)
+  // Config du mois sélectionné
   useEffect(() => {
     setExistingConfig(null);
     getPretermeConfig(moisKey).then((c) => {
       if (c) {
         setExistingConfig(c);
         setConfig({
-          moisKey: c.moisKey,
-          branche: c.branche,
-          seuilEtp: c.seuilEtp,
-          seuilVariation: c.seuilVariation,
-          agences: c.agences,
-          slackChannelId: c.slackChannelId,
+          moisKey: c.moisKey, branche: c.branche,
+          seuilEtp: c.seuilEtp, seuilVariation: c.seuilVariation,
+          agences: c.agences, slackChannelId: c.slackChannelId,
         });
       } else {
         setConfig((prev) => ({ ...prev, moisKey, agences: defaultAgences() }));
       }
     });
   }, [moisKey]);
+
+  // Charger les clients d'un import
+  const loadImportClients = useCallback(async (importId: string) => {
+    try {
+      const clients = await getPretermeClients(importId);
+      setImportedClients(clients);
+    } catch {
+      toast.error("Impossible de charger les clients de l'import");
+    }
+  }, []);
+
+  // Charger les sociétés à valider
+  const loadSocietes = useCallback(async (importId: string) => {
+    try {
+      const s = await getSocietesAValider(importId);
+      setSocietesAValider(s);
+    } catch {
+      toast.error("Impossible de charger les sociétés");
+    }
+  }, []);
 
   const handleValidateConfig = useCallback(async () => {
     if (!user) return;
@@ -150,17 +182,57 @@ export default function PretermeAutoPage() {
     }
   }, [config, user, moisKey]);
 
-  const isConfigValide = existingConfig?.valide ?? false;
+  const handleImportSuccess = useCallback(async (importId: string, agence: AgenceCode) => {
+    setActiveImportId(importId);
+    setActiveAgence(agence);
+    await loadImportClients(importId);
+    setStep("filtrage");
+  }, [loadImportClients]);
 
-  // Accessibilité des steps
+  const handleClassifySuccess = useCallback(async (result: {
+    nbSocietesAValider: number;
+  }) => {
+    if (!activeImportId) return;
+    if (result.nbSocietesAValider > 0) {
+      await loadSocietes(activeImportId);
+      setStep("societes");
+    }
+    // Si pas de sociétés, Phase 4 (Trello) à implémenter
+  }, [activeImportId, loadSocietes]);
+
+  const isConfigValide = existingConfig?.valide ?? false;
+  const stepIndex = STEPS.findIndex((s) => s.id === step);
+
   const canAccessStep = (s: Step): boolean => {
-    if (s === "periode") return true;
-    if (s === "configuration") return true;
+    const idx = STEPS.findIndex((st) => st.id === s);
+    if (idx <= 1) return true;
     if (s === "upload") return isConfigValide;
+    if (s === "filtrage") return !!activeImportId;
+    if (s === "societes") return !!activeImportId;
     return false;
   };
 
-  const stepIndex = STEPS.findIndex((s) => s.id === step);
+  // Breadcrumb
+  const Breadcrumb = ({ current }: { current: string }) => (
+    <div className="flex items-center gap-2 text-sm text-slate-400">
+      <button onClick={() => setStep("periode")} className="hover:text-slate-200">Période</button>
+      {["configuration", "upload", "filtrage", "societes"].includes(step) && (
+        <><span>/</span><button onClick={() => setStep("configuration")} className="hover:text-slate-200">Config</button></>
+      )}
+      {["upload", "filtrage", "societes"].includes(step) && (
+        <><span>/</span><button onClick={() => setStep("upload")} className="hover:text-slate-200">Upload</button></>
+      )}
+      {["filtrage", "societes"].includes(step) && (
+        <><span>/</span><button onClick={() => setStep("filtrage")} className="hover:text-slate-200">Filtrage</button></>
+      )}
+      {step === "societes" && (
+        <><span>/</span><span className="text-white font-medium">{current}</span></>
+      )}
+      {step !== "societes" && (
+        <><span>/</span><span className="text-white font-medium">{current}</span></>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -171,9 +243,7 @@ export default function PretermeAutoPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-white">Prétermes Auto</h1>
-          <p className="text-sm text-slate-400">
-            Gestion automatisée — périmètre Auto uniquement
-          </p>
+          <p className="text-sm text-slate-400">Gestion automatisée — périmètre Auto uniquement</p>
         </div>
         <Badge className="ml-auto bg-sky-900/50 text-sky-300 border-sky-700 capitalize">
           {formatMoisLabel(moisKey)}
@@ -183,7 +253,6 @@ export default function PretermeAutoPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* ── Sidebar ── */}
         <div className="lg:col-span-1 space-y-4">
-          {/* Stepper */}
           <Card className="bg-slate-900 border-slate-700">
             <CardContent className="p-4 space-y-1">
               {STEPS.map((s, i) => {
@@ -191,6 +260,7 @@ export default function PretermeAutoPage() {
                 const isDone =
                   (s.id === "periode" && stepIndex > 0) ||
                   (s.id === "configuration" && isConfigValide) ||
+                  (s.id === "upload" && !!activeImportId && stepIndex > 2) ||
                   false;
                 const accessible = canAccessStep(s.id);
 
@@ -208,47 +278,32 @@ export default function PretermeAutoPage() {
                         : "text-slate-600 cursor-not-allowed"
                     )}
                   >
-                    <div
-                      className={cn(
-                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                        isDone
-                          ? "bg-emerald-800 text-emerald-300"
-                          : isActive
-                          ? "bg-sky-700 text-sky-200"
-                          : accessible
-                          ? "bg-slate-700 text-slate-400"
-                          : "bg-slate-800 text-slate-600"
-                      )}
-                    >
+                    <div className={cn(
+                      "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                      isDone ? "bg-emerald-800 text-emerald-300"
+                        : isActive ? "bg-sky-700 text-sky-200"
+                        : accessible ? "bg-slate-700 text-slate-400"
+                        : "bg-slate-800 text-slate-600"
+                    )}>
                       {isDone ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
                     </div>
                     <span>{s.label}</span>
-                    {!accessible && (
-                      <Clock className="h-3 w-3 ml-auto text-slate-600" />
-                    )}
+                    {!accessible && <Clock className="h-3 w-3 ml-auto text-slate-600" />}
                   </button>
                 );
               })}
 
               <Separator className="bg-slate-800 my-2" />
-
-              {/* Phases à venir */}
               {[
-                { label: "Filtrage & Gemini", phase: 3 },
-                { label: "Dispatch Trello",   phase: 4 },
-                { label: "Synthèse Slack",    phase: 5 },
+                { label: "Dispatch Trello", phase: 4 },
+                { label: "Synthèse Slack",  phase: 5 },
               ].map((s) => (
-                <div
-                  key={s.label}
-                  className="flex items-center gap-3 px-3 py-2 text-slate-600 text-sm"
-                >
+                <div key={s.label} className="flex items-center gap-3 px-3 py-2 text-slate-600 text-sm">
                   <div className="h-6 w-6 rounded-full bg-slate-800 flex items-center justify-center">
                     <Clock className="h-3 w-3" />
                   </div>
                   <span className="text-xs">{s.label}</span>
-                  <Badge className="ml-auto text-[9px] bg-slate-800 text-slate-600 h-4 px-1">
-                    P{s.phase}
-                  </Badge>
+                  <Badge className="ml-auto text-[9px] bg-slate-800 text-slate-600 h-4 px-1">P{s.phase}</Badge>
                 </div>
               ))}
             </CardContent>
@@ -299,53 +354,35 @@ export default function PretermeAutoPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-center gap-4">
-                  <Button
-                    variant="outline" size="icon"
-                    className="border-slate-700 bg-slate-800 hover:bg-slate-700"
-                    onClick={() => setMoisKey((m) => navigateMois(m, -1))}
-                  >
+                  <Button variant="outline" size="icon" className="border-slate-700 bg-slate-800 hover:bg-slate-700"
+                    onClick={() => setMoisKey((m) => navigateMois(m, -1))}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <div className="text-center min-w-48">
-                    <p className="text-2xl font-bold text-white capitalize">
-                      {formatMoisLabel(moisKey)}
-                    </p>
+                    <p className="text-2xl font-bold text-white capitalize">{formatMoisLabel(moisKey)}</p>
                     <p className="text-xs text-slate-500 mt-0.5">Mois traité par ce préterme</p>
                   </div>
-                  <Button
-                    variant="outline" size="icon"
-                    className="border-slate-700 bg-slate-800 hover:bg-slate-700"
-                    onClick={() => setMoisKey((m) => navigateMois(m, 1))}
-                  >
+                  <Button variant="outline" size="icon" className="border-slate-700 bg-slate-800 hover:bg-slate-700"
+                    onClick={() => setMoisKey((m) => navigateMois(m, 1))}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
-
                 <div className="p-4 bg-sky-950/30 border border-sky-800/40 rounded-xl text-sm text-sky-300/80">
                   <p className="font-medium text-sky-300 mb-1">Règle calendaire</p>
-                  <p>
-                    Le traitement de préterme porte toujours sur le{" "}
-                    <strong>mois suivant</strong>. Période pré-sélectionnée :{" "}
-                    <strong className="text-sky-200">{formatMoisLabel(getMoisCible())}</strong>.
-                  </p>
+                  <p>Traitement toujours sur le <strong>mois suivant</strong>. Pré-sélectionné :{" "}
+                    <strong className="text-sky-200">{formatMoisLabel(getMoisCible())}</strong>.</p>
                 </div>
-
                 {existingConfig ? (
-                  <div className={cn(
-                    "p-4 rounded-xl border text-sm flex items-start gap-3",
+                  <div className={cn("p-4 rounded-xl border text-sm flex items-start gap-3",
                     existingConfig.valide
                       ? "bg-emerald-950/30 border-emerald-700/50 text-emerald-300"
-                      : "bg-amber-950/30 border-amber-700/50 text-amber-300"
-                  )}>
+                      : "bg-amber-950/30 border-amber-700/50 text-amber-300")}>
                     {existingConfig.valide
                       ? <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
-                      : <Clock className="h-4 w-4 mt-0.5 shrink-0" />
-                    }
+                      : <Clock className="h-4 w-4 mt-0.5 shrink-0" />}
                     <div>
                       <p className="font-medium">
-                        {existingConfig.valide
-                          ? "Configuration validée pour ce mois"
-                          : "Configuration en cours pour ce mois"}
+                        {existingConfig.valide ? "Configuration validée" : "Configuration en cours"}
                       </p>
                       <p className="text-xs opacity-80 mt-0.5">
                         {existingConfig.agences.reduce((acc, a) => acc + a.charges.length, 0)} CDC —
@@ -359,13 +396,8 @@ export default function PretermeAutoPage() {
                     Aucune configuration pour ce mois — à créer à l&apos;étape suivante.
                   </div>
                 )}
-
-                <Button
-                  className="w-full bg-sky-600 hover:bg-sky-500"
-                  onClick={() => setStep("configuration")}
-                >
-                  Continuer vers la configuration
-                  <ChevronRight className="h-4 w-4 ml-1" />
+                <Button className="w-full bg-sky-600 hover:bg-sky-500" onClick={() => setStep("configuration")}>
+                  Continuer vers la configuration <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </CardContent>
             </Card>
@@ -375,44 +407,16 @@ export default function PretermeAutoPage() {
           {step === "configuration" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-slate-400">
-                  <button onClick={() => setStep("periode")} className="hover:text-slate-200">
-                    Période
-                  </button>
-                  <span>/</span>
-                  <span className="text-white font-medium capitalize">
-                    {formatMoisLabel(moisKey)}
-                  </span>
-                  {isConfigValide && (
-                    <Badge className="ml-2 bg-emerald-900/60 text-emerald-400 border-emerald-700 text-[10px]">
-                      <CheckCircle2 className="h-2.5 w-2.5 mr-1" /> Validée
-                    </Badge>
-                  )}
-                </div>
-                <Button
-                  variant="ghost" size="sm"
-                  className="text-slate-400 text-xs"
-                  onClick={() => setStep("periode")}
-                >
+                <Breadcrumb current="Configuration" />
+                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("periode")}>
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Changer de mois
                 </Button>
               </div>
-
-              <ConfigurationStep
-                moisKey={moisKey}
-                config={config}
-                onChange={setConfig}
-                onValidate={handleValidateConfig}
-                isLoading={isSaving}
-              />
-
+              <ConfigurationStep moisKey={moisKey} config={config} onChange={setConfig}
+                onValidate={handleValidateConfig} isLoading={isSaving} />
               {isConfigValide && (
-                <Button
-                  className="w-full bg-sky-600 hover:bg-sky-500"
-                  onClick={() => setStep("upload")}
-                >
-                  Continuer vers l&apos;upload des fichiers
-                  <ChevronRight className="h-4 w-4 ml-1" />
+                <Button className="w-full bg-sky-600 hover:bg-sky-500" onClick={() => setStep("upload")}>
+                  Continuer vers l&apos;upload <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               )}
             </div>
@@ -422,26 +426,11 @@ export default function PretermeAutoPage() {
           {step === "upload" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-slate-400">
-                  <button onClick={() => setStep("periode")} className="hover:text-slate-200">
-                    Période
-                  </button>
-                  <span>/</span>
-                  <button onClick={() => setStep("configuration")} className="hover:text-slate-200">
-                    Configuration
-                  </button>
-                  <span>/</span>
-                  <span className="text-white font-medium">Upload fichiers</span>
-                </div>
-                <Button
-                  variant="ghost" size="sm"
-                  className="text-slate-400 text-xs"
-                  onClick={() => setStep("configuration")}
-                >
+                <Breadcrumb current="Upload fichiers" />
+                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("configuration")}>
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour config
                 </Button>
               </div>
-
               <Card className="bg-slate-900 border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
@@ -450,12 +439,66 @@ export default function PretermeAutoPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <UploadStep
+                  <UploadStep moisKey={moisKey} configValide={isConfigValide}
+                    idToken={idToken} onImportSuccess={handleImportSuccess} />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* ── Filtrage & Gemini ── */}
+          {step === "filtrage" && activeImportId && activeAgence && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Breadcrumb current="Filtrage & IA" />
+                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("upload")}>
+                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour upload
+                </Button>
+              </div>
+              <Card className="bg-slate-900 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Filter className="h-4 w-4 text-sky-400" />
+                    Filtrage métier + Classification Gemini
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ThresholdsStep
+                    importId={activeImportId}
+                    agence={activeAgence}
                     moisKey={moisKey}
-                    configValide={isConfigValide}
+                    clients={importedClients}
+                    seuilEtpInitial={existingConfig?.seuilEtp ?? 120}
+                    seuilVariationInitial={existingConfig?.seuilVariation ?? 20}
                     idToken={idToken}
-                    onImportSuccess={(_importId: string, _agence: AgenceCode) => {
-                      // Phase 3 : déclencher le filtrage + classification Gemini
+                    onClassifySuccess={handleClassifySuccess}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* ── Validation sociétés ── */}
+          {step === "societes" && activeImportId && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Breadcrumb current="Validation sociétés" />
+                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("filtrage")}>
+                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour filtrage
+                </Button>
+              </div>
+              <Card className="bg-slate-900 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Building2 className="h-4 w-4 text-sky-400" />
+                    Validation des sociétés détectées
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <SocietesValidationStep
+                    societes={societesAValider}
+                    onAllValidated={() => {
+                      toast.success("Toutes les sociétés sont validées — Phase 4 (Trello) à venir !");
                     }}
                   />
                 </CardContent>
