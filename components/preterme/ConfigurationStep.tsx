@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import {
   Plus, Trash2, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
-  User, Link, Settings, Building2, UserX, UserCheck
+  User, Link, Settings, Building2, UserX, RefreshCw, Columns
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Collapsible,
   CollapsibleContent,
@@ -69,6 +70,121 @@ function hasTrelloIncomplete(agences: AgenceConfig[]): boolean {
   );
 }
 
+// ─── TrelloListPicker ─────────────────────────────────────────────────────────
+
+interface TrelloList { id: string; name: string }
+
+function TrelloListPicker({
+  boardId,
+  onSelect,
+}: {
+  boardId: string;
+  onSelect: (list: TrelloList) => void;
+}) {
+  const [apiKey, setApiKey]     = useState("");
+  const [token, setToken]       = useState("");
+  const [lists, setLists]       = useState<TrelloList[]>([]);
+  const [loading, setLoading]   = useState(false);
+  const [fetched, setFetched]   = useState(false);
+
+  const fetchLists = async () => {
+    if (!boardId || !apiKey || !token) {
+      toast.error("Board ID, API Key et Token requis pour charger les colonnes");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/admin/preterme-auto/trello-lists?boardId=${encodeURIComponent(boardId)}&apiKey=${encodeURIComponent(apiKey)}&token=${encodeURIComponent(token)}`
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erreur inconnue");
+      setLists(data.lists);
+      setFetched(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erreur Trello");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 p-3 bg-sky-950/30 rounded-lg border border-sky-700/40 space-y-2">
+      <p className="text-xs font-medium text-sky-300 flex items-center gap-1.5">
+        <Columns className="h-3.5 w-3.5" /> Charger les colonnes disponibles
+      </p>
+      <p className="text-[10px] text-slate-500">
+        Credentials temporaires (non sauvegardés) — utilisés uniquement pour lister les colonnes du board.
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-xs text-slate-400">API Key</Label>
+          <Input
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder="Trello API Key"
+            className="h-7 text-xs bg-slate-800 border-slate-700"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-slate-400">Token</Label>
+          <Input
+            type="password"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="Trello Token"
+            className="h-7 text-xs bg-slate-800 border-slate-700"
+          />
+        </div>
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={fetchLists}
+        disabled={loading || !boardId}
+        className="h-7 text-xs border-sky-700 text-sky-300 hover:bg-sky-900/40"
+      >
+        {loading ? (
+          <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+        ) : (
+          <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+        )}
+        {loading ? "Chargement…" : "Charger les colonnes"}
+      </Button>
+
+      {fetched && lists.length > 0 && (
+        <div className="space-y-1">
+          <Label className="text-xs text-slate-400">Sélectionner la colonne cible</Label>
+          <Select onValueChange={(val) => {
+            const found = lists.find((l) => l.id === val);
+            if (found) onSelect(found);
+          }}>
+            <SelectTrigger className="h-8 text-xs bg-slate-800 border-sky-700">
+              <SelectValue placeholder="Choisir une colonne…" />
+            </SelectTrigger>
+            <SelectContent>
+              {lists.map((l) => (
+                <SelectItem key={l.id} value={l.id}>
+                  {l.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[10px] text-slate-500">
+            La sélection remplira automatiquement le List ID et le nom de la colonne.
+          </p>
+        </div>
+      )}
+
+      {fetched && lists.length === 0 && (
+        <p className="text-xs text-amber-400">Aucune colonne ouverte trouvée sur ce board.</p>
+      )}
+    </div>
+  );
+}
+
 // ─── TrelloForm ───────────────────────────────────────────────────────────────
 
 function TrelloForm({
@@ -78,6 +194,8 @@ function TrelloForm({
   trello: TrelloMapping;
   onChange: (t: TrelloMapping) => void;
 }) {
+  const [showPicker, setShowPicker] = useState(false);
+
   const field = (key: keyof TrelloMapping, label: string, placeholder: string) => (
     <div className="space-y-1">
       <Label className="text-xs text-slate-400">{label}</Label>
@@ -90,16 +208,90 @@ function TrelloForm({
     </div>
   );
 
+  const handleListSelect = (list: TrelloList) => {
+    onChange({ ...trello, trelloListId: list.id, trelloListName: list.name });
+    setShowPicker(false);
+    toast.success(`Colonne sélectionnée : "${list.name}"`);
+  };
+
   return (
     <div className="grid grid-cols-1 gap-2 mt-2 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-      <p className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
-        <Link className="h-3.5 w-3.5" /> Configuration Trello
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+          <Link className="h-3.5 w-3.5" /> Configuration Trello
+        </p>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPicker((v) => !v)}
+                className="h-6 px-2 text-[10px] text-sky-400 hover:text-sky-300 hover:bg-sky-900/30"
+              >
+                <Columns className="h-3 w-3 mr-1" />
+                {showPicker ? "Masquer" : "Chercher une colonne"}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="text-xs">
+              Charge la liste des colonnes du board pour sélectionner par nom
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+
       {field("trelloBoardUrl", "URL du tableau *", "https://trello.com/b/...")}
       {field("trelloListUrl", "URL de la colonne *", "https://trello.com/b/.../liste")}
       {field("trelloBoardId", "Board ID *", "xxxxxx")}
-      {field("trelloListId", "List ID *", "xxxxxx")}
+
+      {/* List ID + nom colonne */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-xs text-slate-400">List ID *</Label>
+          <Input
+            value={trello.trelloListId}
+            onChange={(e) => onChange({ ...trello, trelloListId: e.target.value })}
+            placeholder="xxxxxx"
+            className="h-8 text-xs bg-slate-800 border-slate-700 font-mono"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-slate-400 flex items-center gap-1">
+            Nom colonne
+            <span className="text-slate-600">(auto-rempli)</span>
+          </Label>
+          <Input
+            value={trello.trelloListName ?? ""}
+            onChange={(e) => onChange({ ...trello, trelloListName: e.target.value })}
+            placeholder="ex: À traiter"
+            className={cn(
+              "h-8 text-xs bg-slate-800 border-slate-700",
+              trello.trelloListName && "border-emerald-700/60 text-emerald-300"
+            )}
+          />
+        </div>
+      </div>
+
+      {trello.trelloListName && (
+        <div className="flex items-center gap-1.5 px-2 py-1.5 bg-emerald-950/30 rounded border border-emerald-700/30">
+          <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+          <span className="text-[11px] text-emerald-300">
+            Colonne cible : <strong>{trello.trelloListName}</strong>
+            {" "}— les cartes seront ajoutées <strong>en fin de colonne</strong>.
+          </span>
+        </div>
+      )}
+
       {field("trelloMemberId", "Member ID (optionnel)", "xxxxxx")}
+
+      {/* Picker par nom */}
+      {showPicker && (
+        <TrelloListPicker
+          boardId={trello.trelloBoardId}
+          onSelect={handleListSelect}
+        />
+      )}
     </div>
   );
 }
@@ -398,7 +590,9 @@ interface ConfigurationStepProps {
   config: Omit<PretermeConfig, "id" | "createdAt" | "updatedAt" | "createdBy" | "valide">;
   onChange: (config: ConfigurationStepProps["config"]) => void;
   onValidate: () => Promise<void>;
+  onSaveDraft?: () => Promise<void>;
   isLoading?: boolean;
+  isSavingDraft?: boolean;
 }
 
 export function ConfigurationStep({
@@ -406,7 +600,9 @@ export function ConfigurationStep({
   config,
   onChange,
   onValidate,
+  onSaveDraft,
   isLoading,
+  isSavingDraft,
 }: ConfigurationStepProps) {
   const trelloBlocked = hasTrelloIncomplete(config.agences);
   const hasEmptyPrenom = config.agences.some((a) =>
@@ -540,22 +736,45 @@ export function ConfigurationStep({
         </div>
       )}
 
-      {/* Bouton validation */}
-      <Button
-        onClick={onValidate}
-        disabled={!canValidate || isLoading}
-        className="w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-5 disabled:opacity-50"
-        size="lg"
-      >
-        {isLoading ? (
-          "Enregistrement..."
-        ) : (
-          <>
-            <CheckCircle2 className="h-4 w-4 mr-2" />
-            Valider la configuration — {moisKey}
-          </>
+      {/* Actions */}
+      <div className={cn("flex gap-3", !canValidate ? "flex-col" : "flex-col")}>
+        {/* Brouillon — toujours disponible */}
+        {onSaveDraft && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onSaveDraft}
+            disabled={isSavingDraft || isLoading || hasEmptyPrenom}
+            className="w-full border-slate-600 text-slate-300 hover:bg-slate-800 font-medium py-4 disabled:opacity-40"
+          >
+            {isSavingDraft ? (
+              "Sauvegarde..."
+            ) : (
+              <>
+                <CheckCircle2 className="h-4 w-4 mr-2 text-amber-400" />
+                Sauvegarder le brouillon
+              </>
+            )}
+          </Button>
         )}
-      </Button>
+
+        {/* Validation finale — requiert Trello complet */}
+        <Button
+          onClick={onValidate}
+          disabled={!canValidate || isLoading}
+          className="w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-5 disabled:opacity-50"
+          size="lg"
+        >
+          {isLoading ? (
+            "Validation..."
+          ) : (
+            <>
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Valider la configuration — {moisKey}
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }

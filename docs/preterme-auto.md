@@ -1,3 +1,18 @@
+# Spécifications de la fonctionnalité : Gestion Automatisée des Prétermes
+
+> **Template réutilisable** — Ce document sert de spec de référence et de template pour les branches suivantes (IARD, Habitation, Santé Collective…).
+> Pour une nouvelle branche, dupliquer ce fichier, adapter §1 (périmètre), §3.1 (schéma colonnes), §3.2 (critères anomalie) et §4 (Trello).
+
+> **Statut implémentation — branche Auto :**
+> - ✅ Phase 1 — Socle admin + modèle de données + config mensuelle
+> - ✅ Phase 2 — Import parser + normalisation + détection agence
+> - ✅ Phase 3 — Filtrage métier + classification Gemini + validation sociétés
+> - ✅ Phase 4 — Routage CDC + gestion absences + mapping Trello
+> - ✅ Phase 5 — Dispatch Trello + synthèse Slack + KPI historiques
+> - ✅ Phase 6 — Hardening, idempotence complète, tests unitaires
+
+---
+
 # Spécifications de la fonctionnalité : Gestion Automatisée des Prétermes (Auto)
 
 ## 1. Contexte et Objectif
@@ -179,8 +194,9 @@ Une fois les données traitées et réparties :
 ### 4.1. Paramétrage technique Trello (obligatoire)
 - Chaque chargé de clientèle dispose de **son propre Trello**.
 - Pour chaque chargé de clientèle, stocker :
-  - `trelloBoardId` (tableau cible),
-  - `trelloListId` (colonne cible),
+  - `trelloBoardId` (ID du tableau cible),
+  - `trelloListId` (ID de la colonne cible),
+  - `trelloListName` (nom lisible de la colonne — ex: "À traiter", "Prétermes"),
   - `trelloBoardUrl` (lien du tableau),
   - `trelloListUrl` (lien de la colonne),
   - `trelloMemberId` (optionnel, si assignation directe souhaitée).
@@ -191,6 +207,18 @@ Une fois les données traitées et réparties :
   - les réaffectations temporaires (absence).
 - Si le mapping Trello est incomplet pour un CDC, bloquer la validation de la configuration mensuelle.
 - Si l'admin modifie un prénom ou ajoute un CDC, afficher une **alerte bloquante** demandant de renseigner les liens Trello (`trelloBoardUrl`, `trelloListUrl`) avant de continuer.
+
+#### Sélection de la colonne cible par nom (helper UX)
+- L'interface propose un bouton **"Chercher une colonne"** dans le formulaire Trello de chaque CDC.
+- Ce helper demande temporairement une `apiKey` + `token` Trello (non sauvegardés) et appelle `GET /api/admin/preterme-auto/trello-lists?boardId=...`.
+- La réponse liste toutes les colonnes ouvertes du board (triées par position).
+- L'admin sélectionne la colonne dans un dropdown : le `trelloListId` et le `trelloListName` sont alors auto-remplis.
+- L'API key et le token fournis dans ce helper sont utilisés uniquement pour ce lookup ponctuel et ne sont jamais persistés.
+
+#### Position des cartes dans la colonne
+- Toutes les cartes sont créées avec `pos: "bottom"` (API Trello).
+- Les cartes préterme arrivent donc toujours **en fin de colonne**, après les cartes existantes.
+- Ce comportement est figé et non configurable (règle métier).
 
 ### 4.2. Format standard de titre de carte
 - Format recommandé :
@@ -319,9 +347,25 @@ Contraintes:
 2. Import parser + normalisation colonnes + identification agence par nom de fichier.
 3. Filtrage métier (`>=`) + classification Gemini + écran validation sociétés.
 4. Routage CDC + gestion des absences + mapping Trello.
-5. Dispatch Trello + logs d'exécution.
-6. Synthèse Slack + KPI historiques sur la page dédiée.
+5. Dispatch Trello + logs d'exécution + synthèse Slack.
+6. KPI historiques (Recharts) sur la page dédiée.
 7. Hardening (idempotence import, erreurs, tests end-to-end).
+
+### 8.6. Collections Firestore (pattern validé — branche Auto)
+| Collection | Clé d'unicité | Description |
+|---|---|---|
+| `preterme_configs` | `moisKey` | Config mensuelle (agences, CDC, seuils) |
+| `preterme_imports` | `moisKey + agence + branche` | Historique imports (statut, KPI) |
+| `preterme_clients` | `importId + numeroContrat` | Ligne client par import |
+| `preterme_trello_logs` | — | Journal création cartes Trello |
+
+Pour une nouvelle branche (ex: IARD), préfixer les collections : `preterme_iard_configs`, etc.
+
+### 8.7. Variables d'environnement requises
+| Variable | Usage |
+|---|---|
+| `GEMINI_API_KEY` | Classification Gemini (particulier vs société) |
+| Trello `apiKey` + `token` | Saisie admin au moment du dispatch (non stockés en DB) |
 
 ### 8.6. Règles de pilotage
 - Toujours demander un **scope strict** : "phase X uniquement".

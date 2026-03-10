@@ -96,7 +96,8 @@ export default function PretermeAutoPage() {
 
   const [step, setStep]         = useState<Step>("periode");
   const [moisKey, setMoisKey]   = useState<string>(getMoisCible());
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving]           = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [idToken, setIdToken]   = useState<string>("");
 
   const [existingConfig, setExistingConfig]   = useState<PretermeConfig | null>(null);
@@ -174,6 +175,25 @@ export default function PretermeAutoPage() {
       toast.error("Impossible de charger les sociétés");
     }
   }, []);
+
+  const handleSaveDraft = useCallback(async () => {
+    if (!user) return;
+    setIsSavingDraft(true);
+    try {
+      await upsertPretermeConfig({ ...config, valide: false, createdBy: user.uid });
+      const [updated, fresh] = await Promise.all([
+        getAllPretermeConfigs(),
+        getPretermeConfig(moisKey),
+      ]);
+      setHistorique(updated);
+      if (fresh) setExistingConfig(fresh);
+      toast.success("Brouillon sauvegardé — vous pouvez reprendre plus tard");
+    } catch {
+      toast.error("Erreur lors de la sauvegarde du brouillon");
+    } finally {
+      setIsSavingDraft(false);
+    }
+  }, [config, user, moisKey]);
 
   const handleValidateConfig = useCallback(async () => {
     if (!user) return;
@@ -424,7 +444,8 @@ export default function PretermeAutoPage() {
                 </Button>
               </div>
               <ConfigurationStep moisKey={moisKey} config={config} onChange={setConfig}
-                onValidate={handleValidateConfig} isLoading={isSaving} />
+                onValidate={handleValidateConfig} onSaveDraft={handleSaveDraft}
+                isLoading={isSaving} isSavingDraft={isSavingDraft} />
               {isConfigValide && (
                 <Button className="w-full bg-sky-600 hover:bg-sky-500" onClick={() => setStep("upload")}>
                   Continuer vers l&apos;upload <ChevronRight className="h-4 w-4 ml-1" />
