@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import {
   Calendar, ChevronLeft, ChevronRight, Settings2, Upload, Filter,
-  Building2, CheckCircle2, Clock, History, Car, Send
+  Building2, CheckCircle2, Clock, History, Car, Send, MessageSquare, BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,15 +19,19 @@ import {
   getAllPretermeConfigs,
   getPretermeClients,
   getSocietesAValider,
+  getPretermeImport,
 } from "@/lib/firebase/preterme";
 import { ConfigurationStep } from "@/components/preterme/ConfigurationStep";
 import { UploadStep } from "@/components/preterme/UploadStep";
 import { ThresholdsStep } from "@/components/preterme/ThresholdsStep";
 import { SocietesValidationStep } from "@/components/preterme/SocietesValidationStep";
 import { DispatchPreview } from "@/components/preterme/DispatchPreview";
+import { SynthesisReport } from "@/components/preterme/SynthesisReport";
+import { KpiDashboard } from "@/components/preterme/KpiDashboard";
 import type {
-  PretermeConfig, AgenceConfig, AgenceCode, PretermeClient,
+  PretermeConfig, AgenceConfig, AgenceCode, PretermeClient, PretermeImport,
 } from "@/types/preterme";
+import { getPretermeImportsByMois } from "@/lib/firebase/preterme";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -72,15 +76,17 @@ function defaultAgences(): AgenceConfig[] {
 
 // ─── Steps ──────────────────────────────────────────────────────────────────
 
-type Step = "periode" | "configuration" | "upload" | "filtrage" | "societes" | "dispatch";
+type Step = "periode" | "configuration" | "upload" | "filtrage" | "societes" | "dispatch" | "synthese" | "kpi";
 
 const STEPS: { id: Step; label: string; icon: React.ElementType; phase: number }[] = [
-  { id: "periode",       label: "Période",            icon: Calendar,  phase: 1 },
-  { id: "configuration", label: "Configuration",      icon: Settings2, phase: 1 },
-  { id: "upload",        label: "Upload fichiers",    icon: Upload,    phase: 2 },
-  { id: "filtrage",      label: "Filtrage & IA",      icon: Filter,    phase: 3 },
-  { id: "societes",      label: "Valid. sociétés",    icon: Building2, phase: 3 },
-  { id: "dispatch",      label: "Dispatch Trello",    icon: Send,      phase: 4 },
+  { id: "periode",       label: "Période",            icon: Calendar,      phase: 1 },
+  { id: "configuration", label: "Configuration",      icon: Settings2,     phase: 1 },
+  { id: "upload",        label: "Upload fichiers",    icon: Upload,        phase: 2 },
+  { id: "filtrage",      label: "Filtrage & IA",      icon: Filter,        phase: 3 },
+  { id: "societes",      label: "Valid. sociétés",    icon: Building2,     phase: 3 },
+  { id: "dispatch",      label: "Dispatch Trello",    icon: Send,          phase: 4 },
+  { id: "synthese",      label: "Synthèse Slack",     icon: MessageSquare, phase: 5 },
+  { id: "kpi",           label: "KPI historiques",    icon: BarChart3,     phase: 5 },
 ];
 
 // ─── Page principale ─────────────────────────────────────────────────────────
@@ -102,6 +108,8 @@ export default function PretermeAutoPage() {
   const [activeAgence, setActiveAgence]       = useState<AgenceCode | null>(null);
   const [importedClients, setImportedClients] = useState<PretermeClient[]>([]);
   const [societesAValider, setSocietesAValider] = useState<PretermeClient[]>([]);
+  const [activeImport, setActiveImport]       = useState<PretermeImport | null>(null);
+  const [allImports, setAllImports]           = useState<PretermeImport[]>([]);
 
   const [config, setConfig] = useState<
     Omit<PretermeConfig, "id" | "createdAt" | "updatedAt" | "createdBy" | "valide">
@@ -188,8 +196,10 @@ export default function PretermeAutoPage() {
     setActiveImportId(importId);
     setActiveAgence(agence);
     await loadImportClients(importId);
+    // Charger tous les imports du mois pour les KPI
+    getPretermeImportsByMois(moisKey).then(setAllImports).catch(() => {});
     setStep("filtrage");
-  }, [loadImportClients]);
+  }, [loadImportClients, moisKey]);
 
   const handleClassifySuccess = useCallback(async (result: {
     nbSocietesAValider: number;
@@ -209,9 +219,8 @@ export default function PretermeAutoPage() {
   const canAccessStep = (s: Step): boolean => {
     if (s === "periode" || s === "configuration") return true;
     if (s === "upload") return isConfigValide;
-    if (s === "filtrage") return !!activeImportId;
-    if (s === "societes") return !!activeImportId;
-    if (s === "dispatch") return !!activeImportId;
+    if (s === "filtrage" || s === "societes" || s === "dispatch") return !!activeImportId;
+    if (s === "synthese" || s === "kpi") return !!activeImportId;
     return false;
   };
 
@@ -296,18 +305,6 @@ export default function PretermeAutoPage() {
                 );
               })}
 
-              <Separator className="bg-slate-800 my-2" />
-              {[
-                { label: "Synthèse Slack",  phase: 5 },
-              ].map((s) => (
-                <div key={s.label} className="flex items-center gap-3 px-3 py-2 text-slate-600 text-sm">
-                  <div className="h-6 w-6 rounded-full bg-slate-800 flex items-center justify-center">
-                    <Clock className="h-3 w-3" />
-                  </div>
-                  <span className="text-xs">{s.label}</span>
-                  <Badge className="ml-auto text-[9px] bg-slate-800 text-slate-600 h-4 px-1">P{s.phase}</Badge>
-                </div>
-              ))}
             </CardContent>
           </Card>
 
@@ -540,10 +537,81 @@ export default function PretermeAutoPage() {
                     moisKey={moisKey}
                     clients={importedClients}
                     idToken={idToken}
-                    onDispatchSuccess={() => {
-                      toast.success("Dispatch terminé — Phase 5 (Slack + KPI) à venir !");
+                    onDispatchSuccess={async () => {
+                      toast.success("Dispatch terminé ! Consultation de la synthèse.");
+                      if (activeImportId) {
+                        const imp = await getPretermeImport(activeImportId).catch(() => null);
+                        if (imp) setActiveImport(imp);
+                        getPretermeImportsByMois(moisKey).then(setAllImports).catch(() => {});
+                      }
+                      setStep("synthese");
                     }}
                   />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* ── Synthèse Slack ── */}
+          {step === "synthese" && activeImport && activeAgence && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Breadcrumb current="Synthèse Slack" />
+                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("dispatch")}>
+                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour dispatch
+                </Button>
+              </div>
+              <Card className="bg-slate-900 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <MessageSquare className="h-4 w-4 text-sky-400" />
+                    Synthèse du traitement &amp; envoi Slack
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <SynthesisReport
+                    importData={activeImport}
+                    agence={activeAgence}
+                    parCharge={importedClients
+                      .filter((c) => c.conserve && c.chargeAttribue)
+                      .reduce<Record<string, number>>((acc, c) => {
+                        acc[c.chargeAttribue!] = (acc[c.chargeAttribue!] ?? 0) + 1;
+                        return acc;
+                      }, {})}
+                    nbSocietesEnAttente={importedClients.filter(
+                      (c) => c.conserve &&
+                        (c.typeEntite === "societe" || c.typeEntite === "a_valider") &&
+                        !c.nomGerant
+                    ).length}
+                    slackChannelConfigured={!!existingConfig?.slackChannelId}
+                    idToken={idToken}
+                  />
+                </CardContent>
+              </Card>
+              <Button className="w-full bg-slate-700 hover:bg-slate-600" onClick={() => setStep("kpi")}>
+                Voir les KPI historiques <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
+
+          {/* ── KPI historiques ── */}
+          {step === "kpi" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Breadcrumb current="KPI historiques" />
+                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("synthese")}>
+                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour synthèse
+                </Button>
+              </div>
+              <Card className="bg-slate-900 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <BarChart3 className="h-4 w-4 text-sky-400" />
+                    Tableau de bord KPI — Historique prétermes Auto
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <KpiDashboard imports={allImports} />
                 </CardContent>
               </Card>
             </div>
