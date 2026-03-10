@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import {
   Calendar, ChevronLeft, ChevronRight, Settings2, Upload, Filter,
-  Building2, CheckCircle2, Clock, History, Car
+  Building2, CheckCircle2, Clock, History, Car, Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,7 @@ import { ConfigurationStep } from "@/components/preterme/ConfigurationStep";
 import { UploadStep } from "@/components/preterme/UploadStep";
 import { ThresholdsStep } from "@/components/preterme/ThresholdsStep";
 import { SocietesValidationStep } from "@/components/preterme/SocietesValidationStep";
+import { DispatchPreview } from "@/components/preterme/DispatchPreview";
 import type {
   PretermeConfig, AgenceConfig, AgenceCode, PretermeClient,
 } from "@/types/preterme";
@@ -71,14 +72,15 @@ function defaultAgences(): AgenceConfig[] {
 
 // ─── Steps ──────────────────────────────────────────────────────────────────
 
-type Step = "periode" | "configuration" | "upload" | "filtrage" | "societes";
+type Step = "periode" | "configuration" | "upload" | "filtrage" | "societes" | "dispatch";
 
 const STEPS: { id: Step; label: string; icon: React.ElementType; phase: number }[] = [
-  { id: "periode",       label: "Période",         icon: Calendar,  phase: 1 },
-  { id: "configuration", label: "Configuration",   icon: Settings2, phase: 1 },
-  { id: "upload",        label: "Upload fichiers", icon: Upload,    phase: 2 },
-  { id: "filtrage",      label: "Filtrage & IA",   icon: Filter,    phase: 3 },
-  { id: "societes",      label: "Validation sociétés", icon: Building2, phase: 3 },
+  { id: "periode",       label: "Période",            icon: Calendar,  phase: 1 },
+  { id: "configuration", label: "Configuration",      icon: Settings2, phase: 1 },
+  { id: "upload",        label: "Upload fichiers",    icon: Upload,    phase: 2 },
+  { id: "filtrage",      label: "Filtrage & IA",      icon: Filter,    phase: 3 },
+  { id: "societes",      label: "Valid. sociétés",    icon: Building2, phase: 3 },
+  { id: "dispatch",      label: "Dispatch Trello",    icon: Send,      phase: 4 },
 ];
 
 // ─── Page principale ─────────────────────────────────────────────────────────
@@ -196,19 +198,20 @@ export default function PretermeAutoPage() {
     if (result.nbSocietesAValider > 0) {
       await loadSocietes(activeImportId);
       setStep("societes");
+    } else {
+      setStep("dispatch");
     }
-    // Si pas de sociétés, Phase 4 (Trello) à implémenter
   }, [activeImportId, loadSocietes]);
 
   const isConfigValide = existingConfig?.valide ?? false;
   const stepIndex = STEPS.findIndex((s) => s.id === step);
 
   const canAccessStep = (s: Step): boolean => {
-    const idx = STEPS.findIndex((st) => st.id === s);
-    if (idx <= 1) return true;
+    if (s === "periode" || s === "configuration") return true;
     if (s === "upload") return isConfigValide;
     if (s === "filtrage") return !!activeImportId;
     if (s === "societes") return !!activeImportId;
+    if (s === "dispatch") return !!activeImportId;
     return false;
   };
 
@@ -295,7 +298,6 @@ export default function PretermeAutoPage() {
 
               <Separator className="bg-slate-800 my-2" />
               {[
-                { label: "Dispatch Trello", phase: 4 },
                 { label: "Synthèse Slack",  phase: 5 },
               ].map((s) => (
                 <div key={s.label} className="flex items-center gap-3 px-3 py-2 text-slate-600 text-sm">
@@ -498,7 +500,48 @@ export default function PretermeAutoPage() {
                   <SocietesValidationStep
                     societes={societesAValider}
                     onAllValidated={() => {
-                      toast.success("Toutes les sociétés sont validées — Phase 4 (Trello) à venir !");
+                      toast.success("Toutes les sociétés sont validées !");
+                      setStep("dispatch");
+                    }}
+                  />
+                </CardContent>
+              </Card>
+              <Button className="w-full bg-sky-600 hover:bg-sky-500" onClick={() => setStep("dispatch")}>
+                Continuer vers le dispatch Trello
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
+
+          {/* ── Dispatch Trello ── */}
+          {step === "dispatch" && activeImportId && activeAgence && existingConfig && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Breadcrumb current="Dispatch Trello" />
+                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("societes")}>
+                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour sociétés
+                </Button>
+              </div>
+              <Card className="bg-slate-900 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Send className="h-4 w-4 text-sky-400" />
+                    Création des cartes Trello
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DispatchPreview
+                    importId={activeImportId}
+                    agence={activeAgence}
+                    agenceConfig={
+                      existingConfig.agences.find((a) => a.code === activeAgence) ??
+                      existingConfig.agences[0]
+                    }
+                    moisKey={moisKey}
+                    clients={importedClients}
+                    idToken={idToken}
+                    onDispatchSuccess={() => {
+                      toast.success("Dispatch terminé — Phase 5 (Slack + KPI) à venir !");
                     }}
                   />
                 </CardContent>
