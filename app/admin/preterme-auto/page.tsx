@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import {
@@ -296,6 +296,36 @@ export default function PretermeAutoPage() {
     }).catch(() => {});
   }, [activeImportId]);
 
+  // Charger les imports du mois courant et conserver une sélection stable
+  useEffect(() => {
+    getPretermeImportsByMois(moisKey)
+      .then(async (imports) => {
+        setAllImports(imports);
+
+        if (imports.length === 0) {
+          setActiveImportId(null);
+          setActiveAgence(null);
+          setActiveImport(null);
+          setImportedClients([]);
+          setSocietesAValider([]);
+          return;
+        }
+
+        const stillActive = activeImportId && imports.some((imp) => imp.id === activeImportId);
+        const nextActive = stillActive
+          ? imports.find((imp) => imp.id === activeImportId)!
+          : imports[0];
+
+        setActiveImportId(nextActive.id);
+        setActiveAgence(nextActive.agence);
+        setActiveImport(nextActive);
+        await loadImportClients(nextActive.id);
+      })
+      .catch(() => {
+        toast.error("Impossible de charger les imports du mois");
+      });
+  }, [moisKey, activeImportId, loadImportClients]);
+
   // Charger TOUS les imports historiques quand on arrive sur l'onglet KPI
   useEffect(() => {
     if (step !== "kpi") return;
@@ -320,6 +350,21 @@ export default function PretermeAutoPage() {
       setStep("dispatch");
     }
   }, [activeImportId, loadSocietes]);
+
+  const importsDuMois = useMemo(
+    () => allImports.filter((imp) => imp.moisKey === moisKey),
+    [allImports, moisKey]
+  );
+
+  const handleSwitchImport = useCallback(async (importToActivate: PretermeImport) => {
+    setActiveImportId(importToActivate.id);
+    setActiveAgence(importToActivate.agence);
+    setActiveImport(importToActivate);
+    await loadImportClients(importToActivate.id);
+    if (step === "societes") {
+      await loadSocietes(importToActivate.id);
+    }
+  }, [loadImportClients, loadSocietes, step]);
 
   const isConfigValide = existingConfig?.valide ?? false;
   const stepIndex = STEPS.findIndex((s) => s.id === step);
@@ -448,6 +493,36 @@ export default function PretermeAutoPage() {
 
         {/* ── Contenu principal ── */}
         <div className="lg:col-span-3">
+          {/* Switch agence/import actif (pour garder Kennedy + Rouvière accessibles) */}
+          {["filtrage", "validation-types", "societes", "dispatch", "synthese"].includes(step) &&
+            importsDuMois.length > 1 && (
+            <Card className="bg-slate-900 border-slate-700 mb-4">
+              <CardContent className="p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  {importsDuMois.map((imp) => {
+                    const isActive = imp.id === activeImportId;
+                    return (
+                      <Button
+                        key={imp.id}
+                        type="button"
+                        variant={isActive ? "default" : "outline"}
+                        size="sm"
+                        className={cn(
+                          "text-xs",
+                          isActive
+                            ? "bg-sky-600 hover:bg-sky-500"
+                            : "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700"
+                        )}
+                        onClick={() => { void handleSwitchImport(imp); }}
+                      >
+                        {imp.agence} - {imp.pretermesGlobaux} clients
+                      </Button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* ── Période ── */}
           {step === "periode" && (
