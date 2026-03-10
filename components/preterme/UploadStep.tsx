@@ -43,10 +43,10 @@ interface FileUploadState {
 // ─── DropZone ─────────────────────────────────────────────────────────────
 
 function DropZone({
-  onFile,
+  onFiles,
   disabled,
 }: {
-  onFile: (file: File) => void;
+  onFiles: (files: File[]) => void;
   disabled?: boolean;
 }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -57,10 +57,12 @@ function DropZone({
       e.preventDefault();
       setIsDragging(false);
       if (disabled) return;
-      const f = e.dataTransfer.files[0];
-      if (f) onFile(f);
+      const dropped = Array.from(e.dataTransfer.files).filter(
+        (f) => f.name.endsWith(".xlsx") || f.name.endsWith(".xls")
+      );
+      if (dropped.length) onFiles(dropped);
     },
-    [onFile, disabled]
+    [onFiles, disabled]
   );
 
   return (
@@ -81,15 +83,20 @@ function DropZone({
         ref={inputRef}
         type="file"
         accept=".xlsx,.xls"
+        multiple
         className="hidden"
-        onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+        onChange={(e) => {
+          const selected = Array.from(e.target.files ?? []);
+          if (selected.length) onFiles(selected);
+          e.target.value = "";
+        }}
         disabled={disabled}
       />
       <Upload className="h-8 w-8 text-slate-500 mx-auto mb-3" />
       <p className="text-sm font-medium text-slate-300">
-        Glissez un fichier Excel ou cliquez pour sélectionner
+        Glissez un ou plusieurs fichiers Excel, ou cliquez pour sélectionner
       </p>
-      <p className="text-xs text-slate-500 mt-1">.xlsx ou .xls — export préterme Allianz</p>
+      <p className="text-xs text-slate-500 mt-1">.xlsx ou .xls — sélection multiple possible</p>
     </div>
   );
 }
@@ -266,22 +273,32 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
     return null;
   };
 
-  const addFile = (file: File) => {
-    // Refuser les doublons de nom de fichier
-    if (files.some((f) => f.file.name === file.name)) {
-      toast.warning("Ce fichier est déjà dans la liste.");
-      return;
-    }
-    setFiles((prev) => [
-      ...prev,
-      {
-        file,
-        agenceDetectee: detectAgence(file.name),
-        agenceSelectionnee: null,
-        status: "idle",
-        progress: 0,
-      },
-    ]);
+  const addFiles = (incoming: File[]) => {
+    setFiles((prev) => {
+      const existingNames = new Set(prev.map((f) => f.file.name));
+      const duplicates: string[] = [];
+      const toAdd: FileUploadState[] = [];
+
+      for (const file of incoming) {
+        if (existingNames.has(file.name)) {
+          duplicates.push(file.name);
+        } else {
+          toAdd.push({
+            file,
+            agenceDetectee: detectAgence(file.name),
+            agenceSelectionnee: null,
+            status: "idle",
+            progress: 0,
+          });
+        }
+      }
+
+      if (duplicates.length) {
+        toast.warning(`Fichier(s) déjà présent(s) : ${duplicates.join(", ")}`);
+      }
+
+      return [...prev, ...toAdd];
+    });
   };
 
   const removeFile = (idx: number) => {
@@ -356,7 +373,7 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
       )}
 
       {/* Drop zone */}
-      <DropZone onFile={addFile} disabled={!configValide} />
+      <DropZone onFiles={addFiles} disabled={!configValide} />
 
       {/* Info agences */}
       {files.length === 0 && configValide && (
