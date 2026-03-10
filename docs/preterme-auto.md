@@ -247,4 +247,74 @@ Une fois les données traitées et réparties :
 6. **Mapping agence à figer :**
    - Confirmer formellement : `Kennedy = Corniche = H91358`.
 
+## 8. Mode opératoire Claude Code (document utilisable comme prompt)
+
+### 8.1. Principe d'exécution
+- Ce chantier doit être traité en **phases incrémentales** (pas en livraison monolithique).
+- Démarrer en **mode Plan** pour découper le développement, puis exécuter phase par phase.
+- Chaque phase doit inclure : code, tests, vérification lint/typecheck, et proposition de commit.
+- Ne jamais implémenter une phase non validée par l'admin.
+
+### 8.2. Workflow recommandé
+1. **Plan global** : demander à Claude Code un plan en 4 à 7 phases maximum.
+2. **Validation humaine** : valider explicitement la phase suivante.
+3. **Implémentation ciblée** : demander "Phase N uniquement".
+4. **Contrôle qualité** : tests + lint + typecheck + critères d'acceptation.
+5. **Git** : commit/push/PR par phase pour garder des livrables propres.
+
+### 8.3. Prompt initial (mode Plan)
+Utiliser ce prompt dans Claude Code :
+
+```text
+Contexte:
+Implémente la fonctionnalité décrite dans docs/preterme-auto.md.
+C’est une feature admin-only de gestion automatisée des prétermes (imports, filtres, répartition, validation sociétés, Trello, Slack, KPI historiques).
+
+Objectif:
+Propose un plan d’implémentation en phases incrémentales (4 à 7 phases max), avec:
+1) périmètre précis de chaque phase,
+2) fichiers à créer/modifier,
+3) APIs et modèles de données,
+4) risques et dépendances,
+5) critères d’acceptation testables.
+
+Contraintes:
+- Ne code rien pour l’instant.
+- Priorise une première phase livrable rapidement.
+- Respecte strictement le document docs/preterme-auto.md.
+```
+
+### 8.4. Prompt d'implémentation (phase unique)
+Utiliser ce prompt après validation du plan :
+
+```text
+Implémente uniquement la Phase [N] du plan validé.
+
+Attendus:
+- code complet de la phase,
+- tests minimum nécessaires,
+- vérification lint/typecheck,
+- résumé des changements,
+- proposition de message de commit.
+
+Contraintes:
+- Ne touche pas aux phases suivantes.
+- Respecte strictement docs/preterme-auto.md.
+```
+
+### 8.5. Ordre de phases recommandé
+1. Socle admin + modèle de données + configuration mensuelle (agences, CDC, lettres, seuils).
+2. Import parser + normalisation colonnes + identification agence par nom de fichier.
+3. Filtrage métier (`>=`) + classification Gemini + écran validation sociétés.
+4. Routage CDC + gestion des absences + mapping Trello.
+5. Dispatch Trello + logs d'exécution.
+6. Synthèse Slack + KPI historiques sur la page dédiée.
+7. Hardening (idempotence import, erreurs, tests end-to-end).
+
+### 8.6. Règles de pilotage
+- Toujours demander un **scope strict** : "phase X uniquement".
+- Exiger une **checklist de tests** avant chaque commit.
+- Ouvrir une PR par phase pour faciliter la revue.
+- En cas de dérive de scope, arrêter et recadrer avant de poursuivre.
+
 preterme-auto
