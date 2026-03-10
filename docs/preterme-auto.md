@@ -1,8 +1,11 @@
-# Spécifications de la fonctionnalité : Gestion Automatisée des Prétermes (Auto / Habitation)
+# Spécifications de la fonctionnalité : Gestion Automatisée des Prétermes (Auto)
 
 ## 1. Contexte et Objectif
 Ajouter une nouvelle fonctionnalité au SaaS de l'agence (Allianz - Agent Jean-Michel Nogaro).
 L'objectif est d'automatiser le traitement mensuel des exports de prétermes (facturation à venir des clients), de détecter les anomalies tarifaires, et de répartir les dossiers entre les collaborateurs via la création automatique de cartes Trello.
+
+> Périmètre version actuelle : **Auto uniquement**.  
+> Le périmètre Habitation sera traité dans une phase ultérieure (plutôt IARD) avec un schéma de colonnes potentiellement différent.
 
 ### 1.1. Périmètre d'accès
 - Cette fonctionnalité est **implémentée et accessible uniquement côté admin**.
@@ -18,6 +21,11 @@ L'objectif est d'automatiser le traitement mensuel des exports de prétermes (fa
 2. **Validation de la clé de répartition :** L'interface affiche la clé de répartition actuelle (par agence et par collaborateur, basée sur l'ordre alphabétique du nom des clients, ex: A à C = Corentin). L'utilisateur doit la valider ou la modifier pour ce mois spécifique.
 3. **Upload des exports :** Import des fichiers Excel/CSV d'Allianz.
 4. **Validation des sociétés :** Écran intermédiaire affichant les entités détectées comme "Sociétés". L'utilisateur doit y saisir le nom de famille du gérant pour chaque société afin de pouvoir appliquer la bonne lettre de répartition.
+
+### 2.2. Règle calendaire (mois à venir)
+- Le traitement de préterme se fait toujours sur le **mois suivant**.
+- Exemple : si l'on est en **mars**, on traite le préterme d'**avril**.
+- La période proposée par défaut dans l'interface doit donc être `mois courant + 1` (modifiable par l'admin si besoin).
 
 ### 2.1. Préalables obligatoires avant import
 - Le système connaît les 2 agences cibles : `H91358` et `H92083`.
@@ -94,8 +102,8 @@ Les deux fichiers d'exemple (`H91358` et `H92083`) partagent le même schéma de
 ### 3.2. Détection des Anomalies
 Chaque ligne (client) doit être analysée pour flagger si la situation est "normale" ou "anormale".
 **Critères d'anomalie :**
-- Colonne `Taux de variation` : Supérieur à 20% (majoration anormale).
-- Colonne `ETP` (Écart Tarif Portefeuille) : Supérieur à 1.30 (ce qui équivaut à un indice de 130).
+- Colonne `Taux de variation` : **Supérieur ou égal à 20%** (majoration anormale).
+- Colonne `ETP` (Écart Tarif Portefeuille) : **Supérieur ou égal à 120** (équivalent `1.20`).
 
 ### 3.3. Détection Personne Physique vs Société (Intégration API Gemini)
 - Faire appel à l'API Google Gemini pour analyser la colonne `Nom du client` de chaque ligne.
@@ -106,14 +114,20 @@ Chaque ligne (client) doit être analysée pour flagger si la situation est "nor
 
 ### 3.4. Réglages métier (paramétrables par l'admin)
 - Prévoir des **seuils configurables** avant traitement :
-  - `seuilEtpConservation` (exemple métier : conserver seulement les lignes avec `ETP > 1.22`) ;
-  - `seuilVariationConservation` (exemple métier : conserver seulement les lignes avec `Taux de variation > X%`).
+- `seuilEtpConservation` (valeur par défaut : `120`, soit `1.20`) ;
+- `seuilVariationConservation` (valeur par défaut : `20%`).
 - Ces réglages définissent la population de clients réellement prise en charge.
 - Les valeurs par défaut sont modifiables chaque mois par l'admin avant validation finale.
 - Sauvegarder les seuils utilisés dans l'historique d'import pour audit.
 - Règle de comparaison validée : appliquer systématiquement **`>=`** sur les seuils de conservation :
   - conserver si `ETP >= seuilEtpConservation` ;
   - conserver si `TauxVariation >= seuilVariationConservation`.
+- L'interface doit proposer des **widgets slider** pour ajuster les deux seuils.
+- À chaque déplacement des sliders, recalculer **dynamiquement** :
+  - le nombre de clients conservés,
+  - le ratio de conservation,
+  - les volumes à traiter par agence et par chargé de clientèle.
+- Le résultat (nombre de clients retenus) doit être visible immédiatement avant validation finale.
 
 ### 3.5. Mémorisation des volumes et KPI de pilotage
 - Le système doit mémoriser, pour chaque import/mois/agence/branche :
@@ -142,7 +156,7 @@ Chaque ligne (client) doit être analysée pour flagger si la situation est "nor
   - volumes par agence dans le temps ;
   - volumes par chargé de clientèle dans le temps.
 - Ajouter des indicateurs d'évolution (`delta` vs mois précédent, tendance hausse/baisse).
-- Permettre le filtrage par agence, branche (Auto/Habitation) et période.
+- Permettre le filtrage par agence, branche (Auto) et période.
 
 ### 3.6. Identifiant de référence (unicité)
 - L'identifiant métier unique d'une ligne client est le `N° de Contrat`.
@@ -157,9 +171,9 @@ Une fois les données traitées et réparties :
 - **Contenu de la description Trello :**
   - Nom du client (et nom du gérant si société).
   - Code Agence (H91358 ou H92083).
-  - Branche (Auto ou Habitation) et Mois concerné.
+  - Branche (Auto) et Mois concerné.
   - Prime précédente et Prime actualisée.
-  - Mise en évidence visuelle des anomalies : **Taux de variation (> 20%)** et/ou **ETP (> 1.30)**.
+  - Mise en évidence visuelle des anomalies : **Taux de variation (>= 20%)** et/ou **ETP (>= 120 / 1.20)**.
   - N° de Contrat.
 
 ### 4.1. Paramétrage technique Trello (obligatoire)
@@ -212,40 +226,38 @@ Une fois les données traitées et réparties :
 - **Modularité :** Séparer la logique en plusieurs services (`ImportService`, `AnomalyEngine`, `GeminiClassifier`, `TrelloDispatcher`).
 - **Gestion d'état :** Prévoir une persistance temporaire de l'import pour gérer la pause requise par l'étape de "Validation des sociétés" par l'utilisateur (asynchronisme du processus).
 - **Prompting :** Concevoir un prompt JSON structuré pour Gemini afin qu'il renvoie un format strict (ex: `{"type": "entreprise" | "particulier", "confidence": 0-1}`).
+- **Gemini JSON strict :** Forcer le mode JSON strict sur l'API Gemini avec `response_mime_type: "application/json"` pour garantir la fiabilité du typage de retour (Particulier vs Société).
 - **Agents Gemini :** Prévoir un fonctionnement avec agents et sous-agents Gemini lorsque c'est utile/nécessaire (ex: classification des entités, auto-contrôles qualité, enrichissement des données avant dispatch Trello).
 - **Collecte guidée des accès :** L'application doit demander à l'admin, au fur et à mesure du parcours, les informations manquantes nécessaires à l'exécution (clés API Gemini, tokens/IDs/liens Trello, paramètres requis), avec validation immédiate de chaque saisie.
 - **Gestion sécurisée des secrets :** Ne jamais afficher les clés en clair après enregistrement ; masquer les valeurs sensibles et permettre une mise à jour contrôlée.
+- **Trello rate limiting :** Anticiper les erreurs `429` de l'API Trello en implémentant une file d'attente (queue) et/ou un délai (`delay`) lors de la création de cartes en masse.
+- **Unicité Trello en base :** Stocker l'ID de la carte Trello en base, associé au `N° de Contrat`, afin d'éviter les doublons fonctionnels en cas de relance.
 - **Traçabilité :** Stocker les compteurs `pretermesGlobaux` et `pretermesConserves` dans l'entité d'import afin de pouvoir justifier chaque traitement.
 - **Paramétrage mensuel :** Versionner la clé de répartition (agence/collaborateur/lettres) et les seuils (`ETP`, `Taux de variation`) par mois de traitement.
 
-## 7. Points à confirmer avant développement
-1. **Fallback Gemini :**
-   - En cas d'erreur API, timeout ou confiance faible, confirmer la règle cible.
-   - Recommandation : classer automatiquement en "société à valider manuellement".
+## 7. Décisions métier validées
 
-2. **Logique de conservation finale :**
-   - Confirmer la logique métier entre seuils :
-     - option A : `ETP >= seuilEtp OR TauxVariation >= seuilVariation` ;
-     - option B : `ETP >= seuilEtp AND TauxVariation >= seuilVariation`.
-   - Les comparaisons `>=` sont déjà validées.
+### 7.1. Fallback Gemini
+- Règle confirmée : en cas d'erreur API, timeout ou confiance faible, la ligne est systématiquement classée en **"société à valider manuellement"**.
 
-3. **Validation des sociétés incomplète :**
-   - Définir le comportement si des sociétés n'ont pas de nom gérant renseigné :
-     - blocage complet,
-     - sauvegarde brouillon,
-     - reprise ultérieure.
+### 7.2. Logique de conservation
+- Option **A (OU)** retenue : `ETP >= seuilEtp OR TauxVariation >= seuilVariation`.
+- Les comparaisons `>=` sont la norme métier validée.
 
-4. **Idempotence des imports :**
-   - Définir le comportement si le même fichier (ou même mois/agence/branche) est importé plusieurs fois :
-     - refus,
-     - remplacement,
-     - fusion contrôlée.
+### 7.3. Validation des sociétés incomplète
+- Règle confirmée : **sauvegarde brouillon avec reprise ultérieure**.
+- Le processus global n'est pas bloqué ; seules les lignes concernées restent en attente de validation.
 
-5. **Critères d'acceptation / tests :**
-   - Lister les cas de recette minimaux (ex: parsing, seuils, routing lettres, validation société, création Trello, KPI).
+### 7.4. Idempotence des imports
+- Règle confirmée : **remplacement** pour un même triplet `mois/agence/branche`.
+- À chaque relance sur ce triplet, effectuer une purge propre des données précédentes avant réimport.
+- Prévoir également la purge des cartes Trello associées si elles avaient déjà été générées.
 
-6. **Mapping agence à figer :**
-   - Confirmer formellement : `Kennedy = Corniche = H91358`.
+### 7.5. Critères d'acceptation / tests
+- Maintenir une checklist de recette couvrant au minimum : parsing, seuils, routing lettres, validation société, création Trello, synthèse Slack et KPI.
+
+### 7.6. Mapping agence
+- Confirmé et figé : `Kennedy = Corniche = H91358`.
 
 ## 8. Mode opératoire Claude Code (document utilisable comme prompt)
 
