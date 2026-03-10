@@ -58,17 +58,77 @@ function defaultAgences(): AgenceConfig[] {
     {
       code: "H91358",
       charges: [
-        { id: uuidv4(), prenom: "Corentin",   lettresDebut: "A", lettresFin: "C", trello: null },
-        { id: uuidv4(), prenom: "Emma",       lettresDebut: "D", lettresFin: "F", trello: null },
-        { id: uuidv4(), prenom: "Matthieu",   lettresDebut: "G", lettresFin: "M", trello: null },
-        { id: uuidv4(), prenom: "Donia",      lettresDebut: "N", lettresFin: "Z", trello: null },
+        {
+          id: uuidv4(), prenom: "Corentin", lettresDebut: "A", lettresFin: "C",
+          trello: {
+            trelloBoardId:  "67b5f1b34a0b1f85c58dffc1",
+            trelloListId:   "67b5f1c697b2440733fec2e6",
+            trelloListName: "PRETERME-AUTO",
+            trelloBoardUrl: "https://trello.com/b/nfhDBmQg/corentin",
+            trelloListUrl:  "https://trello.com/b/nfhDBmQg/corentin",
+            trelloMemberId: "67b31e5a33967f2b0c4783e3",
+          },
+        },
+        {
+          id: uuidv4(), prenom: "Emma", lettresDebut: "D", lettresFin: "F",
+          trello: {
+            trelloBoardId:  "66d00de829da279e8e667d12",
+            trelloListId:   "687a58ffda5f06e009db8ad5",
+            trelloListName: "PRETERME AUTO",
+            trelloBoardUrl: "https://trello.com/b/DkhXnVU8/emma",
+            trelloListUrl:  "https://trello.com/b/DkhXnVU8/emma",
+            trelloMemberId: "66d026f95aa7e0dc4201a208",
+          },
+        },
+        {
+          id: uuidv4(), prenom: "Matthieu", lettresDebut: "G", lettresFin: "M",
+          trello: {
+            trelloBoardId:  "6980592314de167992c14682",
+            trelloListId:   "6980593299ba9e50b7bccfa3",
+            trelloListName: "PRETERME AUTO",
+            trelloBoardUrl: "https://trello.com/b/EkK9044F/matthieu",
+            trelloListUrl:  "https://trello.com/b/EkK9044F/matthieu",
+            trelloMemberId: "69805e6a33a948ae79241cbc",
+          },
+        },
+        {
+          id: uuidv4(), prenom: "Donia", lettresDebut: "N", lettresFin: "Z",
+          trello: {
+            trelloBoardId:  "684830496441fb45a81ad2ec",
+            trelloListId:   "6848305df08bc5e50d5cabd4",
+            trelloListName: "PRETERME AUTO",
+            trelloBoardUrl: "https://trello.com/b/yYu4W7FJ/donia",
+            trelloListUrl:  "https://trello.com/b/yYu4W7FJ/donia",
+            trelloMemberId: "6848029e7f42281696feb267",
+          },
+        },
       ],
     },
     {
       code: "H92083",
       charges: [
-        { id: uuidv4(), prenom: "Joelle",     lettresDebut: "A", lettresFin: "H", trello: null },
-        { id: uuidv4(), prenom: "Christelle", lettresDebut: "I", lettresFin: "Z", trello: null },
+        {
+          id: uuidv4(), prenom: "Joelle", lettresDebut: "A", lettresFin: "H",
+          trello: {
+            trelloBoardId:  "66f0f7e293c93ba79d00ac8b",
+            trelloListId:   "66f0f7f5b5637967d3526f61",
+            trelloListName: "PRETERME AUTO",
+            trelloBoardUrl: "https://trello.com/b/3oWnNHUr/joelle",
+            trelloListUrl:  "https://trello.com/b/3oWnNHUr/joelle",
+            trelloMemberId: "66f0fabeee51053c1bdd6a1b",
+          },
+        },
+        {
+          id: uuidv4(), prenom: "Christelle", lettresDebut: "I", lettresFin: "Z",
+          trello: {
+            trelloBoardId:  "696e08ca8f5fc83c1a5595af",
+            trelloListId:   "696e08d97fb0c0bd53e4398a",
+            trelloListName: "PRETERME AUTO",
+            trelloBoardUrl: "https://trello.com/b/IexKz87i/christelle",
+            trelloListUrl:  "https://trello.com/b/IexKz87i/christelle",
+            trelloMemberId: "696e01346b6d56cc7332c3af",
+          },
+        },
       ],
     },
   ];
