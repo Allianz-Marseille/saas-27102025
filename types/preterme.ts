@@ -14,6 +14,7 @@ export const AGENCES: Record<AgenceCode, { nom: string; label: string }> = {
 export interface TrelloMapping {
   trelloBoardId: string;
   trelloListId: string;
+  trelloListName?: string;  // nom lisible de la colonne cible
   trelloBoardUrl: string;
   trelloListUrl: string;
   trelloMemberId?: string;
