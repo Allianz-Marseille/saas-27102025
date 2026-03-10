@@ -5,7 +5,8 @@ import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import {
   Calendar, ChevronLeft, ChevronRight, Settings2, Upload, Filter,
-  Building2, CheckCircle2, Clock, History, Car, Send, MessageSquare, BarChart3
+  Building2, CheckCircle2, Clock, History, Car, Send, MessageSquare, BarChart3,
+  ArrowRightLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +27,7 @@ import { ConfigurationStep } from "@/components/preterme/ConfigurationStep";
 import { UploadStep } from "@/components/preterme/UploadStep";
 import { ThresholdsStep } from "@/components/preterme/ThresholdsStep";
 import { SocietesValidationStep } from "@/components/preterme/SocietesValidationStep";
+import { TypeValidationStep } from "@/components/preterme/TypeValidationStep";
 import { DispatchPreview } from "@/components/preterme/DispatchPreview";
 import { SynthesisReport } from "@/components/preterme/SynthesisReport";
 import { KpiDashboard } from "@/components/preterme/KpiDashboard";
@@ -137,7 +139,7 @@ function defaultAgences(): AgenceConfig[] {
 
 // ─── Steps ──────────────────────────────────────────────────────────────────
 
-type Step = "periode" | "configuration" | "upload" | "filtrage" | "societes" | "dispatch" | "synthese" | "kpi";
+type Step = "periode" | "configuration" | "upload" | "filtrage" | "validation-types" | "societes" | "dispatch" | "synthese" | "kpi";
 
 const STEPS: { id: Step; label: string; icon: React.ElementType; phase: number }[] = [
   { id: "periode",       label: "Période",            icon: Calendar,      phase: 1 },
