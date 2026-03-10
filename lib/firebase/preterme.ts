@@ -13,7 +13,6 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
-  orderBy,
   Timestamp,
 } from "firebase/firestore";
 import { db } from "./config";
@@ -141,8 +140,7 @@ export async function getPretermeImportsByMois(moisKey: string): Promise<Preterm
   assertDb();
   const q = query(
     collection(db!, "preterme_imports"),
-    where("moisKey", "==", moisKey),
-    orderBy("createdAt", "desc")
+    where("moisKey", "==", moisKey)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => {
@@ -153,7 +151,7 @@ export async function getPretermeImportsByMois(moisKey: string): Promise<Preterm
       createdAt: toDate(data.createdAt),
       updatedAt: toDate(data.updatedAt),
     } as PretermeImport;
-  });
+  }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 export async function updatePretermeImport(
@@ -231,8 +229,7 @@ export async function getPretermeClients(importId: string): Promise<PretermeClie
   assertDb();
   const q = query(
     collection(db!, "preterme_clients"),
-    where("importId", "==", importId),
-    orderBy("nomClient", "asc")
+    where("importId", "==", importId)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => {
@@ -243,7 +240,7 @@ export async function getPretermeClients(importId: string): Promise<PretermeClie
       createdAt: toDate(data.createdAt),
       updatedAt: toDate(data.updatedAt),
     } as PretermeClient;
-  });
+  }).sort((a, b) => a.nomClient.localeCompare(b.nomClient, "fr"));
 }
 
 export async function getSocietesAValider(importId: string): Promise<PretermeClient[]> {
@@ -292,8 +289,7 @@ export async function getPretermeLogsByImport(importId: string): Promise<Preterm
   assertDb();
   const q = query(
     collection(db!, "preterme_trello_logs"),
-    where("importId", "==", importId),
-    orderBy("createdAt", "asc")
+    where("importId", "==", importId)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => {
@@ -303,5 +299,5 @@ export async function getPretermeLogsByImport(importId: string): Promise<Preterm
       ...data,
       createdAt: toDate(data.createdAt),
     } as PretermeLog;
-  });
+  }).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 }
