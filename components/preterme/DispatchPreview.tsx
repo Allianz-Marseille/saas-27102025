@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import {
   Send, CheckCircle2, AlertTriangle, Eye, Lock,
@@ -47,11 +47,37 @@ export function DispatchPreview({
   idToken,
   onDispatchSuccess,
 }: DispatchPreviewProps) {
+  const STORAGE_API_KEY = "preterme.trello.apiKey";
+  const STORAGE_TOKEN = "preterme.trello.token";
   const [trelloApiKey, setTrelloApiKey] = useState("");
   const [trelloToken, setTrelloToken] = useState("");
   const [showKeys, setShowKeys] = useState(false);
   const [isDispatching, setIsDispatching] = useState(false);
   const [result, setResult] = useState<DispatchResult | null>(null);
+
+  // Restaure les credentials saisis précédemment sur ce navigateur.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedApiKey = window.localStorage.getItem(STORAGE_API_KEY);
+    const savedToken = window.localStorage.getItem(STORAGE_TOKEN);
+    if (savedApiKey) setTrelloApiKey(savedApiKey);
+    if (savedToken) setTrelloToken(savedToken);
+  }, []);
+
+  // Sauvegarde les credentials pour éviter la ressaisie entre imports/agences.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (trelloApiKey.trim()) {
+      window.localStorage.setItem(STORAGE_API_KEY, trelloApiKey.trim());
+    }
+  }, [trelloApiKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (trelloToken.trim()) {
+      window.localStorage.setItem(STORAGE_TOKEN, trelloToken.trim());
+    }
+  }, [trelloToken]);
 
   // Aperçu routage local (sans appel API)
   const statsRoutage = useMemo(
@@ -237,6 +263,9 @@ export function DispatchPreview({
             Obtenez vos credentials sur{" "}
             <span className="text-sky-500">trello.com/app-key</span>.
             Les clés ne sont jamais stockées côté serveur.
+          </p>
+          <p className="text-[10px] text-slate-500">
+            Cette saisie est mémorisée localement sur ce navigateur.
           </p>
         </CardContent>
       </Card>
