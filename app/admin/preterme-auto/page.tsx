@@ -285,7 +285,6 @@ export default function PretermeAutoPage() {
     await loadImportClients(importId);
     // Charger tous les imports du mois pour les KPI
     getPretermeImportsByMois(moisKey).then(setAllImports).catch(() => {});
-    setStep("filtrage");
   }, [loadImportClients, moisKey]);
 
   // Charger activeImport depuis Firestore quand activeImportId change
@@ -625,6 +624,11 @@ export default function PretermeAutoPage() {
                     idToken={idToken} onImportSuccess={handleImportSuccess} />
                 </CardContent>
               </Card>
+              {activeImportId && (
+                <Button className="w-full bg-sky-600 hover:bg-sky-500" onClick={() => setStep("filtrage")}>
+                  Continuer vers filtrage &amp; IA <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              )}
             </div>
           )}
 

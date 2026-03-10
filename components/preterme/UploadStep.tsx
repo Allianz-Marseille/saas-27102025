@@ -331,7 +331,7 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
     setFiles((prev) => prev.map((f, i) => (i === idx ? { ...f, ...patch } : f)));
   };
 
-  const doUpload = async (idx: number) => {
+  const doUpload = async (idx: number, options?: { showAnotherFileDialog?: boolean }) => {
     const state = files[idx];
     const agence = state.agenceSelectionnee ?? state.agenceDetectee;
     if (!agence) return;
@@ -364,8 +364,10 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
       toast.success(`Import réussi — ${data.nbLignesValides} clients chargés`);
       onImportSuccess?.(data.importId, agence);
 
-      // Ouvrir le dialog "Voulez-vous en télécharger un autre ?"
-      setShowAnotherDialog(true);
+      if (options?.showAnotherFileDialog ?? true) {
+        // Ouvrir le dialog "Voulez-vous en télécharger un autre ?"
+        setShowAnotherDialog(true);
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur réseau";
       updateFile(idx, { status: "error", errorMessage: msg, progress: 0 });
@@ -390,6 +392,25 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
     }
 
     doUpload(idx);
+  };
+
+  const importAllReadyFiles = async () => {
+    const readyIndexes = files
+      .map((f, idx) => ({ f, idx }))
+      .filter(({ f }) => {
+        const agence = f.agenceSelectionnee ?? f.agenceDetectee;
+        return f.status !== "uploading" && f.status !== "success" && !!agence;
+      })
+      .map(({ idx }) => idx);
+
+    if (readyIndexes.length === 0) {
+      toast.warning("Aucun fichier prêt à importer.");
+      return;
+    }
+
+    for (const idx of readyIndexes) {
+      await doUpload(idx, { showAnotherFileDialog: false });
+    }
   };
 
   // Résumé global
@@ -466,6 +487,18 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
           onRemove={() => removeFile(idx)}
         />
       ))}
+
+      {/* Action globale d'import */}
+      {files.length > 1 && (
+        <Button
+          size="sm"
+          onClick={() => { void importAllReadyFiles(); }}
+          className="w-full bg-sky-700 hover:bg-sky-600"
+          disabled={files.some((f) => f.status === "uploading")}
+        >
+          Importer tous les fichiers prêts
+        </Button>
+      )}
 
       {/* Résumé global */}
       {successFiles.length > 0 && (
