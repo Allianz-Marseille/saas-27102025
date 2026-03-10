@@ -33,6 +33,75 @@ interface GeminiResponse {
   classifications: GeminiItem[];
 }
 
+const SOCIETE_KEYWORDS = [
+  "SARL",
+  "SAS",
+  "SASU",
+  "EURL",
+  "SCI",
+  "SA",
+  "SNC",
+  "SCM",
+  "SELARL",
+  "SELAS",
+  "SOCIETE",
+  "COMPAGNIE",
+  "ASSOCIATION",
+  "GROUPE",
+  "HOLDING",
+  "ENTREPRISE",
+  "ETABLISSEMENTS",
+  "ETS",
+  "STE",
+];
+
+const PARTICULES_NOM = new Set(["DE", "DU", "DES", "LE", "LA", "LES", "DEL", "DI", "D"]);
+
+function normalizeNom(rawNom: string): string {
+  return rawNom
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s'’-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+function hasSocieteKeyword(normalizedNom: string): boolean {
+  return SOCIETE_KEYWORDS.some((keyword) =>
+    new RegExp(`(^|\\s)${keyword}(\\s|$)`).test(normalizedNom)
+  );
+}
+
+function looksLikePersonName(normalizedNom: string): boolean {
+  const tokens = normalizedNom.split(" ").filter(Boolean);
+  if (tokens.length < 2 || tokens.length > 5) return false;
+  if (tokens.some((token) => /\d/.test(token))) return false;
+  if (tokens.some((token) => token.length === 1 && token !== "D")) return false;
+  if (tokens.some((token) => !/^[A-Z'’-]+$/.test(token))) return false;
+  if (tokens.some((token) => hasSocieteKeyword(token))) return false;
+
+  const meaningfulTokens = tokens.filter((token) => !PARTICULES_NOM.has(token));
+  return meaningfulTokens.length >= 2;
+}
+
+export function classifierNomAvecHeuristiques(nom: string): ClassificationResult | null {
+  const normalizedNom = normalizeNom(nom);
+  if (!normalizedNom) {
+    return { nom, type: "a_valider", confidence: 0, fallback: true };
+  }
+
+  if (/\d/.test(normalizedNom) || hasSocieteKeyword(normalizedNom)) {
+    return { nom, type: "societe", confidence: 0.95, fallback: false };
+  }
+
+  if (looksLikePersonName(normalizedNom)) {
+    return { nom, type: "particulier", confidence: 0.93, fallback: false };
+  }
+
+  return null;
+}
+
 function buildPrompt(noms: string[]): string {
   return `Tu es un classificateur de noms de clients pour une agence d'assurance française.
 Pour chaque nom fourni, détermine s'il s'agit d'une personne physique (particulier) ou d'une personne morale (entreprise/société/association).
@@ -118,23 +187,56 @@ export async function classifierNoms(
   noms: string[],
   apiKey: string
 ): Promise<ClassificationResult[]> {
+  const finalResults: Array<ClassificationResult | null> = new Array(noms.length).fill(null);
+  const nomsPourGemini: string[] = [];
+  const indexesPourGemini: number[] = [];
+
+  noms.forEach((nom, index) => {
+    const heuristic = classifierNomAvecHeuristiques(nom);
+    if (heuristic) {
+      finalResults[index] = heuristic;
+      return;
+    }
+    nomsPourGemini.push(nom);
+    indexesPourGemini.push(index);
+  });
+
+  if (nomsPourGemini.length === 0) {
+    return finalResults as ClassificationResult[];
+  }
+
   if (!apiKey) {
-    return noms.map((nom) => ({
-      nom,
-      type: "a_valider" as TypeEntite,
-      confidence: 0,
-      fallback: true,
-    }));
+    indexesPourGemini.forEach((index) => {
+      finalResults[index] = {
+        nom: noms[index],
+        type: "a_valider" as TypeEntite,
+        confidence: 0,
+        fallback: true,
+      };
+    });
+    return finalResults as ClassificationResult[];
   }
 
   const client = new GoogleGenAI({ apiKey });
-  const results: ClassificationResult[] = [];
 
-  for (let i = 0; i < noms.length; i += BATCH_SIZE) {
-    const batch = noms.slice(i, i + BATCH_SIZE);
-    const batchResults = await classifyBatch(client, batch);
-    results.push(...batchResults);
+  for (let i = 0; i < nomsPourGemini.length; i += BATCH_SIZE) {
+    const batchNoms = nomsPourGemini.slice(i, i + BATCH_SIZE);
+    const batchIndexes = indexesPourGemini.slice(i, i + BATCH_SIZE);
+    const batchResults = await classifyBatch(client, batchNoms);
+
+    batchResults.forEach((result, batchPosition) => {
+      const originalIndex = batchIndexes[batchPosition];
+      if (originalIndex === undefined) return;
+      finalResults[originalIndex] = result;
+    });
   }
 
-  return results;
+  return finalResults.map((result, index) => (
+    result ?? {
+      nom: noms[index],
+      type: "a_valider" as TypeEntite,
+      confidence: 0,
+      fallback: true,
+    }
+  ));
 }
