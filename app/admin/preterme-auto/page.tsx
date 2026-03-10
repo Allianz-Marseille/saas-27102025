@@ -716,7 +716,10 @@ export default function PretermeAutoPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <KpiDashboard imports={allImports} />
+                  <KpiDashboard
+                    imports={allImports}
+                    currentMoisKey={activeImport?.moisKey ?? moisKey}
+                  />
                 </CardContent>
               </Card>
             </div>

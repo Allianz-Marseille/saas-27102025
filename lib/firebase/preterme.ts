@@ -262,6 +262,24 @@ export async function getPretermeClients(importId: string): Promise<PretermeClie
   }).sort((a, b) => a.nomClient.localeCompare(b.nomClient, "fr"));
 }
 
+export async function getPretermeClientsByMoisKey(moisKey: string): Promise<PretermeClient[]> {
+  assertDb();
+  const q = query(
+    collection(db!, "preterme_clients"),
+    where("moisKey", "==", moisKey)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      ...data,
+      createdAt: toDate(data.createdAt),
+      updatedAt: toDate(data.updatedAt),
+    } as PretermeClient;
+  });
+}
+
 export async function getSocietesAValider(importId: string): Promise<PretermeClient[]> {
   assertDb();
   const q = query(

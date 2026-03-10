@@ -1,20 +1,22 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend
+  Tooltip, ResponsiveContainer, Legend, Cell,
 } from "recharts";
-import { TrendingUp, TrendingDown, Minus, BarChart3 } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, BarChart3, Building2, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { PretermeImport } from "@/types/preterme";
+import { getPretermeClientsByMoisKey } from "@/lib/firebase/preterme";
+import type { PretermeImport, PretermeClient } from "@/types/preterme";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface KpiDashboardProps {
   imports: PretermeImport[];
+  currentMoisKey?: string;
 }
 
 interface MoisData {
@@ -25,12 +27,30 @@ interface MoisData {
   ratio: number;
 }
 
+interface AgenceStat {
+  agence: string;
+  globaux: number;
+  conserves: number;
+  ratio: number;
+}
+
+interface ChargeStat {
+  charge: string;
+  conserves: number;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatMoisLabel(moisKey: string): string {
   const [year, month] = moisKey.split("-");
   return new Date(Number(year), Number(month) - 1, 1)
     .toLocaleDateString("fr-FR", { month: "short", year: "2-digit" });
+}
+
+function formatMoisFull(moisKey: string): string {
+  const [year, month] = moisKey.split("-");
+  return new Date(Number(year), Number(month) - 1, 1)
+    .toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 }
 
 function getDelta(current: number, previous: number | undefined): number | null {
@@ -57,9 +77,19 @@ function DeltaBadge({ delta }: { delta: number | null }) {
   );
 }
 
+const AGENCE_COLORS: Record<string, string> = {
+  H91358: "#0284c7",
+  H92083: "#7c3aed",
+};
+
+const CHARGE_COLORS = ["#0284c7", "#7c3aed", "#059669", "#d97706", "#dc2626", "#64748b"];
+
 // ─── KpiDashboard ─────────────────────────────────────────────────────────────
 
-export function KpiDashboard({ imports }: KpiDashboardProps) {
+export function KpiDashboard({ imports, currentMoisKey }: KpiDashboardProps) {
+  const [clients, setClients] = useState<PretermeClient[]>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+
   // Agréger par mois (dédupliqué, trié chronologiquement)
   const moisData: MoisData[] = useMemo(() => {
     const byMois = new Map<string, { globaux: number; conserves: number }>();
@@ -74,7 +104,7 @@ export function KpiDashboard({ imports }: KpiDashboardProps) {
 
     return Array.from(byMois.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-12) // 12 derniers mois max
+      .slice(-12)
       .map(([moisKey, d]) => ({
         moisKey,
         label: formatMoisLabel(moisKey),
@@ -83,6 +113,52 @@ export function KpiDashboard({ imports }: KpiDashboardProps) {
         ratio: d.globaux > 0 ? Math.round((d.conserves / d.globaux) * 100) : 0,
       }));
   }, [imports]);
+
+  // Mois cible pour les stats détaillées
+  const targetMoisKey = currentMoisKey ?? moisData[moisData.length - 1]?.moisKey;
+
+  // Fetch clients du mois cible
+  useEffect(() => {
+    if (!targetMoisKey) return;
+    setLoadingClients(true);
+    getPretermeClientsByMoisKey(targetMoisKey)
+      .then(setClients)
+      .catch(console.error)
+      .finally(() => setLoadingClients(false));
+  }, [targetMoisKey]);
+
+  // Stats par agence (sur tout l'historique chargé)
+  const agenceStats: AgenceStat[] = useMemo(() => {
+    const byAgence = new Map<string, { globaux: number; conserves: number }>();
+    for (const imp of imports) {
+      const existing = byAgence.get(imp.agence);
+      byAgence.set(imp.agence, {
+        globaux:   (existing?.globaux ?? 0)   + (imp.pretermesGlobaux ?? 0),
+        conserves: (existing?.conserves ?? 0) + (imp.pretermesConserves ?? 0),
+      });
+    }
+    return Array.from(byAgence.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([agence, d]) => ({
+        agence,
+        globaux: d.globaux,
+        conserves: d.conserves,
+        ratio: d.globaux > 0 ? Math.round((d.conserves / d.globaux) * 100) : 0,
+      }));
+  }, [imports]);
+
+  // Stats par collaborateur (mois cible, clients conservés uniquement)
+  const chargeStats: ChargeStat[] = useMemo(() => {
+    const byCharge = new Map<string, number>();
+    for (const c of clients) {
+      if (!c.conserve) continue;
+      const charge = c.chargeAttribue ?? "Non attribué";
+      byCharge.set(charge, (byCharge.get(charge) ?? 0) + 1);
+    }
+    return Array.from(byCharge.entries())
+      .sort(([, a], [, b]) => b - a)
+      .map(([charge, conserves]) => ({ charge, conserves }));
+  }, [clients]);
 
   if (moisData.length === 0) {
     return (
@@ -191,9 +267,7 @@ export function KpiDashboard({ imports }: KpiDashboardProps) {
                 labelStyle={{ color: "#94a3b8" }}
                 itemStyle={{ color: "#e2e8f0" }}
               />
-              <Legend
-                wrapperStyle={{ fontSize: 11, color: "#64748b" }}
-              />
+              <Legend wrapperStyle={{ fontSize: 11, color: "#64748b" }} />
               <Bar dataKey="globaux"   name="Importés"  fill="#334155" radius={[3, 3, 0, 0]} />
               <Bar dataKey="conserves" name="Conservés" fill="#0284c7" radius={[3, 3, 0, 0]} />
             </BarChart>
@@ -228,6 +302,169 @@ export function KpiDashboard({ imports }: KpiDashboardProps) {
               />
             </LineChart>
           </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* ── Par agence ───────────────────────────────────────────────── */}
+      {agenceStats.length > 0 && (
+        <Card className="bg-slate-900 border-slate-700">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-slate-400 flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Répartition par agence (cumul)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              {agenceStats.map((a) => (
+                <div
+                  key={a.agence}
+                  className="bg-slate-800/60 border border-slate-700 rounded-xl p-4"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span
+                      className="text-sm font-semibold"
+                      style={{ color: AGENCE_COLORS[a.agence] ?? "#94a3b8" }}
+                    >
+                      {a.agence}
+                    </span>
+                    <Badge
+                      className={cn(
+                        "text-[10px] h-5",
+                        a.ratio >= 50
+                          ? "bg-emerald-900/60 text-emerald-400 border-emerald-700"
+                          : "bg-amber-900/60 text-amber-400 border-amber-700"
+                      )}
+                    >
+                      {a.ratio}%
+                    </Badge>
+                  </div>
+                  <div className="flex items-end gap-3">
+                    <div>
+                      <p className="text-xl font-bold text-white">{a.conserves}</p>
+                      <p className="text-[10px] text-slate-500">conservés</p>
+                    </div>
+                    <div className="text-slate-600 text-lg pb-0.5">/</div>
+                    <div>
+                      <p className="text-xl font-bold text-slate-400">{a.globaux}</p>
+                      <p className="text-[10px] text-slate-500">importés</p>
+                    </div>
+                  </div>
+                  {/* Barre de progression */}
+                  <div className="mt-3 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${a.ratio}%`,
+                        backgroundColor: AGENCE_COLORS[a.agence] ?? "#94a3b8",
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Bar chart agences */}
+            <ResponsiveContainer width="100%" height={140}>
+              <BarChart
+                data={agenceStats}
+                layout="vertical"
+                margin={{ top: 0, right: 10, left: 10, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+                <XAxis type="number" tick={{ fill: "#64748b", fontSize: 11 }} />
+                <YAxis dataKey="agence" type="category" tick={{ fill: "#94a3b8", fontSize: 11 }} width={70} />
+                <Tooltip
+                  contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 8 }}
+                  labelStyle={{ color: "#94a3b8" }}
+                  itemStyle={{ color: "#e2e8f0" }}
+                />
+                <Bar dataKey="globaux" name="Importés" fill="#334155" radius={[0, 3, 3, 0]}>
+                  {agenceStats.map((a) => (
+                    <Cell key={a.agence} fill="#334155" />
+                  ))}
+                </Bar>
+                <Bar dataKey="conserves" name="Conservés" radius={[0, 3, 3, 0]}>
+                  {agenceStats.map((a) => (
+                    <Cell key={a.agence} fill={AGENCE_COLORS[a.agence] ?? "#0284c7"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Par collaborateur ─────────────────────────────────────────── */}
+      <Card className="bg-slate-900 border-slate-700">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-slate-400 flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Conservés par collaborateur
+            {targetMoisKey && (
+              <span className="text-slate-600 font-normal">
+                — {formatMoisFull(targetMoisKey)}
+              </span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingClients ? (
+            <div className="flex items-center gap-2 py-6 justify-center text-slate-500 text-sm">
+              <span className="animate-pulse">Chargement…</span>
+            </div>
+          ) : chargeStats.length === 0 ? (
+            <p className="text-sm text-slate-500 py-4 text-center">
+              Aucun client conservé avec attribution pour ce mois.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {/* Cards collaborateurs */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {chargeStats.map((c, i) => (
+                  <div
+                    key={c.charge}
+                    className="bg-slate-800/60 border border-slate-700 rounded-xl p-3"
+                  >
+                    <p
+                      className="text-xs font-medium mb-1 truncate"
+                      style={{ color: CHARGE_COLORS[i % CHARGE_COLORS.length] }}
+                    >
+                      {c.charge}
+                    </p>
+                    <p className="text-xl font-bold text-white">{c.conserves}</p>
+                    <p className="text-[10px] text-slate-500">clients</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bar chart collaborateurs */}
+              <ResponsiveContainer width="100%" height={Math.max(120, chargeStats.length * 44)}>
+                <BarChart
+                  data={chargeStats}
+                  layout="vertical"
+                  margin={{ top: 0, right: 30, left: 10, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+                  <XAxis type="number" tick={{ fill: "#64748b", fontSize: 11 }} allowDecimals={false} />
+                  <YAxis dataKey="charge" type="category" tick={{ fill: "#94a3b8", fontSize: 11 }} width={80} />
+                  <Tooltip
+                    contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 8 }}
+                    labelStyle={{ color: "#94a3b8" }}
+                    formatter={(v: number) => [v, "Conservés"]}
+                  />
+                  <Bar dataKey="conserves" name="Conservés" radius={[0, 3, 3, 0]}>
+                    {chargeStats.map((c, i) => (
+                      <Cell
+                        key={c.charge}
+                        fill={CHARGE_COLORS[i % CHARGE_COLORS.length]}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
