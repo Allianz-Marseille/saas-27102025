@@ -10,11 +10,15 @@ import Image from "next/image";
 
 export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
+  const logoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!logoRef.current) {
+      return;
+    }
+
     const ctx = gsap.context(() => {
-      // Animation du logo uniquement
-      gsap.from(".logo-animation", {
+      gsap.from(logoRef.current, {
         scale: 0,
         rotation: -180,
         duration: 1.2,
@@ -47,7 +51,7 @@ export default function HomePage() {
         <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="logo-animation">
+            <div ref={logoRef} className="logo-animation">
               <Image
                 src="/allianz.svg"
                 alt="Allianz"
