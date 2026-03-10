@@ -147,10 +147,13 @@ export default function PretermeAutoPage() {
           agences: c.agences, slackChannelId: c.slackChannelId,
         });
       } else {
-        setConfig((prev) => ({ ...prev, moisKey, agences: defaultAgences() }));
+        // Hériter les agences (CDC + mapping Trello) du mois le plus récent
+        // pour ne pas ressaisir les liens Trello à chaque nouveau mois.
+        const latestAgences = historique[0]?.agences ?? defaultAgences();
+        setConfig((prev) => ({ ...prev, moisKey, agences: latestAgences }));
       }
     });
-  }, [moisKey]);
+  }, [moisKey, historique]);
 
   // Charger les clients d'un import
   const loadImportClients = useCallback(async (importId: string) => {
