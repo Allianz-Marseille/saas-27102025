@@ -207,6 +207,7 @@ export default function PretermeAutoPage() {
   const [allImports, setAllImports]           = useState<PretermeImport[]>([]);
   const [completedSteps, setCompletedSteps] = useState<Partial<Record<Step, boolean>>>({});
   const [hasPendingTypeChanges, setHasPendingTypeChanges] = useState(false);
+  const [savedTypeChoicesByImportId, setSavedTypeChoicesByImportId] = useState<Record<string, boolean>>({});
 
   const [config, setConfig] = useState<
     Omit<PretermeConfig, "id" | "createdAt" | "updatedAt" | "createdBy" | "valide">
@@ -256,6 +257,7 @@ export default function PretermeAutoPage() {
         setStep(restoredStep);
       } else {
         setCompletedSteps({});
+        setSavedTypeChoicesByImportId({});
         setStep("periode");
         // Hériter les agences (CDC + mapping Trello) du mois le plus récent
         // pour ne pas ressaisir les liens Trello à chaque nouveau mois.
@@ -420,12 +422,15 @@ export default function PretermeAutoPage() {
       loadImportClients(activeImportId),
       getPretermeImportsByMois(moisKey).then(setAllImports),
     ]);
+    setSavedTypeChoicesByImportId({});
+    setHasPendingTypeChanges(false);
     markStepsCompleted(["filtrage"]);
     setStep("validation-types");
   }, [activeImportId, loadImportClients, markStepsCompleted, moisKey]);
 
   const handleTypeValidationDone = useCallback(async (nbEntreprises: number) => {
     if (!activeImportId) return;
+    setSavedTypeChoicesByImportId((prev) => ({ ...prev, [activeImportId]: true }));
     markStepsCompleted(["validation-types"]);
     if (nbEntreprises > 0) {
       await loadSocietes(activeImportId);
@@ -444,6 +449,45 @@ export default function PretermeAutoPage() {
     () => allImports.filter((imp) => imp.moisKey === moisKey),
     [allImports, moisKey]
   );
+
+  const isTypeChoicesSavedForImport = useCallback(
+    (imp: PretermeImport): boolean =>
+      savedTypeChoicesByImportId[imp.id] === true ||
+      imp.statut === "PRET" ||
+      imp.statut === "DISPATCH_TRELLO" ||
+      imp.statut === "TERMINE",
+    [savedTypeChoicesByImportId]
+  );
+
+  const areAllImportsTypeChoicesSaved = useMemo(
+    () => importsDuMois.length > 0 && importsDuMois.every((imp) => isTypeChoicesSavedForImport(imp)),
+    [importsDuMois, isTypeChoicesSavedForImport]
+  );
+
+  const handleValidateTypesForAllImports = useCallback(async () => {
+    if (!activeImportId) return;
+    if (hasPendingTypeChanges) {
+      toast.warning("Enregistre d'abord les modifications en cours sur cette agence.");
+      return;
+    }
+    if (!areAllImportsTypeChoicesSaved) {
+      toast.warning("Il faut d'abord enregistrer les choix de type sur toutes les agences.");
+      return;
+    }
+
+    const nbEntreprises = importedClients.filter(
+      (c) => c.conserve && (c.typeEntite === "societe" || c.typeEntite === "a_valider")
+    ).length;
+
+    await handleTypeValidationDone(nbEntreprises);
+    toast.success("Choix de type validés pour toutes les agences du mois.");
+  }, [
+    activeImportId,
+    areAllImportsTypeChoicesSaved,
+    handleTypeValidationDone,
+    hasPendingTypeChanges,
+    importedClients,
+  ]);
   const isConfigValide = existingConfig?.valide ?? false;
 
   const derivedDoneByStatus = useMemo<Partial<Record<Step, boolean>>>(() => {
@@ -830,12 +874,22 @@ export default function PretermeAutoPage() {
                     onSaved={async () => {
                       if (!activeImportId) return;
                       await loadImportClients(activeImportId);
+                      setSavedTypeChoicesByImportId((prev) => ({ ...prev, [activeImportId]: true }));
                       setHasPendingTypeChanges(false);
                     }}
                     onDirtyChange={setHasPendingTypeChanges}
                   />
                 </CardContent>
               </Card>
+              {importsDuMois.length > 1 && (
+                <Button
+                  onClick={() => { void handleValidateTypesForAllImports(); }}
+                  disabled={!areAllImportsTypeChoicesSaved || hasPendingTypeChanges}
+                  className="w-full bg-violet-700 hover:bg-violet-600"
+                >
+                  Passer à l&apos;étape suivante pour toutes les agences
+                </Button>
+              )}
             </div>
           )}
 
