@@ -861,7 +861,7 @@ export default function PretermeAutoPage() {
                     <ArrowRightLeft className="h-4 w-4 text-sky-400" />
                     Vérification de la classification IA
                     {hasPendingTypeChanges && (
-                      <Badge className="ml-2 border-amber-700 bg-amber-900/50 text-amber-300">
+                      <Badge className="ml-2 border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
                         Modifications non enregistrées
                       </Badge>
                     )}
@@ -885,7 +885,7 @@ export default function PretermeAutoPage() {
                 <Button
                   onClick={() => { void handleValidateTypesForAllImports(); }}
                   disabled={!areAllImportsTypeChoicesSaved || hasPendingTypeChanges}
-                  className="w-full bg-violet-700 hover:bg-violet-600"
+                  className="w-full bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-100 disabled:bg-violet-200 disabled:text-violet-500 dark:disabled:bg-violet-900 dark:disabled:text-violet-400"
                 >
                   Passer à l&apos;étape suivante pour toutes les agences
                 </Button>

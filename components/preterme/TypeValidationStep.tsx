@@ -325,7 +325,7 @@ export function TypeValidationStep({
           onClick={handleSaveOnly}
           disabled={isSaving || overrides.size === 0}
           variant="outline"
-          className="border-slate-700 bg-slate-800 hover:bg-slate-700 py-5 font-medium"
+          className="py-5 font-medium border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-100 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:disabled:border-slate-800 dark:disabled:bg-slate-900 dark:disabled:text-slate-500"
           size="lg"
         >
           {isSaving ? (
@@ -344,7 +344,7 @@ export function TypeValidationStep({
         <Button
           onClick={handleConfirm}
           disabled={isSaving}
-          className="bg-sky-600 hover:bg-sky-500 py-5 font-medium"
+          className="py-5 font-medium bg-sky-600 text-white hover:bg-sky-500 disabled:opacity-100 disabled:bg-sky-200 disabled:text-sky-500 dark:disabled:bg-sky-900 dark:disabled:text-sky-500"
           size="lg"
         >
           {isSaving ? (
