@@ -9,7 +9,7 @@
  * 6. Met à jour l'import (statut → TERMINE ou DISPATCH_TRELLO si erreurs).
  *
  * Body JSON :
- *   { importId: string, trelloApiKey: string, trelloToken: string }
+ *   { importId: string, trelloApiKey?: string, trelloToken?: string }
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -36,9 +36,22 @@ export async function POST(request: NextRequest) {
 
   const { importId, trelloApiKey, trelloToken } = body;
   if (!importId) return NextResponse.json({ error: "importId requis." }, { status: 400 });
-  if (!trelloApiKey || !trelloToken) {
+
+  // Source des credentials :
+  // 1) body (si présent), 2) variables serveur.
+  const effectiveTrelloApiKey =
+    trelloApiKey?.trim() ||
+    process.env.TRELLO_API_KEY?.trim() ||
+    process.env.TRELLO_KEY?.trim() ||
+    "";
+  const effectiveTrelloToken =
+    trelloToken?.trim() ||
+    process.env.TRELLO_TOKEN?.trim() ||
+    "";
+
+  if (!effectiveTrelloApiKey || !effectiveTrelloToken) {
     return NextResponse.json(
-      { error: "trelloApiKey et trelloToken sont requis." },
+      { error: "Credentials Trello manquants côté serveur." },
       { status: 400 }
     );
   }
@@ -119,8 +132,8 @@ export async function POST(request: NextRequest) {
     moisKey,
     seuilEtpApplique ?? 120,
     seuilVariationApplique ?? 20,
-    trelloApiKey,
-    trelloToken
+    effectiveTrelloApiKey,
+    effectiveTrelloToken
   );
 
   // ── Écriture Firestore ────────────────────────────────────────────────────

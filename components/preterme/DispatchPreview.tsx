@@ -3,14 +3,12 @@
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import {
-  Send, CheckCircle2, AlertTriangle, Eye, Lock,
-  User, Zap, BarChart3, ExternalLink
+  Send, CheckCircle2, AlertTriangle, Eye,
+  User, Zap, BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -49,35 +47,8 @@ export function DispatchPreview({
 }: DispatchPreviewProps) {
   const STORAGE_API_KEY = "preterme.trello.apiKey";
   const STORAGE_TOKEN = "preterme.trello.token";
-  const [trelloApiKey, setTrelloApiKey] = useState("");
-  const [trelloToken, setTrelloToken] = useState("");
-  const [showKeys, setShowKeys] = useState(false);
   const [isDispatching, setIsDispatching] = useState(false);
   const [result, setResult] = useState<DispatchResult | null>(null);
-
-  // Restaure les credentials saisis précédemment sur ce navigateur.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const savedApiKey = window.localStorage.getItem(STORAGE_API_KEY);
-    const savedToken = window.localStorage.getItem(STORAGE_TOKEN);
-    if (savedApiKey) setTrelloApiKey(savedApiKey);
-    if (savedToken) setTrelloToken(savedToken);
-  }, []);
-
-  // Sauvegarde les credentials pour éviter la ressaisie entre imports/agences.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (trelloApiKey.trim()) {
-      window.localStorage.setItem(STORAGE_API_KEY, trelloApiKey.trim());
-    }
-  }, [trelloApiKey]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (trelloToken.trim()) {
-      window.localStorage.setItem(STORAGE_TOKEN, trelloToken.trim());
-    }
-  }, [trelloToken]);
 
   // Aperçu routage local (sans appel API)
   const statsRoutage = useMemo(
@@ -94,8 +65,7 @@ export function DispatchPreview({
     (c) => c.trello?.trelloBoardId && c.trello?.trelloListId
   );
 
-  const canDispatch =
-    trelloApiKey.trim() && trelloToken.trim() && trelloMappingOk && !isDispatching;
+  const canDispatch = trelloMappingOk && !isDispatching;
 
   const handleDispatch = async () => {
     setIsDispatching(true);
@@ -106,7 +76,15 @@ export function DispatchPreview({
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ importId, trelloApiKey, trelloToken }),
+        body: JSON.stringify({
+          importId,
+          trelloApiKey: typeof window !== "undefined"
+            ? (window.localStorage.getItem(STORAGE_API_KEY) ?? undefined)
+            : undefined,
+          trelloToken: typeof window !== "undefined"
+            ? (window.localStorage.getItem(STORAGE_TOKEN) ?? undefined)
+            : undefined,
+        }),
       });
 
       const data = await res.json();
@@ -224,48 +202,10 @@ export function DispatchPreview({
         </CardContent>
       </Card>
 
-      {/* Credentials Trello */}
       <Card className="bg-slate-900 border-slate-700">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <Lock className="h-4 w-4 text-sky-400" />
-            Credentials Trello
-            <button
-              onClick={() => setShowKeys((v) => !v)}
-              className="ml-auto text-xs text-slate-500 hover:text-slate-300 transition-colors"
-            >
-              {showKeys ? "Masquer" : "Afficher"}
-            </button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-slate-400">API Key Trello *</Label>
-            <Input
-              type={showKeys ? "text" : "password"}
-              value={trelloApiKey}
-              onChange={(e) => setTrelloApiKey(e.target.value)}
-              placeholder="Votre clé API Trello"
-              className="bg-slate-800 border-slate-600 text-sm"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-slate-400">Token Trello *</Label>
-            <Input
-              type={showKeys ? "text" : "password"}
-              value={trelloToken}
-              onChange={(e) => setTrelloToken(e.target.value)}
-              placeholder="Votre token d'accès Trello"
-              className="bg-slate-800 border-slate-600 text-sm"
-            />
-          </div>
-          <p className="text-[10px] text-slate-500">
-            Obtenez vos credentials sur{" "}
-            <span className="text-sky-500">trello.com/app-key</span>.
-            Les clés ne sont jamais stockées côté serveur.
-          </p>
-          <p className="text-[10px] text-slate-500">
-            Cette saisie est mémorisée localement sur ce navigateur.
+        <CardContent className="pt-4">
+          <p className="text-xs text-slate-400">
+            Credentials Trello appliqués automatiquement (mode sécurisé).
           </p>
         </CardContent>
       </Card>
