@@ -206,6 +206,7 @@ export default function PretermeAutoPage() {
   const [activeImport, setActiveImport]       = useState<PretermeImport | null>(null);
   const [allImports, setAllImports]           = useState<PretermeImport[]>([]);
   const [completedSteps, setCompletedSteps] = useState<Partial<Record<Step, boolean>>>({});
+  const [hasPendingTypeChanges, setHasPendingTypeChanges] = useState(false);
 
   const [config, setConfig] = useState<
     Omit<PretermeConfig, "id" | "createdAt" | "updatedAt" | "createdBy" | "valide">
@@ -490,6 +491,7 @@ export default function PretermeAutoPage() {
     setActiveImportId(importToActivate.id);
     setActiveAgence(importToActivate.agence);
     setActiveImport(importToActivate);
+    setHasPendingTypeChanges(false);
     await loadImportClients(importToActivate.id);
     if (step === "societes") {
       await loadSocietes(importToActivate.id);
@@ -814,6 +816,11 @@ export default function PretermeAutoPage() {
                   <CardTitle className="flex items-center gap-2 text-base">
                     <ArrowRightLeft className="h-4 w-4 text-sky-400" />
                     Vérification de la classification IA
+                    {hasPendingTypeChanges && (
+                      <Badge className="ml-2 border-amber-700 bg-amber-900/50 text-amber-300">
+                        Modifications non enregistrées
+                      </Badge>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -823,7 +830,9 @@ export default function PretermeAutoPage() {
                     onSaved={async () => {
                       if (!activeImportId) return;
                       await loadImportClients(activeImportId);
+                      setHasPendingTypeChanges(false);
                     }}
+                    onDirtyChange={setHasPendingTypeChanges}
                   />
                 </CardContent>
               </Card>

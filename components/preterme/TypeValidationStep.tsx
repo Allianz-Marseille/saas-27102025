@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Building2, User, ArrowRightLeft, CheckCircle2, Loader2, Info
@@ -19,6 +19,7 @@ interface TypeValidationStepProps {
   clients: PretermeClient[];
   onValidated: (nbEntreprises: number) => void;
   onSaved?: () => void | Promise<void>;
+  onDirtyChange?: (isDirty: boolean) => void;
 }
 
 type EffectiveType = "particulier" | "societe";
@@ -106,7 +107,12 @@ function ClientRow({
 
 // ─── TypeValidationStep ───────────────────────────────────────────────────────
 
-export function TypeValidationStep({ clients, onValidated, onSaved }: TypeValidationStepProps) {
+export function TypeValidationStep({
+  clients,
+  onValidated,
+  onSaved,
+  onDirtyChange,
+}: TypeValidationStepProps) {
   const { user } = useAuth();
   const [overrides, setOverrides] = useState<Map<string, EffectiveType>>(new Map());
   const [isSaving, setIsSaving] = useState(false);
@@ -138,6 +144,10 @@ export function TypeValidationStep({ clients, onValidated, onSaved }: TypeValida
   );
 
   const nbChanged = overrides.size;
+
+  useEffect(() => {
+    onDirtyChange?.(nbChanged > 0);
+  }, [nbChanged, onDirtyChange]);
 
   const persistCorrections = async (): Promise<void> => {
     if (overrides.size === 0) return;
