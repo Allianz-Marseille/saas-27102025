@@ -309,7 +309,8 @@ export async function getSocietesAValider(importId: string): Promise<PretermeCli
   const q = query(
     collection(db!, "preterme_clients"),
     where("importId", "==", importId),
-    where("typeEntite", "in", ["a_valider", "societe"])
+    where("conserve", "==", true),
+    where("typeEntite", "==", "societe")
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => {

@@ -144,21 +144,24 @@ export function TypeValidationStep({
   );
 
   const nbChanged = overrides.size;
+  // `overrides` peut contenir des clés devenues neutres; on pilote la sauvegarde uniquement
+  // avec les écarts réellement persistables entre l'état Firestore et l'état effectif.
+  const nbPendingPersist = useMemo(
+    () => clients.filter((client) => client.typeEntite !== getEffectiveType(client, overrides)).length,
+    [clients, overrides]
+  );
 
   useEffect(() => {
-    onDirtyChange?.(nbChanged > 0);
-  }, [nbChanged, onDirtyChange]);
+    onDirtyChange?.(nbPendingPersist > 0);
+  }, [nbPendingPersist, onDirtyChange]);
 
   const persistCorrections = async (): Promise<void> => {
-    if (overrides.size === 0) return;
     const uid = user?.uid ?? null;
 
     const updates = clients
       .map((client) => {
         const effectiveType = getEffectiveType(client, overrides);
-        const originalType: EffectiveType =
-          client.typeEntite === "particulier" ? "particulier" : "societe";
-        if (effectiveType === originalType) return null;
+        if (client.typeEntite === effectiveType) return null;
         return { client, effectiveType };
       })
       .filter((item): item is { client: PretermeClient; effectiveType: EffectiveType } => item !== null);
@@ -206,7 +209,7 @@ export function TypeValidationStep({
   const handleConfirm = async () => {
     setIsSaving(true);
     try {
-      if (overrides.size > 0) {
+      if (nbPendingPersist > 0) {
         await persistCorrections();
         setOverrides(new Map());
         await onSaved?.();
@@ -323,7 +326,7 @@ export function TypeValidationStep({
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         <Button
           onClick={handleSaveOnly}
-          disabled={isSaving || overrides.size === 0}
+          disabled={isSaving || nbPendingPersist === 0}
           variant="outline"
           className="py-5 font-medium border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-100 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:disabled:border-slate-800 dark:disabled:bg-slate-900 dark:disabled:text-slate-500"
           size="lg"
@@ -356,10 +359,10 @@ export function TypeValidationStep({
             <>
               <CheckCircle2 className="h-4 w-4 mr-2" />
               {entreprises.length > 0
-                ? (overrides.size > 0
+                ? (nbPendingPersist > 0
                   ? `Enregistrer et saisir les gérants (${entreprises.length} entreprise${entreprises.length > 1 ? "s" : ""})`
                   : `Passer à l'étape suivante (${entreprises.length} entreprise${entreprises.length > 1 ? "s" : ""})`)
-                : (overrides.size > 0
+                : (nbPendingPersist > 0
                   ? "Enregistrer et passer au dispatch"
                   : "Passer au dispatch")}
             </>
