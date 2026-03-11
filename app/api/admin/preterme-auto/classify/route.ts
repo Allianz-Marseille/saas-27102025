@@ -196,6 +196,7 @@ export async function POST(request: NextRequest) {
       seuilEtpApplique: seuilEtp,
       seuilVariationApplique: seuilVariation,
       statut: nbSocietesAValider > 0 ? "VALIDATION_SOCIETES" : "PRET",
+      typesValidatedAt: null,
       updatedAt: now,
     });
 

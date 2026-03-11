@@ -87,6 +87,7 @@ export interface PretermeImport {
   agence: AgenceCode;
   branche: "AUTO";
   statut: ImportStatut;
+  typesValidatedAt?: Date | Timestamp | null;
   pretermesGlobaux: number;
   pretermesConserves: number;
   seuilEtpApplique: number;

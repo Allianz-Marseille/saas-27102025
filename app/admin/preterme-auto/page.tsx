@@ -22,7 +22,9 @@ import {
   getSocietesAValider,
   getPretermeImport,
   getAllPretermeImports,
+  updatePretermeImport,
   updatePretermeConfigWorkflow,
+  getPretermeImportsByMois,
 } from "@/lib/firebase/preterme";
 import { ConfigurationStep } from "@/components/preterme/ConfigurationStep";
 import { UploadStep } from "@/components/preterme/UploadStep";
@@ -35,7 +37,6 @@ import { KpiDashboard } from "@/components/preterme/KpiDashboard";
 import type {
   PretermeConfig, AgenceConfig, AgenceCode, PretermeClient, PretermeImport, PretermeWorkflowStep,
 } from "@/types/preterme";
-import { getPretermeImportsByMois } from "@/lib/firebase/preterme";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -428,9 +429,26 @@ export default function PretermeAutoPage() {
     setStep("validation-types");
   }, [activeImportId, loadImportClients, markStepsCompleted, moisKey]);
 
+  const markTypeChoicesSavedForImport = useCallback(async (importId: string) => {
+    const now = new Date();
+    setSavedTypeChoicesByImportId((prev) => ({ ...prev, [importId]: true }));
+    setAllImports((prev) =>
+      prev.map((imp) => (imp.id === importId ? { ...imp, typesValidatedAt: now } : imp))
+    );
+    if (activeImport?.id === importId) {
+      setActiveImport((prev) => (prev ? { ...prev, typesValidatedAt: now } : prev));
+    }
+
+    try {
+      await updatePretermeImport(importId, { typesValidatedAt: now });
+    } catch {
+      toast.warning("Sauvegarde type effectuée, mais la synchronisation multi-agences est en attente.");
+    }
+  }, [activeImport?.id]);
+
   const handleTypeValidationDone = useCallback(async (nbEntreprises: number) => {
     if (!activeImportId) return;
-    setSavedTypeChoicesByImportId((prev) => ({ ...prev, [activeImportId]: true }));
+    await markTypeChoicesSavedForImport(activeImportId);
     markStepsCompleted(["validation-types"]);
     if (nbEntreprises > 0) {
       await loadSocietes(activeImportId);
@@ -439,7 +457,7 @@ export default function PretermeAutoPage() {
       markStepsCompleted(["societes"]);
       setStep("dispatch");
     }
-  }, [activeImportId, loadSocietes, markStepsCompleted]);
+  }, [activeImportId, loadSocietes, markStepsCompleted, markTypeChoicesSavedForImport]);
 
   useEffect(() => {
     void persistWorkflow(step, completedSteps);
@@ -453,6 +471,7 @@ export default function PretermeAutoPage() {
   const isTypeChoicesSavedForImport = useCallback(
     (imp: PretermeImport): boolean =>
       savedTypeChoicesByImportId[imp.id] === true ||
+      !!imp.typesValidatedAt ||
       imp.statut === "PRET" ||
       imp.statut === "DISPATCH_TRELLO" ||
       imp.statut === "TERMINE",
@@ -554,21 +573,21 @@ export default function PretermeAutoPage() {
 
   // Breadcrumb
   const Breadcrumb = ({ current }: { current: string }) => (
-    <div className="flex items-center gap-2 text-sm text-slate-400">
-      <button onClick={() => setStep("periode")} className="hover:text-slate-200">Période</button>
+    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+      <button onClick={() => setStep("periode")} className="hover:text-slate-700 dark:hover:text-slate-200">Période</button>
       {["configuration", "upload", "filtrage", "validation-types", "societes"].includes(step) && (
-        <><span>/</span><button onClick={() => setStep("configuration")} className="hover:text-slate-200">Config</button></>
+        <><span>/</span><button onClick={() => setStep("configuration")} className="hover:text-slate-700 dark:hover:text-slate-200">Config</button></>
       )}
       {["upload", "filtrage", "validation-types", "societes"].includes(step) && (
-        <><span>/</span><button onClick={() => setStep("upload")} className="hover:text-slate-200">Upload</button></>
+        <><span>/</span><button onClick={() => setStep("upload")} className="hover:text-slate-700 dark:hover:text-slate-200">Upload</button></>
       )}
       {["filtrage", "validation-types", "societes"].includes(step) && (
-        <><span>/</span><button onClick={() => setStep("filtrage")} className="hover:text-slate-200">Filtrage</button></>
+        <><span>/</span><button onClick={() => setStep("filtrage")} className="hover:text-slate-700 dark:hover:text-slate-200">Filtrage</button></>
       )}
       {step === "societes" && (
-        <><span>/</span><button onClick={() => setStep("validation-types")} className="hover:text-slate-200">Valid. types</button></>
+        <><span>/</span><button onClick={() => setStep("validation-types")} className="hover:text-slate-700 dark:hover:text-slate-200">Valid. types</button></>
       )}
-      <><span>/</span><span className="text-white font-medium">{current}</span></>
+      <><span>/</span><span className="font-medium text-slate-900 dark:text-white">{current}</span></>
     </div>
   );
 
@@ -580,8 +599,8 @@ export default function PretermeAutoPage() {
           <Car className="h-5 w-5 text-sky-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Prétermes Auto</h1>
-          <p className="text-sm text-slate-400">Gestion automatisée — périmètre Auto uniquement</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Prétermes Auto</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Gestion automatisée — périmètre Auto uniquement</p>
         </div>
         <Badge className="ml-auto bg-sky-900/50 text-sky-300 border-sky-700 capitalize">
           {formatMoisLabel(moisKey)}
@@ -591,7 +610,7 @@ export default function PretermeAutoPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* ── Sidebar ── */}
         <div className="lg:col-span-1 space-y-4">
-          <Card className="bg-slate-900 border-slate-700">
+          <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
             <CardContent className="p-4 space-y-1">
               {STEPS.map((s, i) => {
                 const isActive = step === s.id;
@@ -610,18 +629,18 @@ export default function PretermeAutoPage() {
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm transition-colors",
                       isActive
-                        ? "bg-sky-950/60 text-sky-300 font-medium"
+                        ? "bg-sky-100 text-sky-700 font-medium dark:bg-sky-950/60 dark:text-sky-300"
                         : accessible
-                        ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
-                        : "text-slate-600 cursor-not-allowed"
+                        ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50"
+                        : "text-slate-400 dark:text-slate-600 cursor-not-allowed"
                     )}
                   >
                     <div className={cn(
                       "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                      isDone ? "bg-emerald-800 text-emerald-300"
-                        : isActive ? "bg-sky-700 text-sky-200"
-                        : accessible ? "bg-slate-700 text-slate-400"
-                        : "bg-slate-800 text-slate-600"
+                      isDone ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-300"
+                        : isActive ? "bg-sky-200 text-sky-700 dark:bg-sky-700 dark:text-sky-200"
+                        : accessible ? "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
+                        : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600"
                     )}>
                       {isDone ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
                     </div>
@@ -629,7 +648,7 @@ export default function PretermeAutoPage() {
                     {completedSteps[s.id] && (
                       <Disc className="h-2.5 w-2.5 ml-auto text-cyan-400" />
                     )}
-                    {!accessible && <Clock className="h-3 w-3 ml-auto text-slate-600" />}
+                    {!accessible && <Clock className="h-3 w-3 ml-auto text-slate-400 dark:text-slate-600" />}
                   </button>
                 );
               })}
@@ -638,25 +657,25 @@ export default function PretermeAutoPage() {
           </Card>
 
           {/* Historique */}
-          <Card className="bg-slate-900 border-slate-700">
+          <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
             <CardHeader className="pb-2 pt-4 px-4">
-              <CardTitle className="text-xs text-slate-400 flex items-center gap-1.5">
+              <CardTitle className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
                 <History className="h-3.5 w-3.5" /> Configs précédentes
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4 space-y-1.5">
               {loadingHistory ? (
-                <p className="text-xs text-slate-600">Chargement...</p>
+                <p className="text-xs text-slate-500 dark:text-slate-600">Chargement...</p>
               ) : historique.length === 0 ? (
-                <p className="text-xs text-slate-600">Aucune config enregistrée</p>
+                <p className="text-xs text-slate-500 dark:text-slate-600">Aucune config enregistrée</p>
               ) : (
                 historique.slice(0, 6).map((h) => (
                   <button
                     key={h.id}
                     onClick={() => { setMoisKey(h.moisKey); setStep("configuration"); }}
-                    className="w-full flex items-center justify-between text-xs px-2 py-1.5 rounded hover:bg-slate-800 transition-colors text-left"
+                    className="w-full flex items-center justify-between text-xs px-2 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
                   >
-                    <span className="text-slate-300">{formatMoisLabel(h.moisKey)}</span>
+                    <span className="text-slate-700 dark:text-slate-300">{formatMoisLabel(h.moisKey)}</span>
                     {h.valide
                       ? <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                       : <Clock className="h-3 w-3 text-amber-500" />
@@ -673,7 +692,7 @@ export default function PretermeAutoPage() {
           {/* Switch agence/import actif (pour garder Kennedy + Rouvière accessibles) */}
           {["filtrage", "validation-types", "societes", "dispatch", "synthese"].includes(step) &&
             importsDuMois.length > 1 && (
-            <Card className="bg-slate-900 border-slate-700 mb-4">
+            <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700 mb-4">
               <CardContent className="p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   {importsDuMois.map((imp) => {
@@ -688,7 +707,7 @@ export default function PretermeAutoPage() {
                           "text-xs",
                           isActive
                             ? "bg-sky-600 hover:bg-sky-500"
-                            : "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700"
+                            : "border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                         )}
                         onClick={() => { void handleSwitchImport(imp); }}
                       >
@@ -706,7 +725,7 @@ export default function PretermeAutoPage() {
 
           {/* ── Période ── */}
           {step === "periode" && (
-            <Card className="bg-slate-900 border-slate-700">
+            <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Calendar className="h-4 w-4 text-sky-400" />
@@ -715,15 +734,15 @@ export default function PretermeAutoPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-center gap-4">
-                  <Button variant="outline" size="icon" className="border-slate-700 bg-slate-800 hover:bg-slate-700"
+                  <Button variant="outline" size="icon" className="border-slate-300 bg-slate-100 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
                     onClick={() => setMoisKey((m) => navigateMois(m, -1))}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <div className="text-center min-w-48">
-                    <p className="text-2xl font-bold text-white capitalize">{formatMoisLabel(moisKey)}</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white capitalize">{formatMoisLabel(moisKey)}</p>
                     <p className="text-xs text-slate-500 mt-0.5">Mois traité par ce préterme</p>
                   </div>
-                  <Button variant="outline" size="icon" className="border-slate-700 bg-slate-800 hover:bg-slate-700"
+                  <Button variant="outline" size="icon" className="border-slate-300 bg-slate-100 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
                     onClick={() => setMoisKey((m) => navigateMois(m, 1))}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -752,7 +771,7 @@ export default function PretermeAutoPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 rounded-xl border border-slate-700 bg-slate-800/30 text-sm text-slate-400 flex items-center gap-3">
+                  <div className="p-4 rounded-xl border border-slate-300 bg-slate-50 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-400 flex items-center gap-3">
                     <Settings2 className="h-4 w-4 shrink-0" />
                     Aucune configuration pour ce mois — à créer à l&apos;étape suivante.
                   </div>
@@ -769,7 +788,7 @@ export default function PretermeAutoPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Breadcrumb current="Configuration" />
-                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("periode")}>
+                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("periode")}>
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Changer de mois
                 </Button>
               </div>
@@ -789,11 +808,11 @@ export default function PretermeAutoPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Breadcrumb current="Upload fichiers" />
-                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("configuration")}>
+                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("configuration")}>
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour config
                 </Button>
               </div>
-              <Card className="bg-slate-900 border-slate-700">
+              <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Upload className="h-4 w-4 text-sky-400" />
@@ -818,11 +837,11 @@ export default function PretermeAutoPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Breadcrumb current="Filtrage & IA" />
-                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("upload")}>
+                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("upload")}>
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour upload
                 </Button>
               </div>
-              <Card className="bg-slate-900 border-slate-700">
+              <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Filter className="h-4 w-4 text-sky-400" />
@@ -851,11 +870,11 @@ export default function PretermeAutoPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Breadcrumb current="Validation des types" />
-                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("filtrage")}>
+                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("filtrage")}>
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour filtrage
                 </Button>
               </div>
-              <Card className="bg-slate-900 border-slate-700">
+              <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <ArrowRightLeft className="h-4 w-4 text-sky-400" />
@@ -874,7 +893,7 @@ export default function PretermeAutoPage() {
                     onSaved={async () => {
                       if (!activeImportId) return;
                       await loadImportClients(activeImportId);
-                      setSavedTypeChoicesByImportId((prev) => ({ ...prev, [activeImportId]: true }));
+                      await markTypeChoicesSavedForImport(activeImportId);
                       setHasPendingTypeChanges(false);
                     }}
                     onDirtyChange={setHasPendingTypeChanges}
@@ -898,11 +917,11 @@ export default function PretermeAutoPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Breadcrumb current="Gérants sociétés" />
-                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("validation-types")}>
+                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("validation-types")}>
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour validation types
                 </Button>
               </div>
-              <Card className="bg-slate-900 border-slate-700">
+              <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Building2 className="h-4 w-4 text-sky-400" />
@@ -932,11 +951,11 @@ export default function PretermeAutoPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Breadcrumb current="Dispatch Trello" />
-                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("societes")}>
+                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("societes")}>
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour sociétés
                 </Button>
               </div>
-              <Card className="bg-slate-900 border-slate-700">
+              <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Send className="h-4 w-4 text-sky-400" />
@@ -978,11 +997,11 @@ export default function PretermeAutoPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Breadcrumb current="Synthèse Slack" />
-                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("dispatch")}>
+                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("dispatch")}>
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour dispatch
                 </Button>
               </div>
-              <Card className="bg-slate-900 border-slate-700">
+              <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <MessageSquare className="h-4 w-4 text-sky-400" />
@@ -1020,11 +1039,11 @@ export default function PretermeAutoPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Breadcrumb current="KPI historiques" />
-                <Button variant="ghost" size="sm" className="text-slate-400 text-xs" onClick={() => setStep("synthese")}>
+                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("synthese")}>
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour synthèse
                 </Button>
               </div>
-              <Card className="bg-slate-900 border-slate-700">
+              <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <BarChart3 className="h-4 w-4 text-sky-400" />
