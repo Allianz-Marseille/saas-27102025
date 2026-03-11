@@ -56,6 +56,12 @@ function formatDescription(
   seuilEtp: number,
   seuilVariation: number
 ): string {
+  const createdAtLabel = new Intl.DateTimeFormat("fr-FR", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "Europe/Paris",
+  }).format(new Date());
+
   const anomalies: string[] = [];
   if (client.etp !== null && client.etp !== undefined && client.etp >= seuilEtp) {
     anomalies.push(`⚠️ **ETP élevé : ${client.etp}** (seuil ≥ ${seuilEtp})`);
@@ -77,6 +83,7 @@ function formatDescription(
     `**N° Contrat :** ${client.numeroContrat}`,
     `**Agence :** ${client.agence}`,
     `**Branche :** Auto`,
+    `**Date de création de la carte :** ${createdAtLabel}`,
     ``,
     `---`,
     ``,
