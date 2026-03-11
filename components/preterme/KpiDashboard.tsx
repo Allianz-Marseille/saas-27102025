@@ -61,17 +61,17 @@ function getDelta(current: number, previous: number | undefined): number | null 
 function DeltaBadge({ delta }: { delta: number | null }) {
   if (delta === null) return null;
   if (delta > 0) return (
-    <Badge className="text-[10px] bg-emerald-900/60 text-emerald-400 border-emerald-700 h-4">
+    <Badge className="text-[10px] bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-700 h-4">
       <TrendingUp className="h-2.5 w-2.5 mr-0.5" />+{delta}%
     </Badge>
   );
   if (delta < 0) return (
-    <Badge className="text-[10px] bg-red-900/60 text-red-400 border-red-700 h-4">
+    <Badge className="text-[10px] bg-red-100 text-red-700 border-red-300 dark:bg-red-900/60 dark:text-red-400 dark:border-red-700 h-4">
       <TrendingDown className="h-2.5 w-2.5 mr-0.5" />{delta}%
     </Badge>
   );
   return (
-    <Badge className="text-[10px] bg-slate-800 text-slate-400 border-slate-700 h-4">
+    <Badge className="text-[10px] bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 h-4">
       <Minus className="h-2.5 w-2.5 mr-0.5" />0%
     </Badge>
   );
@@ -89,6 +89,18 @@ const CHARGE_COLORS = ["#0284c7", "#7c3aed", "#059669", "#d97706", "#dc2626", "#
 export function KpiDashboard({ imports, currentMoisKey }: KpiDashboardProps) {
   const [clients, setClients] = useState<PretermeClient[]>([]);
   const [loadingClients, setLoadingClients] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const syncTheme = () => {
+      setIsDarkTheme(document.documentElement.classList.contains("dark"));
+    };
+    syncTheme();
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
 
   // Agréger par mois (dédupliqué, trié chronologiquement)
   const moisData: MoisData[] = useMemo(() => {
@@ -185,90 +197,112 @@ export function KpiDashboard({ imports, currentMoisKey }: KpiDashboardProps) {
     ? Math.round((annuel.conserves / annuel.globaux) * 100)
     : 0;
 
+  const chartTheme = isDarkTheme
+    ? {
+        grid: "#1e293b",
+        tick: "#64748b",
+        tickStrong: "#94a3b8",
+        tooltipBg: "#0f172a",
+        tooltipBorder: "#334155",
+        tooltipLabel: "#94a3b8",
+        tooltipItem: "#e2e8f0",
+        barMuted: "#334155",
+      }
+    : {
+        grid: "#e2e8f0",
+        tick: "#64748b",
+        tickStrong: "#475569",
+        tooltipBg: "#ffffff",
+        tooltipBorder: "#cbd5e1",
+        tooltipLabel: "#334155",
+        tooltipItem: "#0f172a",
+        barMuted: "#94a3b8",
+      };
+
   return (
     <div className="space-y-6">
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Mois courant — conservés */}
-        <div className="bg-sky-950/40 border border-sky-800/50 rounded-xl p-4">
+        <div className="bg-sky-50 border border-sky-200 dark:bg-sky-950/40 dark:border-sky-800/50 rounded-xl p-4">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-xs text-slate-400">Conservés (M)</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">Conservés (M)</p>
             <DeltaBadge delta={deltaConserves} />
           </div>
-          <p className="text-2xl font-bold text-sky-300">{current.conserves}</p>
-          <p className="text-[10px] text-slate-500 mt-0.5">{current.moisKey}</p>
+          <p className="text-2xl font-bold text-sky-700 dark:text-sky-300">{current.conserves}</p>
+          <p className="text-[10px] text-slate-600 dark:text-slate-500 mt-0.5">{current.moisKey}</p>
         </div>
 
         {/* Mois courant — globaux */}
-        <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-4">
+        <div className="bg-slate-50 border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700 rounded-xl p-4">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-xs text-slate-400">Importés (M)</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">Importés (M)</p>
             <DeltaBadge delta={deltaGlobaux} />
           </div>
-          <p className="text-2xl font-bold text-white">{current.globaux}</p>
-          <p className="text-[10px] text-slate-500 mt-0.5">{current.moisKey}</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{current.globaux}</p>
+          <p className="text-[10px] text-slate-600 dark:text-slate-500 mt-0.5">{current.moisKey}</p>
         </div>
 
         {/* Ratio mois courant */}
         <div className={cn(
           "border rounded-xl p-4",
           current.ratio >= 50
-            ? "bg-emerald-950/40 border-emerald-800/50"
-            : "bg-amber-950/40 border-amber-800/50"
+            ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800/50"
+            : "bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800/50"
         )}>
           <div className="flex items-center justify-between mb-1">
-            <p className="text-xs text-slate-400">Ratio (M)</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">Ratio (M)</p>
             {deltaRatio !== null && (
               <Badge className={cn(
                 "text-[10px] h-4",
                 deltaRatio > 0
-                  ? "bg-emerald-900/60 text-emerald-400 border-emerald-700"
+                  ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-700"
                   : deltaRatio < 0
-                  ? "bg-red-900/60 text-red-400 border-red-700"
-                  : "bg-slate-800 text-slate-400 border-slate-700"
+                  ? "bg-red-100 text-red-700 border-red-300 dark:bg-red-900/60 dark:text-red-400 dark:border-red-700"
+                  : "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
               )}>
                 {deltaRatio > 0 ? "+" : ""}{deltaRatio}pts
               </Badge>
             )}
           </div>
           <p className={cn("text-2xl font-bold",
-            current.ratio >= 50 ? "text-emerald-300" : "text-amber-300"
+            current.ratio >= 50 ? "text-emerald-700 dark:text-emerald-300" : "text-amber-700 dark:text-amber-300"
           )}>
             {current.ratio}%
           </p>
-          <p className="text-[10px] text-slate-500 mt-0.5">conservation</p>
+          <p className="text-[10px] text-slate-600 dark:text-slate-500 mt-0.5">conservation</p>
         </div>
 
         {/* Cumul annuel */}
-        <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-4">
-          <p className="text-xs text-slate-400 mb-1">Cumul annuel</p>
-          <p className="text-2xl font-bold text-white">{annuel.conserves}</p>
-          <p className="text-[10px] text-slate-500 mt-0.5">
+        <div className="bg-slate-50 border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700 rounded-xl p-4">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Cumul annuel</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{annuel.conserves}</p>
+          <p className="text-[10px] text-slate-600 dark:text-slate-500 mt-0.5">
             / {annuel.globaux} — {ratioAnnuel}%
           </p>
         </div>
       </div>
 
       {/* Graphique évolution conservés + globaux */}
-      <Card className="bg-slate-900 border-slate-700">
+      <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-slate-400">
+          <CardTitle className="text-sm text-slate-700 dark:text-slate-400">
             Évolution des volumes (12 derniers mois)
           </CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={moisData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="label" tick={{ fill: "#64748b", fontSize: 11 }} />
-              <YAxis tick={{ fill: "#64748b", fontSize: 11 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis dataKey="label" tick={{ fill: chartTheme.tick, fontSize: 11 }} />
+              <YAxis tick={{ fill: chartTheme.tick, fontSize: 11 }} />
               <Tooltip
-                contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 8 }}
-                labelStyle={{ color: "#94a3b8" }}
-                itemStyle={{ color: "#e2e8f0" }}
+                contentStyle={{ background: chartTheme.tooltipBg, border: `1px solid ${chartTheme.tooltipBorder}`, borderRadius: 8 }}
+                labelStyle={{ color: chartTheme.tooltipLabel }}
+                itemStyle={{ color: chartTheme.tooltipItem }}
               />
-              <Legend wrapperStyle={{ fontSize: 11, color: "#64748b" }} />
-              <Bar dataKey="globaux"   name="Importés"  fill="#334155" radius={[3, 3, 0, 0]} />
+              <Legend wrapperStyle={{ fontSize: 11, color: chartTheme.tick }} />
+              <Bar dataKey="globaux"   name="Importés"  fill={chartTheme.barMuted} radius={[3, 3, 0, 0]} />
               <Bar dataKey="conserves" name="Conservés" fill="#0284c7" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -276,22 +310,22 @@ export function KpiDashboard({ imports, currentMoisKey }: KpiDashboardProps) {
       </Card>
 
       {/* Graphique ratio de conservation */}
-      <Card className="bg-slate-900 border-slate-700">
+      <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-slate-400">
+          <CardTitle className="text-sm text-slate-700 dark:text-slate-400">
             Taux de conservation par mois (%)
           </CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={160}>
             <LineChart data={moisData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="label" tick={{ fill: "#64748b", fontSize: 11 }} />
-              <YAxis domain={[0, 100]} tick={{ fill: "#64748b", fontSize: 11 }}
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis dataKey="label" tick={{ fill: chartTheme.tick, fontSize: 11 }} />
+              <YAxis domain={[0, 100]} tick={{ fill: chartTheme.tick, fontSize: 11 }}
                 tickFormatter={(v) => `${v}%`} />
               <Tooltip
-                contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 8 }}
-                labelStyle={{ color: "#94a3b8" }}
+                contentStyle={{ background: chartTheme.tooltipBg, border: `1px solid ${chartTheme.tooltipBorder}`, borderRadius: 8 }}
+                labelStyle={{ color: chartTheme.tooltipLabel }}
                 formatter={(v: number) => [`${v}%`, "Ratio"]}
               />
               <Line
@@ -307,9 +341,9 @@ export function KpiDashboard({ imports, currentMoisKey }: KpiDashboardProps) {
 
       {/* ── Par agence ───────────────────────────────────────────────── */}
       {agenceStats.length > 0 && (
-        <Card className="bg-slate-900 border-slate-700">
+        <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-slate-400 flex items-center gap-2">
+            <CardTitle className="text-sm text-slate-700 dark:text-slate-400 flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               Répartition par agence (cumul)
             </CardTitle>
@@ -319,7 +353,7 @@ export function KpiDashboard({ imports, currentMoisKey }: KpiDashboardProps) {
               {agenceStats.map((a) => (
                 <div
                   key={a.agence}
-                  className="bg-slate-800/60 border border-slate-700 rounded-xl p-4"
+                  className="bg-slate-50 border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700 rounded-xl p-4"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span
@@ -332,8 +366,8 @@ export function KpiDashboard({ imports, currentMoisKey }: KpiDashboardProps) {
                       className={cn(
                         "text-[10px] h-5",
                         a.ratio >= 50
-                          ? "bg-emerald-900/60 text-emerald-400 border-emerald-700"
-                          : "bg-amber-900/60 text-amber-400 border-amber-700"
+                          ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-700"
+                          : "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/60 dark:text-amber-400 dark:border-amber-700"
                       )}
                     >
                       {a.ratio}%
@@ -341,17 +375,17 @@ export function KpiDashboard({ imports, currentMoisKey }: KpiDashboardProps) {
                   </div>
                   <div className="flex items-end gap-3">
                     <div>
-                      <p className="text-xl font-bold text-white">{a.conserves}</p>
-                      <p className="text-[10px] text-slate-500">conservés</p>
+                      <p className="text-xl font-bold text-slate-900 dark:text-white">{a.conserves}</p>
+                      <p className="text-[10px] text-slate-600 dark:text-slate-500">conservés</p>
                     </div>
                     <div className="text-slate-600 text-lg pb-0.5">/</div>
                     <div>
-                      <p className="text-xl font-bold text-slate-400">{a.globaux}</p>
-                      <p className="text-[10px] text-slate-500">importés</p>
+                      <p className="text-xl font-bold text-slate-600 dark:text-slate-400">{a.globaux}</p>
+                      <p className="text-[10px] text-slate-600 dark:text-slate-500">importés</p>
                     </div>
                   </div>
                   {/* Barre de progression */}
-                  <div className="mt-3 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                  <div className="mt-3 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
@@ -371,17 +405,17 @@ export function KpiDashboard({ imports, currentMoisKey }: KpiDashboardProps) {
                 layout="vertical"
                 margin={{ top: 0, right: 10, left: 10, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
-                <XAxis type="number" tick={{ fill: "#64748b", fontSize: 11 }} />
-                <YAxis dataKey="agence" type="category" tick={{ fill: "#94a3b8", fontSize: 11 }} width={70} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} horizontal={false} />
+                <XAxis type="number" tick={{ fill: chartTheme.tick, fontSize: 11 }} />
+                <YAxis dataKey="agence" type="category" tick={{ fill: chartTheme.tickStrong, fontSize: 11 }} width={70} />
                 <Tooltip
-                  contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 8 }}
-                  labelStyle={{ color: "#94a3b8" }}
-                  itemStyle={{ color: "#e2e8f0" }}
+                  contentStyle={{ background: chartTheme.tooltipBg, border: `1px solid ${chartTheme.tooltipBorder}`, borderRadius: 8 }}
+                  labelStyle={{ color: chartTheme.tooltipLabel }}
+                  itemStyle={{ color: chartTheme.tooltipItem }}
                 />
-                <Bar dataKey="globaux" name="Importés" fill="#334155" radius={[0, 3, 3, 0]}>
+                <Bar dataKey="globaux" name="Importés" fill={chartTheme.barMuted} radius={[0, 3, 3, 0]}>
                   {agenceStats.map((a) => (
-                    <Cell key={a.agence} fill="#334155" />
+                    <Cell key={a.agence} fill={chartTheme.barMuted} />
                   ))}
                 </Bar>
                 <Bar dataKey="conserves" name="Conservés" radius={[0, 3, 3, 0]}>
@@ -396,13 +430,13 @@ export function KpiDashboard({ imports, currentMoisKey }: KpiDashboardProps) {
       )}
 
       {/* ── Par collaborateur ─────────────────────────────────────────── */}
-      <Card className="bg-slate-900 border-slate-700">
+      <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-slate-400 flex items-center gap-2">
+          <CardTitle className="text-sm text-slate-700 dark:text-slate-400 flex items-center gap-2">
             <Users className="h-4 w-4" />
             Conservés par collaborateur
             {targetMoisKey && (
-              <span className="text-slate-600 font-normal">
+              <span className="text-slate-500 dark:text-slate-600 font-normal">
                 — {formatMoisFull(targetMoisKey)}
               </span>
             )}
@@ -410,11 +444,11 @@ export function KpiDashboard({ imports, currentMoisKey }: KpiDashboardProps) {
         </CardHeader>
         <CardContent>
           {loadingClients ? (
-            <div className="flex items-center gap-2 py-6 justify-center text-slate-500 text-sm">
+            <div className="flex items-center gap-2 py-6 justify-center text-slate-600 dark:text-slate-500 text-sm">
               <span className="animate-pulse">Chargement…</span>
             </div>
           ) : chargeStats.length === 0 ? (
-            <p className="text-sm text-slate-500 py-4 text-center">
+            <p className="text-sm text-slate-600 dark:text-slate-500 py-4 text-center">
               Aucun client conservé avec attribution pour ce mois.
             </p>
           ) : (
@@ -424,7 +458,7 @@ export function KpiDashboard({ imports, currentMoisKey }: KpiDashboardProps) {
                 {chargeStats.map((c, i) => (
                   <div
                     key={c.charge}
-                    className="bg-slate-800/60 border border-slate-700 rounded-xl p-3"
+                    className="bg-slate-50 border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700 rounded-xl p-3"
                   >
                     <p
                       className="text-xs font-medium mb-1 truncate"
@@ -432,8 +466,8 @@ export function KpiDashboard({ imports, currentMoisKey }: KpiDashboardProps) {
                     >
                       {c.charge}
                     </p>
-                    <p className="text-xl font-bold text-white">{c.conserves}</p>
-                    <p className="text-[10px] text-slate-500">clients</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white">{c.conserves}</p>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-500">clients</p>
                   </div>
                 ))}
               </div>
@@ -445,12 +479,12 @@ export function KpiDashboard({ imports, currentMoisKey }: KpiDashboardProps) {
                   layout="vertical"
                   margin={{ top: 0, right: 30, left: 10, bottom: 0 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
-                  <XAxis type="number" tick={{ fill: "#64748b", fontSize: 11 }} allowDecimals={false} />
-                  <YAxis dataKey="charge" type="category" tick={{ fill: "#94a3b8", fontSize: 11 }} width={80} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} horizontal={false} />
+                  <XAxis type="number" tick={{ fill: chartTheme.tick, fontSize: 11 }} allowDecimals={false} />
+                  <YAxis dataKey="charge" type="category" tick={{ fill: chartTheme.tickStrong, fontSize: 11 }} width={80} />
                   <Tooltip
-                    contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 8 }}
-                    labelStyle={{ color: "#94a3b8" }}
+                    contentStyle={{ background: chartTheme.tooltipBg, border: `1px solid ${chartTheme.tooltipBorder}`, borderRadius: 8 }}
+                    labelStyle={{ color: chartTheme.tooltipLabel }}
                     formatter={(v: number) => [v, "Conservés"]}
                   />
                   <Bar dataKey="conserves" name="Conservés" radius={[0, 3, 3, 0]}>

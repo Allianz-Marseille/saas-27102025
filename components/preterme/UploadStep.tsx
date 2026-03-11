@@ -87,8 +87,8 @@ function DropZone({
         "border-2 border-dashed rounded-xl text-center cursor-pointer transition-all duration-200 group",
         compact ? "p-5" : "p-10",
         isDragging
-          ? "border-sky-500 bg-sky-950/40 scale-[1.01]"
-          : "border-slate-700 hover:border-sky-700/70 hover:bg-slate-800/40",
+          ? "border-sky-500 bg-sky-100 dark:bg-sky-950/40 scale-[1.01]"
+          : "border-slate-300 dark:border-slate-700 hover:border-sky-500 dark:hover:border-sky-700/70 hover:bg-slate-100 dark:hover:bg-slate-800/40",
         disabled && "opacity-40 cursor-not-allowed pointer-events-none"
       )}
     >
@@ -112,24 +112,24 @@ function DropZone({
       )}>
         <div className={cn(
           "rounded-full p-3 transition-colors duration-200",
-          isDragging ? "bg-sky-900/60" : "bg-slate-800 group-hover:bg-slate-700/80"
+          isDragging ? "bg-sky-200 dark:bg-sky-900/60" : "bg-slate-100 dark:bg-slate-800 group-hover:bg-slate-200 dark:group-hover:bg-slate-700/80"
         )}>
           <Upload className={cn(
             "transition-colors duration-200",
             compact ? "h-5 w-5" : "h-7 w-7",
-            isDragging ? "text-sky-400" : "text-slate-400 group-hover:text-sky-400"
+            isDragging ? "text-sky-600 dark:text-sky-400" : "text-slate-500 dark:text-slate-400 group-hover:text-sky-600 dark:group-hover:text-sky-400"
           )} />
         </div>
 
         {!compact ? (
           <>
-            <p className="text-sm font-medium text-slate-300 group-hover:text-slate-200 transition-colors">
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">
               Glissez un ou plusieurs fichiers Excel, ou cliquez pour sélectionner
             </p>
-            <p className="text-xs text-slate-500">.xlsx ou .xls · sélection multiple possible</p>
+            <p className="text-xs text-slate-600 dark:text-slate-500">.xlsx ou .xls · sélection multiple possible</p>
           </>
         ) : (
-          <p className="text-xs font-medium text-slate-400 group-hover:text-sky-400 transition-colors">
+          <p className="text-xs font-medium text-slate-600 dark:text-slate-400 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
             Ajouter un fichier
           </p>
         )}
@@ -157,16 +157,16 @@ function FileCard({
   return (
     <div className={cn(
       "border rounded-xl p-4 space-y-3 transition-all duration-300",
-      state.status === "success" ? "border-emerald-700/50 bg-emerald-950/20"
-        : state.status === "error" ? "border-red-700/50 bg-red-950/20"
-        : isUploading ? "border-sky-700/50 bg-sky-950/10"
-        : "border-slate-700 bg-slate-800/30"
+      state.status === "success" ? "border-emerald-200 bg-emerald-50 dark:border-emerald-700/50 dark:bg-emerald-950/20"
+        : state.status === "error" ? "border-red-200 bg-red-50 dark:border-red-700/50 dark:bg-red-950/20"
+        : isUploading ? "border-sky-300 bg-sky-50 dark:border-sky-700/50 dark:bg-sky-950/10"
+        : "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/30"
     )}>
       {/* Header */}
       <div className="flex items-start gap-3">
         <div className={cn(
           "mt-0.5 shrink-0 transition-colors",
-          isUploading ? "text-sky-400 animate-pulse" : "text-slate-400"
+          isUploading ? "text-sky-600 dark:text-sky-400 animate-pulse" : "text-slate-500 dark:text-slate-400"
         )}>
           <FileSpreadsheet className="h-5 w-5" />
         </div>
@@ -174,26 +174,26 @@ function FileCard({
         <div className="flex-1 min-w-0">
           <p className={cn(
             "text-sm font-medium truncate transition-colors",
-            isUploading ? "text-sky-300" : "text-slate-200"
+            isUploading ? "text-sky-700 dark:text-sky-300" : "text-slate-800 dark:text-slate-200"
           )}>
             {state.file.name}
           </p>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-600 dark:text-slate-500 mt-0.5">
             {(state.file.size / 1024).toFixed(0)} Ko
           </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
           {isUploading && (
-            <Loader2 className="h-4 w-4 text-sky-400 animate-spin" />
+            <Loader2 className="h-4 w-4 text-sky-600 dark:text-sky-400 animate-spin" />
           )}
           {state.status === "success" && (
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           )}
           {!isUploading && (
             <Button
               variant="ghost" size="icon"
-              className="h-6 w-6 text-slate-600 hover:text-red-400"
+              className="h-6 w-6 text-slate-500 hover:text-red-600 dark:hover:text-red-400"
               onClick={onRemove}
             >
               <X className="h-3.5 w-3.5" />
@@ -204,24 +204,24 @@ function FileCard({
 
       {/* Détection agence */}
       {state.agenceDetectee ? (
-        <div className="flex items-center gap-2 text-xs text-emerald-400">
+        <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-400">
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
           Agence détectée : <strong>{AGENCES[state.agenceDetectee].label}</strong>
         </div>
       ) : (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs text-amber-400">
+          <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
             Agence non détectée — sélectionnez manuellement
           </div>
           <div className="space-y-1">
-            <Label className="text-xs text-slate-400">Agence cible *</Label>
+            <Label className="text-xs text-slate-600 dark:text-slate-400">Agence cible *</Label>
             <Select
               value={state.agenceSelectionnee ?? ""}
               onValueChange={(v) => onAgenceChange(v as AgenceCode)}
               disabled={isUploading}
             >
-              <SelectTrigger className="h-8 text-xs bg-slate-800 border-slate-600 max-w-xs">
+              <SelectTrigger className="h-8 text-xs bg-white border-slate-300 dark:bg-slate-800 dark:border-slate-600 max-w-xs">
                 <SelectValue placeholder="Choisir l'agence..." />
               </SelectTrigger>
               <SelectContent>
@@ -238,7 +238,7 @@ function FileCard({
 
       {/* État upload */}
       {isUploading && (
-        <div className="flex items-center gap-2 text-xs text-sky-400 animate-pulse">
+        <div className="flex items-center gap-2 text-xs text-sky-700 dark:text-sky-400 animate-pulse">
           <Loader2 className="h-3 w-3 animate-spin" />
           Import en cours...
         </div>
@@ -246,26 +246,26 @@ function FileCard({
 
       {/* Résultat succès */}
       {state.status === "success" && state.result && (
-        <div className="p-3 bg-emerald-950/30 rounded-lg border border-emerald-800/40 space-y-1.5">
-          <p className="text-xs font-medium text-emerald-300 flex items-center gap-1.5">
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800/40 space-y-1.5">
+          <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
             <CheckCircle2 className="h-3.5 w-3.5" /> Import réussi
           </p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-            <span className="text-slate-500">Lignes détectées</span>
-            <span className="font-medium text-slate-300">{state.result.nbLignesTotal}</span>
-            <span className="text-slate-500">Lignes importées</span>
-            <span className="font-medium text-emerald-400">{state.result.nbLignesValides}</span>
+            <span className="text-slate-600 dark:text-slate-500">Lignes détectées</span>
+            <span className="font-medium text-slate-800 dark:text-slate-300">{state.result.nbLignesTotal}</span>
+            <span className="text-slate-600 dark:text-slate-500">Lignes importées</span>
+            <span className="font-medium text-emerald-700 dark:text-emerald-400">{state.result.nbLignesValides}</span>
             {state.result.nbErreursParsing > 0 && (
               <>
-                <span className="text-slate-500">Erreurs parsing</span>
-                <span className="font-medium text-amber-400">{state.result.nbErreursParsing}</span>
+                <span className="text-slate-600 dark:text-slate-500">Erreurs parsing</span>
+                <span className="font-medium text-amber-700 dark:text-amber-400">{state.result.nbErreursParsing}</span>
               </>
             )}
           </div>
           {state.result.erreursParsing.length > 0 && (
-            <div className="mt-1.5 space-y-0.5 border-t border-emerald-900/50 pt-1.5">
+            <div className="mt-1.5 space-y-0.5 border-t border-emerald-200 dark:border-emerald-900/50 pt-1.5">
               {state.result.erreursParsing.map((e) => (
-                <p key={e.ligne} className="text-[10px] text-amber-400">
+                <p key={e.ligne} className="text-[10px] text-amber-700 dark:text-amber-400">
                   Ligne {e.ligne} : {e.message}
                 </p>
               ))}
@@ -276,8 +276,8 @@ function FileCard({
 
       {/* Erreur */}
       {state.status === "error" && state.errorMessage && (
-        <div className="p-3 bg-red-950/30 rounded-lg border border-red-800/40">
-          <p className="text-xs text-red-300 flex items-start gap-1.5">
+        <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800/40">
+          <p className="text-xs text-red-700 dark:text-red-300 flex items-start gap-1.5">
             <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
             {state.errorMessage}
           </p>
@@ -290,7 +290,7 @@ function FileCard({
           size="sm"
           onClick={onUpload}
           disabled={!agenceFinal}
-          className="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-40"
+          className="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-60"
         >
           <Upload className="h-3.5 w-3.5 mr-1.5" />
           Importer
@@ -301,7 +301,7 @@ function FileCard({
         <Button
           variant="outline" size="sm"
           onClick={onUpload}
-          className="w-full border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500"
+          className="w-full border-slate-300 text-slate-700 hover:text-slate-900 hover:border-slate-400 dark:border-slate-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-500"
         >
           <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
           Réimporter (remplacera les données existantes)
@@ -331,11 +331,11 @@ function GlobalStatusBanner({
     <div className={cn(
       "flex items-center gap-3 px-4 py-3 rounded-xl border text-sm transition-all",
       allDone
-        ? "border-emerald-700/50 bg-emerald-950/25 text-emerald-300"
-        : "border-slate-700 bg-slate-800/40 text-slate-300"
+        ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-700/50 dark:bg-emerald-950/25 dark:text-emerald-300"
+        : "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300"
     )}>
       {allDone ? (
-        <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+        <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
       ) : (
         <CircleDashed className="h-4 w-4 text-slate-500 shrink-0" />
       )}
@@ -347,7 +347,7 @@ function GlobalStatusBanner({
           <span>
             <span className="font-medium">{done}/2 agence{done > 1 ? "s" : ""} importée{done > 1 ? "s" : ""}</span>
             {agencesManquantes.length > 0 && (
-              <span className="text-slate-400 ml-1">
+              <span className="text-slate-600 dark:text-slate-400 ml-1">
                 · manquante{agencesManquantes.length > 1 ? "s" : ""} :{" "}
                 {agencesManquantes.map((a) => AGENCES[a].label).join(", ")}
               </span>
@@ -359,8 +359,8 @@ function GlobalStatusBanner({
       <Badge className={cn(
         "text-xs",
         allDone
-          ? "bg-emerald-900/60 text-emerald-400 border-emerald-700"
-          : "bg-slate-700 text-slate-400 border-slate-600"
+          ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-700"
+          : "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600"
       )}>
         {done}/2
       </Badge>
@@ -516,11 +516,11 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
     <div className="space-y-4">
       {/* Prérequis config */}
       {!configValide && (
-        <div className="p-4 bg-amber-950/30 border border-amber-700/50 rounded-xl flex items-start gap-3">
-          <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+        <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-700/50 rounded-xl flex items-start gap-3">
+          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-amber-300">Configuration requise</p>
-            <p className="text-xs text-amber-400 mt-0.5">
+            <p className="text-sm font-medium text-amber-700 dark:text-amber-300">Configuration requise</p>
+            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
               Validez d&apos;abord la configuration mensuelle avant d&apos;importer les fichiers.
             </p>
           </div>
@@ -536,8 +536,8 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
 
       {/* Info agences (état vide uniquement) */}
       {files.length === 0 && configValide && (
-        <div className="p-3 bg-slate-800/40 border border-slate-700 rounded-lg text-xs text-slate-400 space-y-1">
-          <p className="flex items-center gap-1.5 font-medium text-slate-300">
+        <div className="p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-400 space-y-1">
+          <p className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
             <Info className="h-3.5 w-3.5" /> Deux fichiers attendus
           </p>
           {(Object.entries(AGENCES) as [AgenceCode, { nom: string; label: string }][]).map(([code, info]) => (
@@ -548,8 +548,8 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
           ))}
           <p className="ml-5">
             L&apos;agence est auto-détectée si le nom de fichier contient{" "}
-            <code className="text-sky-400">H91358</code> ou{" "}
-            <code className="text-sky-400">H92083</code>.
+            <code className="text-sky-600 dark:text-sky-400">H91358</code> ou{" "}
+            <code className="text-sky-600 dark:text-sky-400">H92083</code>.
           </p>
         </div>
       )}
@@ -596,7 +596,7 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
 
       {/* Récapitulatif */}
       {successFiles.length > 0 && (
-        <Card className="bg-slate-900 border-slate-700">
+        <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-emerald-400" />
@@ -606,10 +606,10 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
           <CardContent className="px-4 pb-4 space-y-2">
             {successFiles.map((f) => (
               <div key={f.file.name} className="flex items-center justify-between text-xs">
-                <span className="text-slate-300">
+                <span className="text-slate-700 dark:text-slate-300">
                   {AGENCES[(f.agenceDetectee ?? f.agenceSelectionnee)!]?.label ?? "?"}
                 </span>
-                <Badge className="bg-emerald-900/60 text-emerald-400 border-emerald-700">
+                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-700">
                   {f.result?.nbLignesValides} clients
                 </Badge>
               </div>
@@ -620,14 +620,14 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
 
       {/* Dialog : Confirmation remplacement agence déjà importée */}
       <AlertDialog open={!!replaceConfirm} onOpenChange={(open) => { if (!open) setReplaceConfirm(null); }}>
-        <AlertDialogContent className="bg-slate-900 border-slate-700">
+        <AlertDialogContent className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-slate-100">
+            <AlertDialogTitle className="text-slate-900 dark:text-slate-100">
               Agence déjà importée
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-400">
+            <AlertDialogDescription className="text-slate-600 dark:text-slate-400">
               Un import existe déjà pour{" "}
-              <strong className="text-slate-200">
+              <strong className="text-slate-900 dark:text-slate-200">
                 {replaceConfirm ? AGENCES[replaceConfirm.agence].label : ""}
               </strong>{" "}
               ce mois-ci. Réimporter remplacera toutes les données existantes pour cette agence.
@@ -637,7 +637,7 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel
-              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+              className="border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               onClick={() => setReplaceConfirm(null)}
             >
               Annuler

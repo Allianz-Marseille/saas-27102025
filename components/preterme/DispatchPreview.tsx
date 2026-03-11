@@ -116,12 +116,12 @@ export function DispatchPreview({
   return (
     <div className="space-y-6">
       {/* Aperçu répartition */}
-      <Card className="bg-slate-900 border-slate-700">
+      <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-sm">
             <Eye className="h-4 w-4 text-sky-400" />
             Aperçu de la répartition
-            <Badge className="ml-auto bg-slate-800 text-slate-400 border-slate-700 text-[10px]">
+            <Badge className="ml-auto bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 text-[10px]">
               {AGENCES[agence].label}
             </Badge>
           </CardTitle>
@@ -129,31 +129,31 @@ export function DispatchPreview({
         <CardContent className="space-y-4">
           {/* Stats globales */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-3 text-center">
-              <p className="text-xl font-bold text-white">{statsRoutage.total}</p>
-              <p className="text-xs text-slate-400 mt-0.5">Clients conservés</p>
+            <div className="bg-slate-50 border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700 rounded-xl p-3 text-center">
+              <p className="text-xl font-bold text-slate-900 dark:text-white">{statsRoutage.total}</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Clients conservés</p>
             </div>
-            <div className="bg-emerald-950/40 border border-emerald-800/50 rounded-xl p-3 text-center">
-              <p className="text-xl font-bold text-emerald-300">{statsRoutage.routes}</p>
-              <p className="text-xs text-slate-400 mt-0.5">Routés</p>
+            <div className="bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800/50 rounded-xl p-3 text-center">
+              <p className="text-xl font-bold text-emerald-700 dark:text-emerald-300">{statsRoutage.routes}</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Routés</p>
             </div>
             <div className={cn(
               "border rounded-xl p-3 text-center",
               statsRoutage.nonRoutes > 0
-                ? "bg-amber-950/40 border-amber-800/50"
-                : "bg-slate-800/60 border-slate-700"
+                ? "bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800/50"
+                : "bg-slate-50 border-slate-200 dark:bg-slate-800/60 dark:border-slate-700"
             )}>
-              <p className={cn("text-xl font-bold", statsRoutage.nonRoutes > 0 ? "text-amber-300" : "text-slate-400")}>
+              <p className={cn("text-xl font-bold", statsRoutage.nonRoutes > 0 ? "text-amber-700 dark:text-amber-300" : "text-slate-600 dark:text-slate-400")}>
                 {statsRoutage.nonRoutes}
               </p>
-              <p className="text-xs text-slate-400 mt-0.5">Non routés</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Non routés</p>
             </div>
           </div>
 
           {/* Répartition par CDC */}
           {Object.keys(statsRoutage.parCharge).length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-slate-400">Répartition par CDC</p>
+              <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Répartition par CDC</p>
               {Object.entries(statsRoutage.parCharge)
                 .sort(([, a], [, b]) => b - a)
                 .map(([prenom, nb]) => {
@@ -163,12 +163,12 @@ export function DispatchPreview({
                   return (
                     <div key={prenom} className="space-y-1">
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-300 flex items-center gap-1.5">
+                        <span className="text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                           <User className="h-3 w-3 text-slate-500" />
                           {prenom}
                         </span>
-                        <span className="text-slate-400">
-                          <strong className="text-slate-200">{nb}</strong> clients ({pct}%)
+                        <span className="text-slate-600 dark:text-slate-400">
+                          <strong className="text-slate-900 dark:text-slate-200">{nb}</strong> clients ({pct}%)
                         </span>
                       </div>
                       <Progress value={pct} className="h-1.5" />
@@ -180,7 +180,7 @@ export function DispatchPreview({
 
           {/* Avertissement non routés */}
           {statsRoutage.nonRoutes > 0 && (
-            <div className="flex items-start gap-2 p-3 bg-amber-950/30 border border-amber-700/40 rounded-lg text-xs text-amber-400">
+            <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-700/40 rounded-lg text-xs text-amber-700 dark:text-amber-400">
               <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               <span>
                 {statsRoutage.nonRoutes} client(s) non routable(s) — sociétés sans nom de gérant
@@ -191,7 +191,7 @@ export function DispatchPreview({
 
           {/* Alerte Trello mapping incomplet */}
           {!trelloMappingOk && (
-            <div className="flex items-start gap-2 p-3 bg-red-950/30 border border-red-700/40 rounded-lg text-xs text-red-400">
+            <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-700/40 rounded-lg text-xs text-red-700 dark:text-red-400">
               <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               <span>
                 Mapping Trello incomplet pour certains CDC.
@@ -202,9 +202,9 @@ export function DispatchPreview({
         </CardContent>
       </Card>
 
-      <Card className="bg-slate-900 border-slate-700">
+      <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
         <CardContent className="pt-4">
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-600 dark:text-slate-400">
             Credentials Trello appliqués automatiquement (mode sécurisé).
           </p>
         </CardContent>
@@ -215,12 +215,12 @@ export function DispatchPreview({
         <Card className={cn(
           "border",
           result.trello.errors === 0
-            ? "bg-emerald-950/20 border-emerald-800/40"
-            : "bg-amber-950/20 border-amber-800/40"
+            ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/40"
+            : "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/40"
         )}>
           <CardContent className="pt-4 space-y-3">
             <p className={cn("text-sm font-medium flex items-center gap-2",
-              result.trello.errors === 0 ? "text-emerald-300" : "text-amber-300")}>
+              result.trello.errors === 0 ? "text-emerald-700 dark:text-emerald-300" : "text-amber-700 dark:text-amber-300")}>
               {result.trello.errors === 0
                 ? <><CheckCircle2 className="h-4 w-4" /> Dispatch Trello terminé</>
                 : <><AlertTriangle className="h-4 w-4" /> Dispatch partiel</>
@@ -228,25 +228,25 @@ export function DispatchPreview({
             </p>
             <div className="grid grid-cols-3 gap-3 text-xs">
               <div className="text-center">
-                <p className="text-lg font-bold text-white">{result.trello.total}</p>
-                <p className="text-slate-400">Total</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-white">{result.trello.total}</p>
+                <p className="text-slate-600 dark:text-slate-400">Total</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold text-emerald-400">{result.trello.success}</p>
-                <p className="text-slate-400">Créées</p>
+                <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">{result.trello.success}</p>
+                <p className="text-slate-600 dark:text-slate-400">Créées</p>
               </div>
               <div className="text-center">
-                <p className={cn("text-lg font-bold", result.trello.errors > 0 ? "text-red-400" : "text-slate-500")}>
+                <p className={cn("text-lg font-bold", result.trello.errors > 0 ? "text-red-700 dark:text-red-400" : "text-slate-500")}>
                   {result.trello.errors}
                 </p>
-                <p className="text-slate-400">Erreurs</p>
+                <p className="text-slate-600 dark:text-slate-400">Erreurs</p>
               </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      <Separator className="bg-slate-800" />
+      <Separator className="bg-slate-200 dark:bg-slate-800" />
 
       {/* Bouton dispatch */}
       <Button

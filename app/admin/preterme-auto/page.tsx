@@ -61,15 +61,35 @@ function navigateMois(moisKey: string, delta: number): string {
 function getImportStatusBadge(statut?: string): { label: string; className: string } {
   switch (statut) {
     case "TERMINE":
-      return { label: "Termine", className: "bg-emerald-900/60 text-emerald-300 border-emerald-700" };
+      return {
+        label: "Termine",
+        className:
+          "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-700",
+      };
     case "PRET":
-      return { label: "Pret", className: "bg-sky-900/60 text-sky-300 border-sky-700" };
+      return {
+        label: "Pret",
+        className:
+          "bg-sky-100 text-sky-700 border-sky-300 dark:bg-sky-900/60 dark:text-sky-300 dark:border-sky-700",
+      };
     case "VALIDATION_SOCIETES":
-      return { label: "Validation", className: "bg-amber-900/60 text-amber-300 border-amber-700" };
+      return {
+        label: "Validation",
+        className:
+          "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/60 dark:text-amber-300 dark:border-amber-700",
+      };
     case "DISPATCH_TRELLO":
-      return { label: "Dispatch", className: "bg-violet-900/60 text-violet-300 border-violet-700" };
+      return {
+        label: "Dispatch",
+        className:
+          "bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/60 dark:text-violet-300 dark:border-violet-700",
+      };
     default:
-      return { label: "Brouillon", className: "bg-slate-800 text-slate-300 border-slate-700" };
+      return {
+        label: "Brouillon",
+        className:
+          "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
+      };
   }
 }
 
@@ -622,7 +642,7 @@ export default function PretermeAutoPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Prétermes Auto</h1>
           <p className="text-sm text-slate-600 dark:text-slate-400">Gestion automatisée — périmètre Auto uniquement</p>
         </div>
-        <Badge className="ml-auto bg-sky-900/50 text-sky-300 border-sky-700 capitalize">
+        <Badge className="ml-auto bg-sky-100 text-sky-700 border-sky-300 dark:bg-sky-900/50 dark:text-sky-300 dark:border-sky-700 capitalize">
           {formatMoisLabel(moisKey)}
         </Badge>
       </div>
@@ -767,16 +787,16 @@ export default function PretermeAutoPage() {
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="p-4 bg-sky-950/30 border border-sky-800/40 rounded-xl text-sm text-sky-300/80">
-                  <p className="font-medium text-sky-300 mb-1">Règle calendaire</p>
+                <div className="p-4 bg-sky-50 border border-sky-200 rounded-xl text-sm text-sky-700 dark:bg-sky-950/30 dark:border-sky-800/40 dark:text-sky-300/80">
+                  <p className="font-medium text-sky-700 dark:text-sky-300 mb-1">Règle calendaire</p>
                   <p>Traitement toujours sur le <strong>mois suivant</strong>. Pré-sélectionné :{" "}
-                    <strong className="text-sky-200">{formatMoisLabel(getMoisCible())}</strong>.</p>
+                    <strong className="text-sky-700 dark:text-sky-200">{formatMoisLabel(getMoisCible())}</strong>.</p>
                 </div>
                 {existingConfig ? (
                   <div className={cn("p-4 rounded-xl border text-sm flex items-start gap-3",
                     existingConfig.valide
-                      ? "bg-emerald-950/30 border-emerald-700/50 text-emerald-300"
-                      : "bg-amber-950/30 border-amber-700/50 text-amber-300")}>
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-700/50 dark:text-emerald-300"
+                      : "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-700/50 dark:text-amber-300")}>
                     {existingConfig.valide
                       ? <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
                       : <Clock className="h-4 w-4 mt-0.5 shrink-0" />}

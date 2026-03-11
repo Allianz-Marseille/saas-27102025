@@ -84,8 +84,8 @@ export function SynthesisReport({
       <div className={cn(
         "flex items-start gap-3 p-4 rounded-xl border text-sm",
         isTermine
-          ? "bg-emerald-950/30 border-emerald-700/50 text-emerald-300"
-          : "bg-amber-950/30 border-amber-700/50 text-amber-300"
+          ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-700/50 dark:text-emerald-300"
+          : "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-700/50 dark:text-amber-300"
       )}>
         {isTermine
           ? <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
@@ -102,8 +102,8 @@ export function SynthesisReport({
         <Badge className={cn(
           "ml-auto shrink-0 text-[10px]",
           isTermine
-            ? "bg-emerald-900/60 text-emerald-400 border-emerald-700"
-            : "bg-amber-900/60 text-amber-400 border-amber-700"
+            ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-700"
+            : "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/60 dark:text-amber-400 dark:border-amber-700"
         )}>
           {importData.statut}
         </Badge>
@@ -111,25 +111,25 @@ export function SynthesisReport({
 
       {/* Métriques */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-3 text-center">
-          <p className="text-xl font-bold text-white">{importData.pretermesGlobaux}</p>
-          <p className="text-xs text-slate-400 mt-0.5">Importés</p>
+        <div className="bg-slate-50 border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700 rounded-xl p-3 text-center">
+          <p className="text-xl font-bold text-slate-900 dark:text-white">{importData.pretermesGlobaux}</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Importés</p>
         </div>
-        <div className="bg-sky-950/40 border border-sky-800/50 rounded-xl p-3 text-center">
-          <p className="text-xl font-bold text-sky-300">{importData.pretermesConserves}</p>
-          <p className="text-xs text-slate-400 mt-0.5">Conservés</p>
+        <div className="bg-sky-50 border border-sky-200 dark:bg-sky-950/40 dark:border-sky-800/50 rounded-xl p-3 text-center">
+          <p className="text-xl font-bold text-sky-700 dark:text-sky-300">{importData.pretermesConserves}</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Conservés</p>
         </div>
-        <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-3 text-center">
-          <p className="text-xl font-bold text-emerald-400">{ratioConservation}%</p>
-          <p className="text-xs text-slate-400 mt-0.5">Taux conservation</p>
+        <div className="bg-slate-50 border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700 rounded-xl p-3 text-center">
+          <p className="text-xl font-bold text-emerald-700 dark:text-emerald-400">{ratioConservation}%</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Taux conservation</p>
         </div>
       </div>
 
       {/* Répartition CDC */}
       {Object.keys(parCharge).length > 0 && (
-        <Card className="bg-slate-900 border-slate-700">
+        <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
           <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-xs text-slate-400 flex items-center gap-1.5">
+            <CardTitle className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
               <Users className="h-3.5 w-3.5" /> Répartition par CDC
             </CardTitle>
           </CardHeader>
@@ -138,8 +138,8 @@ export function SynthesisReport({
               .sort(([, a], [, b]) => b - a)
               .map(([prenom, nb]) => (
                 <div key={prenom} className="flex items-center justify-between text-sm">
-                  <span className="text-slate-300">{prenom}</span>
-                  <Badge className="bg-sky-900/50 text-sky-300 border-sky-700 text-[10px]">
+                  <span className="text-slate-700 dark:text-slate-300">{prenom}</span>
+                  <Badge className="bg-sky-100 text-sky-700 border-sky-300 dark:bg-sky-900/50 dark:text-sky-300 dark:border-sky-700 text-[10px]">
                     {nb} dossiers
                   </Badge>
                 </div>
@@ -150,7 +150,7 @@ export function SynthesisReport({
 
       {/* Sociétés en attente */}
       {nbSocietesEnAttente > 0 && (
-        <div className="flex items-start gap-2 p-3 bg-amber-950/30 border border-amber-700/40 rounded-lg text-xs text-amber-400">
+        <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-700/40 rounded-lg text-xs text-amber-700 dark:text-amber-400">
           <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
           <span>
             <strong>{nbSocietesEnAttente}</strong> société(s) sans nom de gérant — pas de carte Trello créée.
@@ -160,22 +160,22 @@ export function SynthesisReport({
       )}
 
       {/* Seuils appliqués */}
-      <div className="p-3 bg-slate-800/40 border border-slate-700 rounded-lg text-xs text-slate-400">
-        <span className="font-medium text-slate-300">Seuils appliqués :</span>{" "}
+      <div className="p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-400">
+        <span className="font-medium text-slate-800 dark:text-slate-300">Seuils appliqués :</span>{" "}
         ETP ≥ <code className="text-sky-400">{importData.seuilEtpApplique}</code> OU
         Variation ≥ <code className="text-sky-400">{importData.seuilVariationApplique}%</code>
       </div>
 
-      <Separator className="bg-slate-800" />
+      <Separator className="bg-slate-200 dark:bg-slate-800" />
 
       {/* Envoi Slack */}
-      <Card className="bg-slate-900 border-slate-700">
+      <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-sm">
             <MessageSquare className="h-4 w-4 text-sky-400" />
             Envoyer la synthèse sur Slack
             {!slackChannelConfigured && (
-              <Badge className="ml-2 text-[10px] bg-amber-900/60 text-amber-400 border-amber-700">
+              <Badge className="ml-2 text-[10px] bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/60 dark:text-amber-400 dark:border-amber-700">
                 Canal non configuré
               </Badge>
             )}
@@ -183,12 +183,12 @@ export function SynthesisReport({
         </CardHeader>
         <CardContent className="space-y-3">
           {!slackChannelConfigured ? (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-600 dark:text-slate-500">
               Configurez un canal Slack dans la configuration mensuelle (étape Configuration)
               puis relancez.
             </p>
           ) : sent ? (
-            <div className="flex items-center gap-2 text-sm text-emerald-300">
+            <div className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-300">
               <CheckCircle2 className="h-4 w-4" />
               Message Slack envoyé avec succès.
             </div>
@@ -196,12 +196,12 @@ export function SynthesisReport({
             <>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs text-slate-400 flex items-center gap-1.5">
+                  <Label className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
                     <Lock className="h-3 w-3" /> Bot Token Slack *
                   </Label>
                   <button
                     onClick={() => setShowToken((v) => !v)}
-                    className="text-xs text-slate-500 hover:text-slate-300"
+                    className="text-xs text-slate-600 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"
                   >
                     {showToken ? "Masquer" : <Eye className="h-3 w-3" />}
                   </button>
@@ -211,9 +211,9 @@ export function SynthesisReport({
                   value={slackToken}
                   onChange={(e) => setSlackToken(e.target.value)}
                   placeholder="xoxb-..."
-                  className="bg-slate-800 border-slate-600 text-sm"
+                  className="bg-white border-slate-300 dark:bg-slate-800 dark:border-slate-600 text-sm"
                 />
-                <p className="text-[10px] text-slate-500">
+                <p className="text-[10px] text-slate-600 dark:text-slate-500">
                   Token Bot Slack (xoxb-...). Non stocké côté serveur.
                 </p>
               </div>
