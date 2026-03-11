@@ -80,9 +80,9 @@ function TrelloListPicker({
     }
     setLoading(true);
     try {
-      // Réutilise l'endpoint générique auto (même logique Trello)
+      // Endpoint Trello dédié IARD (isole les logs et le périmètre fonctionnel)
       const res = await fetch(
-        `/api/admin/preterme-auto/trello-lists?boardId=${encodeURIComponent(boardId)}&apiKey=${encodeURIComponent(apiKey)}&token=${encodeURIComponent(token)}`
+        `/api/admin/preterme-ird/trello-lists?boardId=${encodeURIComponent(boardId)}&apiKey=${encodeURIComponent(apiKey)}&token=${encodeURIComponent(token)}`
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erreur inconnue");
