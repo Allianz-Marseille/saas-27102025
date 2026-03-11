@@ -73,6 +73,19 @@ function getImportStatusBadge(statut?: string): { label: string; className: stri
   }
 }
 
+function isImportTypesValidated(
+  imp: PretermeImport,
+  savedTypeChoicesByImportId: Record<string, boolean>
+): boolean {
+  return (
+    savedTypeChoicesByImportId[imp.id] === true ||
+    !!imp.typesValidatedAt ||
+    imp.statut === "PRET" ||
+    imp.statut === "DISPATCH_TRELLO" ||
+    imp.statut === "TERMINE"
+  );
+}
+
 function defaultAgences(): AgenceConfig[] {
   return [
     {
@@ -469,12 +482,7 @@ export default function PretermeAutoPage() {
   );
 
   const isTypeChoicesSavedForImport = useCallback(
-    (imp: PretermeImport): boolean =>
-      savedTypeChoicesByImportId[imp.id] === true ||
-      !!imp.typesValidatedAt ||
-      imp.statut === "PRET" ||
-      imp.statut === "DISPATCH_TRELLO" ||
-      imp.statut === "TERMINE",
+    (imp: PretermeImport): boolean => isImportTypesValidated(imp, savedTypeChoicesByImportId),
     [savedTypeChoicesByImportId]
   );
 
@@ -489,8 +497,19 @@ export default function PretermeAutoPage() {
       toast.warning("Enregistre d'abord les modifications en cours sur cette agence.");
       return;
     }
-    if (!areAllImportsTypeChoicesSaved) {
-      toast.warning("Il faut d'abord enregistrer les choix de type sur toutes les agences.");
+    const latestImports = await getPretermeImportsByMois(moisKey).catch(() => null);
+    if (!latestImports || latestImports.length === 0) {
+      toast.error("Impossible de vérifier les imports du mois.");
+      return;
+    }
+    setAllImports(latestImports);
+
+    const unsavedImports = latestImports.filter(
+      (imp) => !isImportTypesValidated(imp, savedTypeChoicesByImportId)
+    );
+    if (unsavedImports.length > 0) {
+      const agences = unsavedImports.map((imp) => imp.agence).join(", ");
+      toast.warning(`Enregistre d'abord les choix de type pour : ${agences}.`);
       return;
     }
 
@@ -502,10 +521,11 @@ export default function PretermeAutoPage() {
     toast.success("Choix de type validés pour toutes les agences du mois.");
   }, [
     activeImportId,
-    areAllImportsTypeChoicesSaved,
     handleTypeValidationDone,
     hasPendingTypeChanges,
     importedClients,
+    moisKey,
+    savedTypeChoicesByImportId,
   ]);
   const isConfigValide = existingConfig?.valide ?? false;
 
@@ -903,7 +923,7 @@ export default function PretermeAutoPage() {
               {importsDuMois.length > 1 && (
                 <Button
                   onClick={() => { void handleValidateTypesForAllImports(); }}
-                  disabled={!areAllImportsTypeChoicesSaved || hasPendingTypeChanges}
+                  disabled={hasPendingTypeChanges}
                   className="w-full bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-100 disabled:bg-violet-200 disabled:text-violet-500 dark:disabled:bg-violet-900 dark:disabled:text-violet-400"
                 >
                   Passer à l&apos;étape suivante pour toutes les agences
