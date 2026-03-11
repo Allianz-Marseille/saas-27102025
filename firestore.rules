@@ -233,6 +233,9 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update, delete: if false; // logs immuables
     }
+    match /preterme_quality_overrides/{docId} {
+      allow read, write: if isAdmin();
+    }
 
     // Admin messages collection
     // Messages envoyés par les administrateurs aux commerciaux

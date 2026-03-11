@@ -162,6 +162,20 @@ export interface PretermeLog {
   createdAt: Date | Timestamp;
 }
 
+// ─── Overrides qualité (mémoire IA) ─────────────────────────────────────────
+
+export interface PretermeQualityOverride {
+  id: string;
+  normalizedName: string;
+  entityType: "particulier" | "societe";
+  source: "manual";
+  createdBy: string;
+  updatedBy: string;
+  createdAt: Date | Timestamp;
+  updatedAt: Date | Timestamp;
+  examples?: string[];
+}
+
 // ─── KPI ───────────────────────────────────────────────────────────────────
 
 export interface PretermeKPI {

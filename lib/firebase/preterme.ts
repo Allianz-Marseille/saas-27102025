@@ -7,6 +7,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
   getDocs,
   getDoc,
   doc,
@@ -22,9 +23,11 @@ import type {
   PretermeImport,
   PretermeClient,
   PretermeLog,
+  PretermeQualityOverride,
   AgenceCode,
   PretermeWorkflowStep,
 } from "@/types/preterme";
+import { normalizeClientName } from "@/lib/utils/preterme-quality";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -328,6 +331,77 @@ export async function updatePretermeClient(
   await updateDoc(doc(db!, "preterme_clients", id), {
     ...data,
     updatedAt: Timestamp.now(),
+  });
+}
+
+// ─── Overrides qualité ───────────────────────────────────────────────────────
+
+export async function getQualityOverridesByNormalizedNames(
+  normalizedNames: string[]
+): Promise<Record<string, "particulier" | "societe">> {
+  assertDb();
+  const uniqueNames = Array.from(new Set(normalizedNames.filter(Boolean)));
+  if (uniqueNames.length === 0) return {};
+
+  const result: Record<string, "particulier" | "societe"> = {};
+  const CHUNK_SIZE = 10; // where("in") max 10
+
+  for (let i = 0; i < uniqueNames.length; i += CHUNK_SIZE) {
+    const chunk = uniqueNames.slice(i, i + CHUNK_SIZE);
+    const q = query(
+      collection(db!, "preterme_quality_overrides"),
+      where("normalizedName", "in", chunk)
+    );
+    const snap = await getDocs(q);
+    snap.docs.forEach((d) => {
+      const data = d.data() as { normalizedName?: string; entityType?: "particulier" | "societe" };
+      if (data.normalizedName && data.entityType) {
+        result[data.normalizedName] = data.entityType;
+      }
+    });
+  }
+
+  return result;
+}
+
+export async function upsertQualityOverride(
+  nomClient: string,
+  entityType: "particulier" | "societe",
+  userId: string
+): Promise<void> {
+  assertDb();
+  const normalizedName = normalizeClientName(nomClient);
+  if (!normalizedName) return;
+
+  const now = Timestamp.now();
+  const colRef = collection(db!, "preterme_quality_overrides");
+  const existingSnap = await getDocs(query(colRef, where("normalizedName", "==", normalizedName), limit(1)));
+
+  if (!existingSnap.empty) {
+    const existing = existingSnap.docs[0];
+    const data = existing.data() as { examples?: string[] };
+    const examples = Array.from(new Set([...(data.examples ?? []), nomClient])).slice(0, 10);
+    await updateDoc(existing.ref, {
+      entityType,
+      updatedBy: userId,
+      updatedAt: now,
+      examples,
+    });
+    return;
+  }
+
+  await addDoc(colRef, {
+    normalizedName,
+    entityType,
+    source: "manual",
+    createdBy: userId,
+    updatedBy: userId,
+    createdAt: now,
+    updatedAt: now,
+    examples: [nomClient],
+  } satisfies Omit<PretermeQualityOverride, "id" | "createdAt" | "updatedAt"> & {
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
   });
 }
 

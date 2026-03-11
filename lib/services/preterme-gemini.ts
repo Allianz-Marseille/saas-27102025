@@ -12,6 +12,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import type { TypeEntite } from "@/types/preterme";
+import { normalizeClientName } from "@/lib/utils/preterme-quality";
 
 const MODEL = "gemini-2.5-flash";
 const BATCH_SIZE = 50;
@@ -57,16 +58,6 @@ const SOCIETE_KEYWORDS = [
 
 const PARTICULES_NOM = new Set(["DE", "DU", "DES", "LE", "LA", "LES", "DEL", "DI", "D"]);
 
-function normalizeNom(rawNom: string): string {
-  return rawNom
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s'’-]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toUpperCase();
-}
-
 function hasSocieteKeyword(normalizedNom: string): boolean {
   return SOCIETE_KEYWORDS.some((keyword) =>
     new RegExp(`(^|\\s)${keyword}(\\s|$)`).test(normalizedNom)
@@ -86,7 +77,7 @@ function looksLikePersonName(normalizedNom: string): boolean {
 }
 
 export function classifierNomAvecHeuristiques(nom: string): ClassificationResult | null {
-  const normalizedNom = normalizeNom(nom);
+  const normalizedNom = normalizeClientName(nom);
   if (!normalizedNom) {
     return { nom, type: "a_valider", confidence: 0, fallback: true };
   }

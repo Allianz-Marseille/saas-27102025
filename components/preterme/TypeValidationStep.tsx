@@ -7,7 +7,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { updatePretermeClient } from "@/lib/firebase/preterme";
+import { upsertQualityOverride, updatePretermeClient } from "@/lib/firebase/preterme";
+import { useAuth } from "@/lib/firebase/use-auth";
+import { normalizeClientName } from "@/lib/utils/preterme-quality";
 import type { PretermeClient } from "@/types/preterme";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -26,7 +28,8 @@ function getEffectiveType(
   client: PretermeClient,
   overrides: Map<string, EffectiveType>
 ): EffectiveType {
-  if (overrides.has(client.id)) return overrides.get(client.id)!;
+  const normalizedName = normalizeClientName(client.nomClient);
+  if (overrides.has(normalizedName)) return overrides.get(normalizedName)!;
   // a_valider → société par défaut (résultat ambigu de l'IA)
   return client.typeEntite === "particulier" ? "particulier" : "societe";
 }
@@ -103,6 +106,7 @@ function ClientRow({
 // ─── TypeValidationStep ───────────────────────────────────────────────────────
 
 export function TypeValidationStep({ clients, onValidated }: TypeValidationStepProps) {
+  const { user } = useAuth();
   const [overrides, setOverrides] = useState<Map<string, EffectiveType>>(new Map());
   const [isSaving, setIsSaving] = useState(false);
 
@@ -111,12 +115,13 @@ export function TypeValidationStep({ clients, onValidated }: TypeValidationStepP
       const next = new Map(prev);
       const current = getEffectiveType(client, prev);
       const newType: EffectiveType = current === "particulier" ? "societe" : "particulier";
+      const normalizedName = normalizeClientName(client.nomClient);
       // Si on revient au type original de l'IA, on supprime l'override
       const originalType: EffectiveType = client.typeEntite === "particulier" ? "particulier" : "societe";
       if (newType === originalType) {
-        next.delete(client.id);
+        next.delete(normalizedName);
       } else {
-        next.set(client.id, newType);
+        next.set(normalizedName, newType);
       }
       return next;
     });
@@ -137,10 +142,27 @@ export function TypeValidationStep({ clients, onValidated }: TypeValidationStepP
     setIsSaving(true);
     try {
       if (overrides.size > 0) {
+        const uid = user?.uid ?? "admin";
+        const updates = clients
+          .map((client) => {
+            const effectiveType = getEffectiveType(client, overrides);
+            const originalType: EffectiveType =
+              client.typeEntite === "particulier" ? "particulier" : "societe";
+            if (effectiveType === originalType) return null;
+            return { client, effectiveType };
+          })
+          .filter((item): item is { client: PretermeClient; effectiveType: EffectiveType } => item !== null);
+
         await Promise.all(
-          Array.from(overrides.entries()).map(([id, typeEntite]) =>
-            updatePretermeClient(id, { typeEntite })
+          updates.map(({ client, effectiveType }) =>
+            updatePretermeClient(client.id, { typeEntite: effectiveType })
           )
+        );
+        await Promise.all(
+          Array.from(overrides.entries()).map(([normalizedName, typeEntite]) => {
+            const exampleClient = clients.find((c) => normalizeClientName(c.nomClient) === normalizedName);
+            return upsertQualityOverride(exampleClient?.nomClient ?? normalizedName, typeEntite, uid);
+          })
         );
       }
       const msg = entreprises.length > 0
@@ -205,7 +227,7 @@ export function TypeValidationStep({ clients, onValidated }: TypeValidationStepP
                   key={c.id}
                   client={c}
                   effectiveType="particulier"
-                  isChanged={overrides.has(c.id)}
+                  isChanged={getEffectiveType(c, overrides) !== (c.typeEntite === "particulier" ? "particulier" : "societe")}
                   onToggle={() => toggle(c)}
                 />
               ))}
@@ -230,7 +252,7 @@ export function TypeValidationStep({ clients, onValidated }: TypeValidationStepP
                   key={c.id}
                   client={c}
                   effectiveType="societe"
-                  isChanged={overrides.has(c.id)}
+                  isChanged={getEffectiveType(c, overrides) !== (c.typeEntite === "particulier" ? "particulier" : "societe")}
                   onToggle={() => toggle(c)}
                 />
               ))}

@@ -17,6 +17,34 @@ import { adminDb, Timestamp } from "@/lib/firebase/admin-config";
 import { doitEtreConserve } from "@/lib/services/preterme-anomaly";
 import { classifierNoms } from "@/lib/services/preterme-gemini";
 import type { TypeEntite } from "@/types/preterme";
+import { normalizeClientName } from "@/lib/utils/preterme-quality";
+
+async function getQualityOverrideMap(normalizedNames: string[]): Promise<Record<string, "particulier" | "societe">> {
+  const uniqueNames = Array.from(new Set(normalizedNames.filter(Boolean)));
+  if (uniqueNames.length === 0) return {};
+
+  const result: Record<string, "particulier" | "societe"> = {};
+  const CHUNK_SIZE = 10; // Firestore where in max size
+  for (let i = 0; i < uniqueNames.length; i += CHUNK_SIZE) {
+    const chunk = uniqueNames.slice(i, i + CHUNK_SIZE);
+    const snap = await adminDb
+      .collection("preterme_quality_overrides")
+      .where("normalizedName", "in", chunk)
+      .get();
+
+    snap.docs.forEach((d) => {
+      const data = d.data() as {
+        normalizedName?: string;
+        entityType?: "particulier" | "societe";
+      };
+      if (data.normalizedName && data.entityType) {
+        result[data.normalizedName] = data.entityType;
+      }
+    });
+  }
+
+  return result;
+}
 
 export async function POST(request: NextRequest) {
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -99,12 +127,41 @@ export async function POST(request: NextRequest) {
     );
     const conserveIds = new Set(conserves.map((c) => c.id));
 
-    const classifications = await classifierNoms(conserves.map((c) => c.nomClient), geminiKey);
+    const normalizedNames = conserves.map((c) => normalizeClientName(c.nomClient));
+    const overrideMap = await getQualityOverrideMap(normalizedNames);
+
+    const nomsPourModel: string[] = [];
+    const idsPourModel: string[] = [];
+    conserves.forEach((client) => {
+      const normalizedName = normalizeClientName(client.nomClient);
+      if (!overrideMap[normalizedName]) {
+        nomsPourModel.push(client.nomClient);
+        idsPourModel.push(client.id);
+      }
+    });
+    const modelResults = await classifierNoms(nomsPourModel, geminiKey);
+    const modelResultByClientId = new Map<string, { type: TypeEntite; confidence: number }>();
+    idsPourModel.forEach((clientId, idx) => {
+      const result = modelResults[idx];
+      if (result) {
+        modelResultByClientId.set(clientId, {
+          type: result.type,
+          confidence: result.confidence,
+        });
+      }
+    });
+
     const classifByIndex = new Map<string, { type: TypeEntite; confidence: number }>();
-    conserves.forEach((c, i) => {
-      const res = classifications[i];
+    conserves.forEach((client) => {
+      const normalizedName = normalizeClientName(client.nomClient);
+      const overrideType = overrideMap[normalizedName];
+      if (overrideType) {
+        classifByIndex.set(client.id, { type: overrideType, confidence: 1 });
+        return;
+      }
+      const res = modelResultByClientId.get(client.id);
       if (res) {
-        classifByIndex.set(c.id, { type: res.type, confidence: res.confidence });
+        classifByIndex.set(client.id, { type: res.type, confidence: res.confidence });
       }
     });
 
