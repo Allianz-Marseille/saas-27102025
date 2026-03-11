@@ -35,6 +35,7 @@ interface ThresholdsStepProps {
   agence: AgenceCode;
   moisKey: string;
   clients: Pick<PretermeClient, "etp" | "tauxVariation">[];
+  availableImportIds?: string[];
   seuilEtpInitial: number;
   seuilVariationInitial: number;
   idToken: string;
@@ -83,6 +84,7 @@ export function ThresholdsStep({
   agence,
   moisKey,
   clients,
+  availableImportIds = [],
   seuilEtpInitial,
   seuilVariationInitial,
   idToken,
@@ -99,16 +101,21 @@ export function ThresholdsStep({
     [clients, seuilEtp, seuilVariation]
   );
 
-  const handleClassify = async () => {
+  const handleClassify = async (mode: "active" | "all" = "active") => {
     setIsClassifying(true);
     try {
+      const useAllImports = mode === "all" && availableImportIds.length > 1;
       const res = await fetch("/api/admin/preterme-auto/classify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ importId, seuilEtp, seuilVariation }),
+        body: JSON.stringify(
+          useAllImports
+            ? { importIds: availableImportIds, seuilEtp, seuilVariation }
+            : { importId, seuilEtp, seuilVariation }
+        ),
       });
 
       const data = await res.json();
@@ -127,7 +134,9 @@ export function ThresholdsStep({
         );
       } else {
         toast.success(
-          `Classification terminée — ${data.nbConserves} clients conservés, ${data.nbSocietesAValider} sociétés à valider.`
+          useAllImports
+            ? `Classification globale terminée — ${data.nbConserves} clients conservés (${data.nbImportsTraites} import(s)).`
+            : `Classification terminée — ${data.nbConserves} clients conservés, ${data.nbSocietesAValider} sociétés à valider.`
         );
       }
     } catch (e) {
@@ -302,7 +311,7 @@ export function ThresholdsStep({
 
       {/* Bouton lancement */}
       <Button
-        onClick={handleClassify}
+        onClick={() => { void handleClassify("active"); }}
         disabled={isClassifying || clients.length === 0}
         className="w-full bg-sky-600 hover:bg-sky-500 py-5 font-medium disabled:opacity-50"
         size="lg"
@@ -319,6 +328,18 @@ export function ThresholdsStep({
           </>
         )}
       </Button>
+
+      {availableImportIds.length > 1 && (
+        <Button
+          onClick={() => { void handleClassify("all"); }}
+          disabled={isClassifying}
+          variant="outline"
+          className="w-full border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800"
+          size="lg"
+        >
+          Lancer le filtrage IA pour toutes les agences importées
+        </Button>
+      )}
     </div>
   );
 }

@@ -118,10 +118,16 @@ export async function updatePretermeConfigWorkflow(
   }
 ): Promise<void> {
   assertDb();
-  await updateDoc(doc(db!, "preterme_configs", id), {
-    workflow,
+  const payload: Record<string, unknown> = {
     updatedAt: Timestamp.now(),
-  });
+  };
+  if (workflow.lastStep) {
+    payload["workflow.lastStep"] = workflow.lastStep;
+  }
+  if (workflow.completedSteps) {
+    payload["workflow.completedSteps"] = workflow.completedSteps;
+  }
+  await updateDoc(doc(db!, "preterme_configs", id), payload);
 }
 
 // ─── PretermeImport ──────────────────────────────────────────────────────────

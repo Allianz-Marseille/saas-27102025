@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import {
   Calendar, ChevronLeft, ChevronRight, Settings2, Upload, Filter,
   Building2, CheckCircle2, Clock, History, Car, Send, MessageSquare, BarChart3,
-  ArrowRightLeft
+  ArrowRightLeft, Disc
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +55,21 @@ function navigateMois(moisKey: string, delta: number): string {
   const [year, month] = moisKey.split("-").map(Number);
   const d = new Date(year, month - 1 + delta, 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function getImportStatusBadge(statut?: string): { label: string; className: string } {
+  switch (statut) {
+    case "TERMINE":
+      return { label: "Termine", className: "bg-emerald-900/60 text-emerald-300 border-emerald-700" };
+    case "PRET":
+      return { label: "Pret", className: "bg-sky-900/60 text-sky-300 border-sky-700" };
+    case "VALIDATION_SOCIETES":
+      return { label: "Validation", className: "bg-amber-900/60 text-amber-300 border-amber-700" };
+    case "DISPATCH_TRELLO":
+      return { label: "Dispatch", className: "bg-violet-900/60 text-violet-300 border-violet-700" };
+    default:
+      return { label: "Brouillon", className: "bg-slate-800 text-slate-300 border-slate-700" };
+  }
 }
 
 function defaultAgences(): AgenceConfig[] {
@@ -153,6 +168,20 @@ const STEPS: { id: Step; label: string; icon: React.ElementType; phase: number }
   { id: "synthese",      label: "Synthèse Slack",     icon: MessageSquare, phase: 5 },
   { id: "kpi",           label: "KPI historiques",    icon: BarChart3,     phase: 5 },
 ];
+const STEP_IDS = new Set<Step>(STEPS.map((s) => s.id));
+
+function sanitizeCompletedSteps(
+  raw: Partial<Record<string, boolean>> | undefined
+): Partial<Record<Step, boolean>> {
+  const normalized: Partial<Record<Step, boolean>> = {};
+  if (!raw) return normalized;
+  for (const [key, value] of Object.entries(raw)) {
+    if (STEP_IDS.has(key as Step) && value === true) {
+      normalized[key as Step] = true;
+    }
+  }
+  return normalized;
+}
 
 // ─── Page principale ─────────────────────────────────────────────────────────
 
@@ -208,8 +237,14 @@ export default function PretermeAutoPage() {
     getPretermeConfig(moisKey).then((c) => {
       if (c) {
         setExistingConfig(c);
+        const persistedCompletedSteps = sanitizeCompletedSteps(
+          c.workflow?.completedSteps as Partial<Record<string, boolean>> | undefined
+        );
+        const restoredStep = c.workflow?.lastStep && STEP_IDS.has(c.workflow.lastStep)
+          ? c.workflow.lastStep
+          : "periode";
         setCompletedSteps({
-          ...(c.workflow?.completedSteps ?? {}),
+          ...persistedCompletedSteps,
           ...(c.valide ? { periode: true, configuration: true } : {}),
         });
         setConfig({
@@ -217,7 +252,7 @@ export default function PretermeAutoPage() {
           seuilEtp: c.seuilEtp, seuilVariation: c.seuilVariation,
           agences: c.agences, slackChannelId: c.slackChannelId,
         });
-        setStep(c.workflow?.lastStep ?? "periode");
+        setStep(restoredStep);
       } else {
         setCompletedSteps({});
         setStep("periode");
@@ -236,12 +271,15 @@ export default function PretermeAutoPage() {
     ) => {
       if (!existingConfig?.id) return;
       try {
+        const sanitizedCompletedSteps = sanitizeCompletedSteps(
+          nextCompletedSteps as Partial<Record<string, boolean>> | undefined
+        );
         await updatePretermeConfigWorkflow(existingConfig.id, {
-          lastStep: nextLastStep,
-          completedSteps: nextCompletedSteps,
+          lastStep: nextLastStep && STEP_IDS.has(nextLastStep) ? nextLastStep : undefined,
+          completedSteps: sanitizedCompletedSteps,
         });
       } catch {
-        // Pas bloquant pour l'UX : la reprise continuera à fonctionner localement.
+        toast.warning("Progression enregistrée localement, synchronisation distante en attente.");
       }
     },
     [existingConfig?.id]
@@ -377,10 +415,13 @@ export default function PretermeAutoPage() {
   const handleClassifySuccess = useCallback(async (_result: unknown) => {
     if (!activeImportId) return;
     // Recharger les clients avec typeEntite frais depuis Gemini
-    await loadImportClients(activeImportId);
+    await Promise.all([
+      loadImportClients(activeImportId),
+      getPretermeImportsByMois(moisKey).then(setAllImports),
+    ]);
     markStepsCompleted(["filtrage"]);
     setStep("validation-types");
-  }, [activeImportId, loadImportClients, markStepsCompleted]);
+  }, [activeImportId, loadImportClients, markStepsCompleted, moisKey]);
 
   const handleTypeValidationDone = useCallback(async (nbEntreprises: number) => {
     if (!activeImportId) return;
@@ -402,6 +443,47 @@ export default function PretermeAutoPage() {
     () => allImports.filter((imp) => imp.moisKey === moisKey),
     [allImports, moisKey]
   );
+
+  const derivedDoneByStatus = useMemo<Partial<Record<Step, boolean>>>(() => {
+    const derived: Partial<Record<Step, boolean>> = {};
+    if (isConfigValide) {
+      derived.periode = true;
+      derived.configuration = true;
+    }
+    if (importsDuMois.length > 0) {
+      derived.upload = true;
+    }
+    const hasFiltered = importsDuMois.some((imp) =>
+      imp.statut === "VALIDATION_SOCIETES" ||
+      imp.statut === "PRET" ||
+      imp.statut === "DISPATCH_TRELLO" ||
+      imp.statut === "TERMINE"
+    );
+    if (hasFiltered) {
+      derived.filtrage = true;
+      derived["validation-types"] = true;
+    }
+    const hasSocietesHandled = importsDuMois.some((imp) =>
+      imp.statut === "PRET" || imp.statut === "DISPATCH_TRELLO" || imp.statut === "TERMINE"
+    );
+    if (hasSocietesHandled) {
+      derived.societes = true;
+    }
+    const hasDispatch = importsDuMois.some((imp) =>
+      imp.statut === "DISPATCH_TRELLO" || imp.statut === "TERMINE"
+    );
+    if (hasDispatch) {
+      derived.dispatch = true;
+    }
+    const hasSynthesis = importsDuMois.some((imp) => imp.statut === "TERMINE");
+    if (hasSynthesis) {
+      derived.synthese = true;
+    }
+    if (allImports.length > 0) {
+      derived.kpi = true;
+    }
+    return derived;
+  }, [allImports.length, importsDuMois, isConfigValide]);
 
   const handleSwitchImport = useCallback(async (importToActivate: PretermeImport) => {
     setActiveImportId(importToActivate.id);
@@ -470,9 +552,8 @@ export default function PretermeAutoPage() {
                 const isActive = step === s.id;
                 const isDone =
                   completedSteps[s.id] ||
+                  derivedDoneByStatus[s.id] ||
                   (s.id === "periode" && stepIndex > 0) ||
-                  (s.id === "configuration" && isConfigValide) ||
-                  (s.id === "upload" && !!activeImportId && stepIndex > 2) ||
                   false;
                 const accessible = canAccessStep(s.id);
 
@@ -500,6 +581,9 @@ export default function PretermeAutoPage() {
                       {isDone ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
                     </div>
                     <span>{s.label}</span>
+                    {completedSteps[s.id] && (
+                      <Disc className="h-2.5 w-2.5 ml-auto text-cyan-400" />
+                    )}
                     {!accessible && <Clock className="h-3 w-3 ml-auto text-slate-600" />}
                   </button>
                 );
@@ -564,6 +648,9 @@ export default function PretermeAutoPage() {
                         onClick={() => { void handleSwitchImport(imp); }}
                       >
                         {imp.agence} - {imp.pretermesGlobaux} clients
+                        <Badge className={cn("ml-2 text-[10px] border", getImportStatusBadge(imp.statut).className)}>
+                          {getImportStatusBadge(imp.statut).label}
+                        </Badge>
                       </Button>
                     );
                   })}
@@ -703,6 +790,7 @@ export default function PretermeAutoPage() {
                     agence={activeAgence}
                     moisKey={moisKey}
                     clients={importedClients}
+                    availableImportIds={importsDuMois.map((imp) => imp.id)}
                     seuilEtpInitial={existingConfig?.seuilEtp ?? 120}
                     seuilVariationInitial={existingConfig?.seuilVariation ?? 20}
                     idToken={idToken}
