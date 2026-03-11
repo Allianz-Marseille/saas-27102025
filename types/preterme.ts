@@ -62,14 +62,12 @@ export interface PretermeConfig {
 
 export type PretermeWorkflowStep =
   | "periode"
-  | "configuration"
   | "upload"
   | "filtrage"
-  | "validation-types"
-  | "societes"
+  | "validation"
+  | "modulation"
   | "dispatch"
-  | "synthese"
-  | "kpi";
+  | "synthese";
 
 // ─── Import ────────────────────────────────────────────────────────────────
 

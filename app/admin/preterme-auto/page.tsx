@@ -3,15 +3,15 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
+import Link from "next/link";
 import {
-  Calendar, ChevronLeft, ChevronRight, Settings2, Upload, Filter,
-  Building2, CheckCircle2, Clock, History, Car, Send, MessageSquare, BarChart3,
-  ArrowRightLeft, Disc
+  Calendar, ChevronLeft, ChevronRight, Upload, Filter,
+  Building2, CheckCircle2, Clock, History, Car, Send,
+  MessageSquare, ArrowRightLeft, SlidersHorizontal, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/firebase/use-auth";
 import {
@@ -21,7 +21,6 @@ import {
   getPretermeClients,
   getSocietesAValider,
   getPretermeImport,
-  getAllPretermeImports,
   updatePretermeImport,
   updatePretermeConfigWorkflow,
   getPretermeImportsByMois,
@@ -33,9 +32,9 @@ import { SocietesValidationStep } from "@/components/preterme/SocietesValidation
 import { TypeValidationStep } from "@/components/preterme/TypeValidationStep";
 import { DispatchPreview } from "@/components/preterme/DispatchPreview";
 import { SynthesisReport } from "@/components/preterme/SynthesisReport";
-import { KpiDashboard } from "@/components/preterme/KpiDashboard";
 import type {
-  PretermeConfig, AgenceConfig, AgenceCode, PretermeClient, PretermeImport, PretermeWorkflowStep,
+  PretermeConfig, AgenceConfig, AgenceCode, PretermeClient,
+  PretermeImport, PretermeWorkflowStep,
 } from "@/types/preterme";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -58,38 +57,34 @@ function navigateMois(moisKey: string, delta: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function defaultAgences(): AgenceConfig[] {
+  return [
+    {
+      code: "H91358",
+      charges: [
+        { id: uuidv4(), prenom: "Corentin", lettresDebut: "A", lettresFin: "C", trello: { trelloBoardId: "67b5f1b34a0b1f85c58dffc1", trelloListId: "67b5f1c697b2440733fec2e6", trelloListName: "PRETERME-AUTO", trelloBoardUrl: "https://trello.com/b/nfhDBmQg/corentin", trelloListUrl: "https://trello.com/b/nfhDBmQg/corentin", trelloMemberId: "67b31e5a33967f2b0c4783e3" } },
+        { id: uuidv4(), prenom: "Emma", lettresDebut: "D", lettresFin: "F", trello: { trelloBoardId: "66d00de829da279e8e667d12", trelloListId: "687a58ffda5f06e009db8ad5", trelloListName: "PRETERME AUTO", trelloBoardUrl: "https://trello.com/b/DkhXnVU8/emma", trelloListUrl: "https://trello.com/b/DkhXnVU8/emma", trelloMemberId: "66d026f95aa7e0dc4201a208" } },
+        { id: uuidv4(), prenom: "Matthieu", lettresDebut: "G", lettresFin: "M", trello: { trelloBoardId: "6980592314de167992c14682", trelloListId: "6980593299ba9e50b7bccfa3", trelloListName: "PRETERME AUTO", trelloBoardUrl: "https://trello.com/b/EkK9044F/matthieu", trelloListUrl: "https://trello.com/b/EkK9044F/matthieu", trelloMemberId: "69805e6a33a948ae79241cbc" } },
+        { id: uuidv4(), prenom: "Donia", lettresDebut: "N", lettresFin: "Z", trello: { trelloBoardId: "684830496441fb45a81ad2ec", trelloListId: "6848305df08bc5e50d5cabd4", trelloListName: "PRETERME AUTO", trelloBoardUrl: "https://trello.com/b/yYu4W7FJ/donia", trelloListUrl: "https://trello.com/b/yYu4W7FJ/donia", trelloMemberId: "6848029e7f42281696feb267" } },
+      ],
+    },
+    {
+      code: "H92083",
+      charges: [
+        { id: uuidv4(), prenom: "Joelle", lettresDebut: "A", lettresFin: "H", trello: { trelloBoardId: "66f0f7e293c93ba79d00ac8b", trelloListId: "66f0f7f5b5637967d3526f61", trelloListName: "PRETERME AUTO", trelloBoardUrl: "https://trello.com/b/3oWnNHUr/joelle", trelloListUrl: "https://trello.com/b/3oWnNHUr/joelle", trelloMemberId: "66f0fabeee51053c1bdd6a1b" } },
+        { id: uuidv4(), prenom: "Christelle", lettresDebut: "I", lettresFin: "Z", trello: { trelloBoardId: "696e08ca8f5fc83c1a5595af", trelloListId: "696e08d97fb0c0bd53e4398a", trelloListName: "PRETERME AUTO", trelloBoardUrl: "https://trello.com/b/IexKz87i/christelle", trelloListUrl: "https://trello.com/b/IexKz87i/christelle", trelloMemberId: "696e01346b6d56cc7332c3af" } },
+      ],
+    },
+  ];
+}
+
 function getImportStatusBadge(statut?: string): { label: string; className: string } {
   switch (statut) {
-    case "TERMINE":
-      return {
-        label: "Termine",
-        className:
-          "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-700",
-      };
-    case "PRET":
-      return {
-        label: "Pret",
-        className:
-          "bg-sky-100 text-sky-700 border-sky-300 dark:bg-sky-900/60 dark:text-sky-300 dark:border-sky-700",
-      };
-    case "VALIDATION_SOCIETES":
-      return {
-        label: "Validation",
-        className:
-          "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/60 dark:text-amber-300 dark:border-amber-700",
-      };
-    case "DISPATCH_TRELLO":
-      return {
-        label: "Dispatch",
-        className:
-          "bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/60 dark:text-violet-300 dark:border-violet-700",
-      };
-    default:
-      return {
-        label: "Brouillon",
-        className:
-          "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
-      };
+    case "TERMINE": return { label: "Terminé", className: "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-700" };
+    case "PRET": return { label: "Prêt", className: "bg-sky-100 text-sky-700 border-sky-300 dark:bg-sky-900/60 dark:text-sky-300 dark:border-sky-700" };
+    case "VALIDATION_SOCIETES": return { label: "Validation", className: "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/60 dark:text-amber-300 dark:border-amber-700" };
+    case "DISPATCH_TRELLO": return { label: "Dispatch", className: "bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/60 dark:text-violet-300 dark:border-violet-700" };
+    default: return { label: "Brouillon", className: "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700" };
   }
 }
 
@@ -106,101 +101,18 @@ function isImportTypesValidated(
   );
 }
 
-function defaultAgences(): AgenceConfig[] {
-  return [
-    {
-      code: "H91358",
-      charges: [
-        {
-          id: uuidv4(), prenom: "Corentin", lettresDebut: "A", lettresFin: "C",
-          trello: {
-            trelloBoardId:  "67b5f1b34a0b1f85c58dffc1",
-            trelloListId:   "67b5f1c697b2440733fec2e6",
-            trelloListName: "PRETERME-AUTO",
-            trelloBoardUrl: "https://trello.com/b/nfhDBmQg/corentin",
-            trelloListUrl:  "https://trello.com/b/nfhDBmQg/corentin",
-            trelloMemberId: "67b31e5a33967f2b0c4783e3",
-          },
-        },
-        {
-          id: uuidv4(), prenom: "Emma", lettresDebut: "D", lettresFin: "F",
-          trello: {
-            trelloBoardId:  "66d00de829da279e8e667d12",
-            trelloListId:   "687a58ffda5f06e009db8ad5",
-            trelloListName: "PRETERME AUTO",
-            trelloBoardUrl: "https://trello.com/b/DkhXnVU8/emma",
-            trelloListUrl:  "https://trello.com/b/DkhXnVU8/emma",
-            trelloMemberId: "66d026f95aa7e0dc4201a208",
-          },
-        },
-        {
-          id: uuidv4(), prenom: "Matthieu", lettresDebut: "G", lettresFin: "M",
-          trello: {
-            trelloBoardId:  "6980592314de167992c14682",
-            trelloListId:   "6980593299ba9e50b7bccfa3",
-            trelloListName: "PRETERME AUTO",
-            trelloBoardUrl: "https://trello.com/b/EkK9044F/matthieu",
-            trelloListUrl:  "https://trello.com/b/EkK9044F/matthieu",
-            trelloMemberId: "69805e6a33a948ae79241cbc",
-          },
-        },
-        {
-          id: uuidv4(), prenom: "Donia", lettresDebut: "N", lettresFin: "Z",
-          trello: {
-            trelloBoardId:  "684830496441fb45a81ad2ec",
-            trelloListId:   "6848305df08bc5e50d5cabd4",
-            trelloListName: "PRETERME AUTO",
-            trelloBoardUrl: "https://trello.com/b/yYu4W7FJ/donia",
-            trelloListUrl:  "https://trello.com/b/yYu4W7FJ/donia",
-            trelloMemberId: "6848029e7f42281696feb267",
-          },
-        },
-      ],
-    },
-    {
-      code: "H92083",
-      charges: [
-        {
-          id: uuidv4(), prenom: "Joelle", lettresDebut: "A", lettresFin: "H",
-          trello: {
-            trelloBoardId:  "66f0f7e293c93ba79d00ac8b",
-            trelloListId:   "66f0f7f5b5637967d3526f61",
-            trelloListName: "PRETERME AUTO",
-            trelloBoardUrl: "https://trello.com/b/3oWnNHUr/joelle",
-            trelloListUrl:  "https://trello.com/b/3oWnNHUr/joelle",
-            trelloMemberId: "66f0fabeee51053c1bdd6a1b",
-          },
-        },
-        {
-          id: uuidv4(), prenom: "Christelle", lettresDebut: "I", lettresFin: "Z",
-          trello: {
-            trelloBoardId:  "696e08ca8f5fc83c1a5595af",
-            trelloListId:   "696e08d97fb0c0bd53e4398a",
-            trelloListName: "PRETERME AUTO",
-            trelloBoardUrl: "https://trello.com/b/IexKz87i/christelle",
-            trelloListUrl:  "https://trello.com/b/IexKz87i/christelle",
-            trelloMemberId: "696e01346b6d56cc7332c3af",
-          },
-        },
-      ],
-    },
-  ];
-}
-
 // ─── Steps ──────────────────────────────────────────────────────────────────
 
 type Step = PretermeWorkflowStep;
 
-const STEPS: { id: Step; label: string; icon: React.ElementType; phase: number }[] = [
-  { id: "periode",       label: "Période",            icon: Calendar,      phase: 1 },
-  { id: "configuration", label: "Configuration",      icon: Settings2,     phase: 1 },
-  { id: "upload",        label: "Upload fichiers",    icon: Upload,        phase: 2 },
-  { id: "filtrage",          label: "Filtrage & IA",      icon: Filter,            phase: 3 },
-  { id: "validation-types", label: "Valid. types",        icon: ArrowRightLeft,    phase: 3 },
-  { id: "societes",          label: "Gérants sociétés",   icon: Building2,         phase: 3 },
-  { id: "dispatch",      label: "Dispatch Trello",    icon: Send,          phase: 4 },
-  { id: "synthese",      label: "Synthèse Slack",     icon: MessageSquare, phase: 5 },
-  { id: "kpi",           label: "KPI historiques",    icon: BarChart3,     phase: 5 },
+const STEPS: { id: Step; label: string; icon: React.ElementType }[] = [
+  { id: "periode",    label: "Période",         icon: Calendar },
+  { id: "upload",     label: "Téléchargement",  icon: Upload },
+  { id: "filtrage",   label: "Filtrage IA",     icon: Filter },
+  { id: "validation", label: "Validation",      icon: ArrowRightLeft },
+  { id: "modulation", label: "Modulation",      icon: SlidersHorizontal },
+  { id: "dispatch",   label: "Dispatch Trello", icon: Send },
+  { id: "synthese",   label: "Synthèse Slack",  icon: MessageSquare },
 ];
 const STEP_IDS = new Set<Step>(STEPS.map((s) => s.id));
 
@@ -224,24 +136,26 @@ export default function PretermeAutoPage() {
 
   const [step, setStep]         = useState<Step>("periode");
   const [moisKey, setMoisKey]   = useState<string>(getMoisCible());
-  const [isSaving, setIsSaving]           = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [idToken, setIdToken]   = useState<string>("");
 
-  const [existingConfig, setExistingConfig]   = useState<PretermeConfig | null>(null);
-  const [historique, setHistorique]           = useState<PretermeConfig[]>([]);
-  const [loadingHistory, setLoadingHistory]   = useState(true);
+  const [existingConfig, setExistingConfig] = useState<PretermeConfig | null>(null);
+  const [historique, setHistorique]         = useState<PretermeConfig[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
-  // Import actif (après upload)
   const [activeImportId, setActiveImportId]   = useState<string | null>(null);
   const [activeAgence, setActiveAgence]       = useState<AgenceCode | null>(null);
   const [importedClients, setImportedClients] = useState<PretermeClient[]>([]);
   const [societesAValider, setSocietesAValider] = useState<PretermeClient[]>([]);
   const [activeImport, setActiveImport]       = useState<PretermeImport | null>(null);
   const [allImports, setAllImports]           = useState<PretermeImport[]>([]);
-  const [completedSteps, setCompletedSteps] = useState<Partial<Record<Step, boolean>>>({});
+  const [completedSteps, setCompletedSteps]   = useState<Partial<Record<Step, boolean>>>({});
   const [hasPendingTypeChanges, setHasPendingTypeChanges] = useState(false);
   const [savedTypeChoicesByImportId, setSavedTypeChoicesByImportId] = useState<Record<string, boolean>>({});
+
+  // Sous-étape interne de l'étape validation : types puis gérants
+  const [validationSubStep, setValidationSubStep] = useState<"types" | "societes">("types");
 
   const [config, setConfig] = useState<
     Omit<PretermeConfig, "id" | "createdAt" | "updatedAt" | "createdBy" | "valide">
@@ -251,7 +165,7 @@ export default function PretermeAutoPage() {
     seuilEtp: 120,
     seuilVariation: 20,
     agences: defaultAgences(),
-    slackChannelId: "",
+    slackChannelId: "CE58HNVF0",
   });
 
   // Token Firebase
@@ -281,42 +195,34 @@ export default function PretermeAutoPage() {
           : "periode";
         setCompletedSteps({
           ...persistedCompletedSteps,
-          ...(c.valide ? { periode: true, configuration: true } : {}),
+          ...(c.valide ? { periode: true, modulation: true } : { periode: true }),
         });
         setConfig({
           moisKey: c.moisKey, branche: c.branche,
           seuilEtp: c.seuilEtp, seuilVariation: c.seuilVariation,
-          agences: c.agences, slackChannelId: c.slackChannelId,
+          agences: c.agences, slackChannelId: "CE58HNVF0",
         });
         setStep(restoredStep);
       } else {
         setCompletedSteps({});
         setSavedTypeChoicesByImportId({});
         setStep("periode");
-        // Hériter les agences (CDC + mapping Trello) du mois le plus récent
-        // pour ne pas ressaisir les liens Trello à chaque nouveau mois.
         const latestAgences = historique[0]?.agences ?? defaultAgences();
-        setConfig((prev) => ({ ...prev, moisKey, agences: latestAgences }));
+        setConfig((prev) => ({ ...prev, moisKey, agences: latestAgences, slackChannelId: "CE58HNVF0" }));
       }
     });
   }, [moisKey, historique]);
 
   const persistWorkflow = useCallback(
-    async (
-      nextLastStep?: Step,
-      nextCompletedSteps?: Partial<Record<Step, boolean>>
-    ) => {
+    async (nextLastStep?: Step, nextCompletedSteps?: Partial<Record<Step, boolean>>) => {
       if (!existingConfig?.id) return;
       try {
-        const sanitizedCompletedSteps = sanitizeCompletedSteps(
-          nextCompletedSteps as Partial<Record<string, boolean>> | undefined
-        );
         await updatePretermeConfigWorkflow(existingConfig.id, {
           lastStep: nextLastStep && STEP_IDS.has(nextLastStep) ? nextLastStep : undefined,
-          completedSteps: sanitizedCompletedSteps,
+          completedSteps: sanitizeCompletedSteps(nextCompletedSteps as Partial<Record<string, boolean>> | undefined),
         });
       } catch {
-        toast.warning("Progression enregistrée localement, synchronisation distante en attente.");
+        toast.warning("Progression enregistrée localement.");
       }
     },
     [existingConfig?.id]
@@ -334,29 +240,26 @@ export default function PretermeAutoPage() {
     [persistWorkflow, step]
   );
 
-  // Charger les clients d'un import
   const loadImportClients = useCallback(async (importId: string) => {
     try {
-      const clients = await getPretermeClients(importId);
-      setImportedClients(clients);
+      setImportedClients(await getPretermeClients(importId));
     } catch {
       toast.error("Impossible de charger les clients de l'import");
     }
   }, []);
 
-  // Charger les sociétés à valider
   const loadSocietes = useCallback(async (importId: string) => {
     try {
-      const s = await getSocietesAValider(importId);
-      setSocietesAValider(s);
+      setSocietesAValider(await getSocietesAValider(importId));
     } catch {
       toast.error("Impossible de charger les sociétés");
     }
   }, []);
 
-  const handleSaveDraft = useCallback(async () => {
+  // Étape 1 : confirmer la période → créer config minimale (valide: false)
+  const handleConfirmPeriod = useCallback(async () => {
     if (!user) return;
-    setIsSavingDraft(true);
+    setIsSaving(true);
     try {
       await upsertPretermeConfig({ ...config, valide: false, createdBy: user.uid });
       const [updated, fresh] = await Promise.all([
@@ -365,7 +268,26 @@ export default function PretermeAutoPage() {
       ]);
       setHistorique(updated);
       if (fresh) setExistingConfig(fresh);
-      toast.success("Brouillon sauvegardé — vous pouvez reprendre plus tard");
+      markStepsCompleted(["periode"]);
+      toast.success(`Période ${formatMoisLabel(moisKey)} confirmée.`);
+      setStep("upload");
+    } catch {
+      toast.error("Erreur lors de la confirmation de la période");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [config, user, moisKey, markStepsCompleted]);
+
+  // Brouillon (modulation en cours)
+  const handleSaveDraft = useCallback(async () => {
+    if (!user) return;
+    setIsSavingDraft(true);
+    try {
+      await upsertPretermeConfig({ ...config, valide: false, createdBy: user.uid });
+      const [updated, fresh] = await Promise.all([getAllPretermeConfigs(), getPretermeConfig(moisKey)]);
+      setHistorique(updated);
+      if (fresh) setExistingConfig(fresh);
+      toast.success("Brouillon sauvegardé");
     } catch {
       toast.error("Erreur lors de la sauvegarde du brouillon");
     } finally {
@@ -373,22 +295,20 @@ export default function PretermeAutoPage() {
     }
   }, [config, user, moisKey]);
 
-  const handleValidateConfig = useCallback(async () => {
+  // Étape 5 : valider la modulation (CDC + seuils) → config.valide = true
+  const handleValidateModulation = useCallback(async () => {
     if (!user) return;
     setIsSaving(true);
     try {
       await upsertPretermeConfig({ ...config, valide: true, createdBy: user.uid });
-      const [updated, fresh] = await Promise.all([
-        getAllPretermeConfigs(),
-        getPretermeConfig(moisKey),
-      ]);
+      const [updated, fresh] = await Promise.all([getAllPretermeConfigs(), getPretermeConfig(moisKey)]);
       setHistorique(updated);
       if (fresh) setExistingConfig(fresh);
-      markStepsCompleted(["periode", "configuration"]);
-      toast.success(`Configuration ${formatMoisLabel(moisKey)} validée !`);
-      setStep("upload");
+      markStepsCompleted(["modulation"]);
+      toast.success("Configuration validée — dispatch Trello disponible.");
+      setStep("dispatch");
     } catch {
-      toast.error("Erreur lors de l'enregistrement");
+      toast.error("Erreur lors de la validation de la modulation");
     } finally {
       setIsSaving(false);
     }
@@ -398,12 +318,11 @@ export default function PretermeAutoPage() {
     setActiveImportId(importId);
     setActiveAgence(agence);
     await loadImportClients(importId);
-    // Charger tous les imports du mois pour les KPI
     getPretermeImportsByMois(moisKey).then(setAllImports).catch(() => {});
     markStepsCompleted(["upload"]);
-  }, [loadImportClients, moisKey]);
+  }, [loadImportClients, moisKey, markStepsCompleted]);
 
-  // Charger activeImport depuis Firestore quand activeImportId change
+  // Charger import actif
   useEffect(() => {
     if (!activeImportId) return;
     getPretermeImport(activeImportId).then((imp) => {
@@ -411,47 +330,30 @@ export default function PretermeAutoPage() {
     }).catch(() => {});
   }, [activeImportId]);
 
-  // Charger les imports du mois courant et conserver une sélection stable
+  // Charger les imports du mois
   useEffect(() => {
     getPretermeImportsByMois(moisKey)
       .then(async (imports) => {
         setAllImports(imports);
-
         if (imports.length === 0) {
-          setActiveImportId(null);
-          setActiveAgence(null);
-          setActiveImport(null);
-          setImportedClients([]);
-          setSocietesAValider([]);
+          setActiveImportId(null); setActiveAgence(null); setActiveImport(null);
+          setImportedClients([]); setSocietesAValider([]);
           return;
         }
-
         const stillActive = activeImportId && imports.some((imp) => imp.id === activeImportId);
         const nextActive = stillActive
           ? imports.find((imp) => imp.id === activeImportId)!
           : imports[0];
-
         setActiveImportId(nextActive.id);
         setActiveAgence(nextActive.agence);
         setActiveImport(nextActive);
         await loadImportClients(nextActive.id);
       })
-      .catch(() => {
-        toast.error("Impossible de charger les imports du mois");
-      });
+      .catch(() => toast.error("Impossible de charger les imports du mois"));
   }, [moisKey, activeImportId, loadImportClients]);
-
-  // Charger TOUS les imports historiques quand on arrive sur l'onglet KPI
-  useEffect(() => {
-    if (step !== "kpi") return;
-    getAllPretermeImports()
-      .then(setAllImports)
-      .catch(() => toast.error("Impossible de charger les KPI historiques"));
-  }, [step]);
 
   const handleClassifySuccess = useCallback(async (_result: unknown) => {
     if (!activeImportId) return;
-    // Recharger les clients avec typeEntite frais depuis Gemini
     await Promise.all([
       loadImportClients(activeImportId),
       getPretermeImportsByMois(moisKey).then(setAllImports),
@@ -459,7 +361,8 @@ export default function PretermeAutoPage() {
     setSavedTypeChoicesByImportId({});
     setHasPendingTypeChanges(false);
     markStepsCompleted(["filtrage"]);
-    setStep("validation-types");
+    setValidationSubStep("types");
+    setStep("validation");
   }, [activeImportId, loadImportClients, markStepsCompleted, moisKey]);
 
   const markTypeChoicesSavedForImport = useCallback(async (importId: string) => {
@@ -471,26 +374,53 @@ export default function PretermeAutoPage() {
     if (activeImport?.id === importId) {
       setActiveImport((prev) => (prev ? { ...prev, typesValidatedAt: now } : prev));
     }
-
     try {
       await updatePretermeImport(importId, { typesValidatedAt: now });
     } catch {
-      toast.warning("Sauvegarde type effectuée, mais la synchronisation multi-agences est en attente.");
+      toast.warning("Synchronisation en attente.");
     }
   }, [activeImport?.id]);
 
   const handleTypeValidationDone = useCallback(async (nbEntreprises: number) => {
     if (!activeImportId) return;
     await markTypeChoicesSavedForImport(activeImportId);
-    markStepsCompleted(["validation-types"]);
     if (nbEntreprises > 0) {
       await loadSocietes(activeImportId);
-      setStep("societes");
+      setValidationSubStep("societes");
     } else {
-      markStepsCompleted(["societes"]);
-      setStep("dispatch");
+      markStepsCompleted(["validation"]);
+      setStep("modulation");
     }
   }, [activeImportId, loadSocietes, markStepsCompleted, markTypeChoicesSavedForImport]);
+
+  const handleValidateTypesForAllImports = useCallback(async () => {
+    if (!activeImportId) return;
+    if (hasPendingTypeChanges) {
+      toast.warning("Enregistre d'abord les modifications en cours.");
+      return;
+    }
+    const latestImports = await getPretermeImportsByMois(moisKey).catch(() => null);
+    if (!latestImports || latestImports.length === 0) {
+      toast.error("Impossible de vérifier les imports du mois.");
+      return;
+    }
+    setAllImports(latestImports);
+    const unsaved = latestImports.filter(
+      (imp) => !isImportTypesValidated(imp, savedTypeChoicesByImportId)
+    );
+    if (unsaved.length > 0) {
+      toast.warning(`Valide d'abord les types pour : ${unsaved.map((i) => i.agence).join(", ")}.`);
+      return;
+    }
+    const nbEntreprises = importedClients.filter(
+      (c) => c.conserve && (c.typeEntite === "societe" || c.typeEntite === "a_valider")
+    ).length;
+    await handleTypeValidationDone(nbEntreprises);
+    toast.success("Validation complète pour toutes les agences.");
+  }, [
+    activeImportId, handleTypeValidationDone, hasPendingTypeChanges,
+    importedClients, moisKey, savedTypeChoicesByImportId,
+  ]);
 
   useEffect(() => {
     void persistWorkflow(step, completedSteps);
@@ -511,125 +441,95 @@ export default function PretermeAutoPage() {
     [importsDuMois, isTypeChoicesSavedForImport]
   );
 
-  const handleValidateTypesForAllImports = useCallback(async () => {
-    if (!activeImportId) return;
-    if (hasPendingTypeChanges) {
-      toast.warning("Enregistre d'abord les modifications en cours sur cette agence.");
-      return;
-    }
-    const latestImports = await getPretermeImportsByMois(moisKey).catch(() => null);
-    if (!latestImports || latestImports.length === 0) {
-      toast.error("Impossible de vérifier les imports du mois.");
-      return;
-    }
-    setAllImports(latestImports);
-
-    const unsavedImports = latestImports.filter(
-      (imp) => !isImportTypesValidated(imp, savedTypeChoicesByImportId)
-    );
-    if (unsavedImports.length > 0) {
-      const agences = unsavedImports.map((imp) => imp.agence).join(", ");
-      toast.warning(`Enregistre d'abord les choix de type pour : ${agences}.`);
-      return;
-    }
-
-    const nbEntreprises = importedClients.filter(
-      (c) => c.conserve && (c.typeEntite === "societe" || c.typeEntite === "a_valider")
-    ).length;
-
-    await handleTypeValidationDone(nbEntreprises);
-    toast.success("Choix de type validés pour toutes les agences du mois.");
-  }, [
-    activeImportId,
-    handleTypeValidationDone,
-    hasPendingTypeChanges,
-    importedClients,
-    moisKey,
-    savedTypeChoicesByImportId,
-  ]);
-  const isConfigValide = existingConfig?.valide ?? false;
-
-  const derivedDoneByStatus = useMemo<Partial<Record<Step, boolean>>>(() => {
-    const derived: Partial<Record<Step, boolean>> = {};
-    if (isConfigValide) {
-      derived.periode = true;
-      derived.configuration = true;
-    }
-    if (importsDuMois.length > 0) {
-      derived.upload = true;
-    }
-    const hasFiltered = importsDuMois.some((imp) =>
-      imp.statut === "VALIDATION_SOCIETES" ||
-      imp.statut === "PRET" ||
-      imp.statut === "DISPATCH_TRELLO" ||
-      imp.statut === "TERMINE"
-    );
-    if (hasFiltered) {
-      derived.filtrage = true;
-      derived["validation-types"] = true;
-    }
-    const hasSocietesHandled = importsDuMois.some((imp) =>
-      imp.statut === "PRET" || imp.statut === "DISPATCH_TRELLO" || imp.statut === "TERMINE"
-    );
-    if (hasSocietesHandled) {
-      derived.societes = true;
-    }
-    const hasDispatch = importsDuMois.some((imp) =>
-      imp.statut === "DISPATCH_TRELLO" || imp.statut === "TERMINE"
-    );
-    if (hasDispatch) {
-      derived.dispatch = true;
-    }
-    const hasSynthesis = importsDuMois.some((imp) => imp.statut === "TERMINE");
-    if (hasSynthesis) {
-      derived.synthese = true;
-    }
-    if (allImports.length > 0) {
-      derived.kpi = true;
-    }
-    return derived;
-  }, [allImports.length, importsDuMois, isConfigValide]);
-
   const handleSwitchImport = useCallback(async (importToActivate: PretermeImport) => {
     setActiveImportId(importToActivate.id);
     setActiveAgence(importToActivate.agence);
     setActiveImport(importToActivate);
     setHasPendingTypeChanges(false);
     await loadImportClients(importToActivate.id);
-    if (step === "societes") {
+    if (step === "validation" && validationSubStep === "societes") {
       await loadSocietes(importToActivate.id);
     }
-  }, [loadImportClients, loadSocietes, step]);
-  const stepIndex = STEPS.findIndex((s) => s.id === step);
+  }, [loadImportClients, loadSocietes, step, validationSubStep]);
+
+  // ─── Dérivés ────────────────────────────────────────────────────────────────
+
+  const isPeriodeConfirmed   = existingConfig !== null;
+  const isModulationValide   = existingConfig?.valide ?? false;
+  const stepIndex            = STEPS.findIndex((s) => s.id === step);
 
   const canAccessStep = (s: Step): boolean => {
-    if (s === "periode" || s === "configuration") return true;
-    if (s === "upload") return isConfigValide;
-    if (s === "filtrage" || s === "validation-types" || s === "societes" || s === "dispatch") return !!activeImportId;
-    if (s === "synthese") return !!activeImportId;
-    if (s === "kpi") return allImports.length > 0 || !!activeImportId;
+    if (s === "periode") return true;
+    if (s === "upload") return isPeriodeConfirmed;
+    if (s === "filtrage") return importsDuMois.length > 0;
+    if (s === "validation") return importsDuMois.some((imp) =>
+      ["VALIDATION_SOCIETES", "PRET", "DISPATCH_TRELLO", "TERMINE"].includes(imp.statut));
+    if (s === "modulation") return areAllImportsTypeChoicesSaved &&
+      importsDuMois.some((imp) => ["PRET", "DISPATCH_TRELLO", "TERMINE"].includes(imp.statut));
+    if (s === "dispatch") return isModulationValide && !!activeImportId;
+    if (s === "synthese") return importsDuMois.some((imp) =>
+      ["DISPATCH_TRELLO", "TERMINE"].includes(imp.statut));
     return false;
   };
 
-  // Breadcrumb
-  const Breadcrumb = ({ current }: { current: string }) => (
-    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-      <button onClick={() => setStep("periode")} className="hover:text-slate-700 dark:hover:text-slate-200">Période</button>
-      {["configuration", "upload", "filtrage", "validation-types", "societes"].includes(step) && (
-        <><span>/</span><button onClick={() => setStep("configuration")} className="hover:text-slate-700 dark:hover:text-slate-200">Config</button></>
-      )}
-      {["upload", "filtrage", "validation-types", "societes"].includes(step) && (
-        <><span>/</span><button onClick={() => setStep("upload")} className="hover:text-slate-700 dark:hover:text-slate-200">Upload</button></>
-      )}
-      {["filtrage", "validation-types", "societes"].includes(step) && (
-        <><span>/</span><button onClick={() => setStep("filtrage")} className="hover:text-slate-700 dark:hover:text-slate-200">Filtrage</button></>
-      )}
-      {step === "societes" && (
-        <><span>/</span><button onClick={() => setStep("validation-types")} className="hover:text-slate-700 dark:hover:text-slate-200">Valid. types</button></>
-      )}
-      <><span>/</span><span className="font-medium text-slate-900 dark:text-white">{current}</span></>
-    </div>
-  );
+  const derivedDoneByStatus = useMemo<Partial<Record<Step, boolean>>>(() => {
+    const d: Partial<Record<Step, boolean>> = {};
+    if (isPeriodeConfirmed) d.periode = true;
+    if (importsDuMois.length > 0) d.upload = true;
+    if (importsDuMois.some((imp) => ["VALIDATION_SOCIETES", "PRET", "DISPATCH_TRELLO", "TERMINE"].includes(imp.statut)))
+      d.filtrage = true;
+    if (areAllImportsTypeChoicesSaved && importsDuMois.some((imp) =>
+      ["PRET", "DISPATCH_TRELLO", "TERMINE"].includes(imp.statut)))
+      d.validation = true;
+    if (isModulationValide) d.modulation = true;
+    if (importsDuMois.some((imp) => ["DISPATCH_TRELLO", "TERMINE"].includes(imp.statut)))
+      d.dispatch = true;
+    if (importsDuMois.some((imp) => imp.statut === "TERMINE"))
+      d.synthese = true;
+    return d;
+  }, [importsDuMois, isPeriodeConfirmed, isModulationValide, areAllImportsTypeChoicesSaved]);
+
+  // ─── Sélecteur d'agence (navigation inter-agences) ─────────────────────────
+
+  const AgencySwitcher = () => {
+    if (importsDuMois.length <= 1) return null;
+    return (
+      <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700 mb-4">
+        <CardContent className="p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {importsDuMois.map((imp) => {
+              const isActive = imp.id === activeImportId;
+              return (
+                <Button
+                  key={imp.id}
+                  type="button"
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  className={cn(
+                    "text-xs",
+                    isActive
+                      ? "bg-sky-600 hover:bg-sky-500"
+                      : "border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  )}
+                  onClick={() => { void handleSwitchImport(imp); }}
+                >
+                  {imp.agence}
+                  <span className="ml-1 opacity-60 text-[10px]">{imp.pretermesGlobaux} clients</span>
+                  <Badge className={cn("ml-2 text-[10px] border", getImportStatusBadge(imp.statut).className)}>
+                    {getImportStatusBadge(imp.statut).label}
+                  </Badge>
+                </Button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  void stepIndex; // utilisé implicitement dans le rendu
+
+  // ─── Rendu ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
@@ -653,14 +553,10 @@ export default function PretermeAutoPage() {
           <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
             <CardContent className="p-4 space-y-1">
               {STEPS.map((s, i) => {
-                const isActive = step === s.id;
-                const isDone =
-                  completedSteps[s.id] ||
-                  derivedDoneByStatus[s.id] ||
-                  (s.id === "periode" && stepIndex > 0) ||
-                  false;
+                const isActive  = step === s.id;
+                const isDone    = completedSteps[s.id] || derivedDoneByStatus[s.id] || false;
                 const accessible = canAccessStep(s.id);
-
+                const Icon = s.icon;
                 return (
                   <button
                     key={s.id}
@@ -677,22 +573,22 @@ export default function PretermeAutoPage() {
                   >
                     <div className={cn(
                       "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                      isDone ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-300"
-                        : isActive ? "bg-sky-200 text-sky-700 dark:bg-sky-700 dark:text-sky-200"
-                        : accessible ? "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
+                      isDone
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-300"
+                        : isActive
+                        ? "bg-sky-200 text-sky-700 dark:bg-sky-700 dark:text-sky-200"
+                        : accessible
+                        ? "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
                         : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600"
                     )}>
                       {isDone ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
                     </div>
+                    <Icon className="h-3.5 w-3.5 shrink-0 opacity-60" />
                     <span>{s.label}</span>
-                    {completedSteps[s.id] && (
-                      <Disc className="h-2.5 w-2.5 ml-auto text-cyan-400" />
-                    )}
                     {!accessible && <Clock className="h-3 w-3 ml-auto text-slate-400 dark:text-slate-600" />}
                   </button>
                 );
               })}
-
             </CardContent>
           </Card>
 
@@ -707,20 +603,32 @@ export default function PretermeAutoPage() {
               {loadingHistory ? (
                 <p className="text-xs text-slate-500 dark:text-slate-600">Chargement...</p>
               ) : historique.length === 0 ? (
-                <p className="text-xs text-slate-500 dark:text-slate-600">Aucune config enregistrée</p>
+                <p className="text-xs text-slate-500 dark:text-slate-600">Aucun cycle enregistré</p>
               ) : (
                 historique.slice(0, 6).map((h) => (
-                  <button
+                  <div
                     key={h.id}
-                    onClick={() => { setMoisKey(h.moisKey); setStep("configuration"); }}
-                    className="w-full flex items-center justify-between text-xs px-2 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
+                    className="flex items-center justify-between text-xs px-2 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   >
-                    <span className="text-slate-700 dark:text-slate-300">{formatMoisLabel(h.moisKey)}</span>
-                    {h.valide
-                      ? <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                      : <Clock className="h-3 w-3 text-amber-500" />
-                    }
-                  </button>
+                    <button
+                      onClick={() => { setMoisKey(h.moisKey); setStep("periode"); }}
+                      className="text-slate-700 dark:text-slate-300 text-left flex-1 truncate"
+                    >
+                      {formatMoisLabel(h.moisKey)}
+                    </button>
+                    <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                      {h.valide
+                        ? <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                        : <Clock className="h-3 w-3 text-amber-500" />}
+                      <Link
+                        href={`/admin/preterme-auto/historique/${h.moisKey}`}
+                        className="text-sky-500 hover:text-sky-400 transition-colors"
+                        title="Voir le détail"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    </div>
+                  </div>
                 ))
               )}
             </CardContent>
@@ -729,41 +637,8 @@ export default function PretermeAutoPage() {
 
         {/* ── Contenu principal ── */}
         <div className="lg:col-span-3">
-          {/* Switch agence/import actif (pour garder Kennedy + Rouvière accessibles) */}
-          {["filtrage", "validation-types", "societes", "dispatch", "synthese"].includes(step) &&
-            importsDuMois.length > 1 && (
-            <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700 mb-4">
-              <CardContent className="p-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  {importsDuMois.map((imp) => {
-                    const isActive = imp.id === activeImportId;
-                    return (
-                      <Button
-                        key={imp.id}
-                        type="button"
-                        variant={isActive ? "default" : "outline"}
-                        size="sm"
-                        className={cn(
-                          "text-xs",
-                          isActive
-                            ? "bg-sky-600 hover:bg-sky-500"
-                            : "border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                        )}
-                        onClick={() => { void handleSwitchImport(imp); }}
-                      >
-                        {imp.agence} - {imp.pretermesGlobaux} clients
-                        <Badge className={cn("ml-2 text-[10px] border", getImportStatusBadge(imp.statut).className)}>
-                          {getImportStatusBadge(imp.statut).label}
-                        </Badge>
-                      </Button>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
-          {/* ── Période ── */}
+          {/* ── 1. Période ── */}
           {step === "periode" && (
             <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
               <CardHeader>
@@ -774,35 +649,47 @@ export default function PretermeAutoPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-center gap-4">
-                  <Button variant="outline" size="icon" className="border-slate-300 bg-slate-100 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
-                    onClick={() => setMoisKey((m) => navigateMois(m, -1))}>
+                  <Button
+                    variant="outline" size="icon"
+                    className="border-slate-300 bg-slate-100 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+                    onClick={() => setMoisKey((m) => navigateMois(m, -1))}
+                  >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <div className="text-center min-w-48">
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white capitalize">{formatMoisLabel(moisKey)}</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white capitalize">
+                      {formatMoisLabel(moisKey)}
+                    </p>
                     <p className="text-xs text-slate-500 mt-0.5">Mois traité par ce préterme</p>
                   </div>
-                  <Button variant="outline" size="icon" className="border-slate-300 bg-slate-100 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
-                    onClick={() => setMoisKey((m) => navigateMois(m, 1))}>
+                  <Button
+                    variant="outline" size="icon"
+                    className="border-slate-300 bg-slate-100 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+                    onClick={() => setMoisKey((m) => navigateMois(m, 1))}
+                  >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
+
                 <div className="p-4 bg-sky-50 border border-sky-200 rounded-xl text-sm text-sky-700 dark:bg-sky-950/30 dark:border-sky-800/40 dark:text-sky-300/80">
-                  <p className="font-medium text-sky-700 dark:text-sky-300 mb-1">Règle calendaire</p>
+                  <p className="font-medium mb-1">Règle calendaire</p>
                   <p>Traitement toujours sur le <strong>mois suivant</strong>. Pré-sélectionné :{" "}
                     <strong className="text-sky-700 dark:text-sky-200">{formatMoisLabel(getMoisCible())}</strong>.</p>
                 </div>
+
                 {existingConfig ? (
-                  <div className={cn("p-4 rounded-xl border text-sm flex items-start gap-3",
+                  <div className={cn(
+                    "p-4 rounded-xl border text-sm flex items-start gap-3",
                     existingConfig.valide
                       ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-700/50 dark:text-emerald-300"
-                      : "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-700/50 dark:text-amber-300")}>
+                      : "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-700/50 dark:text-amber-300"
+                  )}>
                     {existingConfig.valide
                       ? <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
                       : <Clock className="h-4 w-4 mt-0.5 shrink-0" />}
                     <div>
                       <p className="font-medium">
-                        {existingConfig.valide ? "Configuration validée" : "Configuration en cours"}
+                        {existingConfig.valide ? "Cycle terminé" : "Cycle en cours"}
                       </p>
                       <p className="text-xs opacity-80 mt-0.5">
                         {existingConfig.agences.reduce((acc, a) => acc + a.charges.length, 0)} CDC —
@@ -811,81 +698,87 @@ export default function PretermeAutoPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 rounded-xl border border-slate-300 bg-slate-50 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-400 flex items-center gap-3">
-                    <Settings2 className="h-4 w-4 shrink-0" />
-                    Aucune configuration pour ce mois — à créer à l&apos;étape suivante.
+                  <div className="p-4 rounded-xl border border-slate-300 bg-slate-50 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-400">
+                    Nouveau cycle — confirmer la période pour commencer.
                   </div>
                 )}
-                <Button className="w-full bg-sky-600 hover:bg-sky-500" onClick={() => setStep("configuration")}>
-                  Continuer vers la configuration <ChevronRight className="h-4 w-4 ml-1" />
+
+                <Button
+                  className="w-full bg-sky-600 hover:bg-sky-500"
+                  disabled={isSaving}
+                  onClick={isPeriodeConfirmed ? () => setStep("upload") : handleConfirmPeriod}
+                >
+                  {isSaving
+                    ? "Confirmation…"
+                    : isPeriodeConfirmed
+                    ? "Continuer vers le téléchargement"
+                    : "Valider la période"}
+                  <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </CardContent>
             </Card>
           )}
 
-          {/* ── Configuration ── */}
-          {step === "configuration" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Breadcrumb current="Configuration" />
-                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("periode")}>
-                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Changer de mois
-                </Button>
-              </div>
-              <ConfigurationStep moisKey={moisKey} config={config} onChange={setConfig}
-                onValidate={handleValidateConfig} onSaveDraft={handleSaveDraft}
-                isLoading={isSaving} isSavingDraft={isSavingDraft} />
-              {isConfigValide && (
-                <Button className="w-full bg-sky-600 hover:bg-sky-500" onClick={() => setStep("upload")}>
-                  Continuer vers l&apos;upload <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              )}
-            </div>
-          )}
-
-          {/* ── Upload ── */}
+          {/* ── 2. Upload ── */}
           {step === "upload" && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Breadcrumb current="Upload fichiers" />
-                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("configuration")}>
-                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour config
+              <div className="flex justify-start">
+                <Button
+                  variant="ghost" size="sm"
+                  className="text-slate-600 dark:text-slate-400 text-xs"
+                  onClick={() => setStep("periode")}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Changer de période
                 </Button>
               </div>
               <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Upload className="h-4 w-4 text-sky-400" />
-                    Import des exports Allianz — {formatMoisLabel(moisKey)}
+                    Téléchargement des exports Allianz — {formatMoisLabel(moisKey)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <UploadStep moisKey={moisKey} configValide={isConfigValide}
-                    idToken={idToken} onImportSuccess={handleImportSuccess} />
+                  <UploadStep
+                    moisKey={moisKey}
+                    configValide={isPeriodeConfirmed}
+                    idToken={idToken}
+                    onImportSuccess={handleImportSuccess}
+                  />
                 </CardContent>
               </Card>
-              {activeImportId && (
-                <Button className="w-full bg-sky-600 hover:bg-sky-500" onClick={() => setStep("filtrage")}>
-                  Continuer vers filtrage &amp; IA <ChevronRight className="h-4 w-4 ml-1" />
+              {importsDuMois.length > 0 && (
+                <Button
+                  className="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-60"
+                  disabled={importsDuMois.length < 2}
+                  onClick={() => setStep("filtrage")}
+                  title={importsDuMois.length < 2 ? "Les 2 agences doivent être importées pour continuer" : ""}
+                >
+                  Valider l&apos;étape — Lancer le filtrage IA
+                  <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               )}
             </div>
           )}
 
-          {/* ── Filtrage & Gemini ── */}
+          {/* ── 3. Filtrage IA ── */}
           {step === "filtrage" && activeImportId && activeAgence && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Breadcrumb current="Filtrage & IA" />
-                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("upload")}>
-                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour upload
+              <div className="flex justify-start">
+                <Button
+                  variant="ghost" size="sm"
+                  className="text-slate-600 dark:text-slate-400 text-xs"
+                  onClick={() => setStep("upload")}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour téléchargement
                 </Button>
               </div>
+              <AgencySwitcher />
               <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Filter className="h-4 w-4 text-sky-400" />
-                    Filtrage métier + Classification Gemini
+                    Classification Gemini — {activeAgence}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -905,101 +798,124 @@ export default function PretermeAutoPage() {
             </div>
           )}
 
-          {/* ── Validation types (particulier / entreprise) ── */}
-          {step === "validation-types" && activeImportId && (
+          {/* ── 4. Validation (types + gérants) ── */}
+          {step === "validation" && activeImportId && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Breadcrumb current="Validation des types" />
-                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("filtrage")}>
+              <div className="flex justify-start">
+                <Button
+                  variant="ghost" size="sm"
+                  className="text-slate-600 dark:text-slate-400 text-xs"
+                  onClick={() => setStep("filtrage")}
+                >
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour filtrage
                 </Button>
               </div>
-              <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <ArrowRightLeft className="h-4 w-4 text-sky-400" />
-                    Vérification de la classification IA
-                    {hasPendingTypeChanges && (
-                      <Badge className="ml-2 border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-                        Modifications non enregistrées
-                      </Badge>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TypeValidationStep
-                    clients={importedClients.filter((c) => c.conserve)}
-                    onValidated={handleTypeValidationDone}
-                    onSaved={async () => {
-                      if (!activeImportId) return;
-                      await loadImportClients(activeImportId);
-                      await markTypeChoicesSavedForImport(activeImportId);
-                      setHasPendingTypeChanges(false);
-                    }}
-                    onDirtyChange={setHasPendingTypeChanges}
-                  />
-                </CardContent>
-              </Card>
-              {importsDuMois.length > 1 && (
+              <AgencySwitcher />
+
+              {validationSubStep === "types" && (
+                <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <ArrowRightLeft className="h-4 w-4 text-sky-400" />
+                      Validation particulier / entreprise
+                      {hasPendingTypeChanges && (
+                        <Badge className="ml-2 border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                          Modifications non enregistrées
+                        </Badge>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <TypeValidationStep
+                      clients={importedClients.filter((c) => c.conserve)}
+                      onValidated={handleTypeValidationDone}
+                      onSaved={async () => {
+                        if (!activeImportId) return;
+                        await loadImportClients(activeImportId);
+                        await markTypeChoicesSavedForImport(activeImportId);
+                        setHasPendingTypeChanges(false);
+                      }}
+                      onDirtyChange={setHasPendingTypeChanges}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {validationSubStep === "societes" && (
+                <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Building2 className="h-4 w-4 text-sky-400" />
+                      Saisie des gérants d&apos;entreprise
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <SocietesValidationStep
+                      societes={societesAValider}
+                      onAllValidated={() => {
+                        markStepsCompleted(["validation"]);
+                        toast.success("Toutes les sociétés sont validées !");
+                        setStep("modulation");
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {importsDuMois.length > 1 && validationSubStep === "types" && (
                 <Button
                   onClick={() => { void handleValidateTypesForAllImports(); }}
                   disabled={hasPendingTypeChanges}
-                  className="w-full bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-100 disabled:bg-violet-200 disabled:text-violet-500 dark:disabled:bg-violet-900 dark:disabled:text-violet-400"
+                  className="w-full bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-60"
                 >
-                  Passer à l&apos;étape suivante pour toutes les agences
+                  Valider l&apos;étape pour toutes les agences
                 </Button>
               )}
             </div>
           )}
 
-          {/* ── Validation sociétés ── */}
-          {step === "societes" && activeImportId && (
+          {/* ── 5. Modulation (CDC + lettres + seuils) ── */}
+          {step === "modulation" && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Breadcrumb current="Gérants sociétés" />
-                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("validation-types")}>
-                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour validation types
+              <div className="flex justify-start">
+                <Button
+                  variant="ghost" size="sm"
+                  className="text-slate-600 dark:text-slate-400 text-xs"
+                  onClick={() => setStep("validation")}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour validation
                 </Button>
               </div>
-              <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Building2 className="h-4 w-4 text-sky-400" />
-                    Saisie des gérants d&apos;entreprise
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <SocietesValidationStep
-                    societes={societesAValider}
-                    onAllValidated={() => {
-                      markStepsCompleted(["societes"]);
-                      toast.success("Toutes les sociétés sont validées !");
-                      setStep("dispatch");
-                    }}
-                  />
-                </CardContent>
-              </Card>
-              <Button className="w-full bg-sky-600 hover:bg-sky-500" onClick={() => setStep("dispatch")}>
-                Continuer vers le dispatch Trello
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
+              <ConfigurationStep
+                moisKey={moisKey}
+                config={config}
+                onChange={setConfig}
+                onValidate={handleValidateModulation}
+                onSaveDraft={handleSaveDraft}
+                isLoading={isSaving}
+                isSavingDraft={isSavingDraft}
+              />
             </div>
           )}
 
-          {/* ── Dispatch Trello ── */}
+          {/* ── 6. Dispatch Trello ── */}
           {step === "dispatch" && activeImportId && activeAgence && existingConfig && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Breadcrumb current="Dispatch Trello" />
-                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("societes")}>
-                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour sociétés
+              <div className="flex justify-start">
+                <Button
+                  variant="ghost" size="sm"
+                  className="text-slate-600 dark:text-slate-400 text-xs"
+                  onClick={() => setStep("modulation")}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour modulation
                 </Button>
               </div>
+              <AgencySwitcher />
               <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Send className="h-4 w-4 text-sky-400" />
-                    Création des cartes Trello
+                    Création des cartes Trello — {activeAgence}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1014,8 +930,8 @@ export default function PretermeAutoPage() {
                     clients={importedClients}
                     idToken={idToken}
                     onDispatchSuccess={async () => {
-                      markStepsCompleted(["dispatch", "synthese"]);
-                      toast.success("Dispatch terminé ! Consultation de la synthèse.");
+                      markStepsCompleted(["dispatch"]);
+                      toast.success("Dispatch Trello terminé !");
                       if (activeImportId) {
                         const [imp] = await Promise.all([
                           getPretermeImport(activeImportId).catch(() => null),
@@ -1032,12 +948,15 @@ export default function PretermeAutoPage() {
             </div>
           )}
 
-          {/* ── Synthèse Slack ── */}
+          {/* ── 7. Synthèse Slack ── */}
           {step === "synthese" && activeImport && activeAgence && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Breadcrumb current="Synthèse Slack" />
-                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("dispatch")}>
+              <div className="flex justify-start">
+                <Button
+                  variant="ghost" size="sm"
+                  className="text-slate-600 dark:text-slate-400 text-xs"
+                  onClick={() => setStep("dispatch")}
+                >
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour dispatch
                 </Button>
               </div>
@@ -1063,42 +982,14 @@ export default function PretermeAutoPage() {
                         (c.typeEntite === "societe" || c.typeEntite === "a_valider") &&
                         !c.nomGerant
                     ).length}
-                    slackChannelConfigured={!!existingConfig?.slackChannelId}
+                    slackChannelConfigured={true}
                     idToken={idToken}
                   />
                 </CardContent>
               </Card>
-              <Button className="w-full bg-slate-700 hover:bg-slate-600" onClick={() => setStep("kpi")}>
-                Voir les KPI historiques <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
             </div>
           )}
 
-          {/* ── KPI historiques ── */}
-          {step === "kpi" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Breadcrumb current="KPI historiques" />
-                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs" onClick={() => setStep("synthese")}>
-                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour synthèse
-                </Button>
-              </div>
-              <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <BarChart3 className="h-4 w-4 text-sky-400" />
-                    Tableau de bord KPI — Historique prétermes Auto
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <KpiDashboard
-                    imports={allImports}
-                    currentMoisKey={activeImport?.moisKey ?? moisKey}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-          )}
         </div>
       </div>
     </div>
