@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
-import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote, Zap, Bot, Car } from "lucide-react";
+import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote, Zap, Bot, Car, Shield } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { MobileMenu } from "@/components/navigation/mobile-menu";
 import { ResponsiveHeader } from "@/components/navigation/responsive-header";
@@ -48,6 +48,11 @@ const adminNavItems = [
     href: "/admin/preterme-auto",
     label: "Prétermes Auto",
     icon: Car,
+  },
+  {
+    href: "/admin/preterme-ird",
+    label: "Prétermes IARD",
+    icon: Shield,
   },
   {
     href: "/admin/boost",

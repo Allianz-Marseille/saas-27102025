@@ -87,6 +87,7 @@
     "zod": "^4.1.12"
   },
   "optionalDependencies": {
+    "@rollup/rollup-darwin-arm64": "^4.59.0",
     "canvas": "^2.11.2"
   },
   "devDependencies": {

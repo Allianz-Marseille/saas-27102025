@@ -42,10 +42,12 @@ export interface AgenceConfig {
   charges: ChargeDeClientele[];
 }
 
+export type PretermeB = "AUTO" | "IRD";
+
 export interface PretermeConfig {
   id: string;
   moisKey: string;        // ex: "2026-04"
-  branche: "AUTO";
+  branche: PretermeB;
   seuilEtp: number;       // défaut 120
   seuilVariation: number; // défaut 20 (%)
   agences: AgenceConfig[];
@@ -83,7 +85,7 @@ export interface PretermeImport {
   id: string;
   moisKey: string;
   agence: AgenceCode;
-  branche: "AUTO";
+  branche: PretermeB;
   statut: ImportStatut;
   typesValidatedAt?: Date | Timestamp | null;
   pretermesGlobaux: number;
@@ -105,7 +107,7 @@ export interface PretermeClient {
   importId: string;
   moisKey: string;
   agence: AgenceCode;
-  branche: "AUTO";
+  branche: PretermeB;
 
   // Colonnes export Allianz (20 colonnes)
   nomClient: string;
@@ -128,6 +130,8 @@ export interface PretermeClient {
   codeGestionCentrale: string;
   tauxModulationCommission: string;
   dateDernierAvenant: string;
+  // Colonne spécifique IRD (absente en Auto)
+  tauxAugmentationIndice?: number | null;
 
   // Traitement
   typeEntite: TypeEntite;
