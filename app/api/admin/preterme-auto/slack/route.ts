@@ -4,9 +4,10 @@
  * Agrège les données d'un import terminé et envoie la synthèse sur Slack.
  *
  * Body JSON :
- *   { importId: string, slackBotToken: string }
+ *   { importId: string }
  *
- * Le channelId est lu depuis la config mensuelle validée (slackChannelId).
+ * Le bot token est lu depuis process.env.SLACK_BOT_TOKEN.
+ * Le channelId est hardcodé (CE58HNVF0).
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -22,16 +23,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: auth.error ?? "Non autorisé" }, { status: 403 });
   }
 
-  let body: { importId?: string; slackBotToken?: string };
+  let body: { importId?: string };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Body JSON invalide." }, { status: 400 });
   }
 
-  const { importId, slackBotToken } = body;
+  const { importId } = body;
   if (!importId) return NextResponse.json({ error: "importId requis." }, { status: 400 });
-  if (!slackBotToken) return NextResponse.json({ error: "slackBotToken requis." }, { status: 400 });
+
+  const slackBotToken = process.env.SLACK_BOT_TOKEN;
+  if (!slackBotToken) {
+    return NextResponse.json({ error: "SLACK_BOT_TOKEN non configuré côté serveur." }, { status: 503 });
+  }
 
   // ── Charger l'import ──────────────────────────────────────────────────────
   const importSnap = await adminDb.collection("preterme_imports").doc(importId).get();
@@ -53,15 +58,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Config mensuelle introuvable." }, { status: 404 });
   }
 
-  const configData = configSnap.docs[0].data();
-  const channelId = configData.slackChannelId ?? "";
-
-  if (!channelId) {
-    return NextResponse.json(
-      { error: "Canal Slack non configuré. Renseignez slackChannelId dans la configuration mensuelle." },
-      { status: 409 }
-    );
-  }
+  const channelId = "CE58HNVF0";
 
   // ── Agréger les données clients ───────────────────────────────────────────
   const clientsSnap = await adminDb

@@ -982,7 +982,6 @@ export default function PretermeAutoPage() {
                         (c.typeEntite === "societe" || c.typeEntite === "a_valider") &&
                         !c.nomGerant
                     ).length}
-                    slackChannelConfigured={true}
                     idToken={idToken}
                   />
                 </CardContent>

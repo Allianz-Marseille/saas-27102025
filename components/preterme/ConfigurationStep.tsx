@@ -685,29 +685,6 @@ export function ConfigurationStep({
         </CardContent>
       </Card>
 
-      {/* Canal Slack */}
-      <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <span className="text-lg">💬</span> Canal Slack (synthèse de fin de traitement)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-1.5">
-            <Label className="text-sm text-slate-700 dark:text-slate-400">ID du canal Slack</Label>
-            <Input
-              value={config.slackChannelId ?? ""}
-              onChange={(e) => onChange({ ...config, slackChannelId: e.target.value })}
-              placeholder="ex: C0XXXXXXXXX"
-              className="bg-white border-slate-300 dark:bg-slate-800 dark:border-slate-700 max-w-xs"
-            />
-            <p className="text-xs text-slate-600 dark:text-slate-500">
-              Trouvez l&apos;ID dans les paramètres du canal Slack (section &quot;À propos&quot;).
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Agences & CDC */}
       {config.agences.map((agence) => (
         <AgenceSection

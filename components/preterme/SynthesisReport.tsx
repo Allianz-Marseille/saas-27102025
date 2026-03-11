@@ -4,13 +4,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   CheckCircle2, Send, AlertTriangle, MessageSquare,
-  Users, BarChart3, Lock, Eye
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import type { PretermeImport, AgenceCode } from "@/types/preterme";
@@ -23,7 +21,6 @@ interface SynthesisReportProps {
   agence: AgenceCode;
   parCharge: Record<string, number>;
   nbSocietesEnAttente: number;
-  slackChannelConfigured: boolean;
   idToken: string;
 }
 
@@ -34,13 +31,10 @@ export function SynthesisReport({
   agence,
   parCharge,
   nbSocietesEnAttente,
-  slackChannelConfigured,
   idToken,
 }: SynthesisReportProps) {
-  const [slackToken, setSlackToken] = useState("");
-  const [showToken, setShowToken]   = useState(false);
-  const [isSending, setIsSending]   = useState(false);
-  const [sent, setSent]             = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [sent, setSent]           = useState(false);
 
   const ratioConservation = importData.pretermesGlobaux > 0
     ? Math.round((importData.pretermesConserves / importData.pretermesGlobaux) * 100)
@@ -49,7 +43,6 @@ export function SynthesisReport({
   const isTermine = importData.statut === "TERMINE";
 
   const handleSendSlack = async () => {
-    if (!slackToken.trim()) return;
     setIsSending(true);
     try {
       const res = await fetch("/api/admin/preterme-auto/slack", {
@@ -58,10 +51,7 @@ export function SynthesisReport({
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({
-          importId: importData.id,
-          slackBotToken: slackToken,
-        }),
+        body: JSON.stringify({ importId: importData.id }),
       });
 
       const data = await res.json();
@@ -174,66 +164,30 @@ export function SynthesisReport({
           <CardTitle className="flex items-center gap-2 text-sm">
             <MessageSquare className="h-4 w-4 text-sky-400" />
             Envoyer la synthèse sur Slack
-            {!slackChannelConfigured && (
-              <Badge className="ml-2 text-[10px] bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/60 dark:text-amber-400 dark:border-amber-700">
-                Canal non configuré
-              </Badge>
-            )}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {!slackChannelConfigured ? (
-            <p className="text-xs text-slate-600 dark:text-slate-500">
-              Configurez un canal Slack dans la configuration mensuelle (étape Configuration)
-              puis relancez.
-            </p>
-          ) : sent ? (
+        <CardContent>
+          {sent ? (
             <div className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-300">
               <CheckCircle2 className="h-4 w-4" />
               Message Slack envoyé avec succès.
             </div>
           ) : (
-            <>
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-                    <Lock className="h-3 w-3" /> Bot Token Slack *
-                  </Label>
-                  <button
-                    onClick={() => setShowToken((v) => !v)}
-                    className="text-xs text-slate-600 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"
-                  >
-                    {showToken ? "Masquer" : <Eye className="h-3 w-3" />}
-                  </button>
-                </div>
-                <Input
-                  type={showToken ? "text" : "password"}
-                  value={slackToken}
-                  onChange={(e) => setSlackToken(e.target.value)}
-                  placeholder="xoxb-..."
-                  className="bg-white border-slate-300 dark:bg-slate-800 dark:border-slate-600 text-sm"
-                />
-                <p className="text-[10px] text-slate-600 dark:text-slate-500">
-                  Token Bot Slack (xoxb-...). Non stocké côté serveur.
-                </p>
-              </div>
-
-              <Button
-                onClick={handleSendSlack}
-                disabled={!slackToken.trim() || isSending}
-                className="w-full bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50"
-              >
-                {isSending ? (
-                  <>
-                    <Send className="h-4 w-4 mr-2 animate-pulse" /> Envoi en cours…
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" /> Envoyer sur Slack
-                  </>
-                )}
-              </Button>
-            </>
+            <Button
+              onClick={handleSendSlack}
+              disabled={isSending}
+              className="w-full bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50"
+            >
+              {isSending ? (
+                <>
+                  <Send className="h-4 w-4 mr-2 animate-pulse" /> Envoi en cours…
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" /> Envoyer sur Slack (#CE58HNVF0)
+                </>
+              )}
+            </Button>
           )}
         </CardContent>
       </Card>
