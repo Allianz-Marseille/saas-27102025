@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-  Building2, CheckCircle2, AlertTriangle, Save, User
+  Building2, CheckCircle2, AlertTriangle, Save, User, Copy, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,11 +33,15 @@ function SocieteCard({
   row,
   onChange,
   onSave,
+  onCopyName,
+  isCopied,
   isSaving,
 }: {
   row: SocieteRow;
   onChange: (val: string) => void;
   onSave: () => void;
+  onCopyName: () => void;
+  isCopied: boolean;
   isSaving: boolean;
 }) {
   const { client } = row;
@@ -56,9 +60,22 @@ function SocieteCard({
           row.saved ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
         )} />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
-            {client.nomClient}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+              {client.nomClient}
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onCopyName}
+              className="h-6 w-6 shrink-0 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              title="Copier le nom"
+              aria-label={`Copier le nom ${client.nomClient}`}
+            >
+              {isCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className="text-[10px] text-slate-500 dark:text-slate-500">N° {client.numeroContrat}</span>
             <Badge
@@ -133,6 +150,7 @@ export function SocietesValidationStep({
     }))
   );
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [copiedClientId, setCopiedClientId] = useState<string | null>(null);
 
   const nbValidees = rows.filter((r) => r.saved).length;
   const allValidated = nbValidees === rows.length;
@@ -169,6 +187,26 @@ export function SocietesValidationStep({
       toast.error("Erreur lors de la sauvegarde");
     } finally {
       setSavingId(null);
+    }
+  };
+
+  const copySocieteName = async (row: SocieteRow) => {
+    const societeName = row.client.nomClient.trim();
+    if (!societeName) {
+      toast.error("Nom de société introuvable.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(societeName);
+      setCopiedClientId(row.client.id);
+      toast.success(`Nom copié : ${societeName}`);
+      setTimeout(() => {
+        setCopiedClientId((current) => (current === row.client.id ? null : current));
+      }, 1500);
+    } catch (error) {
+      console.error("Erreur de copie du nom de société :", error);
+      toast.error("Impossible de copier le nom de la société.");
     }
   };
 
@@ -234,6 +272,8 @@ export function SocietesValidationStep({
           row={row}
           onChange={(val) => updateNom(row.client.id, val)}
           onSave={() => saveRow(row.client.id)}
+          onCopyName={() => copySocieteName(row)}
+          isCopied={copiedClientId === row.client.id}
           isSaving={savingId === row.client.id}
         />
       ))}
