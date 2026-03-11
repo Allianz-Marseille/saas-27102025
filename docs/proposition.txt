@@ -132,11 +132,12 @@ Bouton "← Retour" pour revenir à la page principale.
 ---
 
 ═══════════════════════════════════════════════════════
-## E. QUESTIONS OUVERTES RESTANTES
+## E. DÉCISIONS FINALES
 ═══════════════════════════════════════════════════════
 
-1. Faut-il afficher les absences actives au moment du cycle
-   dans la fiche synthèse (ex: "Corentin remplacé par Matthieu") ?
+1. Absences : OUI — afficher dans la fiche synthèse les remplacements
+   actifs au moment du cycle (ex: "Corentin → remplacé par Matthieu").
 
-2. Les graphiques Recharts : à livrer en même temps que la page
-   historique, ou dans une phase suivante ?
+2. Graphiques Recharts : livrés dans la même phase que la page historique.
+
+→ Proposition complète validée. Prête pour implémentation.
