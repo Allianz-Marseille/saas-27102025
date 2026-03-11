@@ -21,8 +21,9 @@ import {
   getAllPretermeIrdConfigs,
   updatePretermeIrdConfigWorkflow,
   getPretermeIrdImportsByMois,
-  getPretermeIrdImport,
+  updatePretermeIrdImport,
   getPretermeIrdClients,
+  getIrdSocietesAValider,
 } from "@/lib/firebase/preterme-ird";
 import { ConfigurationStep } from "@/components/preterme-ird/ConfigurationStep";
 import { UploadStep } from "@/components/preterme-ird/UploadStep";
@@ -122,6 +123,41 @@ function PlaceholderStep({ label, phase }: { label: string; phase: number }) {
   );
 }
 
+function getImportStatusBadge(statut?: string): { label: string; className: string } {
+  switch (statut) {
+    case "TERMINE":
+      return {
+        label: "Terminé",
+        className:
+          "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-700",
+      };
+    case "PRET":
+      return {
+        label: "Prêt",
+        className:
+          "bg-sky-100 text-sky-700 border-sky-300 dark:bg-sky-900/60 dark:text-sky-300 dark:border-sky-700",
+      };
+    case "VALIDATION_SOCIETES":
+      return {
+        label: "Validation",
+        className:
+          "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/60 dark:text-amber-300 dark:border-amber-700",
+      };
+    case "DISPATCH_TRELLO":
+      return {
+        label: "Dispatch",
+        className:
+          "bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/60 dark:text-violet-300 dark:border-violet-700",
+      };
+    default:
+      return {
+        label: "Brouillon",
+        className:
+          "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
+      };
+  }
+}
+
 // ─── Page principale ─────────────────────────────────────────────────────────
 
 export default function PretermeIrdPage() {
@@ -144,6 +180,10 @@ export default function PretermeIrdPage() {
   const [conservedClients, setConservedClients]   = useState<PretermeClient[]>([]);
   const [validationSubStep, setValidationSubStep] = useState<"types" | "societes">("types");
   const [dispatchClients, setDispatchClients]     = useState<PretermeClient[]>([]);
+  const [societesAValider, setSocietesAValider]   = useState<PretermeClient[]>([]);
+  const [hasPendingTypeChanges, setHasPendingTypeChanges] = useState(false);
+  const [savedTypeChoicesByImportId, setSavedTypeChoicesByImportId] = useState<Record<string, boolean>>({});
+  const [societesValideesByImportId, setSocietesValideesByImportId] = useState<Record<string, boolean>>({});
 
   const [config, setConfig] = useState<
     Omit<PretermeConfig, "id" | "createdAt" | "updatedAt" | "createdBy" | "valide">
@@ -193,6 +233,8 @@ export default function PretermeIrdPage() {
         setStep(restoredStep);
       } else {
         setCompletedSteps({});
+        setSavedTypeChoicesByImportId({});
+        setSocietesValideesByImportId({});
         setStep("periode");
         const latestAgences = historique[0]?.agences ?? defaultAgences();
         setConfig((prev) => ({ ...prev, moisKey, agences: latestAgences, slackChannelId: "CE58HNVF0" }));
@@ -259,10 +301,20 @@ export default function PretermeIrdPage() {
     getPretermeIrdImportsByMois(moisKey)
       .then((imports) => {
         setAllImports(imports);
-        if (imports.length === 0) { setActiveImportId(null); setActiveAgence(null); return; }
-        const first = imports[0];
-        setActiveImportId(first.id);
-        setActiveAgence(first.agence);
+        if (imports.length === 0) {
+          setActiveImportId(null);
+          setActiveAgence(null);
+          setClientsForPreview([]);
+          setConservedClients([]);
+          setDispatchClients([]);
+          setSocietesAValider([]);
+          return;
+        }
+        setActiveImportId((prevId) => {
+          const selected = imports.find((imp) => imp.id === prevId) ?? imports[0];
+          setActiveAgence(selected.agence);
+          return selected.id;
+        });
       })
       .catch(() => toast.error("Impossible de charger les imports du mois"));
   }, [moisKey]);
@@ -273,6 +325,16 @@ export default function PretermeIrdPage() {
     getPretermeIrdImportsByMois(moisKey).then(setAllImports).catch(() => {});
     markStepsCompleted(["upload"]);
   }, [moisKey, markStepsCompleted]);
+
+  const handleSwitchImport = useCallback((imp: PretermeImport) => {
+    setActiveImportId(imp.id);
+    setActiveAgence(imp.agence);
+    setHasPendingTypeChanges(false);
+    setClientsForPreview([]);
+    setConservedClients([]);
+    setDispatchClients([]);
+    setSocietesAValider([]);
+  }, []);
 
   // Charger les clients pour le preview des seuils (étape filtrage)
   useEffect(() => {
@@ -292,6 +354,13 @@ export default function PretermeIrdPage() {
       .catch(() => toast.error("Impossible de charger les clients conservés"));
   }, [step, activeImportId, conservedClients.length]);
 
+  useEffect(() => {
+    if (step !== "validation" || validationSubStep !== "societes" || !activeImportId || societesAValider.length > 0) return;
+    getIrdSocietesAValider(activeImportId)
+      .then(setSocietesAValider)
+      .catch(() => toast.error("Impossible de charger les sociétés à valider"));
+  }, [step, validationSubStep, activeImportId, societesAValider.length]);
+
   const handleClassifySuccess = useCallback(
     (result: { nbConserves: number }) => {
       markStepsCompleted(["filtrage"]);
@@ -306,17 +375,79 @@ export default function PretermeIrdPage() {
     [activeImportId, markStepsCompleted]
   );
 
+  const markTypeChoicesSavedForImport = useCallback(async (importId: string) => {
+    const now = new Date();
+    setSavedTypeChoicesByImportId((prev) => ({ ...prev, [importId]: true }));
+    setAllImports((prev) => prev.map((imp) => (imp.id === importId ? { ...imp, typesValidatedAt: now } : imp)));
+    try {
+      await updatePretermeIrdImport(importId, { typesValidatedAt: now });
+    } catch {
+      toast.warning("Synchronisation des types en attente.");
+    }
+  }, []);
+
   const handleTypeValidated = useCallback(
-    (nbEntreprises: number) => {
+    async (nbEntreprises: number) => {
+      if (!activeImportId) return;
+      await markTypeChoicesSavedForImport(activeImportId);
       if (nbEntreprises > 0) {
+        const societes = await getIrdSocietesAValider(activeImportId).catch(() => [] as PretermeClient[]);
+        setSocietesAValider(societes);
         setValidationSubStep("societes");
       } else {
         markStepsCompleted(["validation"]);
         setStep("modulation");
       }
     },
-    [markStepsCompleted]
+    [activeImportId, markStepsCompleted, markTypeChoicesSavedForImport]
   );
+
+  const handleValidateTypesForAllImports = useCallback(async () => {
+    if (hasPendingTypeChanges) {
+      toast.warning("Enregistre d'abord les modifications en cours.");
+      return;
+    }
+    const latestImports = await getPretermeIrdImportsByMois(moisKey).catch(() => null);
+    if (!latestImports || latestImports.length === 0) {
+      toast.error("Impossible de vérifier les imports du mois.");
+      return;
+    }
+    setAllImports(latestImports);
+    const unsaved = latestImports.filter(
+      (imp) => !savedTypeChoicesByImportId[imp.id] && !imp.typesValidatedAt
+    );
+    if (unsaved.length > 0) {
+      toast.warning(`Valide d'abord les types pour : ${unsaved.map((i) => i.agence).join(", ")}.`);
+      return;
+    }
+    markStepsCompleted(["validation"]);
+    toast.success("Validation complète pour toutes les agences.");
+    setStep("modulation");
+  }, [hasPendingTypeChanges, moisKey, savedTypeChoicesByImportId, markStepsCompleted]);
+
+  const handleSocietesValidated = useCallback(async () => {
+    if (!activeImportId) return;
+    setSocietesValideesByImportId((prev) => ({ ...prev, [activeImportId]: true }));
+
+    const pendingImports = allImports.filter(
+      (imp) => imp.id !== activeImportId && !societesValideesByImportId[imp.id]
+    );
+    for (const imp of pendingImports) {
+      const societes = await getIrdSocietesAValider(imp.id).catch(() => [] as PretermeClient[]);
+      const pending = societes.filter((s) => !s.nomGerant);
+      if (pending.length > 0) {
+        handleSwitchImport(imp);
+        setSocietesAValider(societes);
+        setValidationSubStep("societes");
+        toast.info(`${pending.length} société(s) à valider pour l'agence ${imp.agence}`);
+        return;
+      }
+    }
+
+    markStepsCompleted(["validation"]);
+    toast.success("Toutes les sociétés sont validées !");
+    setStep("modulation");
+  }, [activeImportId, allImports, societesValideesByImportId, handleSwitchImport, markStepsCompleted]);
 
   // Charger les clients conservés pour le dispatch (si absents lors d'un retour de navigation)
   useEffect(() => {
@@ -372,25 +503,84 @@ export default function PretermeIrdPage() {
   const isModulationValide = existingConfig?.valide ?? false;
 
   const hasImports = allImports.length > 0;
+  const importsDuMois = useMemo(
+    () => allImports.filter((imp) => imp.moisKey === moisKey),
+    [allImports, moisKey]
+  );
+  const areAllImportsTypeChoicesSaved = useMemo(
+    () =>
+      importsDuMois.length > 0 &&
+      importsDuMois.every((imp) => savedTypeChoicesByImportId[imp.id] || !!imp.typesValidatedAt),
+    [importsDuMois, savedTypeChoicesByImportId]
+  );
 
   const canAccessStep = useCallback((s: Step): boolean => {
     if (s === "periode")    return true;
     if (s === "upload")     return isPeriodeConfirmed;
-    if (s === "filtrage")   return hasImports;
-    if (s === "validation") return hasImports;
-    if (s === "modulation") return hasImports;
-    if (s === "dispatch")   return isModulationValide;
-    if (s === "synthese")   return isModulationValide;
+    if (s === "filtrage")   return importsDuMois.length > 0;
+    if (s === "validation") return importsDuMois.some((imp) =>
+      ["VALIDATION_SOCIETES", "PRET", "DISPATCH_TRELLO", "TERMINE"].includes(imp.statut)
+    );
+    if (s === "modulation") return areAllImportsTypeChoicesSaved &&
+      importsDuMois.some((imp) => ["PRET", "DISPATCH_TRELLO", "TERMINE"].includes(imp.statut));
+    if (s === "dispatch")   return isModulationValide && !!activeImportId;
+    if (s === "synthese")   return importsDuMois.some((imp) =>
+      ["DISPATCH_TRELLO", "TERMINE"].includes(imp.statut));
     return false;
-  }, [isPeriodeConfirmed, isModulationValide, hasImports]);
+  }, [isPeriodeConfirmed, isModulationValide, importsDuMois, areAllImportsTypeChoicesSaved, activeImportId]);
 
   const derivedDoneByStatus = useMemo<Partial<Record<Step, boolean>>>(() => {
     const d: Partial<Record<Step, boolean>> = {};
-    if (isPeriodeConfirmed)    d.periode = true;
-    if (allImports.length > 0) d.upload  = true;
-    if (isModulationValide)    d.modulation = true;
+    if (isPeriodeConfirmed) d.periode = true;
+    if (importsDuMois.length > 0) d.upload = true;
+    if (importsDuMois.some((imp) => ["VALIDATION_SOCIETES", "PRET", "DISPATCH_TRELLO", "TERMINE"].includes(imp.statut)))
+      d.filtrage = true;
+    if (areAllImportsTypeChoicesSaved && importsDuMois.some((imp) =>
+      ["PRET", "DISPATCH_TRELLO", "TERMINE"].includes(imp.statut)))
+      d.validation = true;
+    if (isModulationValide) d.modulation = true;
+    if (importsDuMois.some((imp) => ["DISPATCH_TRELLO", "TERMINE"].includes(imp.statut)))
+      d.dispatch = true;
+    if (importsDuMois.some((imp) => imp.statut === "TERMINE"))
+      d.synthese = true;
     return d;
-  }, [isPeriodeConfirmed, isModulationValide, allImports.length]);
+  }, [importsDuMois, isPeriodeConfirmed, isModulationValide, areAllImportsTypeChoicesSaved]);
+
+  const AgencySwitcher = () => {
+    if (importsDuMois.length <= 1) return null;
+    return (
+      <Card className="mb-4 border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+        <CardContent className="p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {importsDuMois.map((imp) => {
+              const isActive = imp.id === activeImportId;
+              return (
+                <Button
+                  key={imp.id}
+                  type="button"
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  className={cn(
+                    "text-xs",
+                    isActive
+                      ? "bg-sky-600 hover:bg-sky-500"
+                      : "border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  )}
+                  onClick={() => { void handleSwitchImport(imp); }}
+                >
+                  {imp.agence}
+                  <span className="ml-1 text-[10px] opacity-60">{imp.pretermesGlobaux} clients</span>
+                  <Badge className={cn("ml-2 border text-[10px]", getImportStatusBadge(imp.statut).className)}>
+                    {getImportStatusBadge(imp.statut).label}
+                  </Badge>
+                </Button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   // ─── Rendu ──────────────────────────────────────────────────────────────────
 
@@ -604,12 +794,12 @@ export default function PretermeIrdPage() {
                   />
                 </CardContent>
               </Card>
-              {allImports.length > 0 && (
+              {importsDuMois.length > 0 && (
                 <Button
                   className="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-60"
-                  disabled={allImports.length < 2}
+                  disabled={importsDuMois.length < 2}
                   onClick={() => setStep("filtrage")}
-                  title={allImports.length < 2 ? "Les 2 agences doivent être importées pour continuer" : ""}
+                  title={importsDuMois.length < 2 ? "Les 2 agences doivent être importées pour continuer" : ""}
                 >
                   Valider l&apos;étape — Lancer le filtrage IA
                   <ChevronRight className="h-4 w-4 ml-1" />
@@ -627,6 +817,7 @@ export default function PretermeIrdPage() {
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour téléchargement
                 </Button>
               </div>
+              <AgencySwitcher />
               <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
@@ -641,7 +832,7 @@ export default function PretermeIrdPage() {
                       agence={activeAgence}
                       moisKey={moisKey}
                       clients={clientsForPreview}
-                      availableImportIds={allImports.map((i) => i.id)}
+                      availableImportIds={importsDuMois.map((i) => i.id)}
                       seuilEtpInitial={config.seuilEtp}
                       seuilVariationInitial={config.seuilVariation}
                       idToken={idToken}
@@ -679,6 +870,7 @@ export default function PretermeIrdPage() {
                   {validationSubStep === "societes" ? "Retour classification" : "Retour filtrage"}
                 </Button>
               </div>
+              <AgencySwitcher />
               <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
@@ -693,18 +885,34 @@ export default function PretermeIrdPage() {
                     <TypeValidationStep
                       clients={conservedClients}
                       onValidated={handleTypeValidated}
+                      onSaved={async () => {
+                        if (!activeImportId) return;
+                        await markTypeChoicesSavedForImport(activeImportId);
+                        const clients = await getPretermeIrdClients(activeImportId).catch(() => [] as PretermeClient[]);
+                        setConservedClients(clients.filter((c) => c.conserve));
+                        setHasPendingTypeChanges(false);
+                      }}
+                      onDirtyChange={setHasPendingTypeChanges}
                     />
                   ) : (
                     <SocietesValidationStep
-                      societes={conservedClients.filter((c) => c.typeEntite !== "particulier")}
+                      societes={societesAValider}
                       onAllValidated={() => {
-                        markStepsCompleted(["validation"]);
-                        setStep("modulation");
+                        void handleSocietesValidated();
                       }}
                     />
                   )}
                 </CardContent>
               </Card>
+              {importsDuMois.length > 1 && validationSubStep === "types" && (
+                <Button
+                  onClick={() => { void handleValidateTypesForAllImports(); }}
+                  disabled={hasPendingTypeChanges}
+                  className="w-full bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-60"
+                >
+                  Valider l&apos;étape pour toutes les agences
+                </Button>
+              )}
             </div>
           )}
 
@@ -717,6 +925,7 @@ export default function PretermeIrdPage() {
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour validation
                 </Button>
               </div>
+              <AgencySwitcher />
               <ConfigurationStep
                 moisKey={moisKey}
                 config={config}
@@ -738,6 +947,7 @@ export default function PretermeIrdPage() {
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour modulation
                 </Button>
               </div>
+              <AgencySwitcher />
               <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
@@ -756,7 +966,30 @@ export default function PretermeIrdPage() {
                         moisKey={moisKey}
                         clients={dispatchClients}
                         idToken={idToken}
-                        onDispatchSuccess={handleDispatchSuccess}
+                        onDispatchSuccess={async () => {
+                          handleDispatchSuccess();
+                          if (!activeImportId) return;
+                          const latestImports = await getPretermeIrdImportsByMois(moisKey).catch(() => [] as PretermeImport[]);
+                          if (latestImports.length > 0) setAllImports(latestImports);
+                          const refreshedClients = await getPretermeIrdClients(activeImportId).catch(() => [] as PretermeClient[]);
+                          setDispatchClients(refreshedClients.filter((c) => c.conserve));
+
+                          const allDispatched = latestImports.every(
+                            (i) => ["DISPATCH_TRELLO", "TERMINE"].includes(i.statut)
+                          );
+                          if (allDispatched) {
+                            toast.success("Dispatch terminé pour toutes les agences !");
+                            setStep("synthese");
+                            return;
+                          }
+                          const nextImport = latestImports.find(
+                            (i) => !["DISPATCH_TRELLO", "TERMINE"].includes(i.statut)
+                          );
+                          if (nextImport) {
+                            handleSwitchImport(nextImport);
+                            toast.success(`Dispatch terminé — agence suivante : ${nextImport.agence}`);
+                          }
+                        }}
                       />
                     ) : (
                       <p className="text-sm text-slate-500 dark:text-slate-500 text-center py-8">
@@ -791,6 +1024,7 @@ export default function PretermeIrdPage() {
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour dispatch
                 </Button>
               </div>
+              <AgencySwitcher />
               <PlaceholderStep label="Synthèse Slack — canal CE58HNVF0" phase={5} />
             </div>
           )}
