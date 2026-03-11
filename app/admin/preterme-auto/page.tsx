@@ -443,6 +443,7 @@ export default function PretermeAutoPage() {
     () => allImports.filter((imp) => imp.moisKey === moisKey),
     [allImports, moisKey]
   );
+  const isConfigValide = existingConfig?.valide ?? false;
 
   const derivedDoneByStatus = useMemo<Partial<Record<Step, boolean>>>(() => {
     const derived: Partial<Record<Step, boolean>> = {};
@@ -494,8 +495,6 @@ export default function PretermeAutoPage() {
       await loadSocietes(importToActivate.id);
     }
   }, [loadImportClients, loadSocietes, step]);
-
-  const isConfigValide = existingConfig?.valide ?? false;
   const stepIndex = STEPS.findIndex((s) => s.id === step);
 
   const canAccessStep = (s: Step): boolean => {
