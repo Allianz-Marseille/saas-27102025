@@ -18,6 +18,7 @@ interface TypeValidationStepProps {
   /** Clients déjà conservés (conserve === true) tels que classifiés par Gemini */
   clients: PretermeClient[];
   onValidated: (nbEntreprises: number) => void;
+  onSaved?: () => void | Promise<void>;
 }
 
 type EffectiveType = "particulier" | "societe";
@@ -105,7 +106,7 @@ function ClientRow({
 
 // ─── TypeValidationStep ───────────────────────────────────────────────────────
 
-export function TypeValidationStep({ clients, onValidated }: TypeValidationStepProps) {
+export function TypeValidationStep({ clients, onValidated, onSaved }: TypeValidationStepProps) {
   const { user } = useAuth();
   const [overrides, setOverrides] = useState<Map<string, EffectiveType>>(new Map());
   const [isSaving, setIsSaving] = useState(false);
@@ -138,39 +139,75 @@ export function TypeValidationStep({ clients, onValidated }: TypeValidationStepP
 
   const nbChanged = overrides.size;
 
+  const persistCorrections = async (): Promise<void> => {
+    if (overrides.size === 0) return;
+    const uid = user?.uid ?? null;
+
+    const updates = clients
+      .map((client) => {
+        const effectiveType = getEffectiveType(client, overrides);
+        const originalType: EffectiveType =
+          client.typeEntite === "particulier" ? "particulier" : "societe";
+        if (effectiveType === originalType) return null;
+        return { client, effectiveType };
+      })
+      .filter((item): item is { client: PretermeClient; effectiveType: EffectiveType } => item !== null);
+
+    await Promise.all(
+      updates.map(({ client, effectiveType }) =>
+        updatePretermeClient(client.id, { typeEntite: effectiveType })
+      )
+    );
+
+    // La mémoire globale est un plus : on ne bloque pas la progression métier si elle échoue.
+    if (uid) {
+      const overrideWrites = await Promise.allSettled(
+        Array.from(overrides.entries()).map(([normalizedName, typeEntite]) => {
+          const exampleClient = clients.find((c) => normalizeClientName(c.nomClient) === normalizedName);
+          return upsertQualityOverride(exampleClient?.nomClient ?? normalizedName, typeEntite, uid);
+        })
+      );
+      const failedOverrideWrites = overrideWrites.filter((result) => result.status === "rejected").length;
+      if (failedOverrideWrites > 0) {
+        toast.warning(
+          "Types sauvegardés, mais la mémoire globale n'a pas pu être enregistrée pour certaines corrections."
+        );
+      }
+    } else {
+      toast.warning("Types sauvegardés, mais mémoire globale indisponible (session utilisateur absente).");
+    }
+  };
+
+  const handleSaveOnly = async () => {
+    setIsSaving(true);
+    try {
+      await persistCorrections();
+      setOverrides(new Map());
+      await onSaved?.();
+      toast.success("Corrections enregistrées.");
+    } catch (error) {
+      console.error("Erreur de sauvegarde des corrections de type :", error);
+      toast.error("Erreur lors de l'enregistrement des corrections");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleConfirm = async () => {
     setIsSaving(true);
     try {
       if (overrides.size > 0) {
-        const uid = user?.uid ?? "admin";
-        const updates = clients
-          .map((client) => {
-            const effectiveType = getEffectiveType(client, overrides);
-            const originalType: EffectiveType =
-              client.typeEntite === "particulier" ? "particulier" : "societe";
-            if (effectiveType === originalType) return null;
-            return { client, effectiveType };
-          })
-          .filter((item): item is { client: PretermeClient; effectiveType: EffectiveType } => item !== null);
-
-        await Promise.all(
-          updates.map(({ client, effectiveType }) =>
-            updatePretermeClient(client.id, { typeEntite: effectiveType })
-          )
-        );
-        await Promise.all(
-          Array.from(overrides.entries()).map(([normalizedName, typeEntite]) => {
-            const exampleClient = clients.find((c) => normalizeClientName(c.nomClient) === normalizedName);
-            return upsertQualityOverride(exampleClient?.nomClient ?? normalizedName, typeEntite, uid);
-          })
-        );
+        await persistCorrections();
+        setOverrides(new Map());
+        await onSaved?.();
       }
       const msg = entreprises.length > 0
         ? `${entreprises.length} entreprise${entreprises.length > 1 ? "s" : ""} à compléter`
         : "Aucune entreprise — dispatch direct";
       toast.success(`Types confirmés — ${msg}`);
       onValidated(entreprises.length);
-    } catch {
+    } catch (error) {
+      console.error("Erreur de sauvegarde des corrections de type :", error);
       toast.error("Erreur lors de la sauvegarde des corrections");
     } finally {
       setIsSaving(false);
@@ -272,27 +309,53 @@ export function TypeValidationStep({ clients, onValidated }: TypeValidationStepP
         </div>
       )}
 
-      {/* Bouton confirmation */}
-      <Button
-        onClick={handleConfirm}
-        disabled={isSaving}
-        className="w-full bg-sky-600 hover:bg-sky-500 py-5 font-medium"
-        size="lg"
-      >
-        {isSaving ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Sauvegarde…
-          </>
-        ) : (
-          <>
-            <CheckCircle2 className="h-4 w-4 mr-2" />
-            {entreprises.length > 0
-              ? `Confirmer — saisir les gérants (${entreprises.length} entreprise${entreprises.length > 1 ? "s" : ""})`
-              : "Confirmer — aucune entreprise, passer au dispatch"}
-          </>
-        )}
-      </Button>
+      {/* Actions */}
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+        <Button
+          onClick={handleSaveOnly}
+          disabled={isSaving || overrides.size === 0}
+          variant="outline"
+          className="border-slate-700 bg-slate-800 hover:bg-slate-700 py-5 font-medium"
+          size="lg"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Sauvegarde…
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Enregistrer les choix
+            </>
+          )}
+        </Button>
+
+        <Button
+          onClick={handleConfirm}
+          disabled={isSaving}
+          className="bg-sky-600 hover:bg-sky-500 py-5 font-medium"
+          size="lg"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Sauvegarde…
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              {entreprises.length > 0
+                ? (overrides.size > 0
+                  ? `Enregistrer et saisir les gérants (${entreprises.length} entreprise${entreprises.length > 1 ? "s" : ""})`
+                  : `Passer à l'étape suivante (${entreprises.length} entreprise${entreprises.length > 1 ? "s" : ""})`)
+                : (overrides.size > 0
+                  ? "Enregistrer et passer au dispatch"
+                  : "Passer au dispatch")}
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }

@@ -820,6 +820,10 @@ export default function PretermeAutoPage() {
                   <TypeValidationStep
                     clients={importedClients.filter((c) => c.conserve)}
                     onValidated={handleTypeValidationDone}
+                    onSaved={async () => {
+                      if (!activeImportId) return;
+                      await loadImportClients(activeImportId);
+                    }}
                   />
                 </CardContent>
               </Card>
