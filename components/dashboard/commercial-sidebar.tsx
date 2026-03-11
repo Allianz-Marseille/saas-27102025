@@ -290,21 +290,17 @@ export function CommercialSidebar() {
         )}
         
         <div className="p-4 space-y-2">
-          <div className={cn("flex gap-2", isCollapsed && "flex-col")}>
-            {!isGestionnaireSinistre && (
-              <>
-                <NotificationCenter />
-                <ThemeToggle showLabel={!isCollapsed} />
-              </>
-            )}
+          {!isGestionnaireSinistre && (
+            <div className={cn("flex items-center gap-2", isCollapsed && "flex-col")}>
+              <NotificationCenter />
+              <ThemeToggle showLabel={false} />
+            </div>
+          )}
           {!isCollapsed && (
             <Button
               variant="outline"
               onClick={handleLogout}
-              className={cn(
-                "gap-2 bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all",
-                isGestionnaireSinistre ? "flex-1 w-full" : "flex-1"
-              )}
+              className="w-full gap-2 bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all"
             >
               <LogOut className="h-4 w-4" />
               Se déconnecter
@@ -321,7 +317,6 @@ export function CommercialSidebar() {
               <LogOut className="h-4 w-4" />
             </Button>
           )}
-          </div>
         </div>
       </div>
       </div>

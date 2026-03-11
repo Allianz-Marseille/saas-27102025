@@ -254,30 +254,30 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
             )}
             
             <div className="p-4 space-y-2">
-              <div className={cn("flex gap-2", isCollapsed && "flex-col")}>
-                <ThemeToggle showLabel={!isCollapsed} />
-                {!isCollapsed && (
-                  <Button
-                    variant="outline"
-                    onClick={onLogout}
-                    className="flex-1 gap-2 bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Déconnexion
-                  </Button>
-                )}
-                {isCollapsed && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={onLogout}
-                    title="Déconnexion"
-                    className="bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                )}
+              <div className={cn("flex items-center gap-2", isCollapsed && "flex-col")}>
+                <ThemeToggle showLabel={false} />
               </div>
+              {!isCollapsed && (
+                <Button
+                  variant="outline"
+                  onClick={onLogout}
+                  className="w-full gap-2 bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Déconnexion
+                </Button>
+              )}
+              {isCollapsed && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={onLogout}
+                  title="Déconnexion"
+                  className="w-full bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
         </div>
