@@ -153,7 +153,6 @@ export default function PretermeAutoPage() {
   const [completedSteps, setCompletedSteps]   = useState<Partial<Record<Step, boolean>>>({});
   const [hasPendingTypeChanges, setHasPendingTypeChanges] = useState(false);
   const [savedTypeChoicesByImportId, setSavedTypeChoicesByImportId] = useState<Record<string, boolean>>({});
-  const [societesValideesByImportId, setSocietesValideesByImportId] = useState<Record<string, boolean>>({});
 
   // Sous-étape interne de l'étape validation : types puis gérants
   const [validationSubStep, setValidationSubStep] = useState<"types" | "societes">("types");
@@ -452,36 +451,6 @@ export default function PretermeAutoPage() {
       await loadSocietes(importToActivate.id);
     }
   }, [loadImportClients, loadSocietes, step, validationSubStep]);
-
-  // Fix multi-agences societes : ne passe à modulation que quand TOUTES les agences sont done
-  const handleSocietesValidated = useCallback(async () => {
-    if (!activeImportId) return;
-    setSocietesValideesByImportId((prev) => ({ ...prev, [activeImportId]: true }));
-
-    // Vérifier les autres imports du mois qui ont encore des sociétés sans gérant
-    const otherImports = importsDuMois.filter(
-      (imp) => imp.id !== activeImportId && !societesValideesByImportId[imp.id]
-    );
-    for (const imp of otherImports) {
-      const societes = await getSocietesAValider(imp.id).catch(() => [] as PretermeClient[]);
-      const pending  = societes.filter((s) => !s.nomGerant);
-      if (pending.length > 0) {
-        await handleSwitchImport(imp);
-        setSocietesAValider(societes);
-        setValidationSubStep("societes");
-        toast.info(`${pending.length} société(s) à valider pour l'agence ${imp.agence}`);
-        return;
-      }
-    }
-
-    // Toutes les agences sont traitées → avancer
-    markStepsCompleted(["validation"]);
-    toast.success("Toutes les sociétés sont validées !");
-    setStep("modulation");
-  }, [
-    activeImportId, importsDuMois, societesValideesByImportId,
-    handleSwitchImport, markStepsCompleted,
-  ]);
 
   // ─── Dérivés ────────────────────────────────────────────────────────────────
 
@@ -883,7 +852,11 @@ export default function PretermeAutoPage() {
                   <CardContent>
                     <SocietesValidationStep
                       societes={societesAValider}
-                      onAllValidated={() => { void handleSocietesValidated(); }}
+                      onAllValidated={() => {
+                        markStepsCompleted(["validation"]);
+                        toast.success("Toutes les sociétés sont validées !");
+                        setStep("modulation");
+                      }}
                     />
                   </CardContent>
                 </Card>
@@ -958,29 +931,16 @@ export default function PretermeAutoPage() {
                     idToken={idToken}
                     onDispatchSuccess={async () => {
                       markStepsCompleted(["dispatch"]);
-                      if (!activeImportId) return;
-
-                      const [imp, latestImports] = await Promise.all([
-                        getPretermeImport(activeImportId).catch(() => null),
-                        getPretermeImportsByMois(moisKey).catch(() => [] as PretermeImport[]),
-                      ]);
-                      await loadImportClients(activeImportId);
-                      if (latestImports.length) setAllImports(latestImports);
-                      if (imp) setActiveImport(imp);
-
-                      const allDispatched = latestImports.every(
-                        (i) => ["DISPATCH_TRELLO", "TERMINE"].includes(i.statut)
-                      );
-                      if (allDispatched) {
-                        toast.success("Dispatch terminé pour toutes les agences !");
-                        setStep("synthese");
-                      } else {
-                        const restantes = latestImports
-                          .filter((i) => !["DISPATCH_TRELLO", "TERMINE"].includes(i.statut))
-                          .map((i) => i.agence)
-                          .join(", ");
-                        toast.success(`Dispatch terminé — agence suivante : ${restantes}`);
+                      toast.success("Dispatch Trello terminé !");
+                      if (activeImportId) {
+                        const [imp] = await Promise.all([
+                          getPretermeImport(activeImportId).catch(() => null),
+                          loadImportClients(activeImportId),
+                          getPretermeImportsByMois(moisKey).then(setAllImports).catch(() => {}),
+                        ]);
+                        if (imp) setActiveImport(imp);
                       }
+                      setStep("synthese");
                     }}
                   />
                 </CardContent>
@@ -1022,6 +982,7 @@ export default function PretermeAutoPage() {
                         (c.typeEntite === "societe" || c.typeEntite === "a_valider") &&
                         !c.nomGerant
                     ).length}
+                    slackChannelConfigured={true}
                     idToken={idToken}
                   />
                 </CardContent>

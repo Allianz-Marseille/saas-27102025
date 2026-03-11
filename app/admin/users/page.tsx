@@ -116,10 +116,16 @@ export default function UsersManagementPage() {
     role: "CDC_COMMERCIAL" as User["role"],
   });
 
-  // Helper pour créer les headers avec l'ID et l'email de l'admin
-  const getAuthHeaders = () => {
+  // Helper pour créer les headers authentifiés (token Firebase + contexte admin)
+  const getAuthHeaders = async () => {
+    const token = await user?.getIdToken();
+    if (!token) {
+      throw new Error("Session expirée. Merci de vous reconnecter.");
+    }
+
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     };
     if (user?.uid) headers["x-user-id"] = user.uid;
     if (userData?.email) headers["x-user-email"] = userData.email;
@@ -127,12 +133,18 @@ export default function UsersManagementPage() {
   };
 
   useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     loadUsers();
-  }, []);
+  }, [user]);
 
   const loadUsers = async () => {
     try {
-      const response = await fetch("/api/admin/users");
+      const headers = await getAuthHeaders();
+      const response = await fetch("/api/admin/users", { headers });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Erreur inconnue" }));
         throw new Error(errorData.error || `Erreur ${response.status}: ${response.statusText}`);
@@ -149,9 +161,10 @@ export default function UsersManagementPage() {
 
   const handleCreateUser = async () => {
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch("/api/admin/users", {
         method: "POST",
-        headers: getAuthHeaders(),
+        headers,
         body: JSON.stringify(formData),
       });
 
@@ -171,9 +184,10 @@ export default function UsersManagementPage() {
 
   const handleToggleActive = async (targetUser: User) => {
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch("/api/admin/users", {
         method: "PATCH",
-        headers: getAuthHeaders(),
+        headers,
         body: JSON.stringify({
           uid: targetUser.uid,
           active: !targetUser.active,
@@ -193,9 +207,10 @@ export default function UsersManagementPage() {
     if (!selectedUser) return;
 
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch("/api/admin/users", {
         method: "PATCH",
-        headers: getAuthHeaders(),
+        headers,
         body: JSON.stringify({
           uid: selectedUser.uid,
           role: newRole,
@@ -217,9 +232,10 @@ export default function UsersManagementPage() {
     if (!selectedUser) return;
 
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch("/api/admin/users", {
         method: "PATCH",
-        headers: getAuthHeaders(),
+        headers,
         body: JSON.stringify({
           uid: selectedUser.uid,
           firstName: editData.firstName || undefined,
@@ -246,9 +262,10 @@ export default function UsersManagementPage() {
     if (!selectedUser) return;
 
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch(`/api/admin/users?uid=${selectedUser.uid}`, {
         method: "DELETE",
-        headers: getAuthHeaders(),
+        headers,
       });
 
       if (!response.ok) throw new Error("Erreur suppression");
@@ -271,9 +288,10 @@ export default function UsersManagementPage() {
     }
 
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch("/api/admin/users", {
         method: "PATCH",
-        headers: getAuthHeaders(),
+        headers,
         body: JSON.stringify({
           uid: selectedUser.uid,
           password: newPassword,
