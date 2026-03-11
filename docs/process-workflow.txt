@@ -1,0 +1,65 @@
+Workflow préterme auto
+
+## Règles générales du stepper
+- On ne passe à l'étape suivante que si l'étape en cours est entièrement validée.
+- Chaque étape multi-agences dispose d'un sélecteur d'agence (onglets ou liste) pour naviguer d'une agence à l'autre.
+- Un bouton "Valider l'étape" global (unique, en bas) déclenche la validation de toutes les agences en une fois — il n'est actif que si toutes les agences sont complètes.
+- Les saisies incomplètes sont conservées en brouillon (reprise possible sur un autre appareil).
+
+## Étape 1 - Validation du mois
+- Sélectionner et valider le mois concerné par le préterme.
+- Exemple : si nous sommes en mars, il doit s'agir du préterme d'avril.
+- Pas de distinction par agence à cette étape.
+- Une fois validé, passer à l'étape 2.
+
+## Étape 2 - Téléchargement des fichiers
+- Télécharger les fichiers Excel pour toutes les agences en une seule interface.
+- L'agence est détectée automatiquement depuis le nom du fichier ; sélection manuelle si non détectée.
+- Navigation agence par agence pour vérifier l'état de chaque import.
+- Le bouton "Valider l'étape" n'est actif que si un fichier valide est présent pour chaque agence.
+
+## Étape 3 - Filtrage IA
+- Lancer le filtrage Gemini d'un seul clic (toutes agences).
+- Gemini classe chaque client en : particulier / entreprise / à valider.
+- Le bouton "Valider l'étape" n'est actif qu'une fois le filtrage terminé sur toutes les agences.
+
+## Étape 4 - Validation particulier / entreprise
+- Navigation agence par agence pour traiter les clients classés "à valider" par Gemini.
+- Arbitrage manuel : confirmer ou corriger la classification particulier / entreprise.
+- Renseigner le nom du gérant pour chaque client identifié comme entreprise.
+- À l'issue de cette étape, les volumes et la répartition par CDC sont connus.
+- Le bouton "Valider l'étape" n'est actif que si tous les "à valider" ont été arbitrés et tous les gérants renseignés, pour toutes les agences.
+
+## Étape 5 - Modulation
+- Sur la base des volumes connus, ajuster la configuration héritée du cycle précédent :
+  - Lettres A–Z assignées à chaque CDC par agence (ex : CDC Corentin/Corniche → A à C par défaut).
+  - Seuil de majoration tarifaire (défaut : 20 %) — un client en cours dont la prime dépasse de 20 % celle d'un nouveau client équivalent est flaggé.
+  - Seuil ETP (défaut : 120 €) — un client dont la prime dépasse ce montant absolu est aussi flaggé.
+- Navigation agence par agence pour ajuster la config de chaque CDC.
+- Si un CDC a changé depuis le cycle précédent, demander son board et sa colonne Trello pour mise à niveau.
+- La configuration validée ici sert de point de départ pour le cycle suivant (report glissant).
+- Enregistrer dans le dur : snapshot complet de la config au moment de la validation, indépendamment des évolutions futures de l'équipe.
+- Le bouton "Valider l'étape" n'est actif que si toutes les agences sont configurées.
+
+## Étape 6 - Dispatch Trello
+- Aperçu de la répartition finale par CDC (lettres, absences, seuils), agence par agence.
+- Lancer l'envoi des cartes Trello pour toutes les agences.
+- Les cartes sont créées en bas de la colonne cible de chaque CDC (board + colonne configurés par CDC).
+- L'opération est idempotente : relancer ne crée pas de doublons.
+- Le bouton "Valider l'étape" n'est actif qu'une fois le dispatch terminé sans erreur.
+
+## Étape 7 - Synthèse Slack
+- Envoyer une synthèse automatique sur le canal Slack configuré.
+- Vérifier que la connexion Slack est opérationnelle avant l'envoi (test de connectivité).
+- Contenu du message :
+  - le nombre de clients global et par agence ;
+  - la ventilation particuliers / entreprises ;
+  - le volume par CDC et le pourcentage du global conservé.
+- Confirmer la réception du message Slack avant de clore le cycle.
+
+## Suivi dans le temps
+- Permanence des données : toutes les étapes sont persistées en Firestore.
+- Chaque cycle est une snapshot indépendante (CDC, lettres, taux, volumes).
+- Le cycle suivant hérite de la config validée du cycle précédent comme point de départ.
+- Les saisies incomplètes sont conservées en brouillon et reprises à la reconnexion.
+- L'historique des cycles est consultable (KPI Recharts) pour suivi dans le temps.

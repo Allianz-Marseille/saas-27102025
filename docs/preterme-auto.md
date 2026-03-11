@@ -31,48 +31,88 @@ L'objectif est d'automatiser le traitement mensuel des exports de prétermes (fa
 - H91358 (La Corniche)
 - H92083 (La Rouvière)
 
-## 2. Parcours Utilisateur (Interface)
-1. **Sélection de la période :** L'interface doit demander à l'utilisateur quel mois est concerné par ce préterme.
-2. **Validation de la clé de répartition :** L'interface affiche la clé de répartition actuelle (par agence et par collaborateur, basée sur l'ordre alphabétique du nom des clients, ex: A à C = Corentin). L'utilisateur doit la valider ou la modifier pour ce mois spécifique.
-3. **Upload des exports :** Import des fichiers Excel/CSV d'Allianz.
-4. **Validation des sociétés :** Écran intermédiaire affichant les entités détectées comme "Sociétés". L'utilisateur doit y saisir le nom de famille du gérant pour chaque société afin de pouvoir appliquer la bonne lettre de répartition.
+## 2. Parcours Utilisateur (Stepper 7 étapes)
 
-### 2.2. Règle calendaire (mois à venir)
-- Le traitement de préterme se fait toujours sur le **mois suivant**.
-- Exemple : si l'on est en **mars**, on traite le préterme d'**avril**.
-- La période proposée par défaut dans l'interface doit donc être `mois courant + 1` (modifiable par l'admin si besoin).
+### Règles générales du stepper
+- **Blocage strict** : on ne passe à l'étape suivante que si l'étape en cours est entièrement validée pour **toutes les agences**.
+- **Navigation agence par agence** : chaque étape multi-agences dispose d'un sélecteur (onglets ou liste) pour passer d'une agence à l'autre au sein de l'étape.
+- **Bouton "Valider l'étape"** : unique, positionné en bas de page, actif uniquement quand toutes les agences sont complètes.
+- **Brouillon** : les saisies incomplètes sont persistées à chaque action (reprise possible sur un autre appareil).
 
-### 2.3. Flow de téléchargement des fichiers (multi-import guidé)
+### Étape 1 — Validation du mois
+- Sélectionner et confirmer le mois de traitement (toujours `mois courant + 1`).
+- Pas de distinction par agence à cette étape.
+- Exemple : en mars, on traite le préterme d'avril.
 
-Le parcours d'upload suit un flow séquentiel avec confirmation explicite entre chaque fichier.
+### Étape 2 — Téléchargement des fichiers
+- Interface unique pour toutes les agences : déposer un fichier par agence.
+- L'agence est auto-détectée depuis le nom de fichier (`H91358`, `H92083`) ; sélection manuelle si non détectée.
+- Navigation agence par agence pour vérifier l'état de chaque import.
+- Le bouton "Valider l'étape" n'est actif que si un fichier valide est présent pour chaque agence.
+- **1 seul fichier par agence par mois** — garanti côté serveur (idempotence/purge) et côté client (alerte explicite si doublon agence).
 
-#### Étape 1 — Premier upload
-1. L'admin dépose ou sélectionne un fichier Excel.
-2. L'agence est auto-détectée (nom de fichier contenant `H91358` ou `H92083`), ou sélectionnée manuellement.
-3. L'import démarre ; en cas de succès, une **alerte système** (dialog) s'affiche :
-   > _"Voulez-vous en télécharger un autre ?"_ **Oui / Non**
+### Étape 3 — Filtrage IA
+- Lancer le filtrage Gemini d'un seul clic (toutes agences).
+- Gemini classe chaque client en : `particulier` / `entreprise` / `à valider`.
+- Affichage des KPI bruts (volumes par agence) à l'issue du filtrage.
+- Le bouton "Valider l'étape" n'est actif qu'une fois le filtrage terminé sans erreur sur toutes les agences.
 
-#### Étape 2a — Réponse "Oui"
-- La dropzone reste active pour un second fichier.
-- **Erreurs gérées :**
-  - **Même nom de fichier** → toast d'avertissement : _"Ce fichier a déjà été ajouté."_
-  - **Même agence, fichier différent** → alerte bloquante : _"Un import existe déjà pour [agence] ce mois-ci. Réimporter remplacera les données existantes."_ + confirmation requise.
+### Étape 4 — Validation particulier / entreprise
+- Navigation agence par agence.
+- Arbitrage manuel des clients classés `à valider` par Gemini (confirmer `particulier` ou `entreprise`).
+- Renseigner le nom du gérant pour chaque client classé `entreprise`.
+- Saisie enregistrée en brouillon à chaque action.
+- **À l'issue de cette étape, les volumes et la répartition par CDC sont connus.**
+- Le bouton "Valider l'étape" n'est actif que si tous les `à valider` ont été arbitrés et tous les gérants renseignés, pour toutes les agences.
 
-#### Étape 2b — Réponse "Non"
-- La dropzone est masquée ; le process avance vers l'étape suivante.
-- Un bouton **"Ajouter un fichier"** reste visible si des agences sont encore manquantes, permettant de revenir à l'upload sans repartir du début.
-- Si l'admin tente d'uploader un second fichier pour la **même agence** → alerte explicite (pas de remplacement silencieux).
+### Étape 5 — Modulation
+- Sur la base des volumes connus (étape 4), ajuster la configuration héritée du cycle précédent :
+  - **Lettres A–Z** assignées à chaque CDC par agence (ex : CDC Corentin → A–C par défaut).
+  - **Seuil de majoration** (défaut : 20 %) — flag si prime actuelle >= 20 % au-dessus de la prime nouvelle client équivalente.
+  - **Seuil ETP** (défaut : 120 €) — flag si prime >= ce montant absolu.
+- Les sliders recalculent dynamiquement les volumes retenus par CDC à chaque déplacement.
+- Navigation agence par agence pour ajuster la config de chaque CDC.
+- Si un CDC a changé depuis le cycle précédent → alerte bloquante demandant son board et sa colonne Trello avant de continuer.
+- **Snapshot dans le dur** : la config validée est enregistrée telle quelle, indépendamment des évolutions futures de l'équipe.
+- **Report glissant** : le cycle suivant héritera de cette config comme point de départ.
+- Le bouton "Valider l'étape" n'est actif que si toutes les agences sont configurées.
 
-#### Règles invariantes
-- **1 seul fichier par agence par mois par branche** — garanti côté serveur (idempotence/purge) ET côté client (alerte explicite).
-- Ce flow s'applique identiquement aux branches **IRD** et **M+3** (à venir).
+### Étape 6 — Dispatch Trello
+- Aperçu de la répartition finale par CDC (lettres, seuils, absences), agence par agence.
+- Lancer l'envoi des cartes Trello pour toutes les agences.
+- Cartes créées en bas de colonne (`pos: "bottom"`) dans le board de chaque CDC.
+- Opération idempotente : relancer ne crée pas de doublons.
+- Le bouton "Valider l'étape" n'est actif qu'une fois le dispatch terminé sans erreur.
 
-### 2.1. Préalables obligatoires avant import
-- Le système connaît les 2 agences cibles : `H91358` et `H92083`.
-- Pour chaque agence, l'admin valide la liste des **prénoms des chargés de clientèle** actifs pour la période.
-- Pour chaque chargé de clientèle, l'admin valide les **tranches de lettres** attribuées (ex: `A-C`, `D-E`, etc.).
-- Tant que ces préalables ne sont pas validés, l'import ne doit pas démarrer.
-- Après validation des préalables, l'admin lance l'import Excel/CSV.
+### Étape 7 — Synthèse Slack
+- Vérifier la connectivité Slack avant envoi (test automatique).
+- Envoyer la synthèse sur le canal configuré.
+- Contenu : volume global, ventilation particuliers/entreprises, volume par CDC, ratio de conservation, seuils appliqués.
+- Confirmer la réception du message Slack avant de clore le cycle.
+
+### 2.2. Répartition CDC de référence (point de départ)
+
+**Agence Kennedy / Corniche (`H91358`) :**
+- Corentin : `A-C`
+- Emma : `D-F`
+- Matthieu : `G-M`
+- Donia : `N-Z`
+
+**Agence Rouvière (`H92083`) :**
+- Joelle : `A-H`
+- Christelle : `I-Z`
+
+> Cette répartition est le point de départ du premier cycle. Elle est ensuite modifiable à chaque étape 5 et reportée par glissement.
+
+### 2.3. Règle de reconfiguration Trello (changement d'équipe)
+- Si l'admin modifie le prénom d'un CDC ou en ajoute un → alerte bloquante demandant le board Trello et la colonne cible avant validation.
+- Tant que le mapping Trello (board + colonne) n'est pas renseigné pour le CDC modifié/ajouté, l'étape 5 ne peut pas être validée.
+
+### 2.4. Gestion des absences (réaffectation temporaire)
+- Si un CDC est absent, définir une affectation de remplacement vers un autre CDC.
+- Paramétrable par mois et par agence, avec date de début/fin optionnelle.
+- Pendant l'absence, les clients du CDC absent sont routés vers le CDC remplaçant (board Trello du remplaçant).
+- Réversible facilement et historisée pour audit.
 
 #### Répartition fournie (référence initiale)
 **Agence Kennedy** (rattachée au périmètre Corniche/H91358) :
@@ -298,20 +338,21 @@ Une fois les données traitées et réparties :
 - Les comparaisons `>=` sont la norme métier validée.
 
 ### 7.3. Validation des sociétés incomplète
-- Règle confirmée : **sauvegarde brouillon avec reprise ultérieure**.
-- Le processus global n'est pas bloqué ; seules les lignes concernées restent en attente de validation.
+- Les saisies sont enregistrées en **brouillon** à chaque action (reprise possible).
+- **Le bouton "Valider l'étape" est bloqué** tant que tous les gérants ne sont pas renseignés et tous les `à valider` arbitrés. On ne passe pas à l'étape 5 avec des lignes en attente.
 
 ### 7.4. Idempotence des imports
 - Règle confirmée : **remplacement** pour un même triplet `mois/agence/branche`.
 - À chaque relance sur ce triplet, effectuer une purge propre des données précédentes avant réimport.
 - Prévoir également la purge des cartes Trello associées si elles avaient déjà été générées.
 
-### 7.5. Flow multi-import (upload guidé)
-- Règle confirmée : **dialog de confirmation** après chaque upload réussi ("Voulez-vous en télécharger un autre ?").
-- Doublon par **nom de fichier** → toast avertissement côté client.
+### 7.5. Flow multi-import (upload toutes agences)
+- **Interface unique** : toutes les agences sont uploadées sur la même page, sans dialog de confirmation intermédiaire.
+- Navigation agence par agence pour vérifier l'état de chaque import.
+- Doublon par **nom de fichier** → toast d'avertissement côté client.
 - Doublon par **agence** (fichier différent) → alerte explicite avec confirmation avant remplacement (pas de remplacement silencieux).
-- Si l'admin répond "Non", un bouton "Ajouter un fichier" reste disponible tant que toutes les agences ne sont pas couvertes.
-- Ce comportement est identique pour les branches IRD et M+3 (à venir).
+- Le bouton "Valider l'étape" n'est actif que si toutes les agences ont un fichier valide.
+- Ce comportement est identique pour les branches IARD et M+3 (à venir).
 
 ### 7.6. Critères d'acceptation / tests
 - Maintenir une checklist de recette couvrant au minimum : parsing, seuils, routing lettres, validation société, création Trello, synthèse Slack et KPI.
