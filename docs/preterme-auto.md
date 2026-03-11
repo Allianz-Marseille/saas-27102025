@@ -4,12 +4,13 @@
 > Pour une nouvelle branche, dupliquer ce fichier, adapter §1 (périmètre), §3.1 (schéma colonnes), §3.2 (critères anomalie) et §4 (Trello).
 
 > **Statut implémentation — branche Auto :**
-> - ✅ Phase 1 — Socle admin + modèle de données + config mensuelle
-> - ✅ Phase 2 — Import parser + normalisation + détection agence
-> - ✅ Phase 3 — Filtrage métier + classification Gemini + validation sociétés
-> - ✅ Phase 4 — Routage CDC + gestion absences + mapping Trello
-> - ✅ Phase 5 — Dispatch Trello + synthèse Slack + KPI historiques
-> - ✅ Phase 6 — Hardening, idempotence complète, tests unitaires
+> - ✅ Workflow 7 étapes (Période → Upload → Filtrage IA → Validation → Modulation → Dispatch → Synthèse)
+> - ✅ Import parser + classification Gemini + validation sociétés multi-agences
+> - ✅ Modulation CDC (lettres, seuils, absences, Trello) avec report glissant
+> - ✅ Dispatch Trello idempotent + coordination multi-agences
+> - ✅ Synthèse Slack (canal CE58HNVF0, token via env)
+> - ✅ Page historique `/admin/preterme-auto/historique/[moisKey]` (fiche synthèse + Recharts 12 mois)
+> - ✅ Hardening : societes multi-agences, dispatch multi-agences, .env.example complet
 
 ---
 
@@ -305,7 +306,9 @@ Une fois les données traitées et réparties :
   - horodatage.
 
 ## 5. Intégration Slack (Synthèse de pilotage)
-- À la fin du traitement, générer et envoyer automatiquement un **message Slack** de synthèse dans une **chaîne Slack précise** (canal configurable par l'admin).
+- À la fin du traitement, générer et envoyer automatiquement un **message Slack** de synthèse.
+- **Canal hardcodé : `CE58HNVF0`** — non configurable par l'admin (décision validée).
+- **Bot token** : lu depuis la variable d'environnement `SLACK_BOT_TOKEN` côté serveur ; jamais transmis depuis le front.
 - Le message Slack doit inclure :
   - volume global : `clients globaux`, `clients conservés`, `% de conservation` ;
   - détail par agence (`H91358`, `H92083`) : globaux, conservés, ratio ;
@@ -313,7 +316,6 @@ Une fois les données traitées et réparties :
   - nombre de sociétés en attente de validation (si applicable) ;
   - rappel des seuils appliqués (`ETP`, `Taux de variation`).
 - Le ton attendu est une **synthèse commerciale lisible**, orientée action (qui traite quoi, poids par CDC, niveau d'anomalies).
-- Le canal Slack cible doit être paramétrable et validé avant envoi.
 
 ## 6. Notes Techniques pour Claude Code
 - **Modularité :** Séparer la logique en plusieurs services (`ImportService`, `AnomalyEngine`, `GeminiClassifier`, `TrelloDispatcher`).
@@ -340,6 +342,7 @@ Une fois les données traitées et réparties :
 ### 7.3. Validation des sociétés incomplète
 - Les saisies sont enregistrées en **brouillon** à chaque action (reprise possible).
 - **Le bouton "Valider l'étape" est bloqué** tant que tous les gérants ne sont pas renseignés et tous les `à valider` arbitrés. On ne passe pas à l'étape 5 avec des lignes en attente.
+- **Coordination multi-agences** : après validation des gérants de l'agence active, le système interroge automatiquement les autres agences. S'il reste des sociétés sans gérant → switch automatique vers l'agence concernée + toast. L'étape 5 n'est débloquée que lorsque toutes les agences sont complètes.
 
 ### 7.4. Idempotence des imports
 - Règle confirmée : **remplacement** pour un même triplet `mois/agence/branche`.
@@ -438,7 +441,11 @@ Pour une nouvelle branche (ex: IARD), préfixer les collections : `preterme_iard
 | Variable | Usage |
 |---|---|
 | `GEMINI_API_KEY` | Classification Gemini (particulier vs société) |
-| Trello `apiKey` + `token` | Saisie admin au moment du dispatch (non stockés en DB) |
+| `TRELLO_API_KEY` | Authentification API Trello — dispatch cartes |
+| `TRELLO_TOKEN` | Authentification API Trello — dispatch cartes |
+| `SLACK_BOT_TOKEN` | Envoi synthèse Slack — canal CE58HNVF0 (scope `chat:write`) |
+
+> Les credentials Trello et le bot token Slack ne transitent plus par le front-end.
 
 ### 8.6. Règles de pilotage
 - Toujours demander un **scope strict** : "phase X uniquement".
