@@ -155,6 +155,53 @@ function defaultAgences(): AgenceConfig[] {
   ];
 }
 
+function normalizeName(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function mergeTrelloMapping(
+  current: AgenceConfig["charges"][number]["trello"],
+  fallback: AgenceConfig["charges"][number]["trello"] | undefined
+) {
+  if (!fallback) return current;
+  if (!current) return fallback;
+  return {
+    ...fallback,
+    ...current,
+    trelloBoardId: current.trelloBoardId || fallback.trelloBoardId,
+    trelloListId: current.trelloListId || fallback.trelloListId,
+    trelloBoardUrl: current.trelloBoardUrl || fallback.trelloBoardUrl,
+    trelloListUrl: current.trelloListUrl || fallback.trelloListUrl,
+    trelloListName: current.trelloListName || fallback.trelloListName,
+    trelloMemberId: current.trelloMemberId || fallback.trelloMemberId,
+  };
+}
+
+function hydrateAgencesWithDefaultTrello(agences: AgenceConfig[]): AgenceConfig[] {
+  const fallbackByAgenceAndPrenom = new Map<string, AgenceConfig["charges"][number]["trello"]>();
+  for (const agence of defaultAgences()) {
+    for (const charge of agence.charges) {
+      fallbackByAgenceAndPrenom.set(
+        `${agence.code}:${normalizeName(charge.prenom)}`,
+        charge.trello
+      );
+    }
+  }
+
+  return agences.map((agence) => ({
+    ...agence,
+    charges: agence.charges.map((charge) => {
+      const fallback = fallbackByAgenceAndPrenom.get(
+        `${agence.code}:${normalizeName(charge.prenom)}`
+      );
+      return {
+        ...charge,
+        trello: mergeTrelloMapping(charge.trello, fallback),
+      };
+    }),
+  }));
+}
+
 // ─── Steps ──────────────────────────────────────────────────────────────────
 
 type Step = PretermeWorkflowStep;
@@ -292,7 +339,8 @@ export default function PretermeIrdPage() {
     setExistingConfig(null);
     getPretermeIrdConfig(moisKey).then((c) => {
       if (c) {
-        setExistingConfig(c);
+        const hydratedAgences = hydrateAgencesWithDefaultTrello(c.agences);
+        setExistingConfig({ ...c, agences: hydratedAgences });
         const persistedCompletedSteps = sanitizeCompletedSteps(
           c.workflow?.completedSteps as Partial<Record<string, boolean>> | undefined
         );
@@ -306,7 +354,7 @@ export default function PretermeIrdPage() {
         setConfig({
           moisKey: c.moisKey, branche: c.branche,
           seuilEtp: c.seuilEtp, seuilVariation: c.seuilVariation,
-          agences: c.agences, slackChannelId: "CE58HNVF0",
+          agences: hydratedAgences, slackChannelId: "CE58HNVF0",
         });
         setStep(restoredStep);
       } else {
@@ -315,11 +363,15 @@ export default function PretermeIrdPage() {
         setSocietesValideesByImportId({});
         setStep("periode");
         const latestAgences = historique[0]?.agences ?? defaultAgences();
-        setConfig((prev) => ({ ...prev, moisKey, agences: latestAgences, slackChannelId: "CE58HNVF0" }));
+        setConfig((prev) => ({
+          ...prev,
+          moisKey,
+          agences: hydrateAgencesWithDefaultTrello(latestAgences),
+          slackChannelId: "CE58HNVF0",
+        }));
       }
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moisKey]);
+  }, [moisKey, historique]);
 
   const persistWorkflow = useCallback(
     async (nextLastStep?: Step, nextCompletedSteps?: Partial<Record<Step, boolean>>) => {
