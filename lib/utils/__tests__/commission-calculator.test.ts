@@ -132,6 +132,10 @@ function makeMonth(overrides: Partial<AgencyCommission> = {}): AgencyCommission 
     profitsExceptionnels: 0,
     prelevementsJulien: 0,
     prelevementsJeanMichel: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    createdBy: "test",
+    lastUpdatedBy: "test",
     ...overrides,
   };
 }
