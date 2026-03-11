@@ -1,18 +1,16 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import {
   Send, CheckCircle2, AlertTriangle, Eye,
-  User, Zap, BarChart3, KeyRound, Save
+  User, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { routerClients, calculerStatsRoutage } from "@/lib/services/preterme-router";
 import type { PretermeClient, AgenceConfig, AgenceCode } from "@/types/preterme";
@@ -47,32 +45,8 @@ export function DispatchPreview({
   idToken,
   onDispatchSuccess,
 }: DispatchPreviewProps) {
-  const STORAGE_API_KEY = "preterme.trello.apiKey";
-  const STORAGE_TOKEN = "preterme.trello.token";
   const [isDispatching, setIsDispatching] = useState(false);
   const [result, setResult] = useState<DispatchResult | null>(null);
-  const [apiKey, setApiKey] = useState("");
-  const [token, setToken] = useState("");
-  const [credsSaved, setCredsSaved] = useState(false);
-
-  useEffect(() => {
-    const storedKey = localStorage.getItem(STORAGE_API_KEY) ?? "";
-    const storedToken = localStorage.getItem(STORAGE_TOKEN) ?? "";
-    setApiKey(storedKey);
-    setToken(storedToken);
-    setCredsSaved(!!(storedKey && storedToken));
-  }, []);
-
-  const handleSaveCreds = () => {
-    if (!apiKey.trim() || !token.trim()) {
-      toast.error("API Key et Token Trello requis");
-      return;
-    }
-    localStorage.setItem(STORAGE_API_KEY, apiKey.trim());
-    localStorage.setItem(STORAGE_TOKEN, token.trim());
-    setCredsSaved(true);
-    toast.success("Credentials Trello sauvegardés");
-  };
 
   // Aperçu routage local (sans appel API)
   const statsRoutage = useMemo(
@@ -80,16 +54,11 @@ export function DispatchPreview({
     [clients, agenceConfig]
   );
 
-  const previewRoutes = useMemo(
-    () => routerClients(clients, agenceConfig),
-    [clients, agenceConfig]
-  );
-
   const trelloMappingOk = agenceConfig.charges.every(
     (c) => c.trello?.trelloBoardId && c.trello?.trelloListId
   );
 
-  const canDispatch = trelloMappingOk && !isDispatching && credsSaved;
+  const canDispatch = trelloMappingOk && !isDispatching;
 
   const handleDispatch = async () => {
     setIsDispatching(true);
@@ -102,12 +71,6 @@ export function DispatchPreview({
         },
         body: JSON.stringify({
           importId,
-          trelloApiKey: typeof window !== "undefined"
-            ? (window.localStorage.getItem(STORAGE_API_KEY) ?? undefined)
-            : undefined,
-          trelloToken: typeof window !== "undefined"
-            ? (window.localStorage.getItem(STORAGE_TOKEN) ?? undefined)
-            : undefined,
         }),
       });
 
@@ -226,53 +189,20 @@ export function DispatchPreview({
         </CardContent>
       </Card>
 
-      {/* Credentials Trello */}
+      {/* Credentials Trello (côté serveur) */}
       <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-sm">
-            <KeyRound className="h-4 w-4 text-sky-400" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             Credentials Trello
-            {credsSaved && (
-              <Badge className="ml-auto bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700/60 text-[10px]">
-                <CheckCircle2 className="h-3 w-3 mr-1" /> Sauvegardés
-              </Badge>
-            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <Label className="text-xs text-slate-600 dark:text-slate-400">API Key</Label>
-              <Input
-                type="password"
-                value={apiKey}
-                onChange={(e) => { setApiKey(e.target.value); setCredsSaved(false); }}
-                placeholder="Trello API Key"
-                className="h-8 text-xs font-mono"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-slate-600 dark:text-slate-400">Token</Label>
-              <Input
-                type="password"
-                value={token}
-                onChange={(e) => { setToken(e.target.value); setCredsSaved(false); }}
-                placeholder="Trello Token"
-                className="h-8 text-xs font-mono"
-              />
-            </div>
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:border-emerald-700/40 dark:bg-emerald-950/20 dark:text-emerald-300">
+            Les credentials Trello sont appliqués automatiquement depuis la configuration serveur.
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleSaveCreds}
-            className="w-full text-xs"
-          >
-            <Save className="h-3.5 w-3.5 mr-1.5" />
-            Sauvegarder les credentials
-          </Button>
           <p className="text-[10px] text-slate-500 dark:text-slate-500">
-            Stockés localement dans votre navigateur, jamais envoyés ailleurs que vers l&apos;API Trello.
+            Si le dispatch échoue avec une erreur de credentials, vérifiez les variables serveur `TRELLO_API_KEY` et `TRELLO_TOKEN`.
           </p>
         </CardContent>
       </Card>
@@ -316,12 +246,6 @@ export function DispatchPreview({
       <Separator className="bg-slate-200 dark:bg-slate-800" />
 
       {/* Bouton dispatch */}
-      {!credsSaved && (
-        <p className="text-xs text-center text-amber-600 dark:text-amber-400">
-          Renseignez et sauvegardez vos credentials Trello avant de dispatcher.
-        </p>
-      )}
-
       <Button
         onClick={handleDispatch}
         disabled={!canDispatch}
