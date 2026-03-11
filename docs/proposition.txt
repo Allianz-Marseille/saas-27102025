@@ -140,4 +140,9 @@ Bouton "← Retour" pour revenir à la page principale.
 
 2. Graphiques Recharts : livrés dans la même phase que la page historique.
 
+3. Slack : canal cible fixé en dur côté serveur.
+   Workspace : TE58HNF9U
+   Canal     : CE58HNVF0
+   Pas de saisie ni de configuration côté front.
+
 → Proposition complète validée. Prête pour implémentation.
