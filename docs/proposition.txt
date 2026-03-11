@@ -107,18 +107,36 @@ Deux graphiques sous le tableau :
 ---
 
 ═══════════════════════════════════════════════════════
-## D. QUESTIONS OUVERTES (à valider avant implémentation)
+## D. NAVIGATION — DÉCISION VALIDÉE
 ═══════════════════════════════════════════════════════
 
-1. Veux-tu que la fiche synthèse soit accessible depuis le stepper
-   à la fin du cycle (étape 7 terminée), ou uniquement depuis
-   une page "Historique" dédiée ?
+Point d'entrée : section "Configs précédentes" dans la sidebar
+de la page principale préterme-auto.
 
-2. Le tableau historique : sur la même page que le stepper (onglet
-   ou section en bas), ou une page admin séparée ?
+Chaque entrée = un cycle passé, avec :
+  - le mois (ex: "Avril 2026")
+  - le statut (✅ Terminé)
+  - le nombre de clients conservés (ex: "412 clients")
+  - un lien → "Voir le détail"
 
-3. Les graphiques Recharts : à inclure dans la proposition ou
-   on les garde pour une phase suivante ?
+Le lien ouvre une page dédiée :
+  /admin/preterme-auto/historique/[moisKey]
 
-4. Faut-il afficher les absences actives au moment du cycle
+Cette page contient, dans l'ordre :
+  1. Fiche synthèse du cycle (Bloc A — identité + seuils + volumes)
+  2. Tableau historique tous cycles (Bloc B)
+  3. Graphiques Recharts (Bloc C)
+
+Bouton "← Retour" pour revenir à la page principale.
+
+---
+
+═══════════════════════════════════════════════════════
+## E. QUESTIONS OUVERTES RESTANTES
+═══════════════════════════════════════════════════════
+
+1. Faut-il afficher les absences actives au moment du cycle
    dans la fiche synthèse (ex: "Corentin remplacé par Matthieu") ?
+
+2. Les graphiques Recharts : à livrer en même temps que la page
+   historique, ou dans une phase suivante ?
