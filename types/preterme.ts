@@ -51,10 +51,25 @@ export interface PretermeConfig {
   agences: AgenceConfig[];
   slackChannelId?: string;
   valide: boolean;
+  workflow?: {
+    lastStep?: PretermeWorkflowStep;
+    completedSteps?: Partial<Record<PretermeWorkflowStep, boolean>>;
+  };
   createdAt: Date | Timestamp;
   updatedAt: Date | Timestamp;
   createdBy: string;
 }
+
+export type PretermeWorkflowStep =
+  | "periode"
+  | "configuration"
+  | "upload"
+  | "filtrage"
+  | "validation-types"
+  | "societes"
+  | "dispatch"
+  | "synthese"
+  | "kpi";
 
 // ─── Import ────────────────────────────────────────────────────────────────
 

@@ -23,6 +23,7 @@ import type {
   PretermeClient,
   PretermeLog,
   AgenceCode,
+  PretermeWorkflowStep,
 } from "@/types/preterme";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -105,6 +106,20 @@ export async function validerPretermeConfig(id: string): Promise<void> {
   assertDb();
   await updateDoc(doc(db!, "preterme_configs", id), {
     valide: true,
+    updatedAt: Timestamp.now(),
+  });
+}
+
+export async function updatePretermeConfigWorkflow(
+  id: string,
+  workflow: {
+    lastStep?: PretermeWorkflowStep;
+    completedSteps?: Partial<Record<PretermeWorkflowStep, boolean>>;
+  }
+): Promise<void> {
+  assertDb();
+  await updateDoc(doc(db!, "preterme_configs", id), {
+    workflow,
     updatedAt: Timestamp.now(),
   });
 }

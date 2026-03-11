@@ -22,6 +22,7 @@ import {
   getSocietesAValider,
   getPretermeImport,
   getAllPretermeImports,
+  updatePretermeConfigWorkflow,
 } from "@/lib/firebase/preterme";
 import { ConfigurationStep } from "@/components/preterme/ConfigurationStep";
 import { UploadStep } from "@/components/preterme/UploadStep";
@@ -32,7 +33,7 @@ import { DispatchPreview } from "@/components/preterme/DispatchPreview";
 import { SynthesisReport } from "@/components/preterme/SynthesisReport";
 import { KpiDashboard } from "@/components/preterme/KpiDashboard";
 import type {
-  PretermeConfig, AgenceConfig, AgenceCode, PretermeClient, PretermeImport,
+  PretermeConfig, AgenceConfig, AgenceCode, PretermeClient, PretermeImport, PretermeWorkflowStep,
 } from "@/types/preterme";
 import { getPretermeImportsByMois } from "@/lib/firebase/preterme";
 
@@ -139,7 +140,7 @@ function defaultAgences(): AgenceConfig[] {
 
 // ─── Steps ──────────────────────────────────────────────────────────────────
 
-type Step = "periode" | "configuration" | "upload" | "filtrage" | "validation-types" | "societes" | "dispatch" | "synthese" | "kpi";
+type Step = PretermeWorkflowStep;
 
 const STEPS: { id: Step; label: string; icon: React.ElementType; phase: number }[] = [
   { id: "periode",       label: "Période",            icon: Calendar,      phase: 1 },
@@ -175,6 +176,7 @@ export default function PretermeAutoPage() {
   const [societesAValider, setSocietesAValider] = useState<PretermeClient[]>([]);
   const [activeImport, setActiveImport]       = useState<PretermeImport | null>(null);
   const [allImports, setAllImports]           = useState<PretermeImport[]>([]);
+  const [completedSteps, setCompletedSteps] = useState<Partial<Record<Step, boolean>>>({});
 
   const [config, setConfig] = useState<
     Omit<PretermeConfig, "id" | "createdAt" | "updatedAt" | "createdBy" | "valide">
@@ -206,12 +208,19 @@ export default function PretermeAutoPage() {
     getPretermeConfig(moisKey).then((c) => {
       if (c) {
         setExistingConfig(c);
+        setCompletedSteps({
+          ...(c.workflow?.completedSteps ?? {}),
+          ...(c.valide ? { periode: true, configuration: true } : {}),
+        });
         setConfig({
           moisKey: c.moisKey, branche: c.branche,
           seuilEtp: c.seuilEtp, seuilVariation: c.seuilVariation,
           agences: c.agences, slackChannelId: c.slackChannelId,
         });
+        setStep(c.workflow?.lastStep ?? "periode");
       } else {
+        setCompletedSteps({});
+        setStep("periode");
         // Hériter les agences (CDC + mapping Trello) du mois le plus récent
         // pour ne pas ressaisir les liens Trello à chaque nouveau mois.
         const latestAgences = historique[0]?.agences ?? defaultAgences();
@@ -219,6 +228,36 @@ export default function PretermeAutoPage() {
       }
     });
   }, [moisKey, historique]);
+
+  const persistWorkflow = useCallback(
+    async (
+      nextLastStep?: Step,
+      nextCompletedSteps?: Partial<Record<Step, boolean>>
+    ) => {
+      if (!existingConfig?.id) return;
+      try {
+        await updatePretermeConfigWorkflow(existingConfig.id, {
+          lastStep: nextLastStep,
+          completedSteps: nextCompletedSteps,
+        });
+      } catch {
+        // Pas bloquant pour l'UX : la reprise continuera à fonctionner localement.
+      }
+    },
+    [existingConfig?.id]
+  );
+
+  const markStepsCompleted = useCallback(
+    (steps: Step[]) => {
+      setCompletedSteps((prev) => {
+        const merged = { ...prev };
+        for (const s of steps) merged[s] = true;
+        void persistWorkflow(step, merged);
+        return merged;
+      });
+    },
+    [persistWorkflow, step]
+  );
 
   // Charger les clients d'un import
   const loadImportClients = useCallback(async (importId: string) => {
@@ -270,6 +309,7 @@ export default function PretermeAutoPage() {
       ]);
       setHistorique(updated);
       if (fresh) setExistingConfig(fresh);
+      markStepsCompleted(["periode", "configuration"]);
       toast.success(`Configuration ${formatMoisLabel(moisKey)} validée !`);
       setStep("upload");
     } catch {
@@ -277,7 +317,7 @@ export default function PretermeAutoPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [config, user, moisKey]);
+  }, [config, user, moisKey, markStepsCompleted]);
 
   const handleImportSuccess = useCallback(async (importId: string, agence: AgenceCode) => {
     setActiveImportId(importId);
@@ -285,6 +325,7 @@ export default function PretermeAutoPage() {
     await loadImportClients(importId);
     // Charger tous les imports du mois pour les KPI
     getPretermeImportsByMois(moisKey).then(setAllImports).catch(() => {});
+    markStepsCompleted(["upload"]);
   }, [loadImportClients, moisKey]);
 
   // Charger activeImport depuis Firestore quand activeImportId change
@@ -337,18 +378,25 @@ export default function PretermeAutoPage() {
     if (!activeImportId) return;
     // Recharger les clients avec typeEntite frais depuis Gemini
     await loadImportClients(activeImportId);
+    markStepsCompleted(["filtrage"]);
     setStep("validation-types");
-  }, [activeImportId, loadImportClients]);
+  }, [activeImportId, loadImportClients, markStepsCompleted]);
 
   const handleTypeValidationDone = useCallback(async (nbEntreprises: number) => {
     if (!activeImportId) return;
+    markStepsCompleted(["validation-types"]);
     if (nbEntreprises > 0) {
       await loadSocietes(activeImportId);
       setStep("societes");
     } else {
+      markStepsCompleted(["societes"]);
       setStep("dispatch");
     }
-  }, [activeImportId, loadSocietes]);
+  }, [activeImportId, loadSocietes, markStepsCompleted]);
+
+  useEffect(() => {
+    void persistWorkflow(step, completedSteps);
+  }, [step, completedSteps, persistWorkflow]);
 
   const importsDuMois = useMemo(
     () => allImports.filter((imp) => imp.moisKey === moisKey),
@@ -421,6 +469,7 @@ export default function PretermeAutoPage() {
               {STEPS.map((s, i) => {
                 const isActive = step === s.id;
                 const isDone =
+                  completedSteps[s.id] ||
                   (s.id === "periode" && stepIndex > 0) ||
                   (s.id === "configuration" && isConfigValide) ||
                   (s.id === "upload" && !!activeImportId && stepIndex > 2) ||
@@ -710,6 +759,7 @@ export default function PretermeAutoPage() {
                   <SocietesValidationStep
                     societes={societesAValider}
                     onAllValidated={() => {
+                      markStepsCompleted(["societes"]);
                       toast.success("Toutes les sociétés sont validées !");
                       setStep("dispatch");
                     }}
@@ -751,6 +801,7 @@ export default function PretermeAutoPage() {
                     clients={importedClients}
                     idToken={idToken}
                     onDispatchSuccess={async () => {
+                      markStepsCompleted(["dispatch", "synthese"]);
                       toast.success("Dispatch terminé ! Consultation de la synthèse.");
                       if (activeImportId) {
                         const [imp] = await Promise.all([
