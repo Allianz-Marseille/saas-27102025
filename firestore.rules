@@ -237,6 +237,22 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Prétermes IARD — collections admin uniquement
+    match /preterme_iard_configs/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /preterme_iard_imports/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /preterme_iard_clients/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /preterme_iard_trello_logs/{docId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false; // logs immuables
+    }
+
     // Admin messages collection
     // Messages envoyés par les administrateurs aux commerciaux
     // Lecture : ADMIN uniquement (les récepteurs accèdent via message_recipients)
