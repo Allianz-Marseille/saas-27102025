@@ -127,6 +127,7 @@ export function TagInput({ value, onChange, placeholder = "Ajouter un tag...", d
             onChange={(e) => { setInput(e.target.value); setShowDropdown(true); }}
             onFocus={() => setShowDropdown(true)}
             onKeyDown={handleKeyDown}
+            onBlur={() => { if (input.trim()) addTag(input); }}
             placeholder={value.length === 0 ? placeholder : ""}
             className="flex-1 min-w-[120px] bg-transparent outline-none text-sm placeholder:text-muted-foreground"
           />

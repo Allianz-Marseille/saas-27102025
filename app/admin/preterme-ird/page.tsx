@@ -31,6 +31,7 @@ import { ThresholdsStep } from "@/components/preterme-ird/ThresholdsStep";
 import { TypeValidationStep } from "@/components/preterme-ird/TypeValidationStep";
 import { SocietesValidationStep } from "@/components/preterme-ird/SocietesValidationStep";
 import { DispatchPreview } from "@/components/preterme-ird/DispatchPreview";
+import { SynthesisReport } from "@/components/preterme-ird/SynthesisReport";
 import type {
   PretermeConfig, AgenceConfig, AgenceCode, PretermeImport, PretermeWorkflowStep, PretermeClient,
 } from "@/types/preterme";
@@ -1145,19 +1146,42 @@ export default function PretermeIrdPage() {
             </div>
           )}
 
-          {/* ── 7. Synthèse Slack ── (Phase 5) */}
-          {step === "synthese" && (
-            <div className="space-y-4">
-              <div className="flex justify-start">
-                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs"
-                  onClick={() => setStep("dispatch")}>
-                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour dispatch
-                </Button>
+          {/* ── 7. Synthèse Slack ── */}
+          {step === "synthese" && (() => {
+            const activeImport = importsDuMois.find((imp) => imp.id === activeImportId) ?? null;
+            const parCharge: Record<string, number> = {};
+            for (const client of dispatchClients) {
+              if (client.chargeAttribue) {
+                parCharge[client.chargeAttribue] = (parCharge[client.chargeAttribue] ?? 0) + 1;
+              }
+            }
+            const nbSocietesEnAttente = societesAValider.filter((c) => !c.chargeAttribue).length;
+
+            return (
+              <div className="space-y-4">
+                <div className="flex justify-start">
+                  <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs"
+                    onClick={() => setStep("dispatch")}>
+                    <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour dispatch
+                  </Button>
+                </div>
+                <AgencySwitcher />
+                {activeImport && activeAgence ? (
+                  <SynthesisReport
+                    importData={activeImport}
+                    agence={activeAgence}
+                    parCharge={parCharge}
+                    nbSocietesEnAttente={nbSocietesEnAttente}
+                    idToken={idToken}
+                  />
+                ) : (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Aucun import actif — revenez à l&apos;étape de téléchargement.
+                  </p>
+                )}
               </div>
-              <AgencySwitcher />
-              <PlaceholderStep label="Synthèse Slack — canal CE58HNVF0" phase={5} />
-            </div>
-          )}
+            );
+          })()}
 
         </div>
       </div>

@@ -161,9 +161,8 @@ export function CourtageFormModal({ open, onClose, onSaved, editItem }: Courtage
       const savedId = editItem?.id ?? data.id;
 
       const initialTags = editItem?.tags ?? [];
-      const hasTagChanges = editItem
-        ? tagsDirty || JSON.stringify(initialTags) !== JSON.stringify(tags)
-        : tags.length > 0;
+      const hasTagChanges =
+        tagsDirty || JSON.stringify(initialTags) !== JSON.stringify(tags);
 
       let savedTags = initialTags;
       let tagsUpdatedBy = editItem?.tagsUpdatedBy ?? null;
@@ -192,6 +191,7 @@ export function CourtageFormModal({ open, onClose, onSaved, editItem }: Courtage
         tagsUpdatedBy = patchData.tagsUpdatedBy;
         tagsUpdatedAt = patchData.tagsUpdatedAt;
       }
+
 
       const saved: Courtage = {
         ...(editItem ?? { id: data.id, createdAt: new Date().toISOString() }),
