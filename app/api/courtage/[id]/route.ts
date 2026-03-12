@@ -80,6 +80,45 @@ export async function PUT(
   }
 }
 
+// ── PATCH (tags uniquement) ───────────────────────────────────────────────────
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await verifyAuth(request);
+  if (!auth.valid || !auth.userEmail) {
+    return NextResponse.json({ error: auth.error ?? "Non autorisé" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  if (!id) return NextResponse.json({ error: "ID manquant" }, { status: 400 });
+
+  let body: { tags: string[] };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Body JSON invalide" }, { status: 400 });
+  }
+
+  const tags = Array.isArray(body.tags) ? body.tags.map((t) => String(t).trim()).filter(Boolean) : [];
+  const tagsUpdatedBy = auth.userEmail.split("@")[0];
+  const tagsUpdatedAt = nowFormatted();
+
+  try {
+    const ref = adminDb.collection("courtage").doc(id);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      return NextResponse.json({ error: "Compagnie introuvable" }, { status: 404 });
+    }
+    await ref.update({ tags, tagsUpdatedBy, tagsUpdatedAt });
+    return NextResponse.json({ tags, tagsUpdatedBy, tagsUpdatedAt });
+  } catch (err) {
+    console.error("PATCH /api/courtage/[id]:", err);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
+}
+
 // ── DELETE ───────────────────────────────────────────────────────────────────
 
 export async function DELETE(
