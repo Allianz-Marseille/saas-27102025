@@ -124,9 +124,26 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // ── Contrôle idempotence cross-import (numéro de contrat) ─────────────────
+  // Charge tous les numéros de contrat déjà dispatchés ce mois pour cette agence.
+  const logsSnap = await adminDb
+    .collection("preterme_iard_trello_logs")
+    .where("moisKey", "==", moisKey)
+    .where("agence", "==", agenceCode)
+    .get();
+
+  const dejaDispatchesContrats = new Set<string>(
+    logsSnap.docs.map((d) => d.data().numeroContrat as string).filter(Boolean)
+  );
+
+  const routesADispatcher = routes.filter(
+    (r) => !dejaDispatchesContrats.has(r.client.numeroContrat)
+  );
+  const skipped = routes.length - routesADispatcher.length;
+
   // ── Dispatch Trello IRD ───────────────────────────────────────────────────
   const dispatchResult = await dispatcherIrdTrello(
-    routes,
+    routesADispatcher,
     agenceCode,
     moisKey,
     seuilEtpApplique ?? 120,
@@ -204,8 +221,9 @@ export async function POST(request: NextRequest) {
       nonRoutes: nonRoutes.length,
     },
     trello: {
-      total: dispatchResult.total,
-      success: dispatchResult.success,
+      total: routes.length,
+      success: dispatchResult.success + skipped,
+      skipped,
       errors: dispatchResult.errors,
       errorDetails,
     },
