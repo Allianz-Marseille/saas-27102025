@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
-import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote, Zap, Bot, Car, Shield, BookOpen } from "lucide-react";
+import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Zap, Bot, Car, Shield, BookOpen, CalendarClock } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { MobileMenu } from "@/components/navigation/mobile-menu";
 import { ResponsiveHeader } from "@/components/navigation/responsive-header";
@@ -18,94 +18,26 @@ import { useAuth } from "@/lib/firebase/use-auth";
 import { useAutoLogout } from "@/lib/hooks/use-auto-logout";
 
 const adminNavItems = [
-  {
-    href: "/admin",
-    label: "Dashboard",
-    icon: Home,
-    exact: true,
-  },
-  {
-    href: "/admin/commercial",
-    label: "Commerciaux",
-    icon: Users,
-  },
-  {
-    href: "/admin/sante-individuelle",
-    label: "Santé Individuelle",
-    icon: Heart,
-  },
-  {
-    href: "/admin/sante-collective",
-    label: "Santé Collective",
-    icon: Building2,
-  },
-  {
-    href: "/admin/sinistre",
-    label: "Sinistre",
-    icon: AlertTriangle,
-  },
-  {
-    href: "/admin/preterme-auto",
-    label: "Prétermes Auto",
-    icon: Car,
-  },
-  {
-    href: "/admin/preterme-ird",
-    label: "Prétermes IARD",
-    icon: Shield,
-  },
-  {
-    href: "/admin/boost",
-    label: "Boost",
-    icon: Zap,
-  },
-  {
-    href: "/commun/process",
-    label: "Process",
-    icon: Workflow,
-  },
-  {
-    href: "/commun/outils",
-    label: "Outils",
-    icon: Wrench,
-  },
-  {
-    href: "/commun/agents-ia",
-    label: "Mes agents IA",
-    icon: Bot,
-    badge: "en formation",
-  },
-  {
-    href: "/commun/courtage",
-    label: "Courtage",
-    icon: BookOpen,
-  },
-  {
-    href: "/admin/commissions-agence",
-    label: "Commissions Agence",
-    icon: Coins,
-    separator: true,
-  },
-  {
-    href: "/admin/remunerations",
-    label: "Rémunérations",
-    icon: Banknote,
-  },
-  {
-    href: "/admin/companies",
-    label: "Compagnies",
-    icon: Building2,
-  },
-  {
-    href: "/admin/users",
-    label: "Utilisateurs",
-    icon: Users,
-  },
-  {
-    href: "/admin/logs",
-    label: "Journal des logs",
-    icon: ScrollText,
-  },
+  { href: "/admin", label: "Dashboard", icon: Home, exact: true },
+  // Pilotage
+  { href: "/admin/commercial", label: "Commerciaux", icon: Users },
+  { href: "/admin/sante-individuelle", label: "Santé Individuelle", icon: Heart },
+  { href: "/admin/sante-collective", label: "Santé Collective", icon: Building2 },
+  { href: "/admin/sinistre", label: "Sinistre", icon: AlertTriangle },
+  { href: "/admin/boost", label: "Boost", icon: Zap },
+  { href: "/admin/commissions-agence", label: "Commissions Agence", icon: Coins },
+  // Process
+  { href: "/admin/preterme-auto", label: "Prétermes Auto", icon: Car },
+  { href: "/admin/preterme-ird", label: "Prétermes IARD", icon: Shield },
+  { href: "/admin/mplus3", label: "M+3", icon: CalendarClock, comingSoon: true },
+  { href: "/commun/process", label: "Nos Procédures", icon: Workflow },
+  // Ressources
+  { href: "/commun/outils", label: "Outils", icon: Wrench },
+  { href: "/commun/agents-ia", label: "Mes agents IA", icon: Bot, badge: "en formation" },
+  { href: "/commun/courtage", label: "Courtage", icon: BookOpen },
+  { href: "/admin/companies", label: "Compagnies", icon: Building2 },
+  { href: "/admin/users", label: "Utilisateurs", icon: Users },
+  { href: "/admin/logs", label: "Journal des logs", icon: ScrollText },
 ];
 
 export default function AdminLayout({

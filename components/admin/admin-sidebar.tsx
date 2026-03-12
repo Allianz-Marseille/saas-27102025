@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote, LogOut, ChevronLeft, User, Zap, Bot, Car, Shield, BookOpen } from "lucide-react";
+import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, LogOut, ChevronLeft, User, Zap, Bot, Car, Shield, BookOpen, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import Image from "next/image";
@@ -15,95 +15,56 @@ interface AdminSidebarProps {
   onCollapsedChange: (collapsed: boolean) => void;
 }
 
-const adminNavItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  exact?: boolean;
+  badge?: string;
+  comingSoon?: boolean;
+}
+
+interface NavSection {
+  title?: string;
+  items: NavItem[];
+}
+
+const adminNavSections: NavSection[] = [
   {
-    href: "/admin",
-    label: "Dashboard",
-    icon: Home,
-    exact: true,
+    items: [
+      { href: "/admin", label: "Dashboard", icon: Home, exact: true },
+    ],
   },
   {
-    href: "/admin/commercial",
-    label: "Commerciaux",
-    icon: Users,
+    title: "Pilotage",
+    items: [
+      { href: "/admin/commercial", label: "Commerciaux", icon: Users },
+      { href: "/admin/sante-individuelle", label: "Santé Individuelle", icon: Heart },
+      { href: "/admin/sante-collective", label: "Santé Collective", icon: Building2 },
+      { href: "/admin/sinistre", label: "Sinistre", icon: AlertTriangle },
+      { href: "/admin/boost", label: "Boost", icon: Zap },
+      { href: "/admin/commissions-agence", label: "Commissions Agence", icon: Coins },
+    ],
   },
   {
-    href: "/admin/sante-individuelle",
-    label: "Santé Individuelle",
-    icon: Heart,
+    title: "Process",
+    items: [
+      { href: "/admin/preterme-auto", label: "Prétermes Auto", icon: Car },
+      { href: "/admin/preterme-ird", label: "Prétermes IARD", icon: Shield },
+      { href: "/admin/mplus3", label: "M+3", icon: CalendarClock, comingSoon: true },
+      { href: "/commun/process", label: "Nos Procédures", icon: Workflow },
+    ],
   },
   {
-    href: "/admin/sante-collective",
-    label: "Santé Collective",
-    icon: Building2,
-  },
-  {
-    href: "/admin/sinistre",
-    label: "Sinistre",
-    icon: AlertTriangle,
-  },
-  {
-    href: "/admin/preterme-auto",
-    label: "Prétermes Auto",
-    icon: Car,
-  },
-  {
-    href: "/admin/preterme-ird",
-    label: "Prétermes IARD",
-    icon: Shield,
-  },
-  {
-    href: "/admin/boost",
-    label: "Boost",
-    icon: Zap,
-  },
-  {
-    href: "/commun/process",
-    label: "Process",
-    icon: Workflow,
-  },
-  {
-    href: "/commun/outils",
-    label: "Outils",
-    icon: Wrench,
-    badge: "new",
-  },
-  {
-    href: "/commun/agents-ia",
-    label: "Mes agents IA",
-    icon: Bot,
-    badge: "en formation",
-  },
-  {
-    href: "/commun/courtage",
-    label: "Courtage",
-    icon: BookOpen,
-  },
-  {
-    href: "/admin/commissions-agence",
-    label: "Commissions Agence",
-    icon: Coins,
-    separator: true,
-  },
-  {
-    href: "/admin/remunerations",
-    label: "Rémunérations",
-    icon: Banknote,
-  },
-  {
-    href: "/admin/companies",
-    label: "Compagnies",
-    icon: Building2,
-  },
-  {
-    href: "/admin/users",
-    label: "Utilisateurs",
-    icon: Users,
-  },
-  {
-    href: "/admin/logs",
-    label: "Journal des logs",
-    icon: ScrollText,
+    title: "Ressources",
+    items: [
+      { href: "/commun/outils", label: "Outils", icon: Wrench, badge: "new" },
+      { href: "/commun/agents-ia", label: "Mes agents IA", icon: Bot, badge: "en formation" },
+      { href: "/commun/courtage", label: "Courtage", icon: BookOpen },
+      { href: "/admin/companies", label: "Compagnies", icon: Building2 },
+      { href: "/admin/users", label: "Utilisateurs", icon: Users },
+      { href: "/admin/logs", label: "Journal des logs", icon: ScrollText },
+    ],
   },
 ];
 
@@ -119,7 +80,7 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
           "border-r h-screen fixed left-0 top-0 z-40 transition-all duration-300",
           "bg-gradient-to-b from-white via-slate-50/30 to-slate-100/30",
           "dark:from-slate-950 dark:via-slate-900/10 dark:to-slate-800/10",
-          "hidden lg:block", // Masquer sur mobile/tablette
+          "hidden lg:block",
           isCollapsed ? "w-16" : "w-64"
         )}
       >
@@ -136,7 +97,6 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
                     height={24}
                     className="h-6 w-auto brightness-0 dark:brightness-100 transition-all duration-300 group-hover:scale-105"
                   />
-                  {/* Effet glow au hover */}
                   <div className="absolute inset-0 bg-gradient-to-r from-slate-600 to-slate-800 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300 -z-10" />
                 </div>
                 <span className="text-xs font-medium bg-gradient-to-r from-slate-600 to-slate-800 bg-clip-text text-transparent">
@@ -172,64 +132,77 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-            {adminNavItems.map((item, index) => {
-              const Icon = item.icon;
-              const isComingSoon = (item as { comingSoon?: boolean }).comingSoon;
-              const isActive = !isComingSoon && (item.exact
-                ? pathname === item.href
-                : pathname?.startsWith(item.href));
-
-              return (
-                <div key={isComingSoon ? item.label : item.href}>
-                  {item.separator && index > 0 && (
-                    <div className="my-2 border-t border-slate-200 dark:border-slate-800" />
-                  )}
-                  <Button
-                    variant={isActive ? "default" : "ghost"}
-                    className={cn(
-                      "w-full justify-start gap-3 transition-all relative",
-                      isActive && "bg-gradient-to-r from-slate-600 via-slate-700 to-slate-600 hover:from-slate-700 hover:via-slate-800 hover:to-slate-700 text-white shadow-md shadow-slate-500/20",
-                      !isActive && "hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100 dark:hover:from-slate-900/30 dark:hover:to-slate-800/30",
-                      isCollapsed && "justify-center px-2"
-                    )}
-                    onClick={() => {
-                      if ((item as { comingSoon?: boolean }).comingSoon) {
-                        toast.info("Fonctionnalité à venir !");
-                        return;
-                      }
-                      router.push(item.href);
-                    }}
-                    title={(item as { title?: string }).title ?? (isCollapsed ? item.label : undefined)}
-                  >
-                    <Icon className="h-5 w-5 shrink-0" />
+          <nav className="flex-1 p-3 overflow-y-auto space-y-1">
+            {adminNavSections.map((section, sectionIndex) => (
+              <div key={sectionIndex} className={cn(sectionIndex > 0 && "pt-2")}>
+                {/* Séparateur + titre de section */}
+                {sectionIndex > 0 && (
+                  <div className="mb-1">
+                    <div className="border-t border-slate-200 dark:border-slate-800 mb-2" />
                     {!isCollapsed && (
-                      <span className="font-medium">{item.label}</span>
-                    )}
-                    {!isCollapsed && (item as { comingSoon?: boolean }).comingSoon && (
-                      <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse">
-                        à venir
+                      <span className="px-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                        {section.title}
                       </span>
                     )}
-                    {!isCollapsed && (item as { badge?: string }).badge === "en formation" && (
-                      <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse">
-                        en formation
-                      </span>
-                    )}
-                    {!isCollapsed && (item as { badge?: string }).badge === "new" && (
-                      <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow-md animate-pulse">
-                        new
-                      </span>
-                    )}
-                  </Button>
+                  </div>
+                )}
+
+                {/* Items de la section */}
+                <div className="space-y-0.5 mt-1">
+                  {section.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = !item.comingSoon && (item.exact
+                      ? pathname === item.href
+                      : pathname?.startsWith(item.href));
+
+                    return (
+                      <Button
+                        key={item.href}
+                        variant={isActive ? "default" : "ghost"}
+                        className={cn(
+                          "w-full justify-start gap-3 transition-all relative h-9",
+                          isActive && "bg-gradient-to-r from-slate-600 via-slate-700 to-slate-600 hover:from-slate-700 hover:via-slate-800 hover:to-slate-700 text-white shadow-md shadow-slate-500/20",
+                          !isActive && "hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100 dark:hover:from-slate-900/30 dark:hover:to-slate-800/30",
+                          isCollapsed && "justify-center px-2"
+                        )}
+                        onClick={() => {
+                          if (item.comingSoon) {
+                            toast.info("Fonctionnalité à venir !");
+                            return;
+                          }
+                          router.push(item.href);
+                        }}
+                        title={isCollapsed ? item.label : undefined}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {!isCollapsed && (
+                          <span className="font-medium text-sm">{item.label}</span>
+                        )}
+                        {!isCollapsed && item.comingSoon && (
+                          <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse">
+                            à venir
+                          </span>
+                        )}
+                        {!isCollapsed && item.badge === "en formation" && (
+                          <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-white shadow-md animate-pulse">
+                            en formation
+                          </span>
+                        )}
+                        {!isCollapsed && item.badge === "new" && (
+                          <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow-md animate-pulse">
+                            new
+                          </span>
+                        )}
+                      </Button>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </nav>
 
-          {/* Footer avec utilisateur connecté, thème et déconnexion */}
+          {/* Footer */}
           <div className="mt-auto border-t bg-gradient-to-r from-slate-500/5 via-slate-600/5 to-slate-700/5 dark:from-slate-600/10 dark:via-slate-700/10 dark:to-slate-800/10">
-            {/* Info utilisateur */}
             {userData && !isCollapsed && (
               <div className="p-4 border-b">
                 <div className="flex items-center gap-3">
@@ -250,11 +223,10 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
                 </div>
               </div>
             )}
-            
-            {/* Avatar seul pour collapsed */}
+
             {userData && isCollapsed && (
               <div className="p-4 border-b flex justify-center">
-                <div 
+                <div
                   className="h-10 w-10 rounded-full bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center text-white font-bold text-lg shadow-md"
                   title={userData.email}
                 >
@@ -262,7 +234,7 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
                 </div>
               </div>
             )}
-            
+
             <div className="p-4 space-y-2">
               <div className={cn("flex items-center gap-2", isCollapsed && "flex-col")}>
                 <ThemeToggle showLabel={false} />
@@ -293,7 +265,7 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
         </div>
       </aside>
 
-      {/* Bouton flottant pour rouvrir la sidebar quand elle est collapsed - Desktop uniquement */}
+      {/* Bouton flottant rouvrir */}
       {isCollapsed && (
         <button
           onClick={() => onCollapsedChange(false)}
@@ -301,12 +273,11 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
           title="Ouvrir le menu"
         >
           <ChevronLeft className="h-5 w-5 rotate-180 group-hover:translate-x-1 transition-transform" />
-          {/* Effet glow */}
           <div className="absolute inset-0 bg-gradient-to-r from-slate-600 to-slate-800 opacity-0 group-hover:opacity-50 blur-xl transition-opacity rounded-r-xl -z-10" />
         </button>
       )}
 
-      {/* Bouton flottant pour fermer la sidebar quand elle est ouverte - Desktop uniquement */}
+      {/* Bouton flottant fermer */}
       {!isCollapsed && (
         <button
           onClick={() => onCollapsedChange(true)}
@@ -314,11 +285,9 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
           title="Fermer le menu"
         >
           <ChevronLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
-          {/* Effet glow */}
           <div className="absolute inset-0 bg-gradient-to-r from-slate-700 to-slate-900 opacity-0 group-hover:opacity-50 blur-xl transition-opacity rounded-r-xl -z-10" />
         </button>
       )}
     </>
   );
 }
-
