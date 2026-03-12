@@ -235,17 +235,17 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
               </div>
             )}
 
-            <div className="p-4 space-y-2">
-              <div className={cn("flex items-center gap-2", isCollapsed && "flex-col")}>
+            <div className="p-4 space-y-3">
+              <div className={cn("flex items-center gap-2", isCollapsed && "justify-center")}>
                 <ThemeToggle showLabel={false} />
               </div>
               {!isCollapsed && (
                 <Button
                   variant="outline"
                   onClick={onLogout}
-                  className="w-full gap-2 bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all"
+                  className="w-full gap-2 rounded-xl border-slate-200 dark:border-slate-700 bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-300 transition-all duration-200"
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="h-4 w-4 shrink-0" />
                   Déconnexion
                 </Button>
               )}
@@ -255,7 +255,7 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
                   size="icon"
                   onClick={onLogout}
                   title="Déconnexion"
-                  className="w-full bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all"
+                  className="h-9 w-9 rounded-xl border-slate-200 dark:border-slate-700 bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 hover:border-red-200 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-300 transition-all duration-200"
                 >
                   <LogOut className="h-4 w-4" />
                 </Button>

@@ -34,12 +34,13 @@ import {
   Wrench,
   Zap,
   Bot,
-  BookOpen
+  BookOpen,
+  ChevronLeft,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
 
 // Navigation items pour chaque rôle
 const commercialNavItems = [
@@ -574,11 +575,12 @@ export default function CommunLayout({
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full gap-3 bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800",
-                    isSidebarCollapsed && "px-2"
+                    "w-full gap-2 rounded-xl border-slate-200 dark:border-slate-700 bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-300 transition-all duration-200",
+                    isSidebarCollapsed && "px-2 justify-center"
                   )}
                   onClick={handleLogout}
                 >
+                  <LogOut className="h-4 w-4 shrink-0" />
                   {!isSidebarCollapsed && "Se déconnecter"}
                 </Button>
               </div>

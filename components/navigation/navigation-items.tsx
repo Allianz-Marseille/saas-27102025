@@ -186,10 +186,10 @@ export function NavigationItems({
         <div className="p-4">
           <Button
             variant="outline"
-            className="w-full gap-3 bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-300 transition-all"
+            className="w-full gap-2 rounded-xl border-slate-200 dark:border-slate-700 bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-300 transition-all duration-200"
             onClick={onLogout}
           >
-            <LogOut className="h-5 w-5 shrink-0" />
+            <LogOut className="h-4 w-4 shrink-0" />
             Déconnexion
           </Button>
         </div>

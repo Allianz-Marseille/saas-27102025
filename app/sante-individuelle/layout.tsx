@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LayoutDashboard, FileText, User, BarChart3, ChevronLeft, Workflow, Wrench, Zap, BookOpen } from "lucide-react";
+import { LayoutDashboard, FileText, User, BarChart3, ChevronLeft, Workflow, Wrench, Zap, BookOpen, LogOut } from "lucide-react";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { useAutoLogout } from "@/lib/hooks/use-auto-logout";
@@ -265,11 +265,12 @@ export default function SanteIndividuelleLayout({
               <Button
                 variant="outline"
                 className={cn(
-                  "w-full gap-3 bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800",
-                  isCollapsed && "px-2"
+                  "w-full gap-2 rounded-xl border-slate-200 dark:border-slate-700 bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-300 transition-all duration-200",
+                  isCollapsed && "px-2 justify-center"
                 )}
                 onClick={handleLogout}
               >
+                <LogOut className="h-4 w-4 shrink-0" />
                 {!isCollapsed && "Se déconnecter"}
               </Button>
             </div>
