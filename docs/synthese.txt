@@ -1,0 +1,174 @@
+Synthèse des processus Prétermes (Auto et IRD)
+=============================================
+
+Les deux processus sont implémentés et fonctionnels :
+- Prétermes Auto  →  /app/admin/preterme-auto/
+- Prétermes IARD  →  /app/admin/preterme-ird/
+
+Ils partagent la même structure en 7 étapes et la même logique générale.
+Les différences sont signalées explicitement.
+
+
+Étapes du processus
+-------------------
+
+1) Validation de la période
+- Sélection du moisKey (format YYYY-MM, mois cible = mois suivant).
+- Confirmation crée une PretermeConfig avec valide: false.
+- Collections : preterme_configs (Auto) / preterme_iard_configs (IRD).
+
+2) Téléchargement des fichiers
+- Deux agences → deux fichiers attendus :
+    H91358 — La Corniche (Kennedy)
+    H92083 — La Rouvière
+- Détection de l'agence automatique depuis le nom de fichier.
+  Sélection manuelle possible en secours.
+- Imports lancés en parallèle (Promise.all).
+- Idempotence : un import existant pour le même (moisKey, agence, branche) est purgé avant réimport.
+- Collections créées : preterme_imports + preterme_clients (Auto)
+                      preterme_iard_imports + preterme_iard_clients (IRD)
+- Import créé avec statut: DRAFT.
+
+Format des fichiers (DIFFÉRENCE AUTO / IRD) :
+  Auto  — 20 colonnes, ETP entier (ex. 120)
+  IARD  — 19 colonnes, ETP décimal (ex. 1.20)
+  Colonnes présentes en Auto mais absentes en IARD : nbSinistres, bonusMalus
+  Colonne présente en IARD seulement : tauxAugmentationIndice
+
+Exemples de fichiers disponibles dans docs/fichiers-exports/.
+
+3) Filtrage IA (calcul des volumes)
+- Filtre métier appliqué à chaque client :
+    conservé = (ETP >= seuilEtp) OU (tauxVariation >= seuilVariation)
+  Auto : comparaison directe (etp >= 120)
+  IARD : division par 100  (etp >= 120/100, soit 1.20)
+- Seuils par défaut : seuilEtp = 120, seuilVariation = 20 %
+- Sliders ajustables ; preview des stats en temps réel (sans appel API).
+- Une fois validé, appel à l'API Gemini (batches de 50 noms) :
+    résultat par client : particulier | societe | a_valider + score de confiance
+    fallback a_valider si confiance < 0.6 ou erreur API
+- Les clients sont mis à jour : conserve, typeEntite, geminiConfidence.
+- Import passe en statut: VALIDATION_SOCIETES.
+- Validation requise pour les deux agences avant de continuer.
+
+4) Validation Particulier / Entreprise
+Deux sous-étapes enchaînées :
+
+  4a) Validation des types (TypeValidationStep)
+  - Affiche la classification Gemini pour chaque client conservé.
+  - Correction manuelle possible (bascule particulier ↔ societe).
+  - Les corrections sont mémorisées dans la collection partagée
+    preterme_quality_overrides (utilisée par les deux processus).
+  - Validation marquée : typesValidatedAt sur l'import.
+
+  4b) Validation des sociétés (SocietesValidationStep)
+  - Affichée seulement si des clients de type societe existent.
+  - Saisie obligatoire du nom du gérant (nomGerant) pour chaque société.
+  - Nécessaire pour le routage au CDC (lettre du gérant, pas du client).
+  - Les sociétés sans gérant ne recevront pas de carte Trello.
+
+5) Modulation
+- Revue et ajustement de la configuration CDC :
+    prénom, plage de lettres (lettresDebut–lettresFin)
+    mapping Trello (boardId, listId, boardUrl, listUrl, memberId)
+    absences + remplaçant
+- Les seuils (ETP, variation) restent ajustables ici.
+- Deux actions :
+    Sauvegarder en brouillon  →  valide: false
+    Valider la modulation     →  valide: true  (débloque le dispatch)
+
+6) Dispatch Trello
+- Routage de chaque client conservé vers un CDC :
+    Particulier : 1re lettre de nomClient
+    Société     : 1re lettre de nomGerant
+    Si CDC absent → redirection vers son remplaçant
+    Type a_valider → non routé (pas de carte créée)
+- Création d'une carte Trello par client routé :
+    Titre : [PRETERME][AGENCE][AUTO ou IARD][MOIS] NOM - N°CONTRAT
+    Corps  : fiche CRM en Markdown (primes, variation, ETP, échéance…)
+    Position : en bas de liste (pos: "bottom")
+- Limitation : 250 ms entre chaque appel + retry exponentiel sur HTTP 429.
+- Idempotence : si trelloCardId déjà présent, la carte n'est pas recréée.
+- Logs dans : preterme_trello_logs (Auto) / preterme_iard_trello_logs (IRD).
+- Statut import → DISPATCH_TRELLO puis TERMINE.
+
+7) Synthèse Slack
+- Composant : SynthesisReport (commun aux deux processus).
+- Envoi manuel via bouton dans l'interface.
+- Canal cible : CE58HNVF0 (identique Auto et IARD).
+- Contenu du message :
+    En-tête avec mois et branche (emoji 📋 Auto / 🛡️ IARD)
+    Total importés → conservés + taux de conservation
+    Détail par agence (H91358 / H92083)
+    Répartition par CDC (prénom : N dossiers)
+    Alerte si sociétés sans gérant en attente
+    Seuils appliqués (ETP, variation)
+- API : POST /api/admin/preterme-auto/slack
+         POST /api/admin/preterme-ird/slack
+- Variable d'environnement requise : SLACK_BOT_TOKEN
+
+
+Collections Firestore
+----------------------
+
+Partagées :
+  preterme_quality_overrides  — mémoire IA (Auto + IRD utilisent la même)
+
+Auto :
+  preterme_configs      — config mensuelle (seuils, CDC, Trello, Slack)
+  preterme_imports      — métadonnées d'import (statut, compteurs)
+  preterme_clients      — clients individuels (tous champs + routage)
+  preterme_trello_logs  — audit des cartes créées
+
+IARD :
+  preterme_iard_configs
+  preterme_iard_imports
+  preterme_iard_clients     — inclut le champ tauxAugmentationIndice
+  preterme_iard_trello_logs
+
+
+Différences clés Auto / IARD
+------------------------------
+
+  Colonnes fichier    Auto : 20 (avec nbSinistres, bonusMalus)
+                      IARD : 19 (avec tauxAugmentationIndice, sans sinistres/malus)
+
+  ETP format          Auto : entier  (120)
+                      IARD : décimal (1.20)
+
+  Comparaison ETP     Auto : etp >= seuilEtp
+                      IARD : etp >= seuilEtp / 100
+
+  Collections         Auto : preterme_*
+                      IARD : preterme_iard_*
+
+  Titre carte Trello  Auto : [...][AUTO][...]
+                      IARD : [...][IARD][...]  (à vérifier en production)
+
+  Emoji Slack         Auto : 📋
+                      IARD : 🛡️
+
+  Tout le reste est identique (UI, Gemini, routage, Slack, qualityOverrides).
+
+
+Routes API
+-----------
+
+  Auto :
+    POST /api/admin/preterme-auto/upload
+    POST /api/admin/preterme-auto/classify
+    POST /api/admin/preterme-auto/dispatch
+    POST /api/admin/preterme-auto/slack
+    GET  /api/admin/preterme-auto/trello-lists
+
+  IARD :
+    POST /api/admin/preterme-ird/upload
+    POST /api/admin/preterme-ird/classify
+    POST /api/admin/preterme-ird/dispatch
+    POST /api/admin/preterme-ird/slack
+    GET  /api/admin/preterme-ird/trello-lists
+
+  Variables d'environnement nécessaires :
+    GEMINI_API_KEY
+    SLACK_BOT_TOKEN
+    FIREBASE_SERVICE_ACCOUNT_BASE64  (base64 du JSON Firebase Admin SDK, 3173 chars)
