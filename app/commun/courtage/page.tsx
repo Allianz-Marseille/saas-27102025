@@ -453,7 +453,7 @@ export default function CourtagePage() {
         item={detailItem}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
-        isAdmin={isAdmin}
+        canSuggestAI={isAdmin}
         onTagsUpdated={handleTagsUpdated}
         getToken={getToken}
       />

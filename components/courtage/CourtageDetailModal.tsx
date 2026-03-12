@@ -18,7 +18,8 @@ interface CourtageDetailModalProps {
   item: Courtage | null;
   open: boolean;
   onClose: () => void;
-  isAdmin?: boolean;
+  /** Affiche le bouton "Suggérer avec IA" (réservé admin). Les tags restent éditables par tous les rôles. */
+  canSuggestAI?: boolean;
   onTagsUpdated?: (id: string, tags: string[], tagsUpdatedBy: string, tagsUpdatedAt: string) => void;
   getToken: () => Promise<string | undefined>;
 }
@@ -59,7 +60,7 @@ export function CourtageDetailModal({
   item,
   open,
   onClose,
-  isAdmin,
+  canSuggestAI,
   onTagsUpdated,
   getToken,
 }: CourtageDetailModalProps) {
@@ -195,7 +196,7 @@ export function CourtageDetailModal({
                   Points forts / Spécialités
                 </span>
               </div>
-              {isAdmin && (
+              {canSuggestAI && (
                 <Button
                   variant="ghost"
                   size="sm"
