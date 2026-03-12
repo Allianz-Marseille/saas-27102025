@@ -20,6 +20,7 @@ import {
 } from "@/lib/utils/roles";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { CommercialSidebar } from "@/components/dashboard/commercial-sidebar";
+import { SidebarSessionFooter } from "@/components/dashboard/sidebar-session-footer";
 import { MobileMenu } from "@/components/navigation/mobile-menu";
 import { ResponsiveHeader } from "@/components/navigation/responsive-header";
 import { NavigationItems } from "@/components/navigation/navigation-items";
@@ -36,7 +37,6 @@ import {
   Bot,
   BookOpen,
   ChevronLeft,
-  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -300,9 +300,8 @@ export default function CommunLayout({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Déconnexion automatique après 10 minutes d'inactivité
-  useAutoLogout({
-    timeoutMinutes: 10,
+  const { secondsRemaining } = useAutoLogout({
+    timeoutMinutes: 5,
     warningMinutes: 1,
     userId: user?.uid,
     userEmail: userData?.email,
@@ -373,14 +372,15 @@ export default function CommunLayout({
       <div className="flex h-screen overflow-hidden">
         {/* Sidebar Desktop - selon le rôle */}
         {isAdminUser && (
-          <AdminSidebar 
+          <AdminSidebar
             onLogout={handleLogout}
             isCollapsed={isSidebarCollapsed}
             onCollapsedChange={setIsSidebarCollapsed}
+            countdownSeconds={secondsRemaining}
           />
         )}
         {(isCommercialUser || isGestionnaireSinistreUser) && !isAdminUser && (
-          <CommercialSidebar />
+          <CommercialSidebar countdownSeconds={secondsRemaining} />
         )}
         {(isHealthIndividuelUser || isHealthCollectiveUser) && !isAdminUser && (
           <aside className={cn(
@@ -524,67 +524,15 @@ export default function CommunLayout({
               </ul>
             </nav>
 
-            {/* User info et actions */}
-            <div className="mt-auto border-t border-slate-200 dark:border-slate-800">
-              {userData && !isSidebarCollapsed && (
-                <div className="p-4 border-b border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md",
-                      isHealthIndividuelUser
-                        ? "bg-gradient-to-br from-green-500 to-emerald-600"
-                        : "bg-gradient-to-br from-emerald-500 to-teal-600"
-                    )}>
-                      {userData.email.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold truncate">
-                        {userData.email.split('@')[0]}
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <div className={cn(
-                          "px-2 py-0.5 rounded-full text-white text-[10px] font-bold",
-                          isHealthIndividuelUser ? "bg-green-500" : "bg-emerald-500"
-                        )}>
-                          {isHealthIndividuelUser ? "SANTÉ" : "COLLECTIVE"}
-                        </div>
-                        <User className="h-3 w-3 text-muted-foreground" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {userData && isSidebarCollapsed && (
-                <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-center">
-                  <div 
-                    className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md",
-                      isHealthIndividuelUser
-                        ? "bg-gradient-to-br from-green-500 to-emerald-600"
-                        : "bg-gradient-to-br from-emerald-500 to-teal-600"
-                    )}
-                    title={userData.email}
-                  >
-                    {userData.email.charAt(0).toUpperCase()}
-                  </div>
-                </div>
-              )}
-
-              <div className="p-4">
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full gap-2 rounded-xl border-slate-200 dark:border-slate-700 bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-300 transition-all duration-200",
-                    isSidebarCollapsed && "px-2 justify-center"
-                  )}
-                  onClick={handleLogout}
-                >
-                  <LogOut className="h-4 w-4 shrink-0" />
-                  {!isSidebarCollapsed && "Se déconnecter"}
-                </Button>
-              </div>
-            </div>
+            {/* Footer unifié */}
+            <SidebarSessionFooter
+              countdownSeconds={secondsRemaining}
+              userData={userData}
+              onLogout={handleLogout}
+              variant="health"
+              badgeLabel={isHealthIndividuelUser ? "SANTÉ" : "COLLECTIVE"}
+              isCollapsed={isSidebarCollapsed}
+            />
             </div>
           </aside>
         )}

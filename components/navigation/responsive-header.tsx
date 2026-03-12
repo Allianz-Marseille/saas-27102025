@@ -3,7 +3,6 @@
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
-import { NotificationCenter } from "@/components/dashboard/notification-center";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
@@ -63,9 +62,8 @@ export function ResponsiveHeader({
           </h1>
         </div>
 
-        {/* Actions (Notifications + Thème) */}
+        {/* Actions (Thème) */}
         <div className="flex items-center gap-2">
-          {showNotifications && <NotificationCenter />}
           <ThemeToggle />
         </div>
       </div>

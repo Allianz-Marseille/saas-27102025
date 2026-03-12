@@ -1,9 +1,9 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, LogOut, ChevronLeft, User, Zap, Bot, Car, Shield, BookOpen, CalendarClock } from "lucide-react";
+import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, ChevronLeft, Zap, Bot, Car, Shield, BookOpen, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/dashboard/theme-toggle";
+import { SidebarSessionFooter } from "@/components/dashboard/sidebar-session-footer";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/firebase/use-auth";
@@ -13,6 +13,7 @@ interface AdminSidebarProps {
   onLogout: () => void;
   isCollapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
+  countdownSeconds?: number;
 }
 
 interface NavItem {
@@ -68,7 +69,7 @@ const adminNavSections: NavSection[] = [
   },
 ];
 
-export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: AdminSidebarProps) {
+export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange, countdownSeconds }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { userData } = useAuth();
@@ -202,66 +203,13 @@ export function AdminSidebar({ onLogout, isCollapsed, onCollapsedChange }: Admin
           </nav>
 
           {/* Footer */}
-          <div className="mt-auto border-t bg-gradient-to-r from-slate-500/5 via-slate-600/5 to-slate-700/5 dark:from-slate-600/10 dark:via-slate-700/10 dark:to-slate-800/10">
-            {userData && !isCollapsed && (
-              <div className="p-4 border-b">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                    {userData.email.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold truncate">
-                      {userData.email.split('@')[0]}
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <div className="px-2 py-0.5 rounded-full bg-slate-600 text-white text-[10px] font-bold">
-                        ADMIN
-                      </div>
-                      <User className="h-3 w-3 text-muted-foreground" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {userData && isCollapsed && (
-              <div className="p-4 border-b flex justify-center">
-                <div
-                  className="h-10 w-10 rounded-full bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center text-white font-bold text-lg shadow-md"
-                  title={userData.email}
-                >
-                  {userData.email.charAt(0).toUpperCase()}
-                </div>
-              </div>
-            )}
-
-            <div className="p-4 space-y-3">
-              <div className={cn("flex items-center gap-2", isCollapsed && "justify-center")}>
-                <ThemeToggle showLabel={false} />
-              </div>
-              {!isCollapsed && (
-                <Button
-                  variant="outline"
-                  onClick={onLogout}
-                  className="w-full gap-2 rounded-xl border-slate-200 dark:border-slate-700 bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-300 transition-all duration-200"
-                >
-                  <LogOut className="h-4 w-4 shrink-0" />
-                  Déconnexion
-                </Button>
-              )}
-              {isCollapsed && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={onLogout}
-                  title="Déconnexion"
-                  className="h-9 w-9 rounded-xl border-slate-200 dark:border-slate-700 bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 hover:border-red-200 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-300 transition-all duration-200"
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
+          <SidebarSessionFooter
+            countdownSeconds={countdownSeconds}
+            userData={userData}
+            onLogout={onLogout}
+            variant="admin"
+            isCollapsed={isCollapsed}
+          />
         </div>
       </aside>
 

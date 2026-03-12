@@ -1,17 +1,20 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, FileText, User, LogOut, ChevronLeft, Coins, Workflow, Wrench, Zap, Bot, BookOpen } from "lucide-react";
+import { Home, FileText, User, ChevronLeft, Coins, Workflow, Wrench, Zap, Bot, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/dashboard/theme-toggle";
-import { NotificationCenter } from "@/components/dashboard/notification-center";
+import { SidebarSessionFooter } from "@/components/dashboard/sidebar-session-footer";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { logout } from "@/lib/firebase/auth";
 import { logUserLogout } from "@/lib/firebase/logs";
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/lib/firebase/use-auth";
+
+interface CommercialSidebarProps {
+  countdownSeconds?: number;
+}
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -107,7 +110,7 @@ const gestionnaireSinistreMenuItems: SidebarItem[] = [
   },
 ];
 
-export function CommercialSidebar() {
+export function CommercialSidebar({ countdownSeconds }: CommercialSidebarProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, userData, loading } = useAuth();
@@ -260,75 +263,15 @@ export function CommercialSidebar() {
         })}
       </nav>
 
-      {/* Footer avec utilisateur connecté, notifications, thème et déconnexion */}
-      <div className="mt-auto border-t dark:border-white/[0.06] bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 dark:from-blue-600/10 dark:via-purple-600/10 dark:to-pink-600/10">
-        {/* Info utilisateur */}
-        {userData && !isCollapsed && (
-          <div className="p-4 border-b">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                {userData.email.charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold truncate">
-                  {userData.email.split('@')[0]}
-                </div>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <div className={cn(
-                    "px-2 py-0.5 rounded-full text-white text-[10px] font-bold",
-                    isGestionnaireSinistre ? "bg-orange-500" : "bg-blue-500"
-                  )}>
-                    {isGestionnaireSinistre ? "SINISTRE" : "COMMERCIAL"}
-                  </div>
-                  <User className="h-3 w-3 text-muted-foreground" />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Avatar seul pour collapsed */}
-        {userData && isCollapsed && (
-          <div className="p-4 border-b flex justify-center">
-            <div 
-              className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md"
-              title={userData.email}
-            >
-              {userData.email.charAt(0).toUpperCase()}
-            </div>
-          </div>
-        )}
-        
-        <div className="p-4 space-y-3">
-          {!isGestionnaireSinistre && (
-            <div className={cn("flex items-center gap-2", isCollapsed && "flex-col")}>
-              <NotificationCenter />
-              <ThemeToggle showLabel={false} />
-            </div>
-          )}
-          {!isCollapsed && (
-            <Button
-              variant="outline"
-              onClick={handleLogout}
-              className="w-full gap-2 rounded-xl border-slate-200 dark:border-slate-700 bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-300 transition-all duration-200"
-            >
-              <LogOut className="h-4 w-4 shrink-0" />
-              Se déconnecter
-            </Button>
-          )}
-          {isCollapsed && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleLogout}
-              title="Se déconnecter"
-              className="h-9 w-9 rounded-xl border-slate-200 dark:border-slate-700 bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 hover:border-red-200 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-300 transition-all duration-200"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </div>
+      {/* Footer */}
+      <SidebarSessionFooter
+        countdownSeconds={countdownSeconds}
+        userData={userData}
+        onLogout={handleLogout}
+        variant="commercial"
+        badgeLabel={isGestionnaireSinistre ? "SINISTRE" : "COMMERCIAL"}
+        isCollapsed={isCollapsed}
+      />
       </div>
     </aside>
 

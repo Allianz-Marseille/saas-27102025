@@ -112,9 +112,8 @@ export default function DashboardLayout({
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Déconnexion automatique après 10 minutes d'inactivité
-  useAutoLogout({
-    timeoutMinutes: 10,
+  const { secondsRemaining } = useAutoLogout({
+    timeoutMinutes: 5,
     warningMinutes: 1,
     userId: user?.uid,
     userEmail: userData?.email,
@@ -151,7 +150,7 @@ export default function DashboardLayout({
     <RouteGuard>
       <div className="flex h-screen overflow-hidden">
         {/* Sidebar Desktop - masquée sur mobile/tablette */}
-        <CommercialSidebar />
+        <CommercialSidebar countdownSeconds={secondsRemaining} />
 
         {/* Menu Mobile - visible uniquement sur mobile/tablette */}
         <MobileMenu

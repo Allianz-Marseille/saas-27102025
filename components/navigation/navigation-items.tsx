@@ -6,7 +6,6 @@ import { LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
-import { NotificationCenter } from "@/components/dashboard/notification-center";
 
 interface NavItem {
   href: string;
@@ -174,10 +173,9 @@ export function NavigationItems({
           </div>
         )}
 
-        {/* Actions : thème + notifications (aligné sidebar desktop) */}
+        {/* Actions : thème */}
         <div className="p-4 border-b border-border">
-          <div className="flex flex-wrap items-center gap-2">
-            {showNotifications && <NotificationCenter />}
+          <div className="flex justify-center">
             <ThemeToggle showLabel={true} />
           </div>
         </div>
@@ -186,7 +184,7 @@ export function NavigationItems({
         <div className="p-4">
           <Button
             variant="outline"
-            className="w-full gap-2 rounded-xl border-slate-200 dark:border-slate-700 bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-300 transition-all duration-200"
+            className="w-full gap-2 rounded-xl border-slate-200 dark:border-slate-700 bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-300 transition-all duration-200 animate-pulse hover:animate-none"
             onClick={onLogout}
           >
             <LogOut className="h-4 w-4 shrink-0" />

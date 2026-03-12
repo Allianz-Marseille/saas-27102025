@@ -51,9 +51,8 @@ export default function AdminLayout({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Déconnexion automatique après 10 minutes d'inactivité
-  useAutoLogout({
-    timeoutMinutes: 10,
+  const { secondsRemaining } = useAutoLogout({
+    timeoutMinutes: 5,
     warningMinutes: 1,
     userId: user?.uid,
     userEmail: userData?.email,
@@ -87,10 +86,11 @@ export default function AdminLayout({
     <RouteGuard allowedRoles={["ADMINISTRATEUR"]}>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
         {/* Sidebar Desktop - masquée sur mobile/tablette */}
-        <AdminSidebar 
+        <AdminSidebar
           onLogout={handleLogout}
           isCollapsed={isSidebarCollapsed}
           onCollapsedChange={setIsSidebarCollapsed}
+          countdownSeconds={secondsRemaining}
         />
 
         {/* Menu Mobile - visible uniquement sur mobile/tablette */}
