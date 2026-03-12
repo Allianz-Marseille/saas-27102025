@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/utils/auth-utils";
 import { adminDb, Timestamp } from "@/lib/firebase/admin-config";
+import { normalizeCompanyName, sanitizeInternetLink } from "@/lib/utils/courtage-format";
 
 const SEED_DATA = [
   { compagnie: "Add Value", identifiant: "jm.nogaro@allianz.fr", password: "ALLIANZadd2025@", internet: "https://courtage.add-value.fr/" },
@@ -67,17 +68,18 @@ export async function POST(request: NextRequest) {
     let skipped = 0;
 
     for (const row of SEED_DATA) {
-      const key = row.compagnie.toLowerCase().trim();
+      const normalizedCompagnie = normalizeCompanyName(row.compagnie);
+      const key = normalizedCompagnie.toLowerCase().trim();
       if (existingNames.has(key)) {
         skipped++;
         continue;
       }
       const ref = adminDb.collection("courtage").doc();
       batch.set(ref, {
-        compagnie: row.compagnie,
+        compagnie: normalizedCompagnie,
         identifiant: row.identifiant,
         password: row.password,
-        internet: row.internet,
+        internet: sanitizeInternetLink(row.internet),
         qui: null,
         dateModification: null,
         createdAt: Timestamp.now(),

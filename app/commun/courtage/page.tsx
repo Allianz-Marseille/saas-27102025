@@ -250,19 +250,19 @@ export default function CourtagePage() {
           placeholder="Rechercher une compagnie..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
+          className="pl-9 bg-slate-50/70 border-slate-200 dark:bg-slate-900/40 dark:border-slate-800"
         />
       </div>
 
       {/* Tableau */}
-      <div className="rounded-lg border overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/35">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Compagnie</TableHead>
-              <TableHead>Identifiant</TableHead>
-              <TableHead>Mot de passe</TableHead>
-              <TableHead>Lien</TableHead>
+            <TableRow className="bg-slate-100/70 dark:bg-slate-900/70">
+              <TableHead className="text-slate-700 dark:text-slate-200">Compagnie</TableHead>
+              <TableHead className="text-slate-700 dark:text-slate-200">Identifiant</TableHead>
+              <TableHead className="text-slate-700 dark:text-slate-200">Mot de passe</TableHead>
+              <TableHead className="text-slate-700 dark:text-slate-200">Lien</TableHead>
               <TableHead className="text-right w-[120px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -280,8 +280,15 @@ export default function CourtagePage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((item) => (
-                <TableRow key={item.id} className="group">
+              filtered.map((item, index) => (
+                <TableRow
+                  key={item.id}
+                  className={`group border-slate-100 dark:border-slate-800/80 ${
+                    index % 2 === 0
+                      ? "bg-white/60 hover:bg-slate-50/80 dark:bg-slate-950/20 dark:hover:bg-slate-900/55"
+                      : "bg-slate-50/55 hover:bg-slate-100/70 dark:bg-slate-900/20 dark:hover:bg-slate-900/65"
+                  }`}
+                >
                   <TableCell className="font-medium">{item.compagnie}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground max-w-[180px] truncate">
                     {item.identifiant || "—"}
@@ -302,7 +309,12 @@ export default function CourtagePage() {
                           rel="noopener noreferrer"
                           title="Ouvrir la connexion"
                         >
-                          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:bg-slate-200/70 dark:hover:bg-slate-800/80"
+                            asChild
+                          >
                             <span>
                               <ExternalLink className="h-4 w-4 text-primary" />
                             </span>
@@ -324,7 +336,7 @@ export default function CourtagePage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-8 w-8 hover:bg-slate-200/70 dark:hover:bg-slate-800/80"
                         title="Voir les détails"
                         onClick={() => {
                           setDetailItem(item);
@@ -338,7 +350,7 @@ export default function CourtagePage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-8 w-8 hover:bg-slate-200/70 dark:hover:bg-slate-800/80"
                         title="Modifier"
                         onClick={() => {
                           setEditItem(item);
@@ -352,7 +364,7 @@ export default function CourtagePage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-red-100/70 dark:hover:bg-red-950/50"
                         title="Supprimer"
                         onClick={() => setDeleteTarget(item)}
                       >

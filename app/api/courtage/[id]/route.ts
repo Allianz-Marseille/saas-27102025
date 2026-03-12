@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/utils/auth-utils";
 import { adminDb } from "@/lib/firebase/admin-config";
+import { normalizeCompanyName, sanitizeInternetLink } from "@/lib/utils/courtage-format";
 import type { CourtageFormData } from "@/types/courtage";
 
 function nowFormatted(): string {
@@ -42,8 +43,14 @@ export async function PUT(
     return NextResponse.json({ error: "Le nom de la compagnie est requis" }, { status: 400 });
   }
 
+  const normalizedCompagnie = normalizeCompanyName(compagnie);
+  if (!normalizedCompagnie) {
+    return NextResponse.json({ error: "Le nom de la compagnie est requis" }, { status: 400 });
+  }
+
   const qui = auth.userEmail.split("@")[0];
   const dateModification = nowFormatted();
+  const sanitizedInternet = sanitizeInternetLink(internet);
 
   try {
     const ref = adminDb.collection("courtage").doc(id);
@@ -53,15 +60,20 @@ export async function PUT(
     }
 
     await ref.update({
-      compagnie: compagnie.trim(),
+      compagnie: normalizedCompagnie,
       identifiant: identifiant?.trim() ?? "",
       password: password ?? "",
-      internet: internet?.trim() ?? "",
+      internet: sanitizedInternet,
       qui,
       dateModification,
     });
 
-    return NextResponse.json({ qui, dateModification });
+    return NextResponse.json({
+      qui,
+      dateModification,
+      internet: sanitizedInternet,
+      compagnie: normalizedCompagnie,
+    });
   } catch (err) {
     console.error("PUT /api/courtage/[id]:", err);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });

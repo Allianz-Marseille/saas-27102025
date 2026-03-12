@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/firebase/use-auth";
+import { normalizeCompanyName } from "@/lib/utils/courtage-format";
 import type { Courtage, CourtageFormData } from "@/types/courtage";
 
 interface CourtageFormModalProps {
@@ -53,6 +54,10 @@ export function CourtageFormModal({ open, onClose, onSaved, editItem }: Courtage
   }, [open, editItem]);
 
   const handleChange = (field: keyof CourtageFormData, value: string) => {
+    if (field === "compagnie") {
+      setForm((prev) => ({ ...prev, compagnie: normalizeCompanyName(value) }));
+      return;
+    }
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -86,6 +91,8 @@ export function CourtageFormModal({ open, onClose, onSaved, editItem }: Courtage
       const saved: Courtage = {
         ...(editItem ?? { id: data.id, createdAt: new Date().toISOString() }),
         ...form,
+        compagnie: data.compagnie ?? form.compagnie,
+        internet: data.internet ?? "",
         qui: data.qui ?? editItem?.qui ?? null,
         dateModification: data.dateModification ?? editItem?.dateModification ?? null,
         id: editItem?.id ?? data.id,
@@ -158,7 +165,7 @@ export function CourtageFormModal({ open, onClose, onSaved, editItem }: Courtage
               id="internet"
               value={form.internet}
               onChange={(e) => handleChange("internet", e.target.value)}
-              placeholder="https://... ou libellé"
+              placeholder="https://..."
             />
           </div>
         </div>

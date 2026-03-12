@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/utils/auth-utils";
 import { adminDb, Timestamp } from "@/lib/firebase/admin-config";
+import { normalizeCompanyName, sanitizeInternetLink } from "@/lib/utils/courtage-format";
 import type { CourtageFormData } from "@/types/courtage";
 
 function nowFormatted(): string {
@@ -31,7 +32,15 @@ export async function GET(request: NextRequest) {
       .orderBy("compagnie", "asc")
       .get();
 
-    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const items = snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        compagnie: normalizeCompanyName(data.compagnie),
+        internet: sanitizeInternetLink(data.internet),
+      };
+    });
     return NextResponse.json({ items });
   } catch (err) {
     console.error("GET /api/courtage:", err);
@@ -59,21 +68,30 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Le nom de la compagnie est requis" }, { status: 400 });
   }
 
+  const normalizedCompagnie = normalizeCompanyName(compagnie);
+  if (!normalizedCompagnie) {
+    return NextResponse.json({ error: "Le nom de la compagnie est requis" }, { status: 400 });
+  }
+
   const qui = auth.userEmail.split("@")[0];
   const dateModification = nowFormatted();
+  const sanitizedInternet = sanitizeInternetLink(internet);
 
   try {
     const ref = await adminDb.collection("courtage").add({
-      compagnie: compagnie.trim(),
+      compagnie: normalizedCompagnie,
       identifiant: identifiant?.trim() ?? "",
       password: password ?? "",
-      internet: internet?.trim() ?? "",
+      internet: sanitizedInternet,
       qui,
       dateModification,
       createdAt: Timestamp.now(),
     });
 
-    return NextResponse.json({ id: ref.id, qui, dateModification }, { status: 201 });
+    return NextResponse.json(
+      { id: ref.id, qui, dateModification, internet: sanitizedInternet, compagnie: normalizedCompagnie },
+      { status: 201 }
+    );
   } catch (err) {
     console.error("POST /api/courtage:", err);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
