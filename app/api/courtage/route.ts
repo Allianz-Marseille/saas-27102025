@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Body JSON invalide" }, { status: 400 });
   }
 
-  const { compagnie, identifiant, password, internet } = body;
+  const { compagnie, identifiant, password, internet, logoUrl } = body;
   if (!compagnie?.trim()) {
     return NextResponse.json({ error: "Le nom de la compagnie est requis" }, { status: 400 });
   }
@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
       identifiant: identifiant?.trim() ?? "",
       password: password ?? "",
       internet: sanitizedInternet,
+      logoUrl: logoUrl?.trim() ?? "",
       qui,
       dateModification,
       createdAt: Timestamp.now(),

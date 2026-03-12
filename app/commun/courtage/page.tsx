@@ -33,6 +33,10 @@ import { getTagStyle } from "@/components/courtage/TagInput";
 import { cn } from "@/lib/utils";
 import type { Courtage } from "@/types/courtage";
 
+function isValidUrl(v?: string) {
+  return !!v && (v.startsWith("http://") || v.startsWith("https://"));
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function isUrl(value: string): boolean {
@@ -72,6 +76,7 @@ export default function CourtagePage() {
 
   const [detailItem, setDetailItem] = useState<Courtage | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [logoErrors, setLogoErrors] = useState<Set<string>>(new Set());
 
   const [deleteTarget, setDeleteTarget] = useState<Courtage | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -139,14 +144,6 @@ export default function CourtagePage() {
       }
       return [...prev, saved].sort((a, b) => a.compagnie.localeCompare(b.compagnie));
     });
-  };
-
-  const handleTagsUpdated = (id: string, tags: string[], tagsUpdatedBy: string, tagsUpdatedAt: string) => {
-    setItems((prev) =>
-      prev.map((i) => i.id === id ? { ...i, tags, tagsUpdatedBy, tagsUpdatedAt } : i)
-    );
-    // Also update detailItem if open
-    setDetailItem((prev) => prev?.id === id ? { ...prev, tags, tagsUpdatedBy, tagsUpdatedAt } : prev);
   };
 
   const handleDelete = async () => {
@@ -332,10 +329,20 @@ export default function CourtagePage() {
                     {/* Avatar + Name */}
                     <div className="flex items-center gap-3">
                       <div className={cn(
-                        "h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md shrink-0 bg-gradient-to-br",
-                        gradient
+                        "h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md shrink-0 bg-gradient-to-br overflow-hidden",
+                        isValidUrl(item.logoUrl) && !logoErrors.has(item.id) ? "bg-white" : gradient
                       )}>
-                        {item.compagnie.charAt(0).toUpperCase()}
+                        {isValidUrl(item.logoUrl) && !logoErrors.has(item.id) ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={item.logoUrl}
+                            alt={item.compagnie}
+                            className="h-8 w-8 object-contain"
+                            onError={() => setLogoErrors((prev) => new Set([...prev, item.id]))}
+                          />
+                        ) : (
+                          item.compagnie.charAt(0).toUpperCase()
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-sm leading-tight truncate group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:[background-image:linear-gradient(to_right,var(--tw-gradient-stops))] transition-all duration-300">
@@ -453,9 +460,6 @@ export default function CourtagePage() {
         item={detailItem}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
-        canSuggestAI={isAdmin}
-        onTagsUpdated={handleTagsUpdated}
-        getToken={getToken}
       />
 
       {/* Confirmation suppression */}

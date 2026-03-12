@@ -4,6 +4,7 @@ export interface Courtage {
   identifiant: string;
   password: string;
   internet: string;
+  logoUrl?: string;
   dateModification: string | null; // format YYYY-MM-DD-HH-MM ou null
   qui: string | null;              // partie avant @ de l'email, ou null
   createdAt?: string;
@@ -13,4 +14,4 @@ export interface Courtage {
   tagsUpdatedAt?: string | null;
 }
 
-export type CourtageFormData = Pick<Courtage, "compagnie" | "identifiant" | "password" | "internet">;
+export type CourtageFormData = Pick<Courtage, "compagnie" | "identifiant" | "password" | "internet" | "logoUrl">;
