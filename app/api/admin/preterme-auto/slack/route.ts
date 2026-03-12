@@ -11,10 +11,26 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { verifyAdmin } from "@/lib/utils/auth-utils";
 import { adminDb } from "@/lib/firebase/admin-config";
 import { envoyerSlack, type SlackSynthesisData } from "@/lib/services/preterme-slack";
 import type { AgenceCode } from "@/types/preterme";
+
+function readSlackTokenFromEnvLocal(): string | null {
+  try {
+    const envPath = join(process.cwd(), ".env.local");
+    if (!existsSync(envPath)) return null;
+    const raw = readFileSync(envPath, "utf8");
+    const line = raw.split("\n").find((l) => l.trim().startsWith("SLACK_BOT_TOKEN="));
+    if (!line) return null;
+    const value = line.slice(line.indexOf("=") + 1).trim().replace(/^['"]|['"]$/g, "");
+    return value || null;
+  } catch {
+    return null;
+  }
+}
 
 export async function POST(request: NextRequest) {
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -33,7 +49,10 @@ export async function POST(request: NextRequest) {
   const { importId } = body;
   if (!importId) return NextResponse.json({ error: "importId requis." }, { status: 400 });
 
-  const slackBotToken = process.env.SLACK_BOT_TOKEN;
+  const slackBotToken =
+    process.env.SLACK_BOT_TOKEN?.trim() ||
+    readSlackTokenFromEnvLocal() ||
+    "";
   if (!slackBotToken) {
     return NextResponse.json({ error: "SLACK_BOT_TOKEN non configuré côté serveur." }, { status: 503 });
   }
