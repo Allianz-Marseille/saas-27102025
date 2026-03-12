@@ -52,6 +52,8 @@ function toDate(v: unknown): Date | null {
   return null;
 }
 
+const REQUIRED_AUTO_AGENCES: AgenceCode[] = ["H91358", "H92083"];
+
 // ─── Composants locaux ────────────────────────────────────────────────────────
 
 function StatBlock({ label, value, sub, accent = false }: {
@@ -182,6 +184,26 @@ export default function HistoriqueDetailPage() {
           </Button>
         </Link>
         <p className="text-slate-500 dark:text-slate-400">Aucune configuration trouvée pour {moisKey}.</p>
+      </div>
+    );
+  }
+
+  const isCycleComplet = REQUIRED_AUTO_AGENCES.every((agenceCode) =>
+    imports.some((imp) => imp.agence === agenceCode && imp.statut === "TERMINE")
+  );
+
+  if (!isCycleComplet) {
+    return (
+      <div className="p-8 space-y-4">
+        <Link href="/admin/preterme-auto">
+          <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400">
+            <ArrowLeft className="h-4 w-4 mr-1.5" /> Retour
+          </Button>
+        </Link>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-300">
+          Historique indisponible : ce cycle n&apos;est pas complet.
+          La consultation est autorisée uniquement quand les deux agences Auto sont en statut TERMINE.
+        </div>
       </div>
     );
   }

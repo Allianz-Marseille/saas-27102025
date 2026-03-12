@@ -18,6 +18,7 @@ import {
   upsertPretermeConfig,
   getPretermeConfig,
   getAllPretermeConfigs,
+  getAllPretermeImports,
   getPretermeClients,
   getSocietesAValider,
   getPretermeImport,
@@ -105,6 +106,7 @@ function isImportTypesValidated(
 // ─── Steps ──────────────────────────────────────────────────────────────────
 
 type Step = PretermeWorkflowStep;
+const REQUIRED_AUTO_AGENCES: AgenceCode[] = ["H91358", "H92083"];
 
 const STEPS: { id: Step; label: string; icon: React.ElementType }[] = [
   { id: "periode",    label: "Période",         icon: Calendar },
@@ -143,6 +145,7 @@ export default function PretermeAutoPage() {
 
   const [existingConfig, setExistingConfig] = useState<PretermeConfig | null>(null);
   const [historique, setHistorique]         = useState<PretermeConfig[]>([]);
+  const [historiqueImports, setHistoriqueImports] = useState<PretermeImport[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
   const [activeImportId, setActiveImportId]   = useState<string | null>(null);
@@ -177,11 +180,36 @@ export default function PretermeAutoPage() {
 
   // Historique
   useEffect(() => {
-    getAllPretermeConfigs()
-      .then(setHistorique)
+    Promise.all([getAllPretermeConfigs(), getAllPretermeImports()])
+      .then(([configs, imports]) => {
+        setHistorique(configs);
+        setHistoriqueImports(imports);
+      })
       .catch(() => toast.error("Impossible de charger l'historique"))
       .finally(() => setLoadingHistory(false));
   }, []);
+
+  const historiqueCyclesComplets = useMemo(() => {
+    const importsByMois = new Map<string, PretermeImport[]>();
+    for (const imp of historiqueImports) {
+      const list = importsByMois.get(imp.moisKey);
+      if (list) {
+        list.push(imp);
+      } else {
+        importsByMois.set(imp.moisKey, [imp]);
+      }
+    }
+
+    return historique.filter((cfg) => {
+      if (cfg.branche !== "AUTO") return false;
+      if (!cfg.valide) return false;
+
+      const importsForMois = importsByMois.get(cfg.moisKey) ?? [];
+      return REQUIRED_AUTO_AGENCES.every((agenceCode) =>
+        importsForMois.some((imp) => imp.agence === agenceCode && imp.statut === "TERMINE")
+      );
+    });
+  }, [historique, historiqueImports]);
 
   // Config du mois sélectionné
   useEffect(() => {
@@ -966,10 +994,10 @@ export default function PretermeAutoPage() {
             <CardContent className="px-4 pb-4 space-y-1.5">
               {loadingHistory ? (
                 <p className="text-xs text-slate-500 dark:text-slate-600">Chargement...</p>
-              ) : historique.length === 0 ? (
+              ) : historiqueCyclesComplets.length === 0 ? (
                 <p className="text-xs text-slate-500 dark:text-slate-600">Aucun cycle enregistré</p>
               ) : (
-                historique.slice(0, 6).map((h) => (
+                historiqueCyclesComplets.slice(0, 6).map((h) => (
                   <div
                     key={h.id}
                     className="flex items-center justify-between text-xs px-2 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -981,9 +1009,7 @@ export default function PretermeAutoPage() {
                       {formatMoisLabel(h.moisKey)}
                     </button>
                     <div className="flex items-center gap-1.5 ml-2 shrink-0">
-                      {h.valide
-                        ? <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                        : <Clock className="h-3 w-3 text-amber-500" />}
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                       <Link
                         href={`/admin/preterme-auto/historique/${h.moisKey}`}
                         className="text-sky-500 hover:text-sky-400 transition-colors"
