@@ -59,21 +59,32 @@ function StatCard({
   sub?: string;
   color?: "default" | "emerald" | "amber";
 }) {
-  const bg = {
-    default: "bg-slate-800/60 border-slate-700",
-    emerald: "bg-emerald-950/40 border-emerald-800/60",
-    amber:   "bg-amber-950/40 border-amber-800/60",
+  const surface = {
+    default: "bg-card border-border",
+    emerald:
+      "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/35 dark:border-emerald-800/60",
+    amber: "bg-amber-50 border-amber-200 dark:bg-amber-950/35 dark:border-amber-800/60",
   };
-  const text = {
-    default: "text-white",
-    emerald: "text-emerald-300",
-    amber:   "text-amber-300",
+  const valueText = {
+    default: "text-foreground",
+    emerald: "text-emerald-700 dark:text-emerald-300",
+    amber: "text-amber-700 dark:text-amber-300",
+  };
+  const labelText = {
+    default: "text-muted-foreground",
+    emerald: "text-emerald-700/80 dark:text-emerald-300/80",
+    amber: "text-amber-700/80 dark:text-amber-300/80",
+  };
+  const subText = {
+    default: "text-muted-foreground/90",
+    emerald: "text-emerald-700/70 dark:text-emerald-300/70",
+    amber: "text-amber-700/70 dark:text-amber-300/70",
   };
   return (
-    <div className={cn("rounded-xl border p-4 text-center", bg[color])}>
-      <p className={cn("text-2xl font-bold", text[color])}>{value}</p>
-      <p className="text-xs text-slate-400 mt-1">{label}</p>
-      {sub && <p className="text-[10px] text-slate-500 mt-0.5">{sub}</p>}
+    <div className={cn("rounded-xl border p-4 text-center shadow-premium-sm", surface[color])}>
+      <p className={cn("text-2xl font-bold", valueText[color])}>{value}</p>
+      <p className={cn("mt-1 text-xs", labelText[color])}>{label}</p>
+      {sub && <p className={cn("mt-0.5 text-[10px]", subText[color])}>{sub}</p>}
     </div>
   );
 }
@@ -115,17 +126,17 @@ function AgencePanel({
 
       {/* Barre de conservation */}
       <div className="space-y-1.5">
-        <div className="flex justify-between text-xs text-slate-400">
+        <div className="flex justify-between text-xs text-muted-foreground">
           <span>Taux de conservation</span>
-          <span className="font-medium text-slate-200">{stats.ratioConservation}%</span>
+          <span className="font-medium text-foreground">{stats.ratioConservation}%</span>
         </div>
         <Progress value={stats.ratioConservation} className="h-2" />
       </div>
 
       {/* Sliders */}
-      <Card className="bg-slate-900 border-slate-700">
+      <Card className="border-border bg-card shadow-premium-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-sm text-slate-400">
+          <CardTitle className="flex items-center gap-2 text-sm text-foreground">
             <Filter className="h-4 w-4" />
             Seuils de conservation
           </CardTitle>
@@ -134,8 +145,8 @@ function AgencePanel({
           {/* ETP */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-sm text-slate-300">Seuil ETP</Label>
-              <span className="text-sm font-semibold text-sky-400 bg-sky-950/40 px-2 py-0.5 rounded">
+              <Label className="text-sm text-foreground">Seuil ETP</Label>
+              <span className="rounded border border-sky-200 bg-sky-100 px-2 py-0.5 text-sm font-semibold text-sky-700 dark:border-sky-800/70 dark:bg-sky-950/40 dark:text-sky-300">
                 ≥ {state.seuilEtp}
               </span>
             </div>
@@ -146,18 +157,18 @@ function AgencePanel({
               disabled={state.locked}
               className="w-full"
             />
-            <div className="flex justify-between text-[10px] text-slate-600">
+            <div className="flex justify-between text-[10px] text-muted-foreground">
               <span>100</span><span>150</span><span>200</span>
             </div>
           </div>
 
-          <Separator className="bg-slate-800" />
+          <Separator />
 
           {/* Majoration */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-sm text-slate-300">Majoration (%)</Label>
-              <span className="text-sm font-semibold text-sky-400 bg-sky-950/40 px-2 py-0.5 rounded">
+              <Label className="text-sm text-foreground">Majoration (%)</Label>
+              <span className="rounded border border-sky-200 bg-sky-100 px-2 py-0.5 text-sm font-semibold text-sky-700 dark:border-sky-800/70 dark:bg-sky-950/40 dark:text-sky-300">
                 ≥ {state.seuilVariation}%
               </span>
             </div>
@@ -168,18 +179,18 @@ function AgencePanel({
               disabled={state.locked}
               className="w-full"
             />
-            <div className="flex justify-between text-[10px] text-slate-600">
+            <div className="flex justify-between text-[10px] text-muted-foreground">
               <span>5%</span><span>27%</span><span>50%</span>
             </div>
           </div>
 
           {/* Règle appliquée */}
-          <div className="p-3 bg-slate-800/60 rounded-lg border border-slate-700 text-xs text-slate-400">
-            <span className="font-medium text-slate-300">Règle :</span>{" "}
+          <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Règle :</span>{" "}
             conserver si{" "}
-            <code className="text-sky-400">ETP ≥ {state.seuilEtp}</code>{" "}
-            <span className="font-medium text-slate-300">OU</span>{" "}
-            <code className="text-sky-400">Majo ≥ {state.seuilVariation}%</code>
+            <code className="text-sky-700 dark:text-sky-300">ETP ≥ {state.seuilEtp}</code>{" "}
+            <span className="font-medium text-foreground">OU</span>{" "}
+            <code className="text-sky-700 dark:text-sky-300">Majo ≥ {state.seuilVariation}%</code>
           </div>
         </CardContent>
       </Card>
@@ -187,13 +198,13 @@ function AgencePanel({
       {/* Bouton Je bloque / Modifier */}
       {state.locked ? (
         <div className="flex items-center gap-3">
-          <div className="flex-1 flex items-center gap-2 p-3 bg-emerald-950/30 border border-emerald-800/50 rounded-lg text-sm text-emerald-300">
+          <div className="flex flex-1 items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-300">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
             <span>Validé — ETP ≥ {state.seuilEtp} | Majo ≥ {state.seuilVariation}%</span>
           </div>
           <Button
             variant="outline" size="sm"
-            className="border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0"
+            className="shrink-0 border-border bg-background text-foreground hover:bg-muted"
             onClick={onUnlock}
           >
             Modifier
@@ -211,7 +222,7 @@ function AgencePanel({
         </Button>
       )}
 
-      <div className="flex items-start gap-2 p-3 bg-sky-950/20 border border-sky-900/40 rounded-lg text-xs text-sky-400/80">
+      <div className="flex items-start gap-2 rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-700 dark:border-sky-800/50 dark:bg-sky-950/25 dark:text-sky-300/90">
         <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
         <span>
           L&apos;aperçu est calculé localement. La classification Gemini est lancée quand les deux agences sont bloquées.
@@ -322,10 +333,10 @@ export function ThresholdsStep({
                 isLocked
                   ? isActive
                     ? "bg-emerald-600 text-white border-emerald-500 shadow-sm"
-                    : "bg-emerald-950/50 text-emerald-300 border-emerald-800/60 hover:bg-emerald-950/70"
+                    : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/35 dark:text-emerald-300 dark:border-emerald-800/60 dark:hover:bg-emerald-950/55"
                   : isActive
                     ? "bg-amber-500 text-white border-amber-400 shadow-sm"
-                    : "bg-amber-950/50 text-amber-300 border-amber-800/60 hover:bg-amber-950/70"
+                    : "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/35 dark:text-amber-300 dark:border-amber-800/60 dark:hover:bg-amber-950/55"
               )}
             >
               {isLocked
@@ -335,14 +346,16 @@ export function ThresholdsStep({
               <span>{AGENCES[imp.agence].label}</span>
               <Badge className={cn(
                 "text-[10px] border-0",
-                isLocked ? "bg-emerald-800/60 text-emerald-200" : "bg-amber-800/60 text-amber-200"
+                isLocked
+                  ? "bg-emerald-700/20 text-emerald-800 dark:bg-emerald-700/40 dark:text-emerald-100"
+                  : "bg-amber-700/20 text-amber-900 dark:bg-amber-700/40 dark:text-amber-100"
               )}>
                 {imp.clients.length}
               </Badge>
             </button>
           );
         })}
-        <span className="ml-auto text-xs text-slate-500">
+        <span className="ml-auto text-xs text-muted-foreground">
           {nbLocked}/{imports.length} agences bloquées
         </span>
       </div>
@@ -367,7 +380,7 @@ export function ThresholdsStep({
           "w-full py-5 font-medium text-base transition-all",
           allLocked
             ? "bg-sky-600 hover:bg-sky-500"
-            : "bg-slate-800 text-slate-500 border border-slate-700"
+            : "border border-border bg-muted text-muted-foreground"
         )}
         size="lg"
       >

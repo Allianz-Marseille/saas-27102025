@@ -953,7 +953,7 @@ export default function PretermeAutoPage() {
                                   <span>Types validés — agence verrouillée</span>
                                 </div>
                               ) : clients.length === 0 ? (
-                                <p className="text-xs text-slate-500 dark:text-slate-600 italic text-center py-6">Chargement…</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 italic text-center py-6">Chargement…</p>
                               ) : (
                                 <TypeValidationStep
                                   clients={clients}
@@ -1266,9 +1266,9 @@ export default function PretermeAutoPage() {
             </CardHeader>
             <CardContent className="px-4 pb-4 space-y-1.5">
               {loadingHistory ? (
-                <p className="text-xs text-slate-500 dark:text-slate-600">Chargement...</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Chargement...</p>
               ) : historiqueCyclesComplets.length === 0 ? (
-                <p className="text-xs text-slate-500 dark:text-slate-600">Aucun cycle enregistré</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Aucun cycle enregistré</p>
               ) : (
                 historiqueCyclesComplets.slice(0, 6).map((h) => (
                   <div
