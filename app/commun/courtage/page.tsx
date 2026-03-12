@@ -205,7 +205,7 @@ export default function CourtagePage() {
   }, [user, isAdmin, loading, items.length, importing, autoImportDone]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 sm:px-6 lg:px-8">
       {/* En-tête */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
