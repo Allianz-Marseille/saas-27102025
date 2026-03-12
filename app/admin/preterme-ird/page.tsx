@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   Calendar, ChevronLeft, ChevronRight, Upload, Filter,
   Building2, CheckCircle2, Clock, History, Shield, Send,
-  MessageSquare, ArrowRightLeft, SlidersHorizontal, ExternalLink,
+  MessageSquare, ArrowRightLeft, SlidersHorizontal, ExternalLink, AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -283,10 +283,11 @@ export default function PretermeIrdPage() {
   const [allImports, setAllImports]         = useState<PretermeImport[]>([]);
   const [activeImportId, setActiveImportId] = useState<string | null>(null);
   const [activeAgence, setActiveAgence]     = useState<AgenceCode | null>(null);
-  const [clientsForPreview, setClientsForPreview] = useState<Pick<PretermeClient, "etp" | "tauxVariation">[]>([]);
+  const [clientsByImportId, setClientsByImportId] = useState<Record<string, Pick<PretermeClient, "etp" | "tauxVariation">[]>>({});
   const [conservedClients, setConservedClients]   = useState<PretermeClient[]>([]);
   const [validationSubStep, setValidationSubStep] = useState<"types" | "societes">("types");
   const [dispatchClients, setDispatchClients]     = useState<PretermeClient[]>([]);
+  const [fullClientsByImportId, setFullClientsByImportId] = useState<Record<string, PretermeClient[]>>({});
   const [societesAValider, setSocietesAValider]   = useState<PretermeClient[]>([]);
   const [hasPendingTypeChanges, setHasPendingTypeChanges] = useState(false);
   const [savedTypeChoicesByImportId, setSavedTypeChoicesByImportId] = useState<Record<string, boolean>>({});
@@ -416,7 +417,6 @@ export default function PretermeIrdPage() {
         if (imports.length === 0) {
           setActiveImportId(null);
           setActiveAgence(null);
-          setClientsForPreview([]);
           setConservedClients([]);
           setDispatchClients([]);
           setSocietesAValider([]);
@@ -434,29 +434,38 @@ export default function PretermeIrdPage() {
   const handleImportSuccess = useCallback(async (importId: string, agence: AgenceCode) => {
     setActiveImportId(importId);
     setActiveAgence(agence);
-    getPretermeIrdImportsByMois(moisKey).then(setAllImports).catch(() => {});
-    markStepsCompleted(["upload"]);
+    const latestImports = await getPretermeIrdImportsByMois(moisKey).catch(() => [] as PretermeImport[]);
+    setAllImports(latestImports);
+    if (latestImports.length >= 2) markStepsCompleted(["upload"]);
   }, [moisKey, markStepsCompleted]);
 
   const handleSwitchImport = useCallback((imp: PretermeImport) => {
     setActiveImportId(imp.id);
     setActiveAgence(imp.agence);
     setHasPendingTypeChanges(false);
-    setClientsForPreview([]);
     setConservedClients([]);
     setDispatchClients([]);
     setSocietesAValider([]);
   }, []);
 
-  // Charger les clients pour le preview des seuils (étape filtrage)
+  // Charger les clients de toutes les agences pour le preview des seuils (étape filtrage)
   useEffect(() => {
-    if (step !== "filtrage" || !activeImportId) return;
-    getPretermeIrdClients(activeImportId)
-      .then((clients) => {
-        setClientsForPreview(clients.map((c) => ({ etp: c.etp, tauxVariation: c.tauxVariation })));
+    if (step !== "filtrage") return;
+    const imports = allImports.filter((imp) => imp.moisKey === moisKey);
+    if (imports.length === 0) return;
+    Promise.all(
+      imports.map(async (imp) => {
+        const clients = await getPretermeIrdClients(imp.id);
+        return { importId: imp.id, clients: clients.map((c) => ({ etp: c.etp, tauxVariation: c.tauxVariation })) };
+      })
+    )
+      .then((results) => {
+        const map: Record<string, Pick<PretermeClient, "etp" | "tauxVariation">[]> = {};
+        for (const r of results) map[r.importId] = r.clients;
+        setClientsByImportId(map);
       })
       .catch(() => toast.error("Impossible de charger les clients pour le filtrage"));
-  }, [step, activeImportId]);
+  }, [step, allImports, moisKey]);
 
   // Charger les clients conservés pour la validation (si absents lors d'un retour de navigation)
   useEffect(() => {
@@ -474,17 +483,24 @@ export default function PretermeIrdPage() {
   }, [step, validationSubStep, activeImportId, societesAValider.length]);
 
   const handleClassifySuccess = useCallback(
-    (result: { nbConserves: number }) => {
-      markStepsCompleted(["filtrage"]);
-      if (!activeImportId) return;
-      void getPretermeIrdClients(activeImportId).then((clients) => {
+    async (result: { nbConserves: number }) => {
+      const latestImports = await getPretermeIrdImportsByMois(moisKey).catch(() => [] as PretermeImport[]);
+      setAllImports(latestImports);
+      const nextActive = latestImports.find((i) => i.id === activeImportId) ?? latestImports[0];
+      if (nextActive) {
+        setActiveImportId(nextActive.id);
+        setActiveAgence(nextActive.agence);
+        const clients = await getPretermeIrdClients(nextActive.id).catch(() => []);
         setConservedClients(clients.filter((c) => c.conserve));
-      });
+      }
       if (result.nbConserves === 0) {
         toast.warning("Aucun client conservé avec ces seuils.");
       }
+      markStepsCompleted(["filtrage"]);
+      setValidationSubStep("types");
+      setStep("validation");
     },
-    [activeImportId, markStepsCompleted]
+    [activeImportId, markStepsCompleted, moisKey]
   );
 
   const markTypeChoicesSavedForImport = useCallback(async (importId: string) => {
@@ -561,13 +577,25 @@ export default function PretermeIrdPage() {
     setStep("modulation");
   }, [activeImportId, allImports, societesValideesByImportId, handleSwitchImport, markStepsCompleted]);
 
-  // Charger les clients conservés pour le dispatch (si absents lors d'un retour de navigation)
+  // Charger les clients de toutes les agences pour le dispatch (dual-column)
   useEffect(() => {
-    if (step !== "dispatch" || !activeImportId || dispatchClients.length > 0) return;
-    getPretermeIrdClients(activeImportId)
-      .then((clients) => setDispatchClients(clients.filter((c) => c.conserve)))
-      .catch(() => toast.error("Impossible de charger les clients pour le dispatch"));
-  }, [step, activeImportId, dispatchClients.length]);
+    if (step !== "dispatch") return;
+    const imports = allImports.filter((imp) => imp.moisKey === moisKey);
+    if (imports.length === 0) return;
+    Promise.all(
+      imports.map(async (imp) => ({
+        importId: imp.id,
+        clients: await getPretermeIrdClients(imp.id).catch(() => [] as PretermeClient[]),
+      }))
+    )
+      .then((results) => {
+        const map: Record<string, PretermeClient[]> = {};
+        for (const r of results) map[r.importId] = r.clients;
+        setFullClientsByImportId(map);
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, moisKey]);
 
   const handleDispatchSuccess = useCallback(() => {
     markStepsCompleted(["dispatch"]);
@@ -629,7 +657,7 @@ export default function PretermeIrdPage() {
   const canAccessStep = useCallback((s: Step): boolean => {
     if (s === "periode")    return true;
     if (s === "upload")     return isPeriodeConfirmed;
-    if (s === "filtrage")   return importsDuMois.length > 0;
+    if (s === "filtrage")   return importsDuMois.length >= 2;
     if (s === "validation") return importsDuMois.some((imp) =>
       ["VALIDATION_SOCIETES", "PRET", "DISPATCH_TRELLO", "TERMINE"].includes(imp.statut)
     );
@@ -644,7 +672,7 @@ export default function PretermeIrdPage() {
   const derivedDoneByStatus = useMemo<Partial<Record<Step, boolean>>>(() => {
     const d: Partial<Record<Step, boolean>> = {};
     if (isPeriodeConfirmed) d.periode = true;
-    if (importsDuMois.length > 0) d.upload = true;
+    if (importsDuMois.length >= 2) d.upload = true;
     if (importsDuMois.some((imp) => ["VALIDATION_SOCIETES", "PRET", "DISPATCH_TRELLO", "TERMINE"].includes(imp.statut)))
       d.filtrage = true;
     if (areAllImportsTypeChoicesSaved && importsDuMois.some((imp) =>
@@ -657,6 +685,14 @@ export default function PretermeIrdPage() {
       d.synthese = true;
     return d;
   }, [importsDuMois, isPeriodeConfirmed, isModulationValide, areAllImportsTypeChoicesSaved]);
+
+  const dispatchedByImportId = useMemo<Record<string, boolean>>(() => {
+    const d: Record<string, boolean> = {};
+    for (const imp of importsDuMois) {
+      if (["DISPATCH_TRELLO", "TERMINE"].includes(imp.statut)) d[imp.id] = true;
+    }
+    return d;
+  }, [importsDuMois]);
 
   const AgencySwitcher = () => {
     if (importsDuMois.length <= 1) return null;
@@ -832,22 +868,32 @@ export default function PretermeIrdPage() {
                   />
                 </CardContent>
               </Card>
-              {importsDuMois.length > 0 && (
-                <Button
-                  className="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-60"
-                  disabled={importsDuMois.length < 2}
-                  onClick={() => setStep("filtrage")}
-                  title={importsDuMois.length < 2 ? "Les 2 agences doivent être importées pour continuer" : ""}
-                >
-                  Valider l&apos;étape — Lancer le filtrage IA
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
+              {importsDuMois.length === 1 && (
+                <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-700/50 rounded-xl text-sm">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-medium text-amber-700 dark:text-amber-300">1 agence manquante</p>
+                    <p className="text-xs text-amber-700/80 dark:text-amber-400 mt-0.5">
+                      2 fichiers requis — un par agence (H91358 et H92083) — avant de lancer le filtrage.
+                    </p>
+                  </div>
+                </div>
               )}
+              <Button
+                className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50"
+                disabled={importsDuMois.length < 2}
+                onClick={() => setStep("filtrage")}
+              >
+                {importsDuMois.length < 2
+                  ? `Téléchargement requis (${importsDuMois.length}/2 agences)`
+                  : "Valider l'étape — Lancer le filtrage IA"}
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
             </div>
           )}
 
           {/* ── 3. Filtrage IA ── */}
-          {step === "filtrage" && (
+          {step === "filtrage" && importsDuMois.length >= 2 && (
             <div className="space-y-4">
               <div className="flex justify-start">
                 <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs"
@@ -855,7 +901,6 @@ export default function PretermeIrdPage() {
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour téléchargement
                 </Button>
               </div>
-              <AgencySwitcher />
               <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
@@ -864,34 +909,19 @@ export default function PretermeIrdPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {activeImportId && activeAgence ? (
-                    <ThresholdsStep
-                      importId={activeImportId}
-                      agence={activeAgence}
-                      moisKey={moisKey}
-                      clients={clientsForPreview}
-                      availableImportIds={importsDuMois.map((i) => i.id)}
-                      seuilEtpInitial={config.seuilEtp}
-                      seuilVariationInitial={config.seuilVariation}
-                      idToken={idToken}
-                      onClassifySuccess={handleClassifySuccess}
-                    />
-                  ) : (
-                    <p className="text-sm text-slate-500 dark:text-slate-500 text-center py-8">
-                      Aucun import disponible — retournez à l&apos;étape de téléchargement.
-                    </p>
-                  )}
+                  <ThresholdsStep
+                    imports={importsDuMois.map((imp) => ({
+                      importId: imp.id,
+                      agence: imp.agence,
+                      clients: clientsByImportId[imp.id] ?? [],
+                    }))}
+                    seuilEtpInitial={config.seuilEtp}
+                    seuilVariationInitial={config.seuilVariation}
+                    idToken={idToken}
+                    onClassifySuccess={handleClassifySuccess}
+                  />
                 </CardContent>
               </Card>
-              {completedSteps.filtrage && (
-                <Button
-                  className="w-full bg-sky-600 hover:bg-sky-500"
-                  onClick={() => { setValidationSubStep("types"); setStep("validation"); }}
-                >
-                  Valider et passer à la validation des types
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              )}
             </div>
           )}
 
@@ -977,81 +1007,87 @@ export default function PretermeIrdPage() {
           )}
 
           {/* ── 6. Dispatch Trello ── */}
-          {step === "dispatch" && (
-            <div className="space-y-4">
-              <div className="flex justify-start">
-                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs"
-                  onClick={() => setStep("modulation")}>
-                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour modulation
-                </Button>
-              </div>
-              <AgencySwitcher />
-              <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Send className="h-4 w-4 text-sky-400" />
-                    Dispatch Trello IARD — {formatMoisLabel(moisKey)}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {activeImportId && activeAgence && existingConfig ? (() => {
-                    const agenceCfg = existingConfig.agences.find((a) => a.code === activeAgence);
-                    return agenceCfg ? (
-                      <DispatchPreview
-                        importId={activeImportId}
-                        agence={activeAgence}
-                        agenceConfig={agenceCfg}
-                        moisKey={moisKey}
-                        clients={dispatchClients}
-                        idToken={idToken}
-                        onDispatchSuccess={async () => {
-                          handleDispatchSuccess();
-                          if (!activeImportId) return;
-                          const latestImports = await getPretermeIrdImportsByMois(moisKey).catch(() => [] as PretermeImport[]);
-                          if (latestImports.length > 0) setAllImports(latestImports);
-                          const refreshedClients = await getPretermeIrdClients(activeImportId).catch(() => [] as PretermeClient[]);
-                          setDispatchClients(refreshedClients.filter((c) => c.conserve));
+          {step === "dispatch" && existingConfig && importsDuMois.length > 0 && (() => {
+            const nbDispatched = importsDuMois.filter((i) => dispatchedByImportId[i.id]).length;
+            const allDispatched = nbDispatched === importsDuMois.length;
+            return (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs"
+                    onClick={() => setStep("modulation")}>
+                    <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour modulation
+                  </Button>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    {nbDispatched}/{importsDuMois.length} agence(s) dispatchée(s)
+                  </span>
+                </div>
 
-                          const allDispatched = latestImports.every(
-                            (i) => ["DISPATCH_TRELLO", "TERMINE"].includes(i.statut)
-                          );
-                          if (allDispatched) {
-                            toast.success("Dispatch terminé pour toutes les agences !");
-                            setStep("synthese");
-                            return;
-                          }
-                          const nextImport = latestImports.find(
-                            (i) => !["DISPATCH_TRELLO", "TERMINE"].includes(i.statut)
-                          );
-                          if (nextImport) {
-                            handleSwitchImport(nextImport);
-                            toast.success(`Dispatch terminé — agence suivante : ${nextImport.agence}`);
-                          }
-                        }}
-                      />
-                    ) : (
-                      <p className="text-sm text-slate-500 dark:text-slate-500 text-center py-8">
-                        Configuration d&apos;agence introuvable — vérifiez l&apos;étape Modulation.
-                      </p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {importsDuMois.map((imp) => {
+                    const isDispatched = !!dispatchedByImportId[imp.id];
+                    const agenceCfg = existingConfig.agences.find((a) => a.code === imp.agence) ?? existingConfig.agences[0];
+                    const clients = fullClientsByImportId[imp.id] ?? [];
+                    return (
+                      <div
+                        key={imp.id}
+                        className={cn(
+                          "rounded-xl border overflow-hidden transition-colors",
+                          isDispatched
+                            ? "border-emerald-300 dark:border-emerald-700"
+                            : "border-slate-200 dark:border-slate-700"
+                        )}
+                      >
+                        {isDispatched && (
+                          <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/30 border-b border-emerald-200 dark:border-emerald-800/40">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                              {imp.agence} — Dispatch terminé
+                            </span>
+                          </div>
+                        )}
+                        {!isDispatched && (
+                          <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                            <Send className="h-3.5 w-3.5 text-sky-400" />
+                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                              {imp.agence} — En attente de dispatch
+                            </span>
+                          </div>
+                        )}
+                        <div className="bg-white dark:bg-slate-900 p-4">
+                          <DispatchPreview
+                            importId={imp.id}
+                            agence={imp.agence}
+                            agenceConfig={agenceCfg}
+                            moisKey={moisKey}
+                            clients={clients}
+                            idToken={idToken}
+                            onDispatchSuccess={async () => {
+                              handleDispatchSuccess();
+                              const latestImports = await getPretermeIrdImportsByMois(moisKey).catch(() => [] as PretermeImport[]);
+                              if (latestImports.length > 0) setAllImports(latestImports);
+                              const refreshedClients = await getPretermeIrdClients(imp.id).catch(() => [] as PretermeClient[]);
+                              setFullClientsByImportId((prev) => ({ ...prev, [imp.id]: refreshedClients }));
+                            }}
+                          />
+                        </div>
+                      </div>
                     );
-                  })() : (
-                    <p className="text-sm text-slate-500 dark:text-slate-500 text-center py-8">
-                      Aucun import actif — retournez à l&apos;étape de téléchargement.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-              {completedSteps.dispatch && (
-                <Button
-                  className="w-full bg-sky-600 hover:bg-sky-500"
-                  onClick={() => setStep("synthese")}
-                >
-                  Passer à la synthèse Slack
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              )}
-            </div>
-          )}
+                  })}
+                </div>
+
+                {allDispatched && (
+                  <Button
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 py-5 font-medium"
+                    size="lg"
+                    onClick={() => setStep("synthese")}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Continuer vers la synthèse Slack
+                  </Button>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ── 7. Synthèse Slack ── */}
           {step === "synthese" && (() => {

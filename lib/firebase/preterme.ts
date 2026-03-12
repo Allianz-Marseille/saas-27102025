@@ -44,13 +44,13 @@ function assertDb() {
 
 // ─── PretermeConfig ─────────────────────────────────────────────────────────
 
-/** Crée ou remplace la config d'un mois donné (upsert par moisKey) */
+/** Crée ou remplace la config d'un mois donné (upsert par moisKey + branche) */
 export async function upsertPretermeConfig(
   config: Omit<PretermeConfig, "id" | "createdAt" | "updatedAt">
 ): Promise<string> {
   assertDb();
   const colRef = collection(db!, "preterme_configs");
-  const q = query(colRef, where("moisKey", "==", config.moisKey));
+  const q = query(colRef, where("moisKey", "==", config.moisKey), where("branche", "==", config.branche));
   const snap = await getDocs(q);
 
   const now = Timestamp.now();
@@ -69,11 +69,12 @@ export async function upsertPretermeConfig(
   return docRef.id;
 }
 
-export async function getPretermeConfig(moisKey: string): Promise<PretermeConfig | null> {
+export async function getPretermeConfig(moisKey: string, branche: import("@/types/preterme").PretermeB): Promise<PretermeConfig | null> {
   assertDb();
   const q = query(
     collection(db!, "preterme_configs"),
-    where("moisKey", "==", moisKey)
+    where("moisKey", "==", moisKey),
+    where("branche", "==", branche)
   );
   const snap = await getDocs(q);
   if (snap.empty) return null;
@@ -87,12 +88,12 @@ export async function getPretermeConfig(moisKey: string): Promise<PretermeConfig
   } as PretermeConfig;
 }
 
-export async function getAllPretermeConfigs(): Promise<PretermeConfig[]> {
+export async function getAllPretermeConfigs(branche?: import("@/types/preterme").PretermeB): Promise<PretermeConfig[]> {
   assertDb();
-  const q = query(
-    collection(db!, "preterme_configs"),
-    orderBy("moisKey", "desc")
-  );
+  const colRef = collection(db!, "preterme_configs");
+  const q = branche
+    ? query(colRef, where("branche", "==", branche), orderBy("moisKey", "desc"))
+    : query(colRef, orderBy("moisKey", "desc"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => {
     const data = d.data();
@@ -161,11 +162,12 @@ export async function getPretermeImport(id: string): Promise<PretermeImport | nu
   } as PretermeImport;
 }
 
-export async function getPretermeImportsByMois(moisKey: string): Promise<PretermeImport[]> {
+export async function getPretermeImportsByMois(moisKey: string, branche: import("@/types/preterme").PretermeB): Promise<PretermeImport[]> {
   assertDb();
   const q = query(
     collection(db!, "preterme_imports"),
-    where("moisKey", "==", moisKey)
+    where("moisKey", "==", moisKey),
+    where("branche", "==", branche)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => {
@@ -211,7 +213,8 @@ export async function updatePretermeImport(
 /** Purge un import (clients + logs Trello + import) pour idempotence */
 export async function purgePretermeImport(
   moisKey: string,
-  agence: AgenceCode
+  agence: AgenceCode,
+  branche: import("@/types/preterme").PretermeB
 ): Promise<void> {
   assertDb();
 
@@ -219,7 +222,8 @@ export async function purgePretermeImport(
   const importQ = query(
     collection(db!, "preterme_imports"),
     where("moisKey", "==", moisKey),
-    where("agence", "==", agence)
+    where("agence", "==", agence),
+    where("branche", "==", branche)
   );
   const importSnap = await getDocs(importQ);
   const importIds = importSnap.docs.map((d) => d.id);

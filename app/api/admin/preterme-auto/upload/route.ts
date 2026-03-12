@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/utils/auth-utils";
 import { adminDb, Timestamp } from "@/lib/firebase/admin-config";
 import { parsePretermeExcel, detectAgenceFromFilename } from "@/lib/utils/preterme-parser";
-import type { AgenceCode } from "@/types/preterme";
+import type { AgenceCode, PretermeB } from "@/types/preterme";
 
 export async function POST(request: NextRequest) {
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -35,6 +35,8 @@ export async function POST(request: NextRequest) {
   const file = formData.get("file") as File | null;
   const moisKey = (formData.get("moisKey") as string | null)?.trim();
   const agenceParam = (formData.get("agence") as string | null)?.trim() as AgenceCode | null;
+  const brancheParam = (formData.get("branche") as string | null)?.trim();
+  const branche: PretermeB = brancheParam === "IRD" ? "IRD" : "AUTO";
 
   if (!file) {
     return NextResponse.json({ error: "Aucun fichier fourni." }, { status: 400 });
@@ -66,6 +68,7 @@ export async function POST(request: NextRequest) {
   const configSnap = await adminDb
     .collection("preterme_configs")
     .where("moisKey", "==", moisKey)
+    .where("branche", "==", branche)
     .where("valide", "==", true)
     .limit(1)
     .get();
@@ -105,7 +108,7 @@ export async function POST(request: NextRequest) {
     .collection("preterme_imports")
     .where("moisKey", "==", moisKey)
     .where("agence", "==", agence)
-    .where("branche", "==", "AUTO")
+    .where("branche", "==", branche)
     .get();
 
   if (!existingImportsSnap.empty) {
@@ -131,7 +134,7 @@ export async function POST(request: NextRequest) {
   await importRef.set({
     moisKey,
     agence,
-    branche: "AUTO",
+    branche,
     statut: "DRAFT",
     pretermesGlobaux: parseResult.nbLignesValides,
     pretermesConserves: 0, // sera mis à jour en Phase 3 (filtrage)
@@ -155,7 +158,7 @@ export async function POST(request: NextRequest) {
         importId,
         moisKey,
         agence,
-        branche: "AUTO",
+        branche,
         // 20 colonnes
         nomClient:                   row.nomClient,
         numeroContrat:               row.numeroContrat,

@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   Calendar, ChevronLeft, ChevronRight, Upload, Filter,
   Building2, CheckCircle2, Clock, History, Car, Send,
-  MessageSquare, ArrowRightLeft, SlidersHorizontal, ExternalLink,
+  MessageSquare, ArrowRightLeft, SlidersHorizontal, ExternalLink, AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -151,13 +151,17 @@ export default function PretermeAutoPage() {
   const [activeImportId, setActiveImportId]   = useState<string | null>(null);
   const [activeAgence, setActiveAgence]       = useState<AgenceCode | null>(null);
   const [importedClients, setImportedClients] = useState<PretermeClient[]>([]);
-  const [societesAValider, setSocietesAValider] = useState<PretermeClient[]>([]);
+  const [clientsByImportId, setClientsByImportId] = useState<Record<string, Pick<PretermeClient, "etp" | "tauxVariation">[]>>({});
   const [activeImport, setActiveImport]       = useState<PretermeImport | null>(null);
   const [allImports, setAllImports]           = useState<PretermeImport[]>([]);
   const [completedSteps, setCompletedSteps]   = useState<Partial<Record<Step, boolean>>>({});
-  const [hasPendingTypeChanges, setHasPendingTypeChanges] = useState(false);
   const [savedTypeChoicesByImportId, setSavedTypeChoicesByImportId] = useState<Record<string, boolean>>({});
-  const [societesValideesByImportId, setSocietesValideesByImportId] = useState<Record<string, boolean>>({});
+  // Validation par-agence (dual-colonne)
+  const [fullClientsByImportId, setFullClientsByImportId]       = useState<Record<string, PretermeClient[]>>({});
+  const [allSocietesByImportId, setAllSocietesByImportId]       = useState<Record<string, PretermeClient[]>>({});
+  const [lockedTypesByImportId, setLockedTypesByImportId]       = useState<Record<string, boolean>>({});
+  const [lockedSocietesByImportId, setLockedSocietesByImportId] = useState<Record<string, boolean>>({});
+  const [pendingTypeChangesByImportId, setPendingTypeChangesByImportId] = useState<Record<string, boolean>>({});
 
   // Sous-étape interne de l'étape validation : types puis gérants
   const [validationSubStep, setValidationSubStep] = useState<"types" | "societes">("types");
@@ -168,7 +172,7 @@ export default function PretermeAutoPage() {
     moisKey,
     branche: "AUTO",
     seuilEtp: 120,
-    seuilVariation: 20,
+    seuilVariation: 10,
     agences: defaultAgences(),
     slackChannelId: "CE58HNVF0",
   });
@@ -180,7 +184,7 @@ export default function PretermeAutoPage() {
 
   // Historique
   useEffect(() => {
-    Promise.all([getAllPretermeConfigs(), getAllPretermeImports()])
+    Promise.all([getAllPretermeConfigs("AUTO"), getAllPretermeImports()])
       .then(([configs, imports]) => {
         setHistorique(configs);
         setHistoriqueImports(imports);
@@ -214,7 +218,7 @@ export default function PretermeAutoPage() {
   // Config du mois sélectionné
   useEffect(() => {
     setExistingConfig(null);
-    getPretermeConfig(moisKey).then((c) => {
+    getPretermeConfig(moisKey, "AUTO").then((c) => {
       if (c) {
         setExistingConfig(c);
         const persistedCompletedSteps = sanitizeCompletedSteps(
@@ -278,13 +282,52 @@ export default function PretermeAutoPage() {
     }
   }, []);
 
-  const loadSocietes = useCallback(async (importId: string) => {
-    try {
-      setSocietesAValider(await getSocietesAValider(importId));
-    } catch {
-      toast.error("Impossible de charger les sociétés");
-    }
-  }, []);
+  // Charger les clients complets pour la validation en double colonne
+  useEffect(() => {
+    if (step !== "validation") return;
+    const imports = allImports.filter((imp) => imp.moisKey === moisKey);
+    if (imports.length === 0) return;
+    Promise.all(
+      imports.map(async (imp) => ({
+        importId: imp.id,
+        clients: await getPretermeClients(imp.id),
+        typesValidated: !!imp.typesValidatedAt || !!savedTypeChoicesByImportId[imp.id],
+      }))
+    )
+      .then((results) => {
+        const clientMap: Record<string, PretermeClient[]> = {};
+        const initialLocks: Record<string, boolean> = {};
+        for (const r of results) {
+          clientMap[r.importId] = r.clients;
+          if (r.typesValidated) initialLocks[r.importId] = true;
+        }
+        setFullClientsByImportId(clientMap);
+        setLockedTypesByImportId((prev) =>
+          Object.keys(prev).length > 0 ? prev : initialLocks
+        );
+      })
+      .catch(() => toast.error("Impossible de charger les clients pour la validation"));
+  // savedTypeChoicesByImportId intentionnellement exclu pour ne pas boucler
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, allImports, moisKey]);
+
+  // Charger les clients complets pour le dispatch (aperçu routage par agence)
+  useEffect(() => {
+    if (step !== "dispatch") return;
+    const imports = allImports.filter((imp) => imp.moisKey === moisKey);
+    if (imports.length === 0) return;
+    Promise.all(
+      imports.map(async (imp) => ({
+        importId: imp.id,
+        clients: await getPretermeClients(imp.id).catch(() => [] as PretermeClient[]),
+      }))
+    ).then((results) => {
+      const map: Record<string, PretermeClient[]> = {};
+      for (const r of results) map[r.importId] = r.clients;
+      setFullClientsByImportId(map);
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, moisKey]);
 
   // Étape 1 : confirmer la période → créer config minimale (valide: false)
   const handleConfirmPeriod = useCallback(async () => {
@@ -293,8 +336,8 @@ export default function PretermeAutoPage() {
     try {
       await upsertPretermeConfig({ ...config, valide: false, createdBy: user.uid });
       const [updated, fresh] = await Promise.all([
-        getAllPretermeConfigs(),
-        getPretermeConfig(moisKey),
+        getAllPretermeConfigs("AUTO"),
+        getPretermeConfig(moisKey, "AUTO"),
       ]);
       setHistorique(updated);
       if (fresh) setExistingConfig(fresh);
@@ -314,7 +357,7 @@ export default function PretermeAutoPage() {
     setIsSavingDraft(true);
     try {
       await upsertPretermeConfig({ ...config, valide: false, createdBy: user.uid });
-      const [updated, fresh] = await Promise.all([getAllPretermeConfigs(), getPretermeConfig(moisKey)]);
+      const [updated, fresh] = await Promise.all([getAllPretermeConfigs("AUTO"), getPretermeConfig(moisKey, "AUTO")]);
       setHistorique(updated);
       if (fresh) setExistingConfig(fresh);
       toast.success("Brouillon sauvegardé");
@@ -331,7 +374,7 @@ export default function PretermeAutoPage() {
     setIsSaving(true);
     try {
       await upsertPretermeConfig({ ...config, valide: true, createdBy: user.uid });
-      const [updated, fresh] = await Promise.all([getAllPretermeConfigs(), getPretermeConfig(moisKey)]);
+      const [updated, fresh] = await Promise.all([getAllPretermeConfigs("AUTO"), getPretermeConfig(moisKey, "AUTO")]);
       setHistorique(updated);
       if (fresh) setExistingConfig(fresh);
       markStepsCompleted(["modulation"]);
@@ -348,8 +391,9 @@ export default function PretermeAutoPage() {
     setActiveImportId(importId);
     setActiveAgence(agence);
     await loadImportClients(importId);
-    getPretermeImportsByMois(moisKey).then(setAllImports).catch(() => {});
-    markStepsCompleted(["upload"]);
+    const latestImports = await getPretermeImportsByMois(moisKey, "AUTO").catch(() => [] as PretermeImport[]);
+    setAllImports(latestImports);
+    if (latestImports.length >= 2) markStepsCompleted(["upload"]);
   }, [loadImportClients, moisKey, markStepsCompleted]);
 
   // Charger import actif
@@ -362,12 +406,12 @@ export default function PretermeAutoPage() {
 
   // Charger les imports du mois
   useEffect(() => {
-    getPretermeImportsByMois(moisKey)
+    getPretermeImportsByMois(moisKey, "AUTO")
       .then(async (imports) => {
         setAllImports(imports);
         if (imports.length === 0) {
           setActiveImportId(null); setActiveAgence(null); setActiveImport(null);
-          setImportedClients([]); setSocietesAValider([]);
+          setImportedClients([]); setFullClientsByImportId({}); setAllSocietesByImportId({});
           return;
         }
         const stillActive = activeImportId && imports.some((imp) => imp.id === activeImportId);
@@ -382,14 +426,40 @@ export default function PretermeAutoPage() {
       .catch(() => toast.error("Impossible de charger les imports du mois"));
   }, [moisKey, activeImportId, loadImportClients]);
 
+  // Charger les clients de toutes les agences pour le preview des seuils (étape filtrage)
+  useEffect(() => {
+    if (step !== "filtrage") return;
+    const imports = allImports.filter((imp) => imp.moisKey === moisKey);
+    if (imports.length === 0) return;
+    Promise.all(
+      imports.map(async (imp) => {
+        const clients = await getPretermeClients(imp.id);
+        return { importId: imp.id, clients: clients.map((c) => ({ etp: c.etp, tauxVariation: c.tauxVariation })) };
+      })
+    )
+      .then((results) => {
+        const map: Record<string, Pick<PretermeClient, "etp" | "tauxVariation">[]> = {};
+        for (const r of results) map[r.importId] = r.clients;
+        setClientsByImportId(map);
+      })
+      .catch(() => toast.error("Impossible de charger les clients pour le filtrage"));
+  }, [step, allImports, moisKey]);
+
   const handleClassifySuccess = useCallback(async (_result: unknown) => {
-    if (!activeImportId) return;
-    await Promise.all([
-      loadImportClients(activeImportId),
-      getPretermeImportsByMois(moisKey).then(setAllImports),
-    ]);
+    const latestImports = await getPretermeImportsByMois(moisKey, "AUTO").catch(() => [] as PretermeImport[]);
+    setAllImports(latestImports);
+    const nextActive = latestImports.find((i) => i.id === activeImportId) ?? latestImports[0];
+    if (nextActive) {
+      setActiveImportId(nextActive.id);
+      setActiveAgence(nextActive.agence);
+      await loadImportClients(nextActive.id);
+    }
     setSavedTypeChoicesByImportId({});
-    setHasPendingTypeChanges(false);
+    setLockedTypesByImportId({});
+    setLockedSocietesByImportId({});
+    setPendingTypeChangesByImportId({});
+    setFullClientsByImportId({});
+    setAllSocietesByImportId({});
     markStepsCompleted(["filtrage"]);
     setValidationSubStep("types");
     setStep("validation");
@@ -410,47 +480,6 @@ export default function PretermeAutoPage() {
       toast.warning("Synchronisation en attente.");
     }
   }, [activeImport?.id]);
-
-  const handleTypeValidationDone = useCallback(async (nbEntreprises: number) => {
-    if (!activeImportId) return;
-    await markTypeChoicesSavedForImport(activeImportId);
-    if (nbEntreprises > 0) {
-      await loadSocietes(activeImportId);
-      setValidationSubStep("societes");
-    } else {
-      markStepsCompleted(["validation"]);
-      setStep("modulation");
-    }
-  }, [activeImportId, loadSocietes, markStepsCompleted, markTypeChoicesSavedForImport]);
-
-  const handleValidateTypesForAllImports = useCallback(async () => {
-    if (!activeImportId) return;
-    if (hasPendingTypeChanges) {
-      toast.warning("Enregistre d'abord les modifications en cours.");
-      return;
-    }
-    const latestImports = await getPretermeImportsByMois(moisKey).catch(() => null);
-    if (!latestImports || latestImports.length === 0) {
-      toast.error("Impossible de vérifier les imports du mois.");
-      return;
-    }
-    setAllImports(latestImports);
-    const unsaved = latestImports.filter(
-      (imp) => !isImportTypesValidated(imp, savedTypeChoicesByImportId)
-    );
-    if (unsaved.length > 0) {
-      toast.warning(`Valide d'abord les types pour : ${unsaved.map((i) => i.agence).join(", ")}.`);
-      return;
-    }
-    const nbEntreprises = importedClients.filter(
-      (c) => c.conserve && (c.typeEntite === "societe" || c.typeEntite === "a_valider")
-    ).length;
-    await handleTypeValidationDone(nbEntreprises);
-    toast.success("Validation complète pour toutes les agences.");
-  }, [
-    activeImportId, handleTypeValidationDone, hasPendingTypeChanges,
-    importedClients, moisKey, savedTypeChoicesByImportId,
-  ]);
 
   useEffect(() => {
     void persistWorkflow(step, completedSteps);
@@ -475,45 +504,85 @@ export default function PretermeAutoPage() {
     setActiveImportId(importToActivate.id);
     setActiveAgence(importToActivate.agence);
     setActiveImport(importToActivate);
-    setHasPendingTypeChanges(false);
     await loadImportClients(importToActivate.id);
-    if (step === "validation" && validationSubStep === "societes") {
-      await loadSocietes(importToActivate.id);
-    }
-  }, [loadImportClients, loadSocietes, step, validationSubStep]);
+  }, [loadImportClients]);
 
-  // Fix multi-agences societes : ne passe à modulation que quand TOUTES les agences sont done
-  const handleSocietesValidated = useCallback(async () => {
-    if (!activeImportId) return;
-    setSocietesValideesByImportId((prev) => ({ ...prev, [activeImportId]: true }));
+  // ─── Validation types + gérants — double colonne ──────────────────────────
 
-    // Vérifier les autres imports du mois qui ont encore des sociétés sans gérant
-    const otherImports = importsDuMois.filter(
-      (imp) => imp.id !== activeImportId && !societesValideesByImportId[imp.id]
+  const proceedAfterAllTypesLocked = useCallback(async () => {
+    const freshResults = await Promise.all(
+      importsDuMois.map(async (imp) => ({
+        importId: imp.id,
+        clients: await getPretermeClients(imp.id).catch(() => [] as PretermeClient[]),
+      }))
     );
-    for (const imp of otherImports) {
-      const societes = await getSocietesAValider(imp.id).catch(() => [] as PretermeClient[]);
-      const pending  = societes.filter((s) => !s.nomGerant);
-      if (pending.length > 0) {
-        await handleSwitchImport(imp);
-        setSocietesAValider(societes);
-        setValidationSubStep("societes");
-        toast.info(`${pending.length} société(s) à valider pour l'agence ${imp.agence}`);
-        return;
-      }
+    const freshMap: Record<string, PretermeClient[]> = {};
+    let totalEntreprises = 0;
+    for (const r of freshResults) {
+      freshMap[r.importId] = r.clients;
+      totalEntreprises += r.clients.filter(
+        (c) => c.conserve && (c.typeEntite === "societe" || c.typeEntite === "a_valider")
+      ).length;
     }
+    setFullClientsByImportId(freshMap);
 
-    // Toutes les agences sont traitées → avancer
+    if (totalEntreprises > 0) {
+      const societeResults = await Promise.all(
+        importsDuMois.map(async (imp) => ({
+          importId: imp.id,
+          societes: await getSocietesAValider(imp.id).catch(() => [] as PretermeClient[]),
+        }))
+      );
+      const societeMap: Record<string, PretermeClient[]> = {};
+      const autoLocked: Record<string, boolean> = {};
+      for (const r of societeResults) {
+        societeMap[r.importId] = r.societes;
+        if (r.societes.length === 0) autoLocked[r.importId] = true;
+      }
+      setAllSocietesByImportId(societeMap);
+      setLockedSocietesByImportId(autoLocked);
+      if (importsDuMois.every((imp) => autoLocked[imp.id])) {
+        markStepsCompleted(["validation"]);
+        setStep("modulation");
+      } else {
+        setValidationSubStep("societes");
+      }
+    } else {
+      markStepsCompleted(["validation"]);
+      setStep("modulation");
+    }
+  }, [importsDuMois, markStepsCompleted]);
+
+  const handleLockTypesForImport = useCallback(async (importId: string) => {
+    await markTypeChoicesSavedForImport(importId);
+    const newLocked = { ...lockedTypesByImportId, [importId]: true };
+    setLockedTypesByImportId(newLocked);
+    const allLocked = importsDuMois.every((imp) => newLocked[imp.id]);
+    if (!allLocked) {
+      const agence = importsDuMois.find((i) => i.id === importId)?.agence ?? importId;
+      toast.success(`Agence ${agence} verrouillée — en attente de l'autre agence.`);
+      return;
+    }
+    await proceedAfterAllTypesLocked();
+  }, [importsDuMois, lockedTypesByImportId, markTypeChoicesSavedForImport, proceedAfterAllTypesLocked]);
+
+  const handleLockSocietesForImport = useCallback((importId: string) => {
+    const newLocked = { ...lockedSocietesByImportId, [importId]: true };
+    setLockedSocietesByImportId(newLocked);
+    const allLocked = importsDuMois.every((imp) => newLocked[imp.id]);
+    if (!allLocked) {
+      const agence = importsDuMois.find((i) => i.id === importId)?.agence ?? importId;
+      toast.success(`Gérants validés pour ${agence} — en attente de l'autre agence.`);
+      return;
+    }
     markStepsCompleted(["validation"]);
     toast.success("Toutes les sociétés sont validées !");
     setStep("modulation");
-  }, [
-    activeImportId, importsDuMois, societesValideesByImportId,
-    handleSwitchImport, markStepsCompleted,
-  ]);
+  }, [importsDuMois, lockedSocietesByImportId, markStepsCompleted]);
 
   // ─── Dérivés ────────────────────────────────────────────────────────────────
 
+  const hasPendingTypeChanges = Object.values(pendingTypeChangesByImportId).some(Boolean);
   const isPeriodeConfirmed   = existingConfig !== null;
   const isModulationValide   = existingConfig?.valide ?? false;
   const stepIndex            = STEPS.findIndex((s) => s.id === step);
@@ -521,7 +590,7 @@ export default function PretermeAutoPage() {
   const canAccessStep = (s: Step): boolean => {
     if (s === "periode") return true;
     if (s === "upload") return isPeriodeConfirmed;
-    if (s === "filtrage") return importsDuMois.length > 0;
+    if (s === "filtrage") return importsDuMois.length >= 2;
     if (s === "validation") return importsDuMois.some((imp) =>
       ["VALIDATION_SOCIETES", "PRET", "DISPATCH_TRELLO", "TERMINE"].includes(imp.statut));
     if (s === "modulation") return areAllImportsTypeChoicesSaved &&
@@ -532,10 +601,19 @@ export default function PretermeAutoPage() {
     return false;
   };
 
+  // Agences déjà dispatchées (dérivé du statut Firestore)
+  const dispatchedByImportId = useMemo<Record<string, boolean>>(() => {
+    const d: Record<string, boolean> = {};
+    for (const imp of importsDuMois) {
+      if (["DISPATCH_TRELLO", "TERMINE"].includes(imp.statut)) d[imp.id] = true;
+    }
+    return d;
+  }, [importsDuMois]);
+
   const derivedDoneByStatus = useMemo<Partial<Record<Step, boolean>>>(() => {
     const d: Partial<Record<Step, boolean>> = {};
     if (isPeriodeConfirmed) d.periode = true;
-    if (importsDuMois.length > 0) d.upload = true;
+    if (importsDuMois.length >= 2) d.upload = true;
     if (importsDuMois.some((imp) => ["VALIDATION_SOCIETES", "PRET", "DISPATCH_TRELLO", "TERMINE"].includes(imp.statut)))
       d.filtrage = true;
     if (areAllImportsTypeChoicesSaved && importsDuMois.some((imp) =>
@@ -724,28 +802,39 @@ export default function PretermeAutoPage() {
                 <CardContent>
                   <UploadStep
                     moisKey={moisKey}
+                    branche="AUTO"
                     configValide={isPeriodeConfirmed}
                     idToken={idToken}
                     onImportSuccess={handleImportSuccess}
                   />
                 </CardContent>
               </Card>
-              {importsDuMois.length > 0 && (
-                <Button
-                  className="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-60"
-                  disabled={importsDuMois.length < 2}
-                  onClick={() => setStep("filtrage")}
-                  title={importsDuMois.length < 2 ? "Les 2 agences doivent être importées pour continuer" : ""}
-                >
-                  Valider l&apos;étape — Lancer le filtrage IA
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
+              {importsDuMois.length === 1 && (
+                <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-700/50 rounded-xl text-sm">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-medium text-amber-700 dark:text-amber-300">1 agence manquante</p>
+                    <p className="text-xs text-amber-700/80 dark:text-amber-400 mt-0.5">
+                      2 fichiers requis — un par agence (H91358 et H92083) — avant de lancer le filtrage.
+                    </p>
+                  </div>
+                </div>
               )}
+              <Button
+                className="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-50"
+                disabled={importsDuMois.length < 2}
+                onClick={() => setStep("filtrage")}
+              >
+                {importsDuMois.length < 2
+                  ? `Téléchargement requis (${importsDuMois.length}/2 agences)`
+                  : "Valider l'étape — Lancer le filtrage IA"}
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
             </div>
           )}
 
           {/* ── 3. Filtrage IA ── */}
-          {step === "filtrage" && activeImportId && activeAgence && (
+          {step === "filtrage" && importsDuMois.length >= 2 && (
             <div className="space-y-4">
               <div className="flex justify-start">
                 <Button
@@ -756,23 +845,22 @@ export default function PretermeAutoPage() {
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour téléchargement
                 </Button>
               </div>
-              <AgencySwitcher />
               <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Filter className="h-4 w-4 text-sky-400" />
-                    Classification Gemini — {activeAgence}
+                    Classification Gemini — {formatMoisLabel(moisKey)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ThresholdsStep
-                    importId={activeImportId}
-                    agence={activeAgence}
-                    moisKey={moisKey}
-                    clients={importedClients}
-                    availableImportIds={importsDuMois.map((imp) => imp.id)}
+                    imports={importsDuMois.map((imp) => ({
+                      importId: imp.id,
+                      agence: imp.agence,
+                      clients: clientsByImportId[imp.id] ?? [],
+                    }))}
                     seuilEtpInitial={existingConfig?.seuilEtp ?? 120}
-                    seuilVariationInitial={existingConfig?.seuilVariation ?? 20}
+                    seuilVariationInitial={existingConfig?.seuilVariation ?? 10}
                     idToken={idToken}
                     onClassifySuccess={handleClassifySuccess}
                   />
@@ -782,7 +870,7 @@ export default function PretermeAutoPage() {
           )}
 
           {/* ── 4. Validation (types + gérants) ── */}
-          {step === "validation" && activeImportId && (
+          {step === "validation" && importsDuMois.length > 0 && (
             <div className="space-y-4">
               <div className="flex justify-start">
                 <Button
@@ -793,63 +881,191 @@ export default function PretermeAutoPage() {
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour filtrage
                 </Button>
               </div>
-              <AgencySwitcher />
 
-              {validationSubStep === "types" && (
-                <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <ArrowRightLeft className="h-4 w-4 text-sky-400" />
-                      Validation particulier / entreprise
-                      {hasPendingTypeChanges && (
-                        <Badge className="ml-2 border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-                          Modifications non enregistrées
-                        </Badge>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <TypeValidationStep
-                      clients={importedClients.filter((c) => c.conserve)}
-                      onValidated={handleTypeValidationDone}
-                      onSaved={async () => {
-                        if (!activeImportId) return;
-                        await loadImportClients(activeImportId);
-                        await markTypeChoicesSavedForImport(activeImportId);
-                        setHasPendingTypeChanges(false);
-                      }}
-                      onDirtyChange={setHasPendingTypeChanges}
-                    />
-                  </CardContent>
-                </Card>
-              )}
+              {/* ── Sous-étape : types ── */}
+              {validationSubStep === "types" && (() => {
+                const nbLocked = importsDuMois.filter((i) => lockedTypesByImportId[i.id]).length;
+                const allLocked = nbLocked === importsDuMois.length;
+                return (
+                  <>
+                    {/* Barre de progression */}
+                    <div className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg border text-xs",
+                      allLocked
+                        ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-800/40 dark:text-emerald-300"
+                        : "bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800/40 dark:border-slate-700 dark:text-slate-400"
+                    )}>
+                      {allLocked
+                        ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                        : <ArrowRightLeft className="h-3.5 w-3.5 shrink-0" />}
+                      <span className="flex-1">
+                        {allLocked
+                          ? "Les deux agences sont verrouillées — passage aux gérants…"
+                          : "Validez et verrouillez chaque agence. Les deux doivent être vertes avant de continuer."}
+                      </span>
+                      <Badge className={cn(
+                        "shrink-0 text-[10px]",
+                        allLocked
+                          ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-700"
+                          : "bg-slate-200 text-slate-600 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600"
+                      )}>
+                        {nbLocked} / {importsDuMois.length} verrouillée{nbLocked > 1 ? "s" : ""}
+                      </Badge>
+                    </div>
 
-              {validationSubStep === "societes" && (
-                <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Building2 className="h-4 w-4 text-sky-400" />
-                      Saisie des gérants d&apos;entreprise
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <SocietesValidationStep
-                      societes={societesAValider}
-                      onAllValidated={() => { void handleSocietesValidated(); }}
-                    />
-                  </CardContent>
-                </Card>
-              )}
+                    {/* Double colonne */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {importsDuMois.map((imp) => {
+                        const isLocked = !!lockedTypesByImportId[imp.id];
+                        const isPending = !!pendingTypeChangesByImportId[imp.id];
+                        const clients = (fullClientsByImportId[imp.id] ?? []).filter((c) => c.conserve);
+                        return (
+                          <Card key={imp.id} className={cn(
+                            "bg-white dark:bg-slate-900 transition-colors",
+                            isLocked
+                              ? "border-emerald-300 dark:border-emerald-700"
+                              : "border-slate-200 dark:border-slate-700"
+                          )}>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="flex items-center gap-2 text-sm">
+                                <ArrowRightLeft className="h-4 w-4 text-sky-400 shrink-0" />
+                                <span>{imp.agence}</span>
+                                <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                                  {clients.length} client{clients.length > 1 ? "s" : ""}
+                                </span>
+                                {!isLocked && isPending && (
+                                  <Badge className="ml-auto text-[10px] border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                                    Non enregistré
+                                  </Badge>
+                                )}
+                                {isLocked && (
+                                  <Badge className="ml-auto text-[10px] bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-700">
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    Verrouillé
+                                  </Badge>
+                                )}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              {isLocked ? (
+                                <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-800/40 dark:text-emerald-300">
+                                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                                  <span>Types validés — agence verrouillée</span>
+                                </div>
+                              ) : clients.length === 0 ? (
+                                <p className="text-xs text-slate-500 dark:text-slate-600 italic text-center py-6">Chargement…</p>
+                              ) : (
+                                <TypeValidationStep
+                                  clients={clients}
+                                  onValidated={() => { void handleLockTypesForImport(imp.id); }}
+                                  onSaved={async () => {
+                                    const updated = await getPretermeClients(imp.id).catch(() => [] as PretermeClient[]);
+                                    setFullClientsByImportId((prev) => ({ ...prev, [imp.id]: updated }));
+                                    await markTypeChoicesSavedForImport(imp.id);
+                                  }}
+                                  onDirtyChange={(dirty) =>
+                                    setPendingTypeChangesByImportId((prev) => ({ ...prev, [imp.id]: dirty }))
+                                  }
+                                />
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
 
-              {importsDuMois.length > 1 && validationSubStep === "types" && (
-                <Button
-                  onClick={() => { void handleValidateTypesForAllImports(); }}
-                  disabled={hasPendingTypeChanges}
-                  className="w-full bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-60"
-                >
-                  Valider l&apos;étape pour toutes les agences
-                </Button>
-              )}
+                    {/* Bouton de reprise si les deux sont déjà verrouillées (session précédente) */}
+                    {allLocked && (
+                      <Button
+                        onClick={() => { void proceedAfterAllTypesLocked(); }}
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
+                      >
+                        <ChevronRight className="h-4 w-4 mr-1" />
+                        Continuer vers les gérants
+                      </Button>
+                    )}
+                  </>
+                );
+              })()}
+
+              {/* ── Sous-étape : gérants ── */}
+              {validationSubStep === "societes" && (() => {
+                const nbLocked = importsDuMois.filter((i) => lockedSocietesByImportId[i.id]).length;
+                const allLocked = nbLocked === importsDuMois.length;
+                return (
+                  <>
+                    {/* Barre de progression */}
+                    <div className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg border text-xs",
+                      allLocked
+                        ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-800/40 dark:text-emerald-300"
+                        : "bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800/40 dark:border-slate-700 dark:text-slate-400"
+                    )}>
+                      {allLocked
+                        ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                        : <Building2 className="h-3.5 w-3.5 shrink-0" />}
+                      <span className="flex-1">
+                        {allLocked
+                          ? "Les deux agences sont verrouillées — passage à la modulation…"
+                          : "Saisissez le gérant de chaque entreprise, puis verrouillez chaque agence."}
+                      </span>
+                      <Badge className={cn(
+                        "shrink-0 text-[10px]",
+                        allLocked
+                          ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-700"
+                          : "bg-slate-200 text-slate-600 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600"
+                      )}>
+                        {nbLocked} / {importsDuMois.length} verrouillée{nbLocked > 1 ? "s" : ""}
+                      </Badge>
+                    </div>
+
+                    {/* Double colonne */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {importsDuMois.map((imp) => {
+                        const isLocked = !!lockedSocietesByImportId[imp.id];
+                        const societes = allSocietesByImportId[imp.id] ?? [];
+                        return (
+                          <Card key={imp.id} className={cn(
+                            "bg-white dark:bg-slate-900 transition-colors",
+                            isLocked
+                              ? "border-emerald-300 dark:border-emerald-700"
+                              : "border-slate-200 dark:border-slate-700"
+                          )}>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="flex items-center gap-2 text-sm">
+                                <Building2 className="h-4 w-4 text-sky-400 shrink-0" />
+                                <span>{imp.agence}</span>
+                                <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                                  {societes.length} société{societes.length > 1 ? "s" : ""}
+                                </span>
+                                {isLocked && (
+                                  <Badge className="ml-auto text-[10px] bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-700">
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    Verrouillé
+                                  </Badge>
+                                )}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              {isLocked ? (
+                                <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-800/40 dark:text-emerald-300">
+                                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                                  <span>Gérants validés</span>
+                                </div>
+                              ) : (
+                                <SocietesValidationStep
+                                  societes={societes}
+                                  onAllValidated={() => handleLockSocietesForImport(imp.id)}
+                                />
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
 
@@ -878,67 +1094,124 @@ export default function PretermeAutoPage() {
           )}
 
           {/* ── 6. Dispatch Trello ── */}
-          {step === "dispatch" && activeImportId && activeAgence && existingConfig && (
-            <div className="space-y-4">
-              <div className="flex justify-start">
-                <Button
-                  variant="ghost" size="sm"
-                  className="text-slate-600 dark:text-slate-400 text-xs"
-                  onClick={() => setStep("modulation")}
-                >
-                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour modulation
-                </Button>
+          {step === "dispatch" && existingConfig && importsDuMois.length > 0 && (() => {
+            const nbDispatched = importsDuMois.filter((i) => dispatchedByImportId[i.id]).length;
+            const allDispatched = nbDispatched === importsDuMois.length;
+            return (
+              <div className="space-y-4">
+                <div className="flex justify-start">
+                  <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 text-xs"
+                    onClick={() => setStep("modulation")}>
+                    <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Retour modulation
+                  </Button>
+                </div>
+
+                {/* Barre de progression */}
+                <div className={cn(
+                  "flex items-center gap-3 p-3 rounded-lg border text-xs",
+                  allDispatched
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-800/40 dark:text-emerald-300"
+                    : "bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800/40 dark:border-slate-700 dark:text-slate-400"
+                )}>
+                  {allDispatched
+                    ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                    : <Send className="h-3.5 w-3.5 shrink-0" />}
+                  <span className="flex-1">
+                    {allDispatched
+                      ? "Les deux agences sont dispatchées — vous pouvez passer à la synthèse."
+                      : "Lancez le dispatch Trello pour chaque agence. Les deux doivent être vertes pour continuer."}
+                  </span>
+                  <Badge className={cn(
+                    "shrink-0 text-[10px]",
+                    allDispatched
+                      ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-700"
+                      : "bg-slate-200 text-slate-600 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600"
+                  )}>
+                    {nbDispatched} / {importsDuMois.length} dispatchée{nbDispatched > 1 ? "s" : ""}
+                  </Badge>
+                </div>
+
+                {/* Double colonne */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {importsDuMois.map((imp) => {
+                    const isDispatched = !!dispatchedByImportId[imp.id];
+                    const agenceCfg = existingConfig.agences.find((a) => a.code === imp.agence)
+                      ?? existingConfig.agences[0];
+                    const clients = fullClientsByImportId[imp.id] ?? [];
+                    return (
+                      <div key={imp.id} className={cn(
+                        "rounded-xl border overflow-hidden transition-colors",
+                        isDispatched
+                          ? "border-emerald-300 dark:border-emerald-700"
+                          : "border-slate-200 dark:border-slate-700"
+                      )}>
+                        {/* Header agence */}
+                        <div className={cn(
+                          "flex items-center gap-2 px-4 py-3 border-b",
+                          isDispatched
+                            ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/40"
+                            : "bg-slate-50 border-slate-200 dark:bg-slate-800/50 dark:border-slate-700"
+                        )}>
+                          <Send className="h-4 w-4 text-sky-400 shrink-0" />
+                          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{imp.agence}</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            {imp.pretermesConserves} conservés
+                          </span>
+                          {isDispatched && (
+                            <Badge className="ml-auto text-[10px] bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-700">
+                              <CheckCircle2 className="h-3 w-3 mr-1" /> Dispatché
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* Contenu DispatchPreview */}
+                        <div className="bg-white dark:bg-slate-900 p-4">
+                          <DispatchPreview
+                            importId={imp.id}
+                            agence={imp.agence}
+                            agenceConfig={agenceCfg}
+                            moisKey={moisKey}
+                            clients={clients}
+                            idToken={idToken}
+                            onDispatchSuccess={async () => {
+                              markStepsCompleted(["dispatch"]);
+                              const [updatedImp, latestImports] = await Promise.all([
+                                getPretermeImport(imp.id).catch(() => null),
+                                getPretermeImportsByMois(moisKey, "AUTO").catch(() => [] as PretermeImport[]),
+                              ]);
+                              if (latestImports.length) setAllImports(latestImports);
+                              if (updatedImp) {
+                                setActiveImport(updatedImp);
+                                setActiveImportId(updatedImp.id);
+                                setActiveAgence(updatedImp.agence);
+                              }
+                              const updated = await getPretermeClients(imp.id).catch(() => [] as PretermeClient[]);
+                              setFullClientsByImportId((prev) => ({ ...prev, [imp.id]: updated }));
+                              if (latestImports.every((i) => ["DISPATCH_TRELLO", "TERMINE"].includes(i.statut))) {
+                                toast.success("Dispatch terminé pour toutes les agences !");
+                                setStep("synthese");
+                              } else {
+                                toast.success(`Dispatch terminé pour ${imp.agence}.`);
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Bouton de reprise si les deux sont déjà dispatchées */}
+                {allDispatched && (
+                  <Button onClick={() => setStep("synthese")}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white">
+                    <ChevronRight className="h-4 w-4 mr-1" />
+                    Continuer vers la synthèse
+                  </Button>
+                )}
               </div>
-              <AgencySwitcher />
-              <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Send className="h-4 w-4 text-sky-400" />
-                    Création des cartes Trello — {activeAgence}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <DispatchPreview
-                    importId={activeImportId}
-                    agence={activeAgence}
-                    agenceConfig={
-                      existingConfig.agences.find((a) => a.code === activeAgence) ??
-                      existingConfig.agences[0]
-                    }
-                    moisKey={moisKey}
-                    clients={importedClients}
-                    idToken={idToken}
-                    onDispatchSuccess={async () => {
-                      markStepsCompleted(["dispatch"]);
-                      if (!activeImportId) return;
-
-                      const [imp, latestImports] = await Promise.all([
-                        getPretermeImport(activeImportId).catch(() => null),
-                        getPretermeImportsByMois(moisKey).catch(() => [] as PretermeImport[]),
-                      ]);
-                      await loadImportClients(activeImportId);
-                      if (latestImports.length) setAllImports(latestImports);
-                      if (imp) setActiveImport(imp);
-
-                      const allDispatched = latestImports.every(
-                        (i) => ["DISPATCH_TRELLO", "TERMINE"].includes(i.statut)
-                      );
-                      if (allDispatched) {
-                        toast.success("Dispatch terminé pour toutes les agences !");
-                        setStep("synthese");
-                      } else {
-                        const restantes = latestImports
-                          .filter((i) => !["DISPATCH_TRELLO", "TERMINE"].includes(i.statut))
-                          .map((i) => i.agence)
-                          .join(", ");
-                        toast.success(`Dispatch terminé — agence suivante : ${restantes}`);
-                      }
-                    }}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ── 7. Synthèse Slack ── */}
           {step === "synthese" && activeImport && activeAgence && (

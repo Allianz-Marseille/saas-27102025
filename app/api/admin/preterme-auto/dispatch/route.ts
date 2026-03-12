@@ -64,12 +64,13 @@ export async function POST(request: NextRequest) {
   }
 
   const importData = importSnap.data()!;
-  const { moisKey, agence: agenceCode, seuilEtpApplique, seuilVariationApplique } = importData;
+  const { moisKey, agence: agenceCode, branche, seuilEtpApplique, seuilVariationApplique } = importData;
 
   // ── Charger la config mensuelle (pour la répartition CDC) ─────────────────
   const configSnap = await adminDb
     .collection("preterme_configs")
     .where("moisKey", "==", moisKey)
+    .where("branche", "==", branche)
     .where("valide", "==", true)
     .limit(1)
     .get();

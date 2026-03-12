@@ -63,12 +63,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Import introuvable." }, { status: 404 });
   }
   const importData = importSnap.data()!;
-  const { moisKey, agence: agenceCode, seuilEtpApplique, seuilVariationApplique } = importData;
+  const { moisKey, agence: agenceCode, branche, seuilEtpApplique, seuilVariationApplique } = importData;
 
   // ── Charger la config mensuelle (pour slackChannelId + noms agences) ─────
   const configSnap = await adminDb
     .collection("preterme_configs")
     .where("moisKey", "==", moisKey)
+    .where("branche", "==", branche)
     .where("valide", "==", true)
     .limit(1)
     .get();

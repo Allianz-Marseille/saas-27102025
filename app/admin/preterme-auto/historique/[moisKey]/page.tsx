@@ -95,10 +95,10 @@ export default function HistoriqueDetailPage() {
     if (!moisKey) return;
     setLoading(true);
     Promise.all([
-      getPretermeConfig(moisKey),
-      getPretermeImportsByMois(moisKey),
+      getPretermeConfig(moisKey, "AUTO"),
+      getPretermeImportsByMois(moisKey, "AUTO"),
       getPretermeClientsByMoisKey(moisKey),
-      getAllPretermeConfigs(),
+      getAllPretermeConfigs("AUTO"),
       getAllPretermeImports(),
     ])
       .then(([cfg, imps, cls, allCfg, allImp]) => {

@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import type { AgenceCode } from "@/types/preterme";
+import type { AgenceCode, PretermeB } from "@/types/preterme";
 import { AGENCES } from "@/types/preterme";
 import { detectAgenceFromFilename } from "@/lib/utils/preterme-parser";
 
@@ -372,12 +372,13 @@ function GlobalStatusBanner({
 
 interface UploadStepProps {
   moisKey: string;
+  branche: PretermeB;
   configValide: boolean;
   idToken: string;
   onImportSuccess?: (importId: string, agence: AgenceCode) => void;
 }
 
-export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: UploadStepProps) {
+export function UploadStep({ moisKey, branche, configValide, idToken, onImportSuccess }: UploadStepProps) {
   const [files, setFiles] = useState<FileUploadState[]>([]);
 
   // Dialog confirmation remplacement agence déjà importée
@@ -432,6 +433,7 @@ export function UploadStep({ moisKey, configValide, idToken, onImportSuccess }: 
     formData.append("file", state.file);
     formData.append("moisKey", moisKey);
     formData.append("agence", agence);
+    formData.append("branche", branche);
 
     try {
       const res = await fetch("/api/admin/preterme-auto/upload", {

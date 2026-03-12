@@ -113,7 +113,7 @@ export default function PretermeAutoPage() {
   // Charger la config du mois sélectionné (si existante)
   useEffect(() => {
     setExistingConfig(null);
-    getPretermeConfig(moisKey).then((c) => {
+    getPretermeConfig(moisKey, "AUTO").then((c) => {
       if (c) {
         setExistingConfig(c);
         setConfig({
@@ -137,7 +137,7 @@ export default function PretermeAutoPage() {
       await upsertPretermeConfig({ ...config, valide: true, createdBy: user.uid });
       const [updated, fresh] = await Promise.all([
         getAllPretermeConfigs(),
-        getPretermeConfig(moisKey),
+        getPretermeConfig(moisKey, "AUTO"),
       ]);
       setHistorique(updated);
       if (fresh) setExistingConfig(fresh);
@@ -452,6 +452,7 @@ export default function PretermeAutoPage() {
                 <CardContent>
                   <UploadStep
                     moisKey={moisKey}
+                    branche="AUTO"
                     configValide={isConfigValide}
                     idToken={idToken}
                     onImportSuccess={(_importId: string, _agence: AgenceCode) => {
