@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { routerClients, calculerStatsRoutage } from "@/lib/services/preterme-router";
+import { calculerStatsRoutage } from "@/lib/services/preterme-router";
 import type { PretermeClient, AgenceConfig, AgenceCode } from "@/types/preterme";
 import { AGENCES } from "@/types/preterme";
 
@@ -19,7 +19,18 @@ import { AGENCES } from "@/types/preterme";
 
 interface DispatchResult {
   routage: { total: number; routes: number; nonRoutes: number };
-  trello:  { total: number; success: number; errors: number };
+  trello:  {
+    total: number;
+    success: number;
+    errors: number;
+    errorDetails?: Array<{
+      clientId: string;
+      numeroContrat: string;
+      nomClient: string | null;
+      chargeAttribue: string | null;
+      message: string;
+    }>;
+  };
   statut: string;
 }
 
@@ -194,6 +205,9 @@ export function DispatchPreview({
             Les credentials Trello sont appliqués automatiquement depuis la configuration serveur.
           </div>
           <p className="text-[10px] text-slate-500 dark:text-slate-500">
+            Cycle en cours : <code>{moisKey}</code>
+          </p>
+          <p className="text-[10px] text-slate-500 dark:text-slate-500">
             Si le dispatch échoue, vérifiez les variables serveur <code>TRELLO_API_KEY</code> et <code>TRELLO_TOKEN</code>.
           </p>
         </CardContent>
@@ -234,6 +248,24 @@ export function DispatchPreview({
                 <p className="text-slate-600 dark:text-slate-400">Erreurs</p>
               </div>
             </div>
+            {result.trello.errors > 0 && (result.trello.errorDetails?.length ?? 0) > 0 && (
+              <div className="mt-2 rounded-lg border border-amber-300/70 bg-amber-100/40 p-3 dark:border-amber-700/60 dark:bg-amber-950/30">
+                <p className="mb-2 text-xs font-medium text-amber-800 dark:text-amber-300">
+                  Détails des erreurs Trello (échantillon) :
+                </p>
+                <ul className="space-y-1 text-[11px] text-amber-800 dark:text-amber-200">
+                  {result.trello.errorDetails?.slice(0, 6).map((err) => (
+                    <li key={`${err.clientId}-${err.numeroContrat}`}>
+                      {err.chargeAttribue ? `[${err.chargeAttribue}] ` : ""}
+                      {err.nomClient ?? err.numeroContrat} — {err.message}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-[10px] text-amber-700/90 dark:text-amber-300/90">
+                  Vérifie en priorité les mappings Trello (List ID / Member ID) des CDC affichés ci-dessus.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

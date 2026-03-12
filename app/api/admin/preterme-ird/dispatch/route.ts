@@ -140,6 +140,7 @@ export async function POST(request: NextRequest) {
   const BATCH_SIZE = 400;
 
   const successCards = dispatchResult.cards.filter((c) => c.success && c.cardId);
+  const failedCards = dispatchResult.cards.filter((c) => !c.success);
 
   for (let i = 0; i < successCards.length; i += BATCH_SIZE) {
     const batch = adminDb.batch();
@@ -176,6 +177,17 @@ export async function POST(request: NextRequest) {
   }
 
   const hasErrors = dispatchResult.errors > 0;
+  const errorDetails = failedCards.slice(0, 20).map((card) => {
+    const route = routes.find((r) => r.client.id === card.clientId);
+    return {
+      clientId: card.clientId,
+      numeroContrat: card.numeroContrat,
+      nomClient: route?.client.nomClient ?? null,
+      chargeAttribue: route?.chargePrenom ?? null,
+      message: card.error ?? "Erreur inconnue Trello",
+    };
+  });
+
   await importRef.update({
     statut: hasErrors ? "DISPATCH_TRELLO" : "TERMINE",
     updatedAt: now,
@@ -195,6 +207,7 @@ export async function POST(request: NextRequest) {
       total: dispatchResult.total,
       success: dispatchResult.success,
       errors: dispatchResult.errors,
+      errorDetails,
     },
     statut: hasErrors ? "DISPATCH_TRELLO" : "TERMINE",
   });
