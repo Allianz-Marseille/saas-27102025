@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAuth } from "@/lib/utils/auth-utils";
+import { verifyAuth, verifyAdmin } from "@/lib/utils/auth-utils";
 import { adminDb } from "@/lib/firebase/admin-config";
 import { normalizeCompanyName, sanitizeInternetLink } from "@/lib/utils/courtage-format";
 import type { CourtageFormData } from "@/types/courtage";
@@ -23,7 +23,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await verifyAuth(request);
+  const auth = await verifyAdmin(request);
   if (!auth.valid || !auth.userEmail) {
     return NextResponse.json({ error: auth.error ?? "Non autorisé" }, { status: 401 });
   }
@@ -126,7 +126,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await verifyAuth(request);
+  const auth = await verifyAdmin(request);
   if (!auth.valid) {
     return NextResponse.json({ error: auth.error ?? "Non autorisé" }, { status: 401 });
   }

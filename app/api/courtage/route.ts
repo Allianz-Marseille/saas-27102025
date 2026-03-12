@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAuth } from "@/lib/utils/auth-utils";
+import { verifyAuth, verifyAdmin } from "@/lib/utils/auth-utils";
 import { adminDb, Timestamp } from "@/lib/firebase/admin-config";
 import { normalizeCompanyName, sanitizeInternetLink } from "@/lib/utils/courtage-format";
 import type { CourtageFormData } from "@/types/courtage";
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 // ── POST ─────────────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
-  const auth = await verifyAuth(request);
+  const auth = await verifyAdmin(request);
   if (!auth.valid || !auth.userEmail) {
     return NextResponse.json({ error: auth.error ?? "Non autorisé" }, { status: 401 });
   }

@@ -40,7 +40,8 @@ function isUrl(v?: string) {
 
 export function CourtageFormModal({ open, onClose, onSaved, editItem }: CourtageFormModalProps) {
   const { user, userData } = useAuth();
-  const canSuggestAI = userData?.role === "ADMINISTRATEUR";
+  const isAdmin = userData?.role === "ADMINISTRATEUR";
+  const canSuggestAI = isAdmin;
 
   const [form, setForm] = useState<CourtageFormData>(EMPTY_FORM);
   const [showPassword, setShowPassword] = useState(false);
@@ -135,14 +136,41 @@ export function CourtageFormModal({ open, onClose, onSaved, editItem }: Courtage
   };
 
   const handleSubmit = async () => {
-    if (!form.compagnie.trim()) {
-      toast.error("Le nom de la compagnie est requis.");
-      return;
-    }
-
     setLoading(true);
     try {
       const token = await user?.getIdToken();
+
+      // ── Non-admin : PATCH tags uniquement ──────────────────────────────
+      if (!isAdmin) {
+        if (!editItem) { onClose(); return; }
+        const patchRes = await fetch(`/api/courtage/${editItem.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ tags }),
+        });
+        if (!patchRes.ok) {
+          const d = await patchRes.json();
+          throw new Error(d.error ?? "Erreur serveur");
+        }
+        const patchData = await patchRes.json();
+        const saved: Courtage = {
+          ...editItem,
+          tags: patchData.tags,
+          tagsUpdatedBy: patchData.tagsUpdatedBy,
+          tagsUpdatedAt: patchData.tagsUpdatedAt,
+        };
+        toast.success("Tags mis à jour.");
+        onSaved(saved);
+        onClose();
+        return;
+      }
+
+      // ── Admin : PUT/POST fiche + PATCH tags ───────────────────────────
+      if (!form.compagnie.trim()) {
+        toast.error("Le nom de la compagnie est requis.");
+        return;
+      }
+
       const url = editItem ? `/api/courtage/${editItem.id}` : "/api/courtage";
       const method = editItem ? "PUT" : "POST";
 
@@ -160,7 +188,6 @@ export function CourtageFormModal({ open, onClose, onSaved, editItem }: Courtage
       const data = await res.json();
       const savedId = editItem?.id ?? data.id;
 
-      // Sauvegarder les tags séparément si modifiés
       let savedTags = editItem?.tags ?? [];
       let tagsUpdatedBy = editItem?.tagsUpdatedBy ?? null;
       let tagsUpdatedAt = editItem?.tagsUpdatedAt ?? null;
@@ -211,101 +238,107 @@ export function CourtageFormModal({ open, onClose, onSaved, editItem }: Courtage
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {editItem ? "Modifier la compagnie" : "Nouvelle compagnie"}
+            {isAdmin
+              ? (editItem ? "Modifier la compagnie" : "Nouvelle compagnie")
+              : `Tags — ${editItem?.compagnie ?? ""}`}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          {/* Compagnie */}
-          <div className="space-y-1.5">
-            <Label htmlFor="compagnie">Compagnie *</Label>
-            <Input
-              id="compagnie"
-              value={form.compagnie}
-              onChange={(e) => handleChange("compagnie", e.target.value)}
-              placeholder="Nom de la compagnie"
-            />
-          </div>
+          {/* Champs compagnie (admin seulement) */}
+          {isAdmin && (
+            <>
+              {/* Compagnie */}
+              <div className="space-y-1.5">
+                <Label htmlFor="compagnie">Compagnie *</Label>
+                <Input
+                  id="compagnie"
+                  value={form.compagnie}
+                  onChange={(e) => handleChange("compagnie", e.target.value)}
+                  placeholder="Nom de la compagnie"
+                />
+              </div>
 
-          {/* Logo URL */}
-          <div className="space-y-1.5">
-            <Label htmlFor="logoUrl">Logo (URL)</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="logoUrl"
-                value={form.logoUrl ?? ""}
-                onChange={(e) => handleChange("logoUrl", e.target.value)}
-                placeholder="https://exemple.com/logo.png"
-                className="flex-1"
-              />
-              {/* Prévisualisation */}
-              {isUrl(form.logoUrl) && (
-                <div className="h-9 w-9 rounded-lg border bg-white flex items-center justify-center shrink-0 overflow-hidden">
-                  {logoError ? (
-                    <ImageOff className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={form.logoUrl}
-                      alt="logo"
-                      className="h-7 w-7 object-contain"
-                      onError={() => setLogoError(true)}
-                    />
+              {/* Logo URL */}
+              <div className="space-y-1.5">
+                <Label htmlFor="logoUrl">Logo (URL)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="logoUrl"
+                    value={form.logoUrl ?? ""}
+                    onChange={(e) => handleChange("logoUrl", e.target.value)}
+                    placeholder="https://exemple.com/logo.png"
+                    className="flex-1"
+                  />
+                  {isUrl(form.logoUrl) && (
+                    <div className="h-9 w-9 rounded-lg border bg-white flex items-center justify-center shrink-0 overflow-hidden">
+                      {logoError ? (
+                        <ImageOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={form.logoUrl}
+                          alt="logo"
+                          className="h-7 w-7 object-contain"
+                          onError={() => setLogoError(true)}
+                        />
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              URL directe vers l&apos;image du logo (PNG, SVG…)
-            </p>
-          </div>
+                <p className="text-[11px] text-muted-foreground">
+                  URL directe vers l&apos;image du logo (PNG, SVG…)
+                </p>
+              </div>
 
-          {/* Identifiant */}
-          <div className="space-y-1.5">
-            <Label htmlFor="identifiant">Identifiant</Label>
-            <Input
-              id="identifiant"
-              value={form.identifiant}
-              onChange={(e) => handleChange("identifiant", e.target.value)}
-              placeholder="Login / identifiant"
-            />
-          </div>
+              {/* Identifiant */}
+              <div className="space-y-1.5">
+                <Label htmlFor="identifiant">Identifiant</Label>
+                <Input
+                  id="identifiant"
+                  value={form.identifiant}
+                  onChange={(e) => handleChange("identifiant", e.target.value)}
+                  placeholder="Login / identifiant"
+                />
+              </div>
 
-          {/* Mot de passe */}
-          <div className="space-y-1.5">
-            <Label htmlFor="password">Mot de passe</Label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={form.password}
-                onChange={(e) => handleChange("password", e.target.value)}
-                placeholder="Mot de passe"
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
+              {/* Mot de passe */}
+              <div className="space-y-1.5">
+                <Label htmlFor="password">Mot de passe</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={form.password}
+                    onChange={(e) => handleChange("password", e.target.value)}
+                    placeholder="Mot de passe"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
 
-          {/* Lien internet */}
-          <div className="space-y-1.5">
-            <Label htmlFor="internet">Lien internet</Label>
-            <Input
-              id="internet"
-              value={form.internet}
-              onChange={(e) => handleChange("internet", e.target.value)}
-              placeholder="https://..."
-            />
-          </div>
+              {/* Lien internet */}
+              <div className="space-y-1.5">
+                <Label htmlFor="internet">Lien internet</Label>
+                <Input
+                  id="internet"
+                  value={form.internet}
+                  onChange={(e) => handleChange("internet", e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
 
-          {/* Séparateur */}
-          <div className="border-t pt-1" />
+              {/* Séparateur */}
+              <div className="border-t pt-1" />
+            </>
+          )}
 
           {/* Tags */}
           <div className="space-y-2">
@@ -386,7 +419,7 @@ export function CourtageFormModal({ open, onClose, onSaved, editItem }: Courtage
           </Button>
           <Button onClick={handleSubmit} disabled={loading}>
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {editItem ? "Enregistrer" : "Créer"}
+            {isAdmin ? (editItem ? "Enregistrer" : "Créer") : "Enregistrer les tags"}
           </Button>
         </DialogFooter>
       </DialogContent>
