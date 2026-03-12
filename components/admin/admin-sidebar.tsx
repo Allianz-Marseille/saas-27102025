@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote, LogOut, ChevronLeft, User, Zap, Bot, Car, Shield } from "lucide-react";
+import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Banknote, LogOut, ChevronLeft, User, Zap, Bot, Car, Shield, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import Image from "next/image";
@@ -73,6 +73,11 @@ const adminNavItems = [
     label: "Mes agents IA",
     icon: Bot,
     badge: "en formation",
+  },
+  {
+    href: "/commun/courtage",
+    label: "Courtage",
+    icon: BookOpen,
   },
   {
     href: "/admin/commissions-agence",

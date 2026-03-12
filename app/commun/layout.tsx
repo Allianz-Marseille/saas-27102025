@@ -23,17 +23,18 @@ import { CommercialSidebar } from "@/components/dashboard/commercial-sidebar";
 import { MobileMenu } from "@/components/navigation/mobile-menu";
 import { ResponsiveHeader } from "@/components/navigation/responsive-header";
 import { NavigationItems } from "@/components/navigation/navigation-items";
-import { 
-  Home, 
-  FileText, 
-  User, 
-  Coins, 
+import {
+  Home,
+  FileText,
+  User,
+  Coins,
   Workflow,
   LayoutDashboard,
   BarChart3,
   Wrench,
   Zap,
-  Bot
+  Bot,
+  BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -81,6 +82,11 @@ const commercialNavItems = [
     badge: "new",
   },
   {
+    icon: BookOpen,
+    label: "Courtage",
+    href: "/commun/courtage",
+  },
+  {
     icon: User,
     label: "Profil",
     href: "/dashboard/profile",
@@ -109,6 +115,11 @@ const gestionnaireSinistreNavItems = [
     label: "Outils",
     href: "/commun/outils",
     badge: "new",
+  },
+  {
+    icon: BookOpen,
+    label: "Courtage",
+    href: "/commun/courtage",
   },
 ];
 
@@ -150,6 +161,11 @@ const healthNavItems = [
     label: "Outils",
     icon: Wrench,
     badge: "new",
+  },
+  {
+    href: "/commun/courtage",
+    label: "Courtage",
+    icon: BookOpen,
   },
   {
     href: "/sante-individuelle/profile",
@@ -196,6 +212,11 @@ const healthCollectiveNavItems = [
     label: "Outils",
     icon: Wrench,
     badge: "new",
+  },
+  {
+    href: "/commun/courtage",
+    label: "Courtage",
+    icon: BookOpen,
   },
   {
     href: "/sante-collective/profile",
@@ -252,6 +273,11 @@ const adminNavItems = [
     label: "Mes agents IA",
     icon: Bot,
     badge: "en formation",
+  },
+  {
+    href: "/commun/courtage",
+    label: "Courtage",
+    icon: BookOpen,
   },
   {
     href: "/admin/commissions-agence",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, FileText, User, Coins, Workflow, Wrench, Zap, Bot } from "lucide-react";
+import { Home, FileText, User, Coins, Workflow, Wrench, Zap, Bot, BookOpen } from "lucide-react";
 import { CommercialSidebar } from "@/components/dashboard/commercial-sidebar";
 import { MobileMenu } from "@/components/navigation/mobile-menu";
 import { ResponsiveHeader } from "@/components/navigation/responsive-header";
@@ -55,6 +55,11 @@ const commercialNavItems = [
     badge: "new",
   },
   {
+    icon: BookOpen,
+    label: "Courtage",
+    href: "/commun/courtage",
+  },
+  {
     icon: User,
     label: "Profil",
     href: "/dashboard/profile",
@@ -89,6 +94,11 @@ const gestionnaireSinistreNavItems = [
     label: "Outils",
     href: "/commun/outils",
     badge: "new",
+  },
+  {
+    icon: BookOpen,
+    label: "Courtage",
+    href: "/commun/courtage",
   },
 ];
 

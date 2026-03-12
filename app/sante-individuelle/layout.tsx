@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LayoutDashboard, FileText, User, BarChart3, ChevronLeft, Workflow, Wrench, Zap } from "lucide-react";
+import { LayoutDashboard, FileText, User, BarChart3, ChevronLeft, Workflow, Wrench, Zap, BookOpen } from "lucide-react";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { useAuth } from "@/lib/firebase/use-auth";
 import { useAutoLogout } from "@/lib/hooks/use-auto-logout";
@@ -49,6 +49,11 @@ const healthNavItems = [
     href: "/commun/outils",
     label: "Outils",
     icon: Wrench,
+  },
+  {
+    href: "/commun/courtage",
+    label: "Courtage",
+    icon: BookOpen,
   },
   {
     href: "/sante-individuelle/profile",

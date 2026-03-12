@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, FileText, User, LogOut, ChevronLeft, Coins, Workflow, Wrench, Zap, Bot } from "lucide-react";
+import { Home, FileText, User, LogOut, ChevronLeft, Coins, Workflow, Wrench, Zap, Bot, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { NotificationCenter } from "@/components/dashboard/notification-center";
@@ -61,6 +61,11 @@ const menuItems: SidebarItem[] = [
     badge: "new",
   },
   {
+    icon: BookOpen,
+    label: "Courtage",
+    href: "/commun/courtage",
+  },
+  {
     icon: User,
     label: "Profil",
     href: "/dashboard/profile",
@@ -94,6 +99,11 @@ const gestionnaireSinistreMenuItems: SidebarItem[] = [
     label: "Outils",
     href: "/commun/outils",
     badge: "new",
+  },
+  {
+    icon: BookOpen,
+    label: "Courtage",
+    href: "/commun/courtage",
   },
 ];
 
