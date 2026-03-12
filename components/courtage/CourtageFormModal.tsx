@@ -160,26 +160,37 @@ export function CourtageFormModal({ open, onClose, onSaved, editItem }: Courtage
       const data = await res.json();
       const savedId = editItem?.id ?? data.id;
 
-      let savedTags = editItem?.tags ?? [];
+      const initialTags = editItem?.tags ?? [];
+      const hasTagChanges = editItem
+        ? tagsDirty || JSON.stringify(initialTags) !== JSON.stringify(tags)
+        : tags.length > 0;
+
+      let savedTags = initialTags;
       let tagsUpdatedBy = editItem?.tagsUpdatedBy ?? null;
       let tagsUpdatedAt = editItem?.tagsUpdatedAt ?? null;
 
-      if (tagsDirty || (!editItem && tags.length > 0)) {
-        try {
-          const patchRes = await fetch(`/api/courtage/${savedId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ tags }),
-          });
-          if (patchRes.ok) {
-            const patchData = await patchRes.json();
-            savedTags = patchData.tags;
-            tagsUpdatedBy = patchData.tagsUpdatedBy;
-            tagsUpdatedAt = patchData.tagsUpdatedAt;
+      if (hasTagChanges) {
+        const patchRes = await fetch(`/api/courtage/${savedId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ tags }),
+        });
+
+        if (!patchRes.ok) {
+          let patchErrorMessage = "Erreur lors de l'enregistrement des tags.";
+          try {
+            const patchErrorData = await patchRes.json();
+            patchErrorMessage = patchErrorData.error ?? patchErrorMessage;
+          } catch {
+            // Garde le message par defaut si la reponse n'est pas du JSON
           }
-        } catch {
-          // Non-bloquant
+          throw new Error(patchErrorMessage);
         }
+
+        const patchData = await patchRes.json();
+        savedTags = patchData.tags;
+        tagsUpdatedBy = patchData.tagsUpdatedBy;
+        tagsUpdatedAt = patchData.tagsUpdatedAt;
       }
 
       const saved: Courtage = {
