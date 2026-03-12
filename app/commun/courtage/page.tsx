@@ -63,8 +63,7 @@ function getCardGradient(name: string): string {
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CourtagePage() {
-  const { user, userData } = useAuth();
-  const isAdmin = userData?.role === "ADMINISTRATEUR";
+  const { user } = useAuth();
 
   const [items, setItems] = useState<Courtage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -191,11 +190,11 @@ export default function CourtagePage() {
   };
 
   useEffect(() => {
-    if (!user || !isAdmin || loading || items.length > 0 || importing || autoImportDone) return;
+    if (!user || loading || items.length > 0 || importing || autoImportDone) return;
     setAutoImportDone(true);
     void runInitialImport(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isAdmin, loading, items.length, importing, autoImportDone]);
+  }, [user, loading, items.length, importing, autoImportDone]);
 
   return (
     <div className="min-h-screen">
@@ -222,7 +221,7 @@ export default function CourtagePage() {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              {isAdmin && items.length === 0 && !loading && (
+              {items.length === 0 && !loading && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -234,16 +233,14 @@ export default function CourtagePage() {
                   Import initial
                 </Button>
               )}
-              {isAdmin && (
-                <Button
-                  size="sm"
-                  onClick={() => { setEditItem(null); setFormOpen(true); }}
-                  className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/30 border-0"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle compagnie
-                </Button>
-              )}
+              <Button
+                size="sm"
+                onClick={() => { setEditItem(null); setFormOpen(true); }}
+                className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/30 border-0"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nouvelle compagnie
+              </Button>
             </div>
           </div>
         </div>
@@ -433,18 +430,16 @@ export default function CourtagePage() {
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
 
-                      {/* Supprimer (admin uniquement) */}
-                      {isAdmin && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-red-50 dark:hover:bg-red-950/40"
-                          title="Supprimer"
-                          onClick={() => setDeleteTarget(item)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
+                      {/* Supprimer */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-red-50 dark:hover:bg-red-950/40"
+                        title="Supprimer"
+                        onClick={() => setDeleteTarget(item)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
                   </div>
                 </div>

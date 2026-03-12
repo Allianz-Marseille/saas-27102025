@@ -5,11 +5,11 @@
  * Idempotent : chaque ligne est insérée seulement si la compagnie n'existe pas déjà.
  * Pour les doublons légitimes (ex: Allianz Travel), un suffixe de distinction est conservé.
  *
- * Réservé aux administrateurs.
+ * Accessible à tous les rôles authentifiés (CRUD sans distinction de rôle).
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdmin } from "@/lib/utils/auth-utils";
+import { verifyAuth } from "@/lib/utils/auth-utils";
 import { adminDb, Timestamp } from "@/lib/firebase/admin-config";
 import { normalizeCompanyName, sanitizeInternetLink } from "@/lib/utils/courtage-format";
 
@@ -51,9 +51,9 @@ const SEED_DATA = [
 ] as const;
 
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdmin(request);
+  const auth = await verifyAuth(request);
   if (!auth.valid) {
-    return NextResponse.json({ error: auth.error ?? "Non autorisé" }, { status: 403 });
+    return NextResponse.json({ error: auth.error ?? "Non autorisé" }, { status: 401 });
   }
 
   try {

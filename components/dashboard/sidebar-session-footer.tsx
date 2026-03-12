@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, User } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { CountdownDial } from "@/components/dashboard/countdown-dial";
@@ -57,87 +57,70 @@ export function SidebarSessionFooter({
   const resolvedBadgeLabel = badgeLabel ?? config.badgeLabel;
 
   return (
-    <div className={cn("mt-auto border-t bg-gradient-to-r", config.bgGradient)}>
-      {/* 1. Cadran compte à rebours */}
-      {countdownSeconds !== undefined && (
-        <div className={cn("py-2 border-b flex justify-center", config.borderColor)}>
-          <CountdownDial secondsRemaining={countdownSeconds} totalSeconds={totalSeconds} />
-        </div>
+    <div
+      className={cn(
+        "mt-auto border-t bg-gradient-to-r shrink-0",
+        config.bgGradient,
+        config.borderColor
       )}
-
-      {/* 2. Toggles clair/sombre — centrés */}
-      <div className={cn("py-2 border-b flex justify-center", config.borderColor)}>
+    >
+      {/* Ligne 1 : Minuteur + Thème (compact) */}
+      <div className="flex items-center justify-center gap-2 py-1.5 px-2">
+        {countdownSeconds !== undefined && (
+          <CountdownDial
+            secondsRemaining={countdownSeconds}
+            totalSeconds={totalSeconds}
+            size="sm"
+          />
+        )}
         <ThemeToggle showLabel={false} />
       </div>
 
-      {/* 3. Qui est connecté */}
-      {userData && !isCollapsed && (
-        <div className={cn("p-3 border-b", config.borderColor)}>
-          <div className="flex items-center gap-3">
+      {/* Ligne 2 : Qui est connecté + Déconnexion */}
+      <div className="flex items-center gap-2 py-1.5 px-2 border-t border-slate-200/80 dark:border-slate-700/80">
+        {userData && (
+          <>
             <div
               className={cn(
-                "h-9 w-9 rounded-full bg-gradient-to-br flex items-center justify-center text-white font-bold text-base shadow-md shrink-0",
+                "h-7 w-7 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-xs font-bold shrink-0",
                 config.avatarGradient
               )}
+              title={userData.email}
             >
               {userData.email.charAt(0).toUpperCase()}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold truncate">
-                {userData.email.split("@")[0]}
-              </div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <div
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                <span className="text-xs font-medium truncate">
+                  {userData.email.split("@")[0]}
+                </span>
+                <span
                   className={cn(
-                    "px-2 py-0.5 rounded-full text-white text-[10px] font-bold",
+                    "px-1.5 py-0.5 rounded text-[9px] font-bold text-white shrink-0",
                     config.badgeColor
                   )}
                 >
                   {resolvedBadgeLabel}
-                </div>
-                <User className="h-3 w-3 text-muted-foreground" />
+                </span>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {userData && isCollapsed && (
-        <div className={cn("p-3 border-b flex justify-center", config.borderColor)}>
-          <div
-            className={cn(
-              "h-9 w-9 rounded-full bg-gradient-to-br flex items-center justify-center text-white font-bold text-base shadow-md",
-              config.avatarGradient
             )}
-            title={userData.email}
-          >
-            {userData.email.charAt(0).toUpperCase()}
-          </div>
-        </div>
-      )}
-
-      {/* 4. Bouton Se déconnecter avec pulse léger */}
-      <div className="p-3">
-        {!isCollapsed ? (
-          <Button
-            variant="outline"
-            onClick={onLogout}
-            className="w-full gap-2 rounded-xl border-slate-200 dark:border-slate-700 bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-300 transition-all duration-200 animate-pulse hover:animate-none"
-          >
-            <LogOut className="h-4 w-4 shrink-0" />
-            Se déconnecter
-          </Button>
-        ) : (
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onLogout}
-            title="Se déconnecter"
-            className="h-9 w-9 rounded-xl border-slate-200 dark:border-slate-700 bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 hover:border-red-200 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-300 transition-all duration-200 animate-pulse hover:animate-none"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
+          </>
         )}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onLogout}
+          title="Se déconnecter"
+          className={cn(
+            "h-8 w-8 shrink-0 rounded-lg border-slate-200 dark:border-slate-700",
+            "text-red-600 dark:text-red-400 hover:bg-red-50 hover:border-red-200",
+            "dark:hover:bg-red-950/40 dark:hover:border-red-800/60",
+            "transition-all duration-200 animate-pulse hover:animate-none",
+            !isCollapsed && "ml-auto"
+          )}
+        >
+          <LogOut className="h-3.5 w-3.5" />
+        </Button>
       </div>
     </div>
   );

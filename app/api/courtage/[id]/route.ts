@@ -2,11 +2,11 @@
  * PUT    /api/courtage/[id]  — modifie une compagnie
  * DELETE /api/courtage/[id]  — supprime une compagnie
  *
- * Accessible à tous les rôles authentifiés.
+ * PUT/PATCH/DELETE accessibles à tous les rôles authentifiés (CRUD sans distinction de rôle).
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAuth, verifyAdmin } from "@/lib/utils/auth-utils";
+import { verifyAuth } from "@/lib/utils/auth-utils";
 import { adminDb } from "@/lib/firebase/admin-config";
 import { normalizeCompanyName, sanitizeInternetLink } from "@/lib/utils/courtage-format";
 import type { CourtageFormData } from "@/types/courtage";
@@ -23,7 +23,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await verifyAdmin(request);
+  const auth = await verifyAuth(request);
   if (!auth.valid || !auth.userEmail) {
     return NextResponse.json({ error: auth.error ?? "Non autorisé" }, { status: 401 });
   }
@@ -126,7 +126,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await verifyAdmin(request);
+  const auth = await verifyAuth(request);
   if (!auth.valid) {
     return NextResponse.json({ error: auth.error ?? "Non autorisé" }, { status: 401 });
   }

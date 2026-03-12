@@ -3,6 +3,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -74,6 +75,9 @@ export function CourtageDetailModal({ item, open, onClose }: CourtageDetailModal
             )}
             {item.compagnie}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Détails et identifiants de la compagnie partenaire {item.compagnie}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-1">

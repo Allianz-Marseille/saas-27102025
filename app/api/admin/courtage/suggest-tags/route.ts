@@ -2,11 +2,11 @@
  * POST /api/admin/courtage/suggest-tags
  *
  * Analyse le nom + URL d'une compagnie avec Gemini et suggère des tags pertinents.
- * Réservé aux ADMINISTRATEUR.
+ * Accessible à tous les rôles authentifiés (IA sans distinction de rôle).
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdmin } from "@/lib/utils/auth-utils";
+import { verifyAuth } from "@/lib/utils/auth-utils";
 import { GoogleGenAI } from "@google/genai";
 
 const REFERENCE_TAGS = [
@@ -21,7 +21,7 @@ const REFERENCE_TAGS = [
 ];
 
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdmin(request);
+  const auth = await verifyAuth(request);
   if (!auth.valid) {
     return NextResponse.json({ error: auth.error ?? "Non autorisé" }, { status: 401 });
   }

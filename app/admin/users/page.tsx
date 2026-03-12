@@ -702,7 +702,14 @@ export default function UsersManagementPage() {
                 Créer un nouveau compte utilisateur avec un rôle spécifique
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleCreateUser();
+              }}
+              id="create-user-form"
+              className="space-y-4"
+            >
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -742,12 +749,12 @@ export default function UsersManagementPage() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
+            </form>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Annuler
               </Button>
-              <Button onClick={handleCreateUser}>
+              <Button type="submit" form="create-user-form">
                 <Plus className="mr-2 h-4 w-4" />
                 Créer
               </Button>
@@ -919,7 +926,14 @@ export default function UsersManagementPage() {
                 Définir un nouveau mot de passe pour {selectedUser?.email}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleResetPassword();
+              }}
+              id="reset-password-form"
+              className="space-y-4"
+            >
               <div className="space-y-2">
                 <Label htmlFor="new-password">Nouveau mot de passe</Label>
                 <PasswordInput
@@ -930,16 +944,21 @@ export default function UsersManagementPage() {
                   autoComplete="new-password"
                 />
               </div>
-            </div>
+            </form>
             <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setIsPasswordDialogOpen(false);
-                setNewPassword("");
-              }}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsPasswordDialogOpen(false);
+                  setNewPassword("");
+                }}
+              >
                 Annuler
               </Button>
-              <Button 
-                onClick={handleResetPassword}
+              <Button
+                type="submit"
+                form="reset-password-form"
                 disabled={!newPassword || newPassword.length < 6}
               >
                 <KeyRound className="mr-2 h-4 w-4" />

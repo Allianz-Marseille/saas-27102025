@@ -116,43 +116,50 @@ function TrelloListPicker({
       <p className="text-[10px] text-slate-600 dark:text-slate-500">
         Credentials temporaires (non sauvegardés) — utilisés uniquement pour lister les colonnes du board.
       </p>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1">
-          <Label className="text-xs text-slate-600 dark:text-slate-400">API Key</Label>
-          <Input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="Trello API Key"
-            className="h-7 text-xs bg-white border-slate-300 dark:bg-slate-800 dark:border-slate-700"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-slate-600 dark:text-slate-400">Token</Label>
-          <Input
-            type="password"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="Trello Token"
-            className="h-7 text-xs bg-white border-slate-300 dark:bg-slate-800 dark:border-slate-700"
-          />
-        </div>
-      </div>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={fetchLists}
-        disabled={loading || !boardId}
-        className="h-7 text-xs border-sky-300 text-sky-700 hover:bg-sky-100 dark:border-sky-700 dark:text-sky-300 dark:hover:bg-sky-900/40"
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          fetchLists();
+        }}
+        className="space-y-2"
       >
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs text-slate-600 dark:text-slate-400">API Key</Label>
+            <Input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="Trello API Key"
+              className="h-7 text-xs bg-white border-slate-300 dark:bg-slate-800 dark:border-slate-700"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-slate-600 dark:text-slate-400">Token</Label>
+            <Input
+              type="password"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="Trello Token"
+              className="h-7 text-xs bg-white border-slate-300 dark:bg-slate-800 dark:border-slate-700"
+            />
+          </div>
+        </div>
+        <Button
+          type="submit"
+          variant="outline"
+          size="sm"
+          disabled={loading || !boardId}
+          className="h-7 text-xs border-sky-300 text-sky-700 hover:bg-sky-100 dark:border-sky-700 dark:text-sky-300 dark:hover:bg-sky-900/40"
+        >
         {loading ? (
           <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
         ) : (
           <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
         )}
         {loading ? "Chargement…" : "Charger les colonnes"}
-      </Button>
+        </Button>
+      </form>
 
       {fetched && lists.length > 0 && (
         <div className="space-y-1">

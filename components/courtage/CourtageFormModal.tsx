@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -39,9 +40,7 @@ function isUrl(v?: string) {
 }
 
 export function CourtageFormModal({ open, onClose, onSaved, editItem }: CourtageFormModalProps) {
-  const { user, userData } = useAuth();
-  const isAdmin = userData?.role === "ADMINISTRATEUR";
-  const canSuggestAI = isAdmin;
+  const { user } = useAuth();
 
   const [form, setForm] = useState<CourtageFormData>(EMPTY_FORM);
   const [showPassword, setShowPassword] = useState(false);
@@ -139,33 +138,6 @@ export function CourtageFormModal({ open, onClose, onSaved, editItem }: Courtage
     setLoading(true);
     try {
       const token = await user?.getIdToken();
-
-      // ── Non-admin : PATCH tags uniquement ──────────────────────────────
-      if (!isAdmin) {
-        if (!editItem) { onClose(); return; }
-        const patchRes = await fetch(`/api/courtage/${editItem.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ tags }),
-        });
-        if (!patchRes.ok) {
-          const d = await patchRes.json();
-          throw new Error(d.error ?? "Erreur serveur");
-        }
-        const patchData = await patchRes.json();
-        const saved: Courtage = {
-          ...editItem,
-          tags: patchData.tags,
-          tagsUpdatedBy: patchData.tagsUpdatedBy,
-          tagsUpdatedAt: patchData.tagsUpdatedAt,
-        };
-        toast.success("Tags mis à jour.");
-        onSaved(saved);
-        onClose();
-        return;
-      }
-
-      // ── Admin : PUT/POST fiche + PATCH tags ───────────────────────────
       if (!form.compagnie.trim()) {
         toast.error("Le nom de la compagnie est requis.");
         return;
@@ -238,17 +210,22 @@ export function CourtageFormModal({ open, onClose, onSaved, editItem }: Courtage
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isAdmin
-              ? (editItem ? "Modifier la compagnie" : "Nouvelle compagnie")
-              : `Tags — ${editItem?.compagnie ?? ""}`}
+            {editItem ? "Modifier la compagnie" : "Nouvelle compagnie"}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {editItem ? "Modifier les informations et tags de la compagnie" : "Créer une nouvelle compagnie partenaire"}
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          {/* Champs compagnie (admin seulement) */}
-          {isAdmin && (
-            <>
-              {/* Compagnie */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+          className="space-y-4 py-2"
+          id="courtage-form"
+        >
+          {/* Compagnie */}
               <div className="space-y-1.5">
                 <Label htmlFor="compagnie">Compagnie *</Label>
                 <Input
@@ -335,28 +312,24 @@ export function CourtageFormModal({ open, onClose, onSaved, editItem }: Courtage
                 />
               </div>
 
-              {/* Séparateur */}
-              <div className="border-t pt-1" />
-            </>
-          )}
+          {/* Séparateur */}
+          <div className="border-t pt-1" />
 
           {/* Tags */}
-          <div className="space-y-2">
+            <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Points forts / Tags</Label>
-              {canSuggestAI && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40"
-                  onClick={handleSuggestTags}
-                  disabled={suggesting}
-                >
-                  {suggesting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                  Suggérer avec IA
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40"
+                onClick={handleSuggestTags}
+                disabled={suggesting}
+              >
+                {suggesting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                Suggérer avec IA
+              </Button>
             </div>
 
             {/* Suggestions IA */}
@@ -411,15 +384,15 @@ export function CourtageFormModal({ open, onClose, onSaved, editItem }: Courtage
               Entrée ou virgule pour valider · saisie libre · accessible à tous
             </p>
           </div>
-        </div>
+        </form>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={loading}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
+          <Button type="submit" form="courtage-form" disabled={loading}>
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {isAdmin ? (editItem ? "Enregistrer" : "Créer") : "Enregistrer les tags"}
+            {editItem ? "Enregistrer" : "Créer"}
           </Button>
         </DialogFooter>
       </DialogContent>
