@@ -101,6 +101,7 @@ export default function CourtagePage() {
   const [deleting, setDeleting] = useState(false);
 
   const [importing, setImporting] = useState(false);
+  const [autoImportDone, setAutoImportDone] = useState(false);
 
   const fetchItems = async () => {
     try {
@@ -169,7 +170,7 @@ export default function CourtagePage() {
     }
   };
 
-  const handleImport = async () => {
+  const runInitialImport = async (silent = false) => {
     setImporting(true);
     try {
       const token = await user?.getIdToken();
@@ -179,14 +180,29 @@ export default function CourtagePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erreur serveur");
-      toast.success(data.message);
+      if (!silent) {
+        toast.success(data.message);
+      }
       await fetchItems();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erreur lors de l'import");
+      if (!silent) {
+        toast.error(err instanceof Error ? err.message : "Erreur lors de l'import");
+      }
     } finally {
       setImporting(false);
     }
   };
+
+  const handleImport = async () => {
+    await runInitialImport(false);
+  };
+
+  useEffect(() => {
+    if (!user || !isAdmin || loading || items.length > 0 || importing || autoImportDone) return;
+    setAutoImportDone(true);
+    void runInitialImport(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isAdmin, loading, items.length, importing, autoImportDone]);
 
   return (
     <div className="space-y-6">
