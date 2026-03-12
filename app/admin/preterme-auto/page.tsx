@@ -32,6 +32,7 @@ import { SocietesValidationStep } from "@/components/preterme/SocietesValidation
 import { TypeValidationStep } from "@/components/preterme/TypeValidationStep";
 import { DispatchPreview } from "@/components/preterme/DispatchPreview";
 import { SynthesisReport } from "@/components/preterme/SynthesisReport";
+import { StepperTimeline } from "@/components/preterme/StepperTimeline";
 import type {
   PretermeConfig, AgenceConfig, AgenceCode, PretermeClient,
   PretermeImport, PretermeWorkflowStep,
@@ -578,94 +579,17 @@ export default function PretermeAutoPage() {
         </Badge>
       </div>
 
+      {/* ── Timeline stepper ── */}
+      <StepperTimeline
+        steps={STEPS}
+        currentStep={step}
+        completedSteps={completedSteps}
+        derivedDone={derivedDoneByStatus}
+        canAccess={canAccessStep}
+        onStepClick={setStep}
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* ── Sidebar ── */}
-        <div className="lg:col-span-1 space-y-4">
-          <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
-            <CardContent className="p-4 space-y-1">
-              {STEPS.map((s, i) => {
-                const isActive  = step === s.id;
-                const isDone    = completedSteps[s.id] || derivedDoneByStatus[s.id] || false;
-                const accessible = canAccessStep(s.id);
-                const Icon = s.icon;
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => accessible && setStep(s.id)}
-                    disabled={!accessible}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm transition-colors",
-                      isActive
-                        ? "bg-sky-100 text-sky-700 font-medium dark:bg-sky-950/60 dark:text-sky-300"
-                        : accessible
-                        ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50"
-                        : "text-slate-400 dark:text-slate-600 cursor-not-allowed"
-                    )}
-                  >
-                    <div className={cn(
-                      "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                      isDone
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-300"
-                        : isActive
-                        ? "bg-sky-200 text-sky-700 dark:bg-sky-700 dark:text-sky-200"
-                        : accessible
-                        ? "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
-                        : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600"
-                    )}>
-                      {isDone ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
-                    </div>
-                    <Icon className="h-3.5 w-3.5 shrink-0 opacity-60" />
-                    <span>{s.label}</span>
-                    {!accessible && <Clock className="h-3 w-3 ml-auto text-slate-400 dark:text-slate-600" />}
-                  </button>
-                );
-              })}
-            </CardContent>
-          </Card>
-
-          {/* Historique */}
-          <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <CardTitle className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-                <History className="h-3.5 w-3.5" /> Configs précédentes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4 space-y-1.5">
-              {loadingHistory ? (
-                <p className="text-xs text-slate-500 dark:text-slate-600">Chargement...</p>
-              ) : historique.length === 0 ? (
-                <p className="text-xs text-slate-500 dark:text-slate-600">Aucun cycle enregistré</p>
-              ) : (
-                historique.slice(0, 6).map((h) => (
-                  <div
-                    key={h.id}
-                    className="flex items-center justify-between text-xs px-2 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                  >
-                    <button
-                      onClick={() => { setMoisKey(h.moisKey); setStep("periode"); }}
-                      className="text-slate-700 dark:text-slate-300 text-left flex-1 truncate"
-                    >
-                      {formatMoisLabel(h.moisKey)}
-                    </button>
-                    <div className="flex items-center gap-1.5 ml-2 shrink-0">
-                      {h.valide
-                        ? <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                        : <Clock className="h-3 w-3 text-amber-500" />}
-                      <Link
-                        href={`/admin/preterme-auto/historique/${h.moisKey}`}
-                        className="text-sky-500 hover:text-sky-400 transition-colors"
-                        title="Voir le détail"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                      </Link>
-                    </div>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
         {/* ── Contenu principal ── */}
         <div className="lg:col-span-3">
 
@@ -1029,6 +953,50 @@ export default function PretermeAutoPage() {
             </div>
           )}
 
+        </div>
+
+        {/* ── Historique ── */}
+        <div className="lg:col-span-1">
+          <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                <History className="h-3.5 w-3.5" /> Cycles précédents
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 space-y-1.5">
+              {loadingHistory ? (
+                <p className="text-xs text-slate-500 dark:text-slate-600">Chargement...</p>
+              ) : historique.length === 0 ? (
+                <p className="text-xs text-slate-500 dark:text-slate-600">Aucun cycle enregistré</p>
+              ) : (
+                historique.slice(0, 6).map((h) => (
+                  <div
+                    key={h.id}
+                    className="flex items-center justify-between text-xs px-2 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <button
+                      onClick={() => { setMoisKey(h.moisKey); setStep("periode"); }}
+                      className="text-slate-700 dark:text-slate-300 text-left flex-1 truncate capitalize"
+                    >
+                      {formatMoisLabel(h.moisKey)}
+                    </button>
+                    <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                      {h.valide
+                        ? <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                        : <Clock className="h-3 w-3 text-amber-500" />}
+                      <Link
+                        href={`/admin/preterme-auto/historique/${h.moisKey}`}
+                        className="text-sky-500 hover:text-sky-400 transition-colors"
+                        title="Voir le détail"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
