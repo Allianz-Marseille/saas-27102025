@@ -43,7 +43,7 @@ const TRELLO_CONFIG = {
         {
           id: 'ken-emma',
           firstName: 'Emma',
-          letters: ['D', 'E', 'F'],
+          letters: ['D', 'E', 'F', 'G', 'H', 'I'],
           boardId: 'DkhXnVU8',
           lists: {
             processM3:    '676a80ed876c6ba57ce79e64',
@@ -54,7 +54,7 @@ const TRELLO_CONFIG = {
         {
           id: 'ken-donia',
           firstName: 'Donia',
-          letters: ['N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
+          letters: ['J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
           boardId: 'yYu4W7FJ',
           lists: {
             processM3:    '684830582071a3a26db4e6c1',
