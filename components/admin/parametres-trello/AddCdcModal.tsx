@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Link, ChevronDown, Loader2, RefreshCw } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { X, Link, Loader2, RefreshCw } from 'lucide-react'
 import { CDC, Agency } from '@/lib/trello-config/types'
 import { AlphabetGrid } from './AlphabetGrid'
 import { CDC_AVATAR_COLORS } from '@/lib/trello-config/constants'
@@ -47,9 +47,6 @@ export function AddCdcModal({ open, agency, initial, cdcIndex = 0, onClose, onSu
   const [lists, setLists] = useState(initial?.lists ?? EMPTY_LISTS)
 
   // Trello fetch state
-  const [showFetch, setShowFetch] = useState(false)
-  const [apiKey, setApiKey] = useState('')
-  const [token, setToken] = useState('')
   const [fetchedLists, setFetchedLists] = useState<{ id: string; name: string }[]>([])
   const [fetching, setFetching] = useState(false)
   const [fetchError, setFetchError] = useState('')
@@ -63,22 +60,20 @@ export function AddCdcModal({ open, agency, initial, cdcIndex = 0, onClose, onSu
       setBoardUrl(initial?.boardId ? `https://trello.com/b/${initial.boardId}` : '')
       setLetters(initial?.letters ?? [])
       setLists(initial?.lists ?? EMPTY_LISTS)
-      setShowFetch(false)
       setFetchedLists([])
       setFetchError('')
     }
   }, [open, initial])
 
   async function fetchLists() {
-    if (!boardId || !apiKey || !token) return
+    if (!boardId) return
     setFetching(true)
     setFetchError('')
     try {
-      const res = await fetch(`/api/admin/trello/lists?boardId=${boardId}&apiKey=${apiKey}&token=${token}`)
+      const res = await fetch(`/api/admin/trello/lists?boardId=${boardId}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Erreur inconnue')
       setFetchedLists(data.lists)
-      // Auto-match par nom de colonne
       setLists(autoMatch(data.lists))
     } catch (err: unknown) {
       setFetchError(err instanceof Error ? err.message : 'Erreur inconnue')
@@ -191,64 +186,19 @@ export function AddCdcModal({ open, agency, initial, cdcIndex = 0, onClose, onSu
                   {boardId && (
                     <button
                       type="button"
-                      onClick={() => setShowFetch(v => !v)}
-                      className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                      onClick={fetchLists}
+                      disabled={fetching}
+                      className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 disabled:opacity-40 transition-colors"
                     >
-                      <RefreshCw className="h-3 w-3" />
-                      Récupérer les colonnes
-                      <ChevronDown className={`h-3 w-3 transition-transform ${showFetch ? 'rotate-180' : ''}`} />
+                      {fetching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                      {fetching ? 'Chargement…' : 'Récupérer les colonnes'}
                     </button>
                   )}
                 </div>
 
-                {/* Section fetch credentials */}
-                <AnimatePresence>
-                  {showFetch && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="bg-slate-800/60 border border-slate-700 rounded-lg p-3 space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <p className="text-[10px] text-slate-500 mb-1">API Key Trello</p>
-                            <input
-                              value={apiKey}
-                              onChange={e => setApiKey(e.target.value)}
-                              placeholder="API Key"
-                              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white font-mono placeholder-slate-600 focus:outline-none focus:border-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-slate-500 mb-1">Token Trello</p>
-                            <input
-                              value={token}
-                              onChange={e => setToken(e.target.value)}
-                              placeholder="Token"
-                              type="password"
-                              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white font-mono placeholder-slate-600 focus:outline-none focus:border-blue-500"
-                            />
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={fetchLists}
-                          disabled={fetching || !apiKey || !token}
-                          className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-blue-600/20 text-blue-400 text-xs hover:bg-blue-600/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                        >
-                          {fetching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                          {fetching ? 'Chargement…' : 'Charger les colonnes'}
-                        </button>
-                        {fetchError && (
-                          <p className="text-xs text-red-400">{fetchError}</p>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {fetchError && (
+                  <p className="text-xs text-red-400">{fetchError}</p>
+                )}
 
                 {/* Dropdowns si colonnes récupérées, sinon inputs manuels */}
                 <div className="grid grid-cols-3 gap-2">

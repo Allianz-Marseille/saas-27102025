@@ -10,11 +10,14 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url)
   const boardId = searchParams.get('boardId')
-  const apiKey = searchParams.get('apiKey')
-  const token = searchParams.get('token')
+  const apiKey = process.env.TRELLO_API_KEY
+  const token = process.env.TRELLO_TOKEN
 
-  if (!boardId || !apiKey || !token) {
-    return NextResponse.json({ error: 'Paramètres manquants : boardId, apiKey, token' }, { status: 400 })
+  if (!boardId) {
+    return NextResponse.json({ error: 'Paramètre manquant : boardId' }, { status: 400 })
+  }
+  if (!apiKey || !token) {
+    return NextResponse.json({ error: 'TRELLO_API_KEY ou TRELLO_TOKEN manquant dans les variables d\'environnement' }, { status: 500 })
   }
 
   const url = `https://api.trello.com/1/boards/${boardId}/lists?fields=id,name,closed&key=${apiKey}&token=${token}`
