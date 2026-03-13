@@ -52,11 +52,6 @@ const TRELLO_CONFIG = {
           },
         },
         {
-          id: 'ken-matthieu',
-          firstName: 'Matthieu',
-          letters: ['G', 'H', 'I', 'J', 'K', 'L', 'M'],
-        },
-        {
           id: 'ken-donia',
           firstName: 'Donia',
           letters: ['N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
