@@ -2,13 +2,17 @@
 
 ## Statut
 
-| Date       | Décision                                          |
-|------------|---------------------------------------------------|
-| 2026-03-13 | Données réelles validées (Kennedy + Rouvière)     |
-| 2026-03-13 | Schéma Firestore arrêté (document unique)         |
-| 2026-03-13 | Design UI/UX validé (split-panel + grille A–Z)    |
-| 2026-03-13 | Architecture fichiers définie                     |
-| 2026-03-13 | Stack technique confirmée                         |
+| Date       | Décision                                                                 |
+|------------|--------------------------------------------------------------------------|
+| 2026-03-13 | Données réelles validées (Kennedy + Rouvière)                            |
+| 2026-03-13 | Schéma Firestore arrêté (document unique)                                |
+| 2026-03-13 | Design UI/UX validé (split-panel + grille A–Z)                          |
+| 2026-03-13 | Architecture fichiers définie                                            |
+| 2026-03-13 | Stack technique confirmée                                                |
+| 2026-03-13 | URLs tableaux Trello collaborateurs ajoutées                             |
+| 2026-03-13 | List IDs colonnes récupérés via API Trello (M+3 / AUTO / IARD)          |
+| 2026-03-13 | AddCdcModal : extraction Board ID depuis URL + fetch colonnes automatique |
+| 2026-03-13 | API route `/api/admin/trello/lists` — credentials depuis env vars        |
 
 > Ce fichier est relu au début de chaque session Cursor / Claude Code pour reprendre le contexte.
 
@@ -36,42 +40,71 @@ Actions : ajouter, modifier, supprimer une agence
 
 **Agence Kennedy**
 
-| CDC      | Lettres | Board ID | URL du tableau Trello                                        |
-|----------|---------|----------|--------------------------------------------------------------|
-| Corentin | A – C   | 816      | https://trello.com/b/nfhDBmQg/corentin                      |
-| Emma     | D – F   | 417      | https://trello.com/b/DkhXnVU8/emma                          |
-| Matthieu | G – M   | 876      | —                                                            |
-| Donia    | N – Z   | 825      | https://trello.com/b/yYu4W7FJ/donia                         |
+| CDC      | Lettres | Board ID    | URL du tableau Trello                   |
+|----------|---------|-------------|-----------------------------------------|
+| Corentin | A – C   | `nfhDBmQg`  | https://trello.com/b/nfhDBmQg/corentin  |
+| Emma     | D – F   | `DkhXnVU8`  | https://trello.com/b/DkhXnVU8/emma      |
+| Matthieu | G – M   | —           | —                                       |
+| Donia    | N – Z   | `yYu4W7FJ`  | https://trello.com/b/yYu4W7FJ/donia     |
 
 **Agence Rouvière**
 
-| CDC        | Lettres | Board ID | URL du tableau Trello                                        |
-|------------|---------|----------|--------------------------------------------------------------|
-| Joelle     | A – H   | 750      | https://trello.com/b/3oWnNHUr/joelle                        |
-| Christelle | I – Z   | 721      | https://trello.com/b/IexKz87i/christelle                    |
+| CDC        | Lettres | Board ID    | URL du tableau Trello                      |
+|------------|---------|-------------|--------------------------------------------|
+| Joelle     | A – H   | `3oWnNHUr`  | https://trello.com/b/3oWnNHUr/joelle       |
+| Christelle | I – Z   | `IexKz87i`  | https://trello.com/b/IexKz87i/christelle   |
 
 ---
 
-## URLs des tableaux Trello — Collaborateurs
+## Données réelles Trello — Collaborateurs
 
-> Section de référence pour récupérer les Board IDs réels via l'API Trello (`GET /1/boards/{boardId}` avec `.json` en suffixe d'URL).
+> List IDs récupérés via `GET /api/admin/trello/lists` le 2026-03-13. Credentials stockés dans `.env.local` (`TRELLO_API_KEY`, `TRELLO_TOKEN`).
 
 ### Agence Kennedy
 
-| CDC      | URL Trello                                                                          | Board ID (à extraire) |
-|----------|-------------------------------------------------------------------------------------|----------------------|
-| Corentin | https://trello.com/b/nfhDBmQg/corentin                                              | `nfhDBmQg`           |
-| Emma     | https://trello.com/b/DkhXnVU8/emma                                                  | `DkhXnVU8`           |
-| Donia    | https://trello.com/b/yYu4W7FJ/donia                                                 | `yYu4W7FJ`           |
+**Corentin** — Board ID : `nfhDBmQg` — https://trello.com/b/nfhDBmQg/corentin
+
+| Colonne       | List ID                    |
+|---------------|----------------------------|
+| M+3           | `67b5f1c185fe56bcbc836efa` |
+| Préterme AUTO | `67b5f1c697b2440733fec2e6` |
+| Préterme IARD | `67b5f1cc0a8afcaca6cd606f` |
+
+**Emma** — Board ID : `DkhXnVU8` — https://trello.com/b/DkhXnVU8/emma
+
+| Colonne       | List ID                    |
+|---------------|----------------------------|
+| M+3           | `676a80ed876c6ba57ce79e64` |
+| Préterme AUTO | `687a58ffda5f06e009db8ad5` |
+| Préterme IARD | `687a59067f1178246c263732` |
+
+**Donia** — Board ID : `yYu4W7FJ` — https://trello.com/b/yYu4W7FJ/donia
+
+| Colonne       | List ID                    |
+|---------------|----------------------------|
+| M+3           | `684830582071a3a26db4e6c1` |
+| Préterme AUTO | `6848305df08bc5e50d5cabd4` |
+| Préterme IARD | `6848306555a6640697bea7ef` |
 
 ### Agence Rouvière
 
-| CDC        | URL Trello                                                                        | Board ID (à extraire) |
-|------------|-----------------------------------------------------------------------------------|----------------------|
-| Joelle     | https://trello.com/b/3oWnNHUr/joelle                                              | `3oWnNHUr`           |
-| Christelle | https://trello.com/b/IexKz87i/christelle                                          | `IexKz87i`           |
+**Joelle** — Board ID : `3oWnNHUr` — https://trello.com/b/3oWnNHUr/joelle
 
-> **Note** : Le Board ID dans l'URL Trello (ex: `nfhDBmQg`) est l'identifiant court. L'API Trello retourne un ID long différent — utiliser le short ID dans la config Firestore suffit pour les appels API (`/1/boards/{shortId}/lists`).
+| Colonne       | List ID                    |
+|---------------|----------------------------|
+| M+3           | `66f0f7ed9464370f143288e1` |
+| Préterme AUTO | `66f0f7f5b5637967d3526f61` |
+| Préterme IARD | `66f0f7fc15019fe80a3486a5` |
+
+**Christelle** — Board ID : `IexKz87i` — https://trello.com/b/IexKz87i/christelle
+
+| Colonne       | List ID                    |
+|---------------|----------------------------|
+| M+3           | `696e08d17fb0c0bd53e42097` |
+| Préterme AUTO | `696e08d97fb0c0bd53e4398a` |
+| Préterme IRD  | `696e08e102b522306fd1d710` |
+
+> ⚠️ Christelle a des colonnes dupliquées (`M+3 / ASTRID`, `PRETERME AUTO / ASTRID`) — celles retenues sont les plus récentes (sans `/ASTRID`).
 
 ---
 
@@ -207,23 +240,30 @@ Chaque CDC = une card avec :
   /admin
     /parametres-trello
       page.tsx                    ← server component, accès ADMINISTRATEUR
+  /api
+    /admin
+      /trello
+        /lists
+          route.ts                ← GET ?boardId= → colonnes ouvertes (credentials via env vars)
 
 /components
   /admin
     /parametres-trello
       AgencySidebar.tsx           ← liste agences + bouton ajout
       AgencyPanel.tsx             ← panel principal + AnimatePresence
-      CdcCard.tsx                 ← carte CDC complète
+      CdcCard.tsx                 ← carte CDC complète (bordure orange/vert)
       AlphabetGrid.tsx            ← grille A–Z (taken/active/libre)
       CoverageBar.tsx             ← barre progression couverture
       AddAgencyModal.tsx          ← dialog ajout/modif agence
       AddCdcModal.tsx             ← dialog ajout/modif CDC
+                                     • URL Trello → Board ID extrait auto
+                                     • Bouton "Récupérer les colonnes" → dropdowns auto-matchés
 
 /lib
   /trello-config
     types.ts                      ← interfaces Agency, CDC, TrelloLists
     hooks.ts                      ← useTrelloConfig() — Firestore temps réel
-    validators.ts                 ← validateCoverage(), routeClient()
+    validators.ts                 ← validateCoverage(), routeClient(), isTrelloComplete()
     constants.ts                  ← ALPHABET, CDC_COLORS, AGENCIES
 ```
 
