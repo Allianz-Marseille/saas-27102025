@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
-import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Zap, Bot, Car, Shield, BookOpen, CalendarClock } from "lucide-react";
+import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, Zap, Bot, Car, Shield, BookOpen, CalendarClock, Settings2 } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { MobileMenu } from "@/components/navigation/mobile-menu";
 import { ResponsiveHeader } from "@/components/navigation/responsive-header";
@@ -27,14 +27,15 @@ const adminNavItems = [
   { href: "/admin/boost", label: "Boost", icon: Zap },
   { href: "/admin/commissions-agence", label: "Commissions Agence", icon: Coins },
   // Process
-  { href: "/admin/preterme-auto", label: "Prétermes Auto", icon: Car },
-  { href: "/admin/preterme-ird", label: "Prétermes IARD", icon: Shield },
+  { href: "/admin/preterme-auto", label: "Prétermes Auto", icon: Car, comingSoon: true },
+  { href: "/admin/preterme-ird", label: "Prétermes IARD", icon: Shield, comingSoon: true },
   { href: "/admin/mplus3", label: "M+3", icon: CalendarClock, comingSoon: true },
   { href: "/commun/process", label: "Nos Procédures", icon: Workflow },
   // Ressources
   { href: "/commun/outils", label: "Outils", icon: Wrench },
   { href: "/commun/agents-ia", label: "Mes agents IA", icon: Bot, badge: "en formation" },
   { href: "/commun/courtage", label: "Courtage", icon: BookOpen },
+  { href: "/admin/parametres-trello", label: "Paramètres Trello", icon: Settings2 },
   { href: "/admin/companies", label: "Compagnies", icon: Building2 },
   { href: "/admin/users", label: "Utilisateurs", icon: Users },
   { href: "/admin/logs", label: "Journal des logs", icon: ScrollText },
