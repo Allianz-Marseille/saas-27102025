@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     // Pagination Slack (max 1000 par page)
     do {
       const params = new URLSearchParams({
-        types: 'public_channel,private_channel',
+        types: 'public_channel',
         limit: '1000',
         exclude_archived: 'true',
       })
