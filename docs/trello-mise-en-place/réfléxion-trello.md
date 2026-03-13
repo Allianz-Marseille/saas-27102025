@@ -36,19 +36,42 @@ Actions : ajouter, modifier, supprimer une agence
 
 **Agence Kennedy**
 
-| CDC      | Lettres | Board ID |
-|----------|---------|----------|
-| Corentin | A – C   | 816      |
-| Emma     | D – F   | 417      |
-| Matthieu | G – M   | 876      |
-| Donia    | N – Z   | 825      |
+| CDC      | Lettres | Board ID | URL du tableau Trello                                        |
+|----------|---------|----------|--------------------------------------------------------------|
+| Corentin | A – C   | 816      | https://trello.com/b/nfhDBmQg/corentin                      |
+| Emma     | D – F   | 417      | https://trello.com/b/DkhXnVU8/emma                          |
+| Matthieu | G – M   | 876      | —                                                            |
+| Donia    | N – Z   | 825      | https://trello.com/b/yYu4W7FJ/donia                         |
 
 **Agence Rouvière**
 
-| CDC        | Lettres | Board ID |
-|------------|---------|----------|
-| Joelle     | A – H   | 750      |
-| Christelle | I – Z   | 721      |
+| CDC        | Lettres | Board ID | URL du tableau Trello                                        |
+|------------|---------|----------|--------------------------------------------------------------|
+| Joelle     | A – H   | 750      | https://trello.com/b/3oWnNHUr/joelle                        |
+| Christelle | I – Z   | 721      | https://trello.com/b/IexKz87i/christelle                    |
+
+---
+
+## URLs des tableaux Trello — Collaborateurs
+
+> Section de référence pour récupérer les Board IDs réels via l'API Trello (`GET /1/boards/{boardId}` avec `.json` en suffixe d'URL).
+
+### Agence Kennedy
+
+| CDC      | URL Trello                                                                          | Board ID (à extraire) |
+|----------|-------------------------------------------------------------------------------------|----------------------|
+| Corentin | https://trello.com/b/nfhDBmQg/corentin                                              | `nfhDBmQg`           |
+| Emma     | https://trello.com/b/DkhXnVU8/emma                                                  | `DkhXnVU8`           |
+| Donia    | https://trello.com/b/yYu4W7FJ/donia                                                 | `yYu4W7FJ`           |
+
+### Agence Rouvière
+
+| CDC        | URL Trello                                                                        | Board ID (à extraire) |
+|------------|-----------------------------------------------------------------------------------|----------------------|
+| Joelle     | https://trello.com/b/3oWnNHUr/joelle                                              | `3oWnNHUr`           |
+| Christelle | https://trello.com/b/IexKz87i/christelle                                          | `IexKz87i`           |
+
+> **Note** : Le Board ID dans l'URL Trello (ex: `nfhDBmQg`) est l'identifiant court. L'API Trello retourne un ID long différent — utiliser le short ID dans la config Firestore suffit pour les appels API (`/1/boards/{shortId}/lists`).
 
 ---
 

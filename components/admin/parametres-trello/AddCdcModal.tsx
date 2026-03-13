@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X } from 'lucide-react'
+import { X, Link } from 'lucide-react'
 import { CDC, Agency } from '@/lib/trello-config/types'
 import { AlphabetGrid } from './AlphabetGrid'
 import { CDC_AVATAR_COLORS } from '@/lib/trello-config/constants'
@@ -18,16 +18,24 @@ interface Props {
 
 const EMPTY_LISTS = { processM3: '', pretermeAuto: '', pretermeIrd: '' }
 
+function extractBoardId(input: string): string {
+  const match = input.match(/trello\.com\/b\/([A-Za-z0-9]+)/)
+  return match ? match[1] : input.trim()
+}
+
 export function AddCdcModal({ open, agency, initial, cdcIndex = 0, onClose, onSubmit }: Props) {
   const [firstName, setFirstName] = useState(initial?.firstName ?? '')
-  const [boardId, setBoardId] = useState(initial?.boardId ?? '')
+  const [boardUrl, setBoardUrl] = useState(initial?.boardId ? `https://trello.com/b/${initial.boardId}` : '')
   const [letters, setLetters] = useState<string[]>(initial?.letters ?? [])
   const [lists, setLists] = useState(initial?.lists ?? EMPTY_LISTS)
+
+  const boardId = extractBoardId(boardUrl)
+  const isBoardIdExtracted = boardUrl.includes('trello.com') && !!boardId
 
   useEffect(() => {
     if (open) {
       setFirstName(initial?.firstName ?? '')
-      setBoardId(initial?.boardId ?? '')
+      setBoardUrl(initial?.boardId ? `https://trello.com/b/${initial.boardId}` : '')
       setLetters(initial?.letters ?? [])
       setLists(initial?.lists ?? EMPTY_LISTS)
     }
@@ -46,7 +54,7 @@ export function AddCdcModal({ open, agency, initial, cdcIndex = 0, onClose, onSu
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!firstName.trim()) return
-    onSubmit({ firstName: capitalizeFirst(firstName.trim()), boardId: boardId.trim(), letters, lists })
+    onSubmit({ firstName: capitalizeFirst(firstName.trim()), boardId, letters, lists })
     onClose()
   }
 
@@ -80,26 +88,37 @@ export function AddCdcModal({ open, agency, initial, cdcIndex = 0, onClose, onSu
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Prénom + Board ID */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-slate-400 mb-1.5">Prénom CDC</label>
+              {/* Prénom */}
+              <div>
+                <label className="block text-xs text-slate-400 mb-1.5">Prénom CDC</label>
+                <input
+                  value={firstName}
+                  onChange={e => setFirstName(capitalizeFirst(e.target.value))}
+                  placeholder="ex: Corentin"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* URL Trello → Board ID auto */}
+              <div>
+                <label className="block text-xs text-slate-400 mb-1.5">URL du tableau Trello</label>
+                <div className="relative">
+                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
                   <input
-                    value={firstName}
-                    onChange={e => setFirstName(capitalizeFirst(e.target.value))}
-                    placeholder="ex: Corentin"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                    value={boardUrl}
+                    onChange={e => setBoardUrl(e.target.value)}
+                    placeholder="https://trello.com/b/nfhDBmQg/corentin"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-8 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs text-slate-400 mb-1.5">Board ID Trello</label>
-                  <input
-                    value={boardId}
-                    onChange={e => setBoardId(e.target.value)}
-                    placeholder="ex: 816"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
+                {boardUrl && (
+                  <p className="mt-1.5 text-xs font-mono">
+                    {isBoardIdExtracted
+                      ? <span className="text-green-400">Board ID extrait : <span className="text-white">{boardId}</span></span>
+                      : <span className="text-slate-400">Board ID : <span className="text-white">{boardId}</span></span>
+                    }
+                  </p>
+                )}
               </div>
 
               {/* Lettres */}
