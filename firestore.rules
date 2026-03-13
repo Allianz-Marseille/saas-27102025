@@ -218,6 +218,11 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
     
+    // Config globale (ex: config/trello) — accès admin uniquement
+    match /config/{docId} {
+      allow read, write: if isAdmin();
+    }
+
     // Prétermes Auto — collections admin uniquement
     match /preterme_configs/{docId} {
       allow read, write: if isAdmin();
