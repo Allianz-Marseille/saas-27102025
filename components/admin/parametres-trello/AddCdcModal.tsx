@@ -148,7 +148,7 @@ export function AddCdcModal({ open, agency, initial, cdcIndex = 0, onClose, onSu
                   <input
                     value={boardUrl}
                     onChange={e => setBoardUrl(e.target.value)}
-                    placeholder="https://trello.com/b/nfhDBmQg/corentin"
+                    placeholder={`https://trello.com/b/xxxxxxxx/${firstName.toLowerCase() || 'prenom'}`}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-8 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                   />
                 </div>
