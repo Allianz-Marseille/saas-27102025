@@ -45,7 +45,7 @@ export function AddCdcModal({ open, agency, initial, cdcIndex = 0, onClose, onSu
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!firstName.trim() || !boardId.trim()) return
+    if (!firstName.trim()) return
     onSubmit({ firstName: capitalizeFirst(firstName.trim()), boardId: boardId.trim(), letters, lists })
     onClose()
   }
@@ -151,7 +151,7 @@ export function AddCdcModal({ open, agency, initial, cdcIndex = 0, onClose, onSu
                 </button>
                 <button
                   type="submit"
-                  disabled={!firstName.trim() || !boardId.trim()}
+                  disabled={!firstName.trim()}
                   className="flex-1 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   {initial ? 'Enregistrer' : 'Ajouter'}

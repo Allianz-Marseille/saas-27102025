@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { Pencil, Trash2 } from 'lucide-react'
 import { CDC, Agency } from '@/lib/trello-config/types'
 import { CDC_AVATAR_COLORS, ALPHABET } from '@/lib/trello-config/constants'
-import { getLetterOwner } from '@/lib/trello-config/validators'
+import { getLetterOwner, isTrelloComplete } from '@/lib/trello-config/validators'
 import { AddCdcModal } from './AddCdcModal'
 
 interface Props {
@@ -25,11 +25,13 @@ export function CdcCard({ cdc, cdcIndex, agency, onUpdate, onDelete }: Props) {
       ? 'Aucune lettre'
       : `${cdc.letters[0]} – ${cdc.letters[cdc.letters.length - 1]}`
 
+  const trelloOk = isTrelloComplete(cdc)
+
   return (
     <>
       <motion.div
         layout
-        className="bg-slate-800/60 border border-slate-700 rounded-xl p-4 space-y-4"
+        className={`bg-slate-800/60 border rounded-xl p-4 space-y-4 ${trelloOk ? 'border-green-500/50' : 'border-orange-500/50'}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -39,10 +41,13 @@ export function CdcCard({ cdc, cdcIndex, agency, onUpdate, onDelete }: Props) {
             </div>
             <div>
               <p className="text-sm font-semibold text-white">{cdc.firstName}</p>
-              <p className="text-xs text-slate-400 font-mono">{letterRange} · board {cdc.boardId}</p>
+              <p className="text-xs text-slate-400 font-mono">{letterRange}</p>
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${trelloOk ? 'bg-green-500/15 text-green-400' : 'bg-orange-500/15 text-orange-400'}`}>
+              {trelloOk ? 'Trello OK' : 'Trello manquant'}
+            </span>
             <button
               onClick={() => setEditing(true)}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
@@ -90,7 +95,7 @@ export function CdcCard({ cdc, cdcIndex, agency, onUpdate, onDelete }: Props) {
             <div key={key} className="bg-slate-900/60 rounded-lg px-2 py-1.5">
               <p className="text-[10px] text-slate-500">{label}</p>
               <p className="text-xs font-mono text-slate-300 truncate">
-                {cdc.lists[key as keyof typeof cdc.lists] || <span className="text-slate-600">—</span>}
+                {cdc.lists?.[key as keyof typeof cdc.lists] || <span className="text-slate-600">—</span>}
               </p>
             </div>
           ))}

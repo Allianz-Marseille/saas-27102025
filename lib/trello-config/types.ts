@@ -8,8 +8,8 @@ export interface CDC {
   id: string
   firstName: string
   letters: string[]
-  boardId: string
-  lists: TrelloLists
+  boardId?: string
+  lists?: TrelloLists
 }
 
 export interface Agency {

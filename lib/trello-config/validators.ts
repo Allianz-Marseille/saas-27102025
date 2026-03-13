@@ -26,6 +26,15 @@ export function getLetterOwner(letter: string, agency: Agency, excludeCdcId?: st
   ) ?? null
 }
 
+export function isTrelloComplete(cdc: CDC): boolean {
+  return !!(
+    cdc.boardId?.trim() &&
+    cdc.lists?.processM3?.trim() &&
+    cdc.lists?.pretermeAuto?.trim() &&
+    cdc.lists?.pretermeIrd?.trim()
+  )
+}
+
 export function canDeleteCdc(cdcId: string, agency: Agency): boolean {
   const remaining = agency.cdc.filter(c => c.id !== cdcId)
   if (remaining.length === 0) return true
