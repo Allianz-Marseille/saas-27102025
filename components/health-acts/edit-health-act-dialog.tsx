@@ -37,7 +37,7 @@ const HEALTH_ACT_KINDS = [
 ];
 
 export function EditHealthActDialog({ open, onOpenChange, act, onSuccess }: EditHealthActDialogProps) {
-  const { userData } = useAuth();
+  const { user, userData } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   
@@ -150,11 +150,18 @@ export function EditHealthActDialog({ open, onOpenChange, act, onSuccess }: Edit
     if (kind === "AFFAIRE_NOUVELLE" && trimmedContractNumber !== originalContractNumber) {
       setIsLoading(true);
       try {
+        if (!user) {
+          throw new Error("Session expirée. Veuillez vous reconnecter.");
+        }
+
+        const idToken = await user.getIdToken();
+
         // Vérifier si le nouveau numéro existe déjà via l'API route
         const response = await fetch("/api/health-acts/check-contract", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
           },
           body: JSON.stringify({
             numeroContrat: trimmedContractNumber,

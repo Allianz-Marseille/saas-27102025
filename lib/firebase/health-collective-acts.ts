@@ -1,5 +1,6 @@
 import { collection, addDoc, query, where, getDocs, Timestamp, doc, deleteDoc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "./config";
+import { buildAuthenticatedJsonHeaders } from "./api-auth";
 import { HealthCollectiveAct, HealthCollectiveActKind, HealthCollectiveActOrigin } from "@/types";
 
 // Coefficients selon l'origine
@@ -63,11 +64,10 @@ export const createHealthCollectiveAct = async (
   
   if (healthCollectiveANTypes.includes(act.kind) && trimmedContractNumber) {
     try {
+      const headers = await buildAuthenticatedJsonHeaders();
       const response = await fetch("/api/health-acts/check-contract", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           numeroContrat: trimmedContractNumber,
         }),

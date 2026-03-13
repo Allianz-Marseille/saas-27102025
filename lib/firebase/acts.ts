@@ -1,5 +1,6 @@
 import { collection, addDoc, query, where, getDocs, Timestamp, doc, deleteDoc, updateDoc, getDoc, or, limit } from "firebase/firestore";
 import { db } from "./config";
+import { buildAuthenticatedJsonHeaders } from "./api-auth";
 import { Act } from "@/types";
 
 // Réexporter Act pour compatibilité avec les imports existants
@@ -217,11 +218,10 @@ export const contractNumberExists = async (numeroContrat: string): Promise<boole
   // Utiliser l'API route qui utilise Firebase Admin SDK
   // pour avoir accès à tous les actes (contourne les règles Firestore)
   try {
+    const headers = await buildAuthenticatedJsonHeaders();
     const response = await fetch("/api/acts/check-contract", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({ numeroContrat }),
     });
 

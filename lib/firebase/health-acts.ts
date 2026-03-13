@@ -1,5 +1,6 @@
 import { collection, addDoc, query, where, getDocs, Timestamp, doc, deleteDoc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "./config";
+import { buildAuthenticatedJsonHeaders } from "./api-auth";
 import { HealthAct } from "@/types";
 
 // Coefficients par type d'acte selon le document de spécification
@@ -21,11 +22,10 @@ export const createHealthAct = async (act: Omit<HealthAct, 'id' | 'dateSaisie' |
   const trimmedContractNumber = act.numeroContrat?.trim();
   if (act.kind === "AFFAIRE_NOUVELLE" && trimmedContractNumber) {
     try {
+      const headers = await buildAuthenticatedJsonHeaders();
       const response = await fetch("/api/health-acts/check-contract", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           numeroContrat: trimmedContractNumber,
         }),

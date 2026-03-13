@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { updateHealthCollectiveAct, getHealthCollectiveActKindLabel, getHealthCollectiveActOriginLabel } from "@/lib/firebase/health-collective-acts";
 import { HealthCollectiveAct, HealthCollectiveActKind, HealthCollectiveActOrigin } from "@/types";
 import { getCompanies, type Company } from "@/lib/firebase/companies";
+import { useAuth } from "@/lib/firebase/use-auth";
 import { Timestamp } from "firebase/firestore";
 
 interface EditHealthCollectiveActDialogProps {
@@ -51,6 +52,7 @@ const HEALTH_COLLECTIVE_AN_TYPES = [
 ];
 
 export function EditHealthCollectiveActDialog({ open, onOpenChange, act, onSuccess }: EditHealthCollectiveActDialogProps) {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   
@@ -165,11 +167,18 @@ export function EditHealthCollectiveActDialog({ open, onOpenChange, act, onSucce
     if (HEALTH_COLLECTIVE_AN_TYPES.includes(kind as string) && trimmedContractNumber !== originalContractNumber) {
       setIsLoading(true);
       try {
+        if (!user) {
+          throw new Error("Session expirée. Veuillez vous reconnecter.");
+        }
+
+        const idToken = await user.getIdToken();
+
         // Vérifier si le nouveau numéro existe déjà via l'API route
         const response = await fetch("/api/health-acts/check-contract", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
           },
           body: JSON.stringify({
             numeroContrat: trimmedContractNumber,

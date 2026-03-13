@@ -201,10 +201,12 @@ export function NewHealthCollectiveActDialog({ open, onOpenChange, onSuccess }: 
       
       if (healthCollectiveANTypes.includes(kind as string)) {
         const trimmedContractNumber = numeroContrat.trim();
+        const idToken = await user.getIdToken();
         const response = await fetch("/api/health-acts/check-contract", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
           },
           body: JSON.stringify({
             numeroContrat: trimmedContractNumber,
