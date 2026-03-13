@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, ChevronLeft, Zap, Bot, Car, Shield, BookOpen, CalendarClock } from "lucide-react";
+import { Home, Building2, Users, ScrollText, Heart, AlertTriangle, Coins, Workflow, Wrench, ChevronLeft, Zap, Bot, Car, Shield, BookOpen, CalendarClock, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarSessionFooter } from "@/components/dashboard/sidebar-session-footer";
 import Image from "next/image";
@@ -62,6 +62,7 @@ const adminNavSections: NavSection[] = [
       { href: "/commun/outils", label: "Outils", icon: Wrench, badge: "new" },
       { href: "/commun/agents-ia", label: "Mes agents IA", icon: Bot, badge: "en formation" },
       { href: "/commun/courtage", label: "Courtage", icon: BookOpen },
+      { href: "/admin/parametres-trello", label: "Paramètres Trello", icon: Settings2 },
       { href: "/admin/companies", label: "Compagnies", icon: Building2 },
       { href: "/admin/users", label: "Utilisateurs", icon: Users },
       { href: "/admin/logs", label: "Journal des logs", icon: ScrollText },
