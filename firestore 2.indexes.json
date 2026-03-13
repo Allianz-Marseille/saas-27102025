@@ -176,8 +176,17 @@
         { "fieldPath": "importId", "order": "ASCENDING" },
         { "fieldPath": "typeEntite", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "preterme_workflows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "statut", "order": "ASCENDING" },
+        { "fieldPath": "confirmeAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
 }
+
 
