@@ -240,7 +240,7 @@ export default function PretermeAutoPage() {
         {workflow?.etapeActive === 1 && <Step1Mois onConfirm={handleConfirmMois} />}
 
         {workflow?.etapeActive === 2 && (
-          <Step2Import workflow={workflow} onUpdate={handleUpdateRefresh} onAdvance={handleAdvance} />
+          <Step2Import workflow={workflow} onUpdate={handleUpdate} onRefresh={handleRefresh} onAdvance={handleAdvance} />
         )}
 
         {workflow?.etapeActive === 3 && (
@@ -252,7 +252,7 @@ export default function PretermeAutoPage() {
         )}
 
         {workflow?.etapeActive === 5 && (
-          <Step5Dispatch workflow={workflow} onUpdate={handleUpdateRefresh} onAdvance={handleAdvance} />
+          <Step5Dispatch workflow={workflow} onUpdate={handleUpdate} onRefresh={handleRefresh} onAdvance={handleAdvance} />
         )}
 
         {workflow?.etapeActive === 6 && (

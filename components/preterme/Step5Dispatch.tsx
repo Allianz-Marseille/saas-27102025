@@ -12,6 +12,7 @@ import { db } from "@/lib/firebase/config"
 type Props = {
   workflow: WorkflowState
   onUpdate: (w: WorkflowState) => Promise<void>
+  onRefresh: () => Promise<void>
   onAdvance: () => void
 }
 
@@ -220,7 +221,7 @@ function AgenceDispatch({
   )
 }
 
-export function Step5Dispatch({ workflow, onUpdate, onAdvance }: Props) {
+export function Step5Dispatch({ workflow, onUpdate, onRefresh, onAdvance }: Props) {
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [dispatchingMap, setDispatchingMap] = useState<Record<string, boolean>>({})
 
@@ -251,7 +252,7 @@ export function Step5Dispatch({ workflow, onUpdate, onAdvance }: Props) {
         const data = await res.json()
         console.error("Dispatch error:", data.error)
       }
-      await onUpdate({ ...workflow })
+      await onRefresh()
     } catch (e) {
       console.error("Dispatch failed:", e)
     } finally {

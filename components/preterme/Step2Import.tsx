@@ -8,6 +8,7 @@ import type { WorkflowState } from "@/types/preterme"
 type Props = {
   workflow: WorkflowState
   onUpdate: (w: WorkflowState) => Promise<void>
+  onRefresh: () => Promise<void>
   onAdvance: () => void
 }
 
@@ -344,7 +345,7 @@ function AgenceCard({
   )
 }
 
-export function Step2Import({ workflow, onUpdate, onAdvance }: Props) {
+export function Step2Import({ workflow, onUpdate, onRefresh, onAdvance }: Props) {
   const [uploadStates, setUploadStates] = useState<Record<string, AgenceUploadState>>({
     H91358: { loading: false, error: null },
     H92083: { loading: false, error: null },
@@ -380,7 +381,7 @@ export function Step2Import({ workflow, onUpdate, onAdvance }: Props) {
       if (!res.ok) throw new Error(data.error ?? "Erreur upload")
 
       // Reload workflow from Firestore via parent
-      await onUpdate({ ...workflow }) // trigger refresh
+      await onRefresh()
       setUploadStates(prev => ({ ...prev, [code]: { loading: false, error: null } }))
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur"
@@ -396,7 +397,7 @@ export function Step2Import({ workflow, onUpdate, onAdvance }: Props) {
         headers: { Authorization: token, "Content-Type": "application/json" },
         body: JSON.stringify({ moisKey: workflow.moisKey, codeAgence, seuilMajo, seuilEtp }),
       })
-      await onUpdate({ ...workflow })
+      await onRefresh()
     } catch {}
   }
 
