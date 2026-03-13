@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdmin } from '@/lib/firebase/auth-server'
+import { verifyAdmin } from '@/lib/utils/auth-utils'
 
 export async function GET(req: NextRequest) {
   try {
