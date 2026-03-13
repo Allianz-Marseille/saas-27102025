@@ -7,7 +7,6 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
 } from "firebase/firestore"
 import { db } from "./config"
 import type { WorkflowState, SnapshotCdc } from "@/types/preterme"
@@ -28,8 +27,7 @@ export async function getActiveWorkflow(): Promise<WorkflowState | null> {
   const database = assertDb()
   const q = query(
     collection(database, "preterme_workflows"),
-    where("statut", "==", "en_cours"),
-    orderBy("confirmeAt", "desc")
+    where("statut", "==", "en_cours")
   )
   const snap = await getDocs(q)
   if (snap.empty) return null
