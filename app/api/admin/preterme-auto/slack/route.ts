@@ -13,25 +13,28 @@ const DEFAULT_CHANNEL_ID = "CE58HNVF0"
 
 function buildSlackMessage(workflow: WorkflowState, agencies: Agency[]): string {
   const agenceCodes = Object.keys(workflow.agences)
+
+  // Passe 1 — totaux globaux
   let grandTotalClients = 0
   let grandTotalRetenus = 0
   let grandTotalCartes = 0
   let grandTotalErreurs = 0
+  for (const code of agenceCodes) {
+    const a = workflow.agences[code]
+    const retenus = a.clients.filter(c => c.retenu)
+    grandTotalClients += a.clientsTotal
+    grandTotalRetenus += retenus.length
+    grandTotalCartes += retenus.filter(c => c.dispatchStatut === "ok").length
+    grandTotalErreurs += retenus.filter(c => c.dispatchStatut === "erreur").length
+  }
 
+  // Passe 2 — blocs par agence
   const agenceBlocks = agenceCodes.map(code => {
     const a = workflow.agences[code]
     const retenus = a.clients.filter(c => c.retenu)
-    const particuliers = retenus.filter(c => c.classificationFinale === "particulier").length
-    const entreprises = retenus.filter(c => c.classificationFinale === "entreprise").length
-    const cartes = retenus.filter(c => c.dispatchStatut === "ok").length
     const erreurs = retenus.filter(c => c.dispatchStatut === "erreur").length
+    const pct = grandTotalClients > 0 ? Math.round(retenus.length / grandTotalClients * 100) : 0
 
-    grandTotalClients += a.clientsTotal
-    grandTotalRetenus += retenus.length
-    grandTotalCartes += cartes
-    grandTotalErreurs += erreurs
-
-    // Routing per CDC depuis la config Trello
     const agency = agencies.find(ag => ag.code === code)
     let cdcLine = ""
 
@@ -46,40 +49,33 @@ function buildSlackMessage(workflow: WorkflowState, agencies: Agency[]): string 
         agency
       )
 
-      const cdcMap = new Map<string, { prenom: string; total: number; ok: number; err: number }>()
+      const cdcMap = new Map<string, { prenom: string; total: number; err: number }>()
       for (const rc of routed) {
         const key = rc.cdcId ?? `__missing_${rc.premiereLettre}__`
         if (!cdcMap.has(key)) {
-          cdcMap.set(key, {
-            prenom: rc.cdcPrenom ?? `?${rc.premiereLettre}`,
-            total: 0, ok: 0, err: 0,
-          })
+          cdcMap.set(key, { prenom: rc.cdcPrenom ?? `?${rc.premiereLettre}`, total: 0, err: 0 })
         }
         const entry = cdcMap.get(key)!
         entry.total++
         const client = retenus.find(c => c.numeroContrat === rc.numeroContrat)
-        if (client?.dispatchStatut === "ok") entry.ok++
-        else if (client?.dispatchStatut === "erreur") entry.err++
+        if (client?.dispatchStatut === "erreur") entry.err++
       }
 
       const parts = [...cdcMap.entries()]
         .sort((a, b) => b[1].total - a[1].total)
-        .map(([, { prenom, ok, total, err }]) =>
-          err > 0
-            ? `${prenom} *${ok}/${total}* _(⚠️ ${err} err)_`
-            : `${prenom} *${ok}*`
+        .map(([, { prenom, total, err }]) =>
+          err > 0 ? `${prenom}: ${total} _(⚠️ ${err} err)_` : `${prenom}: ${total}`
         )
 
-      if (parts.length > 0) cdcLine = `› ${parts.join(" · ")}`
+      if (parts.length > 0) cdcLine = parts.join(" — ")
     }
 
-    const cartesLabel = erreurs > 0
-      ? `${cartes}/${retenus.length} cartes ⚠️`
-      : `${cartes} cartes ✅`
+    const agenceHeader = erreurs > 0
+      ? `🏢 *${code}* — ${retenus.length} retenus (${pct}% / ${grandTotalClients}) ⚠️`
+      : `🏢 *${code}* — ${retenus.length} retenus (${pct}% / ${grandTotalClients})`
 
     return [
-      `🏢 *${code}* — ${cartesLabel}`,
-      `${a.clientsTotal} importés · *${retenus.length} retenus* · ${particuliers} part. / ${entreprises} entr.`,
+      agenceHeader,
       ...(cdcLine ? [cdcLine] : []),
     ].join("\n")
   })
@@ -89,17 +85,18 @@ function buildSlackMessage(workflow: WorkflowState, agencies: Agency[]): string 
   })
 
   const divider = "━━━━━━━━━━━━━━━━━━━"
-  const totalLabel = grandTotalErreurs > 0
-    ? `*TOTAL : ${grandTotalCartes}/${grandTotalRetenus} cartes créées* ⚠️`
-    : `*TOTAL : ${grandTotalCartes}/${grandTotalRetenus} cartes créées* ✅`
+  const cartesLabel = grandTotalErreurs > 0
+    ? `${grandTotalCartes}/${grandTotalRetenus} ⚠️`
+    : `${grandTotalCartes}/${grandTotalRetenus} ✅`
 
   return [
     `🚗 *Préterme Auto — ${workflow.moisLabel}*`,
     `_Traitement du ${date} · ${agenceCodes.length} agences_`,
     "",
-    divider,
-    `📊 ${totalLabel}`,
-    `${grandTotalClients} importés → *${grandTotalRetenus} retenus*`,
+    `📊 Nbre de contrats dans le préterme : *${grandTotalClients}*`,
+    `✅ Nbre retenu : *${grandTotalRetenus}*`,
+    `🃏 Nbre de cartes Trello : *${cartesLabel}*`,
+    "",
     divider,
     "",
     agenceBlocks.join("\n\n"),
