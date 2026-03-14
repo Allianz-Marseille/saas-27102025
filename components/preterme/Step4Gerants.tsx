@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { Users, Lock, Unlock, CheckCircle2, Building2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Users, Lock, Unlock, CheckCircle2, Building2, BookUser } from "lucide-react"
+import { getGerantsMemo, saveGerantsMemo } from "@/lib/firebase/preterme"
 import type { WorkflowState } from "@/types/preterme"
 
 type Props = {
@@ -15,12 +16,14 @@ const AGENCES = ["H91358", "H92083"]
 function AgenceGerants({
   codeAgence,
   workflow,
+  memoGerants,
   onGerantChange,
   onLock,
   onUnlock,
 }: {
   codeAgence: string
   workflow: WorkflowState
+  memoGerants: Record<string, string>
   onGerantChange: (code: string, numeroContrat: string, gerant: string) => void
   onLock: (code: string) => void
   onUnlock: (code: string) => void
@@ -136,22 +139,40 @@ function AgenceGerants({
                   </span>
                 </div>
 
-                <input
-                  type="text"
-                  placeholder="Nom du gérant *"
-                  value={client.gerant ?? ""}
-                  disabled={isBlocked}
-                  onChange={e => onGerantChange(codeAgence, client.numeroContrat, e.target.value)}
-                  className="w-full rounded-lg outline-none transition-all"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: `0.5px solid ${client.gerant?.trim() ? "rgba(155,135,245,0.3)" : "rgba(255,255,255,0.1)"}`,
-                    color: "#f0eeff",
-                    padding: "8px 12px",
-                    fontSize: 12,
-                    fontFamily: "DM Sans, sans-serif",
-                  }}
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Nom du gérant *"
+                    value={client.gerant ?? ""}
+                    disabled={isBlocked}
+                    onChange={e => onGerantChange(codeAgence, client.numeroContrat, e.target.value)}
+                    className="w-full rounded-lg outline-none transition-all"
+                    style={{
+                      background: "rgba(255,255,255,0.04)",
+                      border: `0.5px solid ${client.gerant?.trim() ? "rgba(155,135,245,0.3)" : "rgba(255,255,255,0.1)"}`,
+                      color: "#f0eeff",
+                      padding: "8px 12px",
+                      paddingRight: memoGerants[client.nomClient] ? 90 : 12,
+                      fontSize: 12,
+                      fontFamily: "DM Sans, sans-serif",
+                    }}
+                  />
+                  {memoGerants[client.nomClient] && (
+                    <div
+                      className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded-full pointer-events-none"
+                      style={{
+                        fontSize: 9,
+                        background: "rgba(155,135,245,0.12)",
+                        color: "#9b87f5",
+                        border: "0.5px solid rgba(155,135,245,0.3)",
+                        fontFamily: "DM Mono, monospace",
+                      }}
+                    >
+                      <BookUser style={{ width: 8, height: 8 }} />
+                      mémorisé
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -162,6 +183,37 @@ function AgenceGerants({
 }
 
 export function Step4Gerants({ workflow, onUpdate, onAdvance }: Props) {
+  const [memoGerants, setMemoGerants] = useState<Record<string, string>>({})
+
+  // Charger la mémoire des gérants au montage
+  useEffect(() => {
+    const allEntreprises = AGENCES.flatMap(code =>
+      (workflow.agences[code]?.clients ?? [])
+        .filter(c => c.retenu && c.classificationFinale === "entreprise")
+        .map(c => c.nomClient)
+    )
+    if (allEntreprises.length === 0) return
+
+    getGerantsMemo(allEntreprises).then(memo => {
+      setMemoGerants(memo)
+      // Pré-remplir les gérants non encore renseignés
+      let updated = workflow
+      AGENCES.forEach(code => {
+        const agence = updated.agences[code]
+        if (!agence) return
+        const clients = agence.clients.map(c => {
+          if (!c.retenu || c.classificationFinale !== "entreprise") return c
+          if (c.gerant?.trim()) return c // déjà renseigné manuellement → ne pas écraser
+          const fromMemo = memo[c.nomClient]
+          return fromMemo ? { ...c, gerant: fromMemo } : c
+        })
+        updated = { ...updated, agences: { ...updated.agences, [code]: { ...agence, clients } } }
+      })
+      onUpdate(updated)
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const bothBlocked = AGENCES.every(code => {
     const agence = workflow.agences[code]
     if (!agence) return true
@@ -184,6 +236,11 @@ export function Step4Gerants({ workflow, onUpdate, onAdvance }: Props) {
   async function handleLock(codeAgence: string) {
     const agence = workflow.agences[codeAgence]
     if (!agence) return
+    // Mémoriser les gérants renseignés pour les prochains mois
+    const entries = agence.clients
+      .filter(c => c.retenu && c.classificationFinale === "entreprise" && c.gerant?.trim())
+      .map(c => ({ nomClient: c.nomClient, gerant: c.gerant! }))
+    await saveGerantsMemo(entries)
     await onUpdate({
       ...workflow,
       agences: { ...workflow.agences, [codeAgence]: { ...agence, etape4Statut: "bloqué" } },
@@ -246,6 +303,7 @@ export function Step4Gerants({ workflow, onUpdate, onAdvance }: Props) {
             key={code}
             codeAgence={code}
             workflow={workflow}
+            memoGerants={memoGerants}
             onGerantChange={handleGerantChange}
             onLock={handleLock}
             onUnlock={handleUnlock}

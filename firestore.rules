@@ -247,6 +247,9 @@ service cloud.firestore {
     match /preterme_snapshots/{docId} {
       allow read, write: if isAdmin();
     }
+    match /preterme_gerants/{docId} {
+      allow read, write: if isAdmin();
+    }
 
     // Prétermes IARD — collections admin uniquement
     match /preterme_iard_configs/{docId} {

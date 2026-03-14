@@ -62,3 +62,45 @@ export async function getSnapshots(moisKey: string): Promise<SnapshotCdc[]> {
   const snap = await getDocs(q)
   return snap.docs.map(d => d.data() as SnapshotCdc)
 }
+
+// ─── Mémoire gérants ──────────────────────────────────────────────────────────
+// Clé = nomClient normalisé (uppercase, trim) → équivalence stricte
+
+function gerantDocId(nomClient: string): string {
+  return nomClient.trim().toUpperCase().replace(/\//g, "_")
+}
+
+/**
+ * Retourne un map nomClient → gérant pour tous les noms trouvés en mémoire.
+ */
+export async function getGerantsMemo(nomClients: string[]): Promise<Record<string, string>> {
+  const database = assertDb()
+  const result: Record<string, string> = {}
+  await Promise.all(
+    nomClients.map(async nom => {
+      const snap = await getDoc(doc(database, "preterme_gerants", gerantDocId(nom)))
+      if (snap.exists()) {
+        result[nom] = (snap.data() as { gerant: string }).gerant
+      }
+    })
+  )
+  return result
+}
+
+/**
+ * Mémorise les gérants (upsert). Appelé au blocage de l'agence.
+ */
+export async function saveGerantsMemo(entries: { nomClient: string; gerant: string }[]): Promise<void> {
+  const database = assertDb()
+  await Promise.all(
+    entries
+      .filter(e => e.gerant.trim())
+      .map(({ nomClient, gerant }) =>
+        setDoc(doc(database, "preterme_gerants", gerantDocId(nomClient)), {
+          nomClient,
+          gerant: gerant.trim(),
+          updatedAt: new Date().toISOString(),
+        })
+      )
+  )
+}
