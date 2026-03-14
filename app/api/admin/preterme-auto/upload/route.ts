@@ -79,7 +79,12 @@ export async function POST(req: NextRequest) {
   if (workflowSnap.exists) {
     const existing = workflowSnap.data() as WorkflowState
     const updatedAgences = { ...(existing.agences ?? {}), [detectedAgence]: agenceData }
-    await workflowRef.update({ agences: updatedAgences })
+    const updatePayload: Record<string, unknown> = { agences: updatedAgences }
+    // Réimport : remettre le workflow à l'étape 2 si on était plus loin
+    if ((existing.etapeActive ?? 1) > 2) {
+      updatePayload.etapeActive = 2
+    }
+    await workflowRef.update(updatePayload)
   } else {
     return NextResponse.json({ error: "Workflow introuvable — confirmez d'abord le mois" }, { status: 404 })
   }

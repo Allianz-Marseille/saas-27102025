@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback } from "react"
-import { Upload, Loader2, Lock, Unlock, FileSpreadsheet, X, CheckCircle2, AlertTriangle } from "lucide-react"
+import { Upload, Loader2, Lock, Unlock, FileSpreadsheet, X, CheckCircle2, AlertTriangle, RotateCcw } from "lucide-react"
 import { buildAuthenticatedJsonHeaders } from "@/lib/firebase/api-auth"
 import type { WorkflowState } from "@/types/preterme"
 
@@ -49,7 +49,9 @@ function AgenceCard({
   const [recalcing, setRecalcing] = useState(false)
   const dropRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const reimportRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
+  const [reimportDragging, setReimportDragging] = useState(false)
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
@@ -338,6 +340,46 @@ function AgenceCard({
                 <span style={{ fontSize: 12, color: "#2dc596" }}>Agence bloquée — seuils figés</span>
               </div>
             )}
+
+            {/* Zone réimport — toujours disponible après un premier import */}
+            <div
+              onDragOver={e => { e.preventDefault(); setReimportDragging(true) }}
+              onDragLeave={() => setReimportDragging(false)}
+              onDrop={e => {
+                e.preventDefault()
+                setReimportDragging(false)
+                const file = e.dataTransfer.files[0]
+                if (file) onUpload(file, codeAgence)
+              }}
+              onClick={() => reimportRef.current?.click()}
+              className="flex items-center justify-center gap-2 rounded-lg cursor-pointer transition-all duration-200 mt-3"
+              style={{
+                height: 36,
+                background: reimportDragging ? "rgba(239,68,68,0.08)" : "rgba(255,255,255,0.02)",
+                border: `1px dashed ${reimportDragging ? "rgba(239,68,68,0.5)" : "rgba(255,255,255,0.1)"}`,
+              }}
+            >
+              {uploadState.loading ? (
+                <Loader2 className="animate-spin" style={{ width: 12, height: 12, color: "#9b87f5" }} />
+              ) : (
+                <>
+                  <RotateCcw style={{ width: 11, height: 11, color: "rgba(200,196,230,0.35)" }} />
+                  <span style={{ fontSize: 11, color: "rgba(200,196,230,0.35)" }}>
+                    Réimporter — remet à zéro
+                  </span>
+                </>
+              )}
+              <input
+                ref={reimportRef}
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0]
+                  if (file) onUpload(file, codeAgence)
+                }}
+              />
+            </div>
           </>
         )}
       </div>
