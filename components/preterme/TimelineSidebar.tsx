@@ -1,7 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import { cn } from "@/lib/utils"
-import { Check, Lock } from "lucide-react"
+import { Check, Lock, ChevronDown, CheckCircle2, Clock, Plus } from "lucide-react"
+import type { WorkflowState } from "@/types/preterme"
 
 type Step = {
   num: 1 | 2 | 3 | 4 | 5 | 6
@@ -22,11 +24,23 @@ type Props = {
   etapeActive: 1 | 2 | 3 | 4 | 5 | 6
   etapeMax: 1 | 2 | 3 | 4 | 5 | 6
   moisLabel?: string
+  statut?: "en_cours" | "terminé"
+  allWorkflows?: WorkflowState[]
   onStepClick: (step: 1 | 2 | 3 | 4 | 5 | 6) => void
+  onSelectMonth?: (moisKey: string) => void
 }
 
-export function TimelineSidebar({ etapeActive, etapeMax, moisLabel, onStepClick }: Props) {
-  const progress = ((etapeActive - 1) / 5) * 100
+export function TimelineSidebar({
+  etapeActive,
+  etapeMax,
+  moisLabel,
+  statut,
+  allWorkflows = [],
+  onStepClick,
+  onSelectMonth,
+}: Props) {
+  const progress = ((etapeMax - 1) / 5) * 100
+  const [showMonthPicker, setShowMonthPicker] = useState(false)
 
   return (
     <div
@@ -59,11 +73,103 @@ export function TimelineSidebar({ etapeActive, etapeMax, moisLabel, onStepClick 
         >
           Préterme Auto
         </h2>
-        {moisLabel && (
-          <p style={{ fontSize: 12, color: "rgba(200,196,230,0.55)", marginTop: 2 }}>
-            {moisLabel}
-          </p>
-        )}
+
+        {/* Sélecteur de mois */}
+        <div className="relative mt-2">
+          <button
+            onClick={() => allWorkflows.length > 0 && setShowMonthPicker(prev => !prev)}
+            className="flex items-center justify-between w-full rounded-lg px-3 py-2 transition-colors"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: showMonthPicker
+                ? "0.5px solid rgba(155,135,245,0.4)"
+                : "0.5px solid rgba(255,255,255,0.1)",
+              cursor: allWorkflows.length > 0 ? "pointer" : "default",
+            }}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              {statut === "terminé" ? (
+                <CheckCircle2 style={{ width: 11, height: 11, color: "#2dc596", flexShrink: 0 }} />
+              ) : statut === "en_cours" ? (
+                <Clock style={{ width: 11, height: 11, color: "#9b87f5", flexShrink: 0 }} />
+              ) : null}
+              <span
+                className="truncate"
+                style={{ fontSize: 12, color: "#f0eeff", fontFamily: "Syne, sans-serif" }}
+              >
+                {moisLabel ?? "Nouveau mois"}
+              </span>
+            </div>
+            {allWorkflows.length > 0 && (
+              <ChevronDown
+                style={{
+                  width: 12,
+                  height: 12,
+                  color: "rgba(200,196,230,0.4)",
+                  flexShrink: 0,
+                  transform: showMonthPicker ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.2s",
+                }}
+              />
+            )}
+          </button>
+
+          {/* Dropdown liste des mois */}
+          {showMonthPicker && (
+            <div
+              className="absolute left-0 right-0 z-20 rounded-lg overflow-hidden mt-1"
+              style={{
+                background: "#0e0c1a",
+                border: "0.5px solid rgba(155,135,245,0.25)",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+              }}
+            >
+              {allWorkflows.map(w => {
+                const isCurrent = w.moisLabel === moisLabel
+                return (
+                  <button
+                    key={w.moisKey}
+                    onClick={() => {
+                      onSelectMonth?.(w.moisKey)
+                      setShowMonthPicker(false)
+                    }}
+                    className="flex items-center justify-between w-full px-3 py-2.5 transition-colors"
+                    style={{
+                      background: isCurrent ? "rgba(155,135,245,0.08)" : "transparent",
+                    }}
+                    onMouseEnter={e => { if (!isCurrent) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)" }}
+                    onMouseLeave={e => { if (!isCurrent) (e.currentTarget as HTMLElement).style.background = "transparent" }}
+                  >
+                    <span style={{ fontSize: 12, color: isCurrent ? "#f0eeff" : "rgba(200,196,230,0.7)", fontFamily: "Syne, sans-serif" }}>
+                      {w.moisLabel}
+                    </span>
+                    {w.statut === "terminé" ? (
+                      <CheckCircle2 style={{ width: 11, height: 11, color: "#2dc596" }} />
+                    ) : (
+                      <Clock style={{ width: 11, height: 11, color: "#9b87f5" }} />
+                    )}
+                  </button>
+                )
+              })}
+              {/* Option nouveau mois */}
+              <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
+                <button
+                  onClick={() => {
+                    onStepClick(1)
+                    setShowMonthPicker(false)
+                  }}
+                  className="flex items-center gap-2 w-full px-3 py-2.5 transition-colors"
+                  style={{ background: "transparent" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)" }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent" }}
+                >
+                  <Plus style={{ width: 11, height: 11, color: "rgba(200,196,230,0.4)" }} />
+                  <span style={{ fontSize: 12, color: "rgba(200,196,230,0.5)" }}>Nouveau mois</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Steps timeline */}
@@ -96,12 +202,8 @@ export function TimelineSidebar({ etapeActive, etapeMax, moisLabel, onStepClick 
                     isActive && "ring-1"
                   )}
                   style={{
-                    background: isActive
-                      ? "rgba(155,135,245,0.06)"
-                      : "transparent",
-                    border: isActive
-                      ? "0.5px solid rgba(155,135,245,0.25)"
-                      : "0.5px solid transparent",
+                    background: isActive ? "rgba(155,135,245,0.06)" : "transparent",
+                    border: isActive ? "0.5px solid rgba(155,135,245,0.25)" : "0.5px solid transparent",
                     boxShadow: isActive ? "0 0 30px rgba(155,135,245,0.08)" : "none",
                   }}
                 >
@@ -178,8 +280,14 @@ export function TimelineSidebar({ etapeActive, etapeMax, moisLabel, onStepClick 
           <span style={{ fontSize: 10, color: "rgba(200,196,230,0.4)", fontFamily: "DM Mono, monospace" }}>
             PROGRESSION
           </span>
-          <span style={{ fontSize: 10, color: "#9b87f5", fontFamily: "DM Mono, monospace" }}>
-            {Math.round(progress)}%
+          <span
+            style={{
+              fontSize: 10,
+              color: statut === "terminé" ? "#2dc596" : "#9b87f5",
+              fontFamily: "DM Mono, monospace",
+            }}
+          >
+            {statut === "terminé" ? "✓ terminé" : `${Math.round(progress)}%`}
           </span>
         </div>
         <div
@@ -190,7 +298,9 @@ export function TimelineSidebar({ etapeActive, etapeMax, moisLabel, onStepClick 
             className="h-full rounded-full transition-all duration-500"
             style={{
               width: `${progress}%`,
-              background: "linear-gradient(to right, #7c3aed, #9b87f5)",
+              background: statut === "terminé"
+                ? "linear-gradient(to right, #059669, #2dc596)"
+                : "linear-gradient(to right, #7c3aed, #9b87f5)",
             }}
           />
         </div>

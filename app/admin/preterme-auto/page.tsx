@@ -10,7 +10,7 @@ import { Step4Gerants } from "@/components/preterme/Step4Gerants"
 import { Step5Dispatch } from "@/components/preterme/Step5Dispatch"
 import { Step6Slack } from "@/components/preterme/Step6Slack"
 import {
-  getActiveWorkflow,
+  getAllWorkflows,
   getWorkflow,
   createWorkflow,
   updateWorkflow,
@@ -37,21 +37,32 @@ function buildEmptyAgence() {
 
 export default function PretermeAutoPage() {
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null)
+  const [allWorkflows, setAllWorkflows] = useState<WorkflowState[]>([])
+  // etapeMax = progression max atteinte — ne régresse pas quand on navigue en arrière
+  const [etapeMax, setEtapeMax] = useState<1 | 2 | 3 | 4 | 5 | 6>(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showNewWarning, setShowNewWarning] = useState(false)
   const [pendingNew, setPendingNew] = useState<{ moisKey: string; moisLabel: string } | null>(null)
 
   useEffect(() => {
-    loadActiveWorkflow()
+    loadAllWorkflows()
   }, [])
 
-  async function loadActiveWorkflow() {
+  async function loadAllWorkflows() {
     setLoading(true)
     setError(null)
     try {
-      const active = await getActiveWorkflow()
-      setWorkflow(active)
+      const all = await getAllWorkflows()
+      setAllWorkflows(all)
+      if (all.length === 0) {
+        setWorkflow(null)
+        setEtapeMax(1)
+      } else {
+        // Priorité : workflow en_cours ; sinon le plus récent (trié desc par moisKey)
+        const active = all.find(w => w.statut === "en_cours") ?? all[0]
+        applyWorkflow(active)
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur chargement workflow")
     } finally {
@@ -59,8 +70,19 @@ export default function PretermeAutoPage() {
     }
   }
 
+  function applyWorkflow(w: WorkflowState) {
+    setWorkflow(w)
+    setEtapeMax(w.statut === "terminé" ? 6 : w.etapeActive)
+  }
+
+  function handleSelectMonth(moisKey: string) {
+    const w = allWorkflows.find(x => x.moisKey === moisKey)
+    if (w) applyWorkflow(w)
+  }
+
   const handleUpdate = useCallback(async (updated: WorkflowState) => {
     setWorkflow(updated)
+    setAllWorkflows(prev => prev.map(w => w.moisKey === updated.moisKey ? updated : w))
     try {
       await updateWorkflow(updated.moisKey, updated)
     } catch (e) {
@@ -72,18 +94,24 @@ export default function PretermeAutoPage() {
     if (!workflow) return
     try {
       const fresh = await getWorkflow(workflow.moisKey)
-      if (fresh) setWorkflow(fresh)
+      if (fresh) {
+        setWorkflow(fresh)
+        setAllWorkflows(prev => prev.map(w => w.moisKey === fresh.moisKey ? fresh : w))
+      }
     } catch {}
   }, [workflow])
 
-  const handleUpdateRefresh = useCallback(async (_ignored: WorkflowState) => {
-    await handleRefresh()
-  }, [handleRefresh])
-
   async function handleConfirmMois(moisKey: string, moisLabel: string) {
-    if (workflow && workflow.moisKey !== moisKey && workflow.statut === "en_cours") {
+    const existingInCours = allWorkflows.find(w => w.statut === "en_cours")
+    if (existingInCours && existingInCours.moisKey !== moisKey) {
       setPendingNew({ moisKey, moisLabel })
       setShowNewWarning(true)
+      return
+    }
+    // Si ce mois existe déjà (ex : terminé), l'afficher sans recréer
+    const existing = allWorkflows.find(w => w.moisKey === moisKey)
+    if (existing) {
+      applyWorkflow(existing)
       return
     }
     await createAndStartWorkflow(moisKey, moisLabel)
@@ -99,7 +127,8 @@ export default function PretermeAutoPage() {
       agences: Object.fromEntries(AGENCES.map(code => [code, buildEmptyAgence()])),
     }
     await createWorkflow(newWorkflow)
-    setWorkflow(newWorkflow)
+    setAllWorkflows(prev => [newWorkflow, ...prev])
+    applyWorkflow(newWorkflow)
     setPendingNew(null)
     setShowNewWarning(false)
     toast.success(`Workflow ${moisLabel} démarré`)
@@ -108,6 +137,9 @@ export default function PretermeAutoPage() {
   async function handleArchiveAndNew() {
     if (!workflow || !pendingNew) return
     await updateWorkflow(workflow.moisKey, { statut: "terminé" })
+    setAllWorkflows(prev =>
+      prev.map(w => w.moisKey === workflow.moisKey ? { ...w, statut: "terminé" as const } : w)
+    )
     await createAndStartWorkflow(pendingNew.moisKey, pendingNew.moisLabel)
   }
 
@@ -115,15 +147,15 @@ export default function PretermeAutoPage() {
     if (!workflow) return
     const next = Math.min(6, workflow.etapeActive + 1) as WorkflowState["etapeActive"]
     const updated = { ...workflow, etapeActive: next }
+    setEtapeMax(prev => Math.max(prev, next) as WorkflowState["etapeActive"])
     await handleUpdate(updated)
   }
 
   function handleStepClick(step: 1 | 2 | 3 | 4 | 5 | 6) {
     if (!workflow) return
+    // Change uniquement la vue — etapeMax n'est pas affecté
     setWorkflow(prev => prev ? { ...prev, etapeActive: step } : prev)
   }
-
-  const etapeMax = workflow?.etapeActive ?? (1 as 1 | 2 | 3 | 4 | 5 | 6)
 
   if (loading) {
     return (
@@ -142,7 +174,7 @@ export default function PretermeAutoPage() {
         <AlertTriangle style={{ width: 28, height: 28, color: "#f87171" }} />
         <p style={{ fontSize: 13, color: "#f87171" }}>{error}</p>
         <button
-          onClick={loadActiveWorkflow}
+          onClick={loadAllWorkflows}
           className="flex items-center gap-2 rounded-xl px-4 py-2"
           style={{
             fontSize: 12,
@@ -179,13 +211,7 @@ export default function PretermeAutoPage() {
             style={{ background: "#0e0c1a", border: "0.5px solid rgba(155,135,245,0.3)" }}
           >
             <h4
-              style={{
-                fontSize: 16,
-                fontWeight: 700,
-                color: "#f0eeff",
-                marginBottom: 8,
-                fontFamily: "Syne, sans-serif",
-              }}
+              style={{ fontSize: 16, fontWeight: 700, color: "#f0eeff", marginBottom: 8, fontFamily: "Syne, sans-serif" }}
             >
               Workflow en cours détecté
             </h4>
@@ -198,25 +224,14 @@ export default function PretermeAutoPage() {
               <button
                 onClick={() => { setShowNewWarning(false); setPendingNew(null) }}
                 className="flex-1 rounded-xl py-2.5"
-                style={{
-                  fontSize: 13,
-                  background: "rgba(255,255,255,0.04)",
-                  border: "0.5px solid rgba(255,255,255,0.1)",
-                  color: "rgba(200,196,230,0.6)",
-                }}
+                style={{ fontSize: 13, background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.1)", color: "rgba(200,196,230,0.6)" }}
               >
                 Annuler
               </button>
               <button
                 onClick={handleArchiveAndNew}
                 className="flex-1 rounded-xl py-2.5 font-semibold"
-                style={{
-                  fontSize: 13,
-                  background: "rgba(155,135,245,0.15)",
-                  border: "0.5px solid rgba(155,135,245,0.4)",
-                  color: "#c4b5fd",
-                  fontFamily: "Syne, sans-serif",
-                }}
+                style={{ fontSize: 13, background: "rgba(155,135,245,0.15)", border: "0.5px solid rgba(155,135,245,0.4)", color: "#c4b5fd", fontFamily: "Syne, sans-serif" }}
               >
                 Archiver et démarrer
               </button>
@@ -228,9 +243,12 @@ export default function PretermeAutoPage() {
       {/* Left sidebar */}
       <TimelineSidebar
         etapeActive={workflow?.etapeActive ?? 1}
-        etapeMax={etapeMax as 1 | 2 | 3 | 4 | 5 | 6}
+        etapeMax={etapeMax}
         moisLabel={workflow?.moisLabel}
+        statut={workflow?.statut}
+        allWorkflows={allWorkflows}
         onStepClick={handleStepClick}
+        onSelectMonth={handleSelectMonth}
       />
 
       {/* Right content */}

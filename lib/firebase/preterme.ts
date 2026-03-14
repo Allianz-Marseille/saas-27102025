@@ -37,6 +37,14 @@ export async function getActiveWorkflow(): Promise<WorkflowState | null> {
   return snap.docs[0].data() as WorkflowState
 }
 
+export async function getAllWorkflows(): Promise<WorkflowState[]> {
+  const database = assertDb()
+  const snap = await getDocs(collection(database, "preterme_workflows"))
+  return snap.docs
+    .map(d => d.data() as WorkflowState)
+    .sort((a, b) => b.moisKey.localeCompare(a.moisKey))
+}
+
 export async function createWorkflow(state: WorkflowState): Promise<void> {
   const database = assertDb()
   await setDoc(doc(database, "preterme_workflows", state.moisKey), state)
