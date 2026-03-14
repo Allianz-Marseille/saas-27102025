@@ -242,21 +242,23 @@ export function Step3Classification({ workflow, onUpdate, onRefresh, onAdvance }
 
   const bothBlocked = AGENCES.every(code => workflow.agences[code]?.etape3Statut === "bloqué")
 
-  // Auto-trigger Gemini when step loads :
-  // - agence en_attente avec clients retenus
-  // - agence "analysé" mais aucun client n'a de classificationFinale (bug précédent)
+  // Auto-trigger Gemini séquentiellement au chargement de l'étape
+  // (séquentiel pour éviter les écrasements Firestore concurrents)
   useEffect(() => {
-    AGENCES.forEach(code => {
-      const agence = workflow.agences[code]
-      if (!agence) return
-      if (agence.etape3Statut === "bloqué") return
-      const retenus = agence.clients.filter(c => c.retenu)
-      if (retenus.length === 0) return
-      const hasClassification = retenus.some(c => c.classificationFinale !== null)
-      if (!hasClassification) {
-        triggerClassify(code)
+    async function runSequential() {
+      for (const code of AGENCES) {
+        const agence = workflow.agences[code]
+        if (!agence) continue
+        if (agence.etape3Statut === "bloqué") continue
+        const retenus = agence.clients.filter(c => c.retenu)
+        if (retenus.length === 0) continue
+        const hasClassification = retenus.some(c => c.classificationFinale !== null)
+        if (!hasClassification) {
+          await triggerClassify(code)
+        }
       }
-    })
+    }
+    runSequential()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

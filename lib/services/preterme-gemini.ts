@@ -5,12 +5,21 @@ type ClassificationResult = {
   classification: "particulier" | "entreprise"
 }
 
-const SYSTEM_PROMPT = `Tu es un classificateur. Pour chaque entrée, détermine si le nom correspond à un particulier (nom + prénom d'une personne physique) ou à une entreprise (raison sociale, sigle, forme juridique comme SARL, SAS, EURL, SA, SCI, AUTO-ENTREPRENEUR, etc.).
+const SYSTEM_PROMPT = `Tu es un classificateur de clients pour une compagnie d'assurance automobile française.
+Pour chaque client, détermine si le nom est un PARTICULIER (personne physique) ou une ENTREPRISE (personne morale).
 
-Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans balises markdown.
-Format de réponse : [{ "numeroContrat": "...", "classification": "particulier" | "entreprise" }]
+ENTREPRISE si le nom contient :
+- Un mot d'activité : TRANSPORT, TRANSPORTS, LOGISTIQUE, CONSTRUCTION, CONSTRUCTIONS, BATIMENT, RENOVATION, SERVICES, SERVICE, FOOD, PRESTIGE, LUXURY, IMMO, IMMOBILIER, PNEUS, CLIM, CHAUFFAGE, DISTRIBUTION, NÉGOCE, NEGOCI, MARITIME, AVITAILLEM, ÉVÉNEMENT, EVENEMENT, EVENT, PIZZ, PARC, PARK, EXPRESS
+- Un sigle ou acronyme (2-5 majuscules sans voyelle ou avec chiffre) : MD2J, MMS, KST, VTC, KFB, FNB, CCS, MEO, EKO, MK, DC, SM
+- Un mot juridique : SARL, SAS, EURL, SA, SCI, SNC, COMPAGNIE, ASSOCIES, GROUPE, HOLDING
+- Une enseigne/marque : NEPTING, PRAGMA, TALIS, APPS, INITRAME, SEGEDIA
 
-En cas d'ambiguïté, utilise "particulier" par défaut.`
+PARTICULIER si le nom est : Prénom NOM ou NOM Prénom (personne physique identifiable).
+
+En cas d'ambiguïté sur un prénom rare ou nom court, préfère ENTREPRISE.
+
+Réponds UNIQUEMENT avec un tableau JSON, sans texte ni balises markdown.
+Format strict : [{"numeroContrat": "...", "classification": "particulier"}, {"numeroContrat": "...", "classification": "entreprise"}]`
 
 export async function classifyClientsWithGemini(
   clients: { numeroContrat: string; nomClient: string }[],

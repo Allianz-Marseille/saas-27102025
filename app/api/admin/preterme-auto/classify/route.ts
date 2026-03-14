@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { verifyAdmin } from "@/lib/utils/auth-utils"
 import { adminDb } from "@/lib/firebase/admin-config"
 import { classifyClientsWithGemini } from "@/lib/services/preterme-gemini"
-import type { WorkflowState, ClientImporte } from "@/types/preterme"
+import type { AgenceState, ClientImporte } from "@/types/preterme"
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   const snap = await ref.get()
   if (!snap.exists) return NextResponse.json({ error: "Workflow introuvable" }, { status: 404 })
 
-  const workflow = snap.data() as WorkflowState
+  const workflow = snap.data() as { agences?: Record<string, AgenceState> }
   const agence = workflow.agences?.[codeAgence]
   if (!agence) return NextResponse.json({ error: "Agence introuvable" }, { status: 404 })
 
@@ -54,16 +54,11 @@ export async function POST(req: NextRequest) {
     }
   })
 
-  const updatedAgences = {
-    ...workflow.agences,
-    [codeAgence]: {
-      ...agence,
-      etape3Statut: "analysé",
-      clients: updatedClients,
-    },
-  }
-
-  await ref.update({ agences: updatedAgences })
+  // Mise à jour ciblée via dot-notation pour éviter les écrasements concurrents
+  await ref.update({
+    [`agences.${codeAgence}.etape3Statut`]: "analysé",
+    [`agences.${codeAgence}.clients`]: updatedClients,
+  })
 
   const particuliers = updatedClients.filter(c => c.retenu && c.classificationFinale === "particulier").length
   const entreprises = updatedClients.filter(c => c.retenu && c.classificationFinale === "entreprise").length
