@@ -9,7 +9,7 @@ import { routeClientsTocdcs } from "@/lib/services/preterme-router"
 import type { WorkflowState } from "@/types/preterme"
 import type { Agency } from "@/lib/trello-config/types"
 
-const SLACK_CHANNEL_ID = "CE58HNVF0"
+const DEFAULT_CHANNEL_ID = "CE58HNVF0"
 
 function buildSlackMessage(workflow: WorkflowState, agencies: Agency[]): string {
   const agenceCodes = Object.keys(workflow.agences)
@@ -114,8 +114,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { moisKey } = await req.json() as { moisKey: string }
+    const { moisKey, channelId } = await req.json() as { moisKey: string; channelId?: string }
     if (!moisKey) return NextResponse.json({ error: "moisKey requis" }, { status: 400 })
+    const targetChannel = channelId ?? DEFAULT_CHANNEL_ID
 
     const token = process.env.SLACK_BOT_TOKEN
     if (!token) return NextResponse.json({ error: "SLACK_BOT_TOKEN non configuré" }, { status: 500 })
@@ -134,7 +135,7 @@ export async function POST(req: NextRequest) {
     const slackRes = await fetch("https://slack.com/api/chat.postMessage", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ channel: SLACK_CHANNEL_ID, text, mrkdwn: true }),
+      body: JSON.stringify({ channel: targetChannel, text, mrkdwn: true }),
     })
 
     const slackData = await slackRes.json() as { ok: boolean; error?: string }
