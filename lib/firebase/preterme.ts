@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   getDoc,
+  getDocFromServer,
   setDoc,
   updateDoc,
   getDocs,
@@ -18,7 +19,9 @@ function assertDb() {
 
 export async function getWorkflow(moisKey: string): Promise<WorkflowState | null> {
   const database = assertDb()
-  const snap = await getDoc(doc(database, "preterme_workflows", moisKey))
+  // getDocFromServer bypass le cache Firestore client — indispensable après une
+  // écriture faite par l'admin SDK (ex: dispatch route) pour voir les données fraîches.
+  const snap = await getDocFromServer(doc(database, "preterme_workflows", moisKey))
   if (!snap.exists()) return null
   return snap.data() as WorkflowState
 }
