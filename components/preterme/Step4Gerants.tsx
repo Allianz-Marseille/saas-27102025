@@ -20,6 +20,7 @@ function AgenceGerants({
   workflow,
   localGerants,
   memoGerants,
+  modifiedContracts,
   onLocalChange,
   onBlurSave,
   onLock,
@@ -29,6 +30,7 @@ function AgenceGerants({
   workflow: WorkflowState
   localGerants: Record<string, string>
   memoGerants: Record<string, string>
+  modifiedContracts: Set<string>
   onLocalChange: (numeroContrat: string, nomClient: string, gerant: string) => void
   onBlurSave: () => void
   onLock: (code: string) => void
@@ -130,7 +132,22 @@ function AgenceGerants({
             {entreprises.map(client => {
               const localVal = localGerants[client.numeroContrat] ?? ""
               const isMemo = !!memoGerants[client.nomClient]
+              const isModified = modifiedContracts.has(client.numeroContrat)
               const isFilled = localVal.trim().length > 0
+              const showBadge = isMemo || isModified
+
+              // Couleurs selon état
+              const borderColor = !isFilled && !isBlocked
+                ? "rgba(239,68,68,0.2)"
+                : isModified
+                ? "rgba(239,159,39,0.35)"
+                : isFilled
+                ? "rgba(155,135,245,0.3)"
+                : "rgba(255,255,255,0.1)"
+
+              const badgeColor = isModified
+                ? { bg: "rgba(239,159,39,0.12)", text: "#ef9f27", border: "rgba(239,159,39,0.3)" }
+                : { bg: "rgba(155,135,245,0.12)", text: "#9b87f5", border: "rgba(155,135,245,0.3)" }
 
               return (
                 <div
@@ -156,32 +173,33 @@ function AgenceGerants({
                       placeholder="Nom du gérant *"
                       value={localVal}
                       disabled={isBlocked}
-                      onChange={e => onLocalChange(client.numeroContrat, client.nomClient, e.target.value)}
+                      onChange={e => onLocalChange(client.numeroContrat, client.nomClient, e.target.value.toUpperCase())}
                       onBlur={onBlurSave}
                       className="w-full rounded-lg outline-none transition-all"
                       style={{
                         background: "rgba(255,255,255,0.04)",
-                        border: `0.5px solid ${isFilled ? "rgba(155,135,245,0.3)" : "rgba(255,255,255,0.1)"}`,
+                        border: `0.5px solid ${borderColor}`,
                         color: "#f0eeff",
                         padding: "8px 12px",
-                        paddingRight: isMemo ? 90 : 12,
+                        paddingRight: showBadge ? 90 : 12,
                         fontSize: 12,
-                        fontFamily: "DM Sans, sans-serif",
+                        fontFamily: "DM Mono, monospace",
+                        textTransform: "uppercase",
                       }}
                     />
-                    {isMemo && (
+                    {showBadge && (
                       <div
                         className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded-full pointer-events-none"
                         style={{
                           fontSize: 9,
-                          background: "rgba(155,135,245,0.12)",
-                          color: "#9b87f5",
-                          border: "0.5px solid rgba(155,135,245,0.3)",
+                          background: badgeColor.bg,
+                          color: badgeColor.text,
+                          border: `0.5px solid ${badgeColor.border}`,
                           fontFamily: "DM Mono, monospace",
                         }}
                       >
                         <BookUser style={{ width: 8, height: 8 }} />
-                        mémorisé
+                        {isModified ? "modifié" : "mémorisé"}
                       </div>
                     )}
                   </div>
@@ -201,6 +219,7 @@ export function Step4Gerants({ workflow, onUpdate, onAdvance }: Props) {
   // State local pour la saisie (découplé de Firestore)
   const [localGerants, setLocalGerants] = useState<Record<string, string>>({})
   const [memoGerants, setMemoGerants] = useState<Record<string, string>>({})
+  const [modifiedContracts, setModifiedContracts] = useState<Set<string>>(new Set())
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -248,8 +267,17 @@ export function Step4Gerants({ workflow, onUpdate, onAdvance }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Saisie : mise à jour locale + propagation immédiate aux autres contrats de la même société
+  // Saisie : uppercase + mise à jour locale + propagation aux contrats de la même société
   function handleLocalChange(numeroContrat: string, nomClient: string, gerant: string) {
+    // Marquer ce contrat (et ses doublons) comme modifiés manuellement
+    setModifiedContracts(prev => {
+      const next = new Set(prev)
+      next.add(numeroContrat)
+      allEntreprises.forEach(c => {
+        if (c.nomClient === nomClient) next.add(c.numeroContrat)
+      })
+      return next
+    })
     setLocalGerants(prev => {
       const updated = { ...prev, [numeroContrat]: gerant }
       // Propager aux contrats du même nomClient (même société, contrats différents)
@@ -378,6 +406,7 @@ export function Step4Gerants({ workflow, onUpdate, onAdvance }: Props) {
             workflow={workflow}
             localGerants={localGerants}
             memoGerants={memoGerants}
+            modifiedContracts={modifiedContracts}
             onLocalChange={handleLocalChange}
             onBlurSave={handleBlurSave}
             onLock={handleLock}
