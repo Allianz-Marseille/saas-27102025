@@ -11,42 +11,118 @@ function formatEuro(n: number): string {
   return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €"
 }
 
+export type DispatchContext = {
+  moisLabel: string
+  seuilMajo: number
+  seuilEtp: number
+  dispatchedAt: string // ISO
+}
+
 export function buildCardTitle(client: ClientImporte): string {
   return `[AUTO] ${client.nomClient} — Échéance ${formatDate(client.echeancePrincipale)}`
 }
 
-export function buildCardDescription(client: ClientImporte): string {
-  const lines = [
-    "## Contrat",
-    `- N° de contrat     : ${client.numeroContrat}`,
-    `- Code produit      : ${client.codeProduit}`,
-    `- Formule           : ${client.formule}`,
-    `- Fractionnement    : ${client.codeFractionnement}`,
-    `- Mode de règlement : ${client.modeReglement}`,
-    "",
-    "## Tarif",
-    `- Prime précédente  : ${formatEuro(client.primePrecedente)}`,
-    `- Prime actualisée  : ${formatEuro(client.primeActualisee)}`,
-    `- Majoration        : +${client.tauxVariation.toFixed(2)} %`,
-    `- ETP               : ${client.etp.toFixed(2)}`,
-    "",
-    "## Sinistralité",
-    `- Nb sinistres      : ${client.nbSinistres}`,
-    `- Bonus/Malus       : ${client.bonusMalus.toFixed(2)}`,
-    "",
-    "## Client",
-    `- Type              : ${client.classificationFinale === "entreprise" ? "Entreprise" : "Particulier"}`,
-    `- Surveillance      : ${client.surveillancePortefeuille}`,
-    `- Avantage client   : ${client.avantageClient}`,
-    `- Dernier avenant   : ${formatDate(client.dateEffetDernierAvenant)}`,
-  ]
+export function buildCardDescription(client: ClientImporte, ctx?: DispatchContext): string {
+  const now = ctx?.dispatchedAt ? new Date(ctx.dispatchedAt) : new Date()
+  const dateStr = now.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })
+  const timeStr = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
 
-  if (client.classificationFinale === "entreprise" && client.gerant) {
-    lines.push("", "## Entreprise")
-    lines.push(`- Gérant            : ${client.gerant}`)
+  const majoOk = ctx ? client.tauxVariation >= ctx.seuilMajo : null
+  const etpOk = ctx ? client.etp >= ctx.seuilEtp : null
+
+  // Niveau d'alerte basé sur les dépassements
+  const nbAlertes = (majoOk ? 1 : 0) + (etpOk ? 1 : 0)
+  const niveauAlerte = nbAlertes === 2 ? "🔴 DOUBLE ALERTE" : nbAlertes === 1 ? "🟠 ALERTE" : "🟡 SURVEILLANCE"
+
+  let classifLabel = "—"
+  if (client.classificationFinale === "particulier") {
+    classifLabel = client.corrigeParUtilisateur ? "👤 Particulier *(corrigé manuellement)*" : "👤 Particulier *(détection IA)*"
+  } else if (client.classificationFinale === "entreprise") {
+    classifLabel = client.corrigeParUtilisateur ? "🏢 Entreprise *(corrigée manuellement)*" : "🏢 Entreprise *(détection IA)*"
   }
 
-  return lines.join("\n")
+  const lines: (string | null)[] = [
+    `## ${niveauAlerte} — Préterme Auto ${ctx?.moisLabel ?? ""}`,
+    "",
+    `> 🤖 Carte générée automatiquement le **${dateStr} à ${timeStr}**.`,
+    "> Ce client a été identifié par le système comme nécessitant un suivi proactif avant son échéance.",
+    "",
+    "---",
+    "",
+    "## 🎯 Pourquoi ce client est dans votre tableau ?",
+    "",
+    ctx
+      ? `- 📈 **Majoration tarifaire :** +${client.tauxVariation.toFixed(2)} % ${majoOk ? `→ dépasse le seuil de ${ctx.seuilMajo} % ✅` : `→ en dessous du seuil de ${ctx.seuilMajo} % —`}`
+      : `- 📈 **Majoration tarifaire :** +${client.tauxVariation.toFixed(2)} %`,
+    ctx
+      ? `- 📊 **Évolution tarif prédictif (ETP) :** ${client.etp.toFixed(2)} ${etpOk ? `→ dépasse le seuil de ${ctx.seuilEtp} ✅` : `→ en dessous du seuil de ${ctx.seuilEtp} —`}`
+      : `- 📊 **Évolution tarif prédictif (ETP) :** ${client.etp.toFixed(2)}`,
+    "",
+    `- 🏷️ **Profil détecté :** ${classifLabel}`,
+    (client.classificationFinale === "entreprise" && client.gerant)
+      ? `- 👔 **Interlocuteur / Gérant :** ${client.gerant}`
+      : null,
+    "",
+    "---",
+    "",
+    "## 📋 Fiche contrat",
+    "",
+    `- 🔢 **N° contrat :** \`${client.numeroContrat}\``,
+    `- 🚗 **Code produit :** ${client.codeProduit}`,
+    `- 📦 **Formule :** ${client.formule}`,
+    `- 🔄 **Fractionnement :** ${client.codeFractionnement}`,
+    `- 💳 **Mode de règlement :** ${client.modeReglement}`,
+    `- 📝 **Dernier avenant :** ${formatDate(client.dateEffetDernierAvenant)}`,
+    `- 📅 **Échéance principale :** ${formatDate(client.echeancePrincipale)}`,
+    "",
+    "---",
+    "",
+    "## 💶 Situation tarifaire",
+    "",
+    `- Prime N-1           : ${formatEuro(client.primePrecedente)}`,
+    `- Prime actualisée    : ${formatEuro(client.primeActualisee)}`,
+    `- ⚠️ Variation        : **+${client.tauxVariation.toFixed(2)} %**`,
+    `- ETP                 : ${client.etp.toFixed(2)}`,
+    "",
+    "---",
+    "",
+    "## 🚨 Sinistralité (N-3)",
+    "",
+    `- Nb sinistres     : ${client.nbSinistres === 0 ? "✅ Aucun" : `⚠️ ${client.nbSinistres}`}`,
+    `- Coefficient B/M  : ${client.bonusMalus.toFixed(2)}`,
+    `- Surveillance PF  : ${client.surveillancePortefeuille || "—"}`,
+    `- Avantage client  : ${client.avantageClient || "—"}`,
+    "",
+    "---",
+    "",
+    "## 📞 Suivi relationnel — Actions CDC",
+    "",
+    "### 📬 Tentatives de contact",
+    "- [ ] 📞 1er appel — *date :* ___________",
+    "- [ ] ✅ Client joint",
+    "- [ ] 📱 SMS de relance envoyé — *date :* ___________",
+    "- [ ] 📧 Mail de relance envoyé — *date :* ___________",
+    "- [ ] 🎙️ Message vocal laissé — *date :* ___________",
+    "- [ ] 🔁 Rappel client reçu — *date :* ___________",
+    "",
+    "### 🤝 Entretien",
+    "- [ ] 📅 Entretien planifié — *date/heure :* ___________",
+    "- [ ] ✅ Entretien réalisé",
+    "- [ ] 📝 Compte-rendu rédigé",
+    "",
+    "### 🏁 Résultat final",
+    "- [ ] 🟢 **Fidélisé** — contrat maintenu",
+    "- [ ] 🔴 **Résilié** — départ client",
+    "- [ ] ⚫ **Sans suite** — client injoignable après plusieurs tentatives",
+    "- [ ] 🟡 **En attente** — suivi en cours",
+    "",
+    "---",
+    "",
+    "> 💡 **Conseil :** utilisez les **Commentaires** de cette carte pour noter chaque échange",
+    "> *(date, canal utilisé, contenu de l'échange, suite donnée, prochain rendez-vous…)*",
+  ]
+
+  return lines.filter((l): l is string => l !== null).join("\n")
 }
 
 async function sleep(ms: number) {
@@ -60,10 +136,11 @@ export async function createOrUpdateCard(
   listId: string,
   apiKey: string,
   token: string,
-  retries = 2
+  retries = 2,
+  ctx?: DispatchContext
 ): Promise<TrelloCard> {
   const name = buildCardTitle(client)
-  const desc = buildCardDescription(client)
+  const desc = buildCardDescription(client, ctx)
 
   if (client.trelloCardId) {
     const res = await fetch(
@@ -76,7 +153,7 @@ export async function createOrUpdateCard(
     )
     if (res.status === 429 && retries > 0) {
       await sleep(1500)
-      return createOrUpdateCard(client, listId, apiKey, token, retries - 1)
+      return createOrUpdateCard(client, listId, apiKey, token, retries - 1, ctx)
     }
     const card = await res.json()
     return { id: card.id, name: card.name, url: card.shortUrl ?? "" }
@@ -93,7 +170,7 @@ export async function createOrUpdateCard(
 
   if (res.status === 429 && retries > 0) {
     await sleep(1500)
-    return createOrUpdateCard(client, listId, apiKey, token, retries - 1)
+    return createOrUpdateCard(client, listId, apiKey, token, retries - 1, ctx)
   }
 
   if (!res.ok) {

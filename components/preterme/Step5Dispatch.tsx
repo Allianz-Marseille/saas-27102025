@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Send, Loader2, CheckCircle2, AlertTriangle, User, Building2 } from "lucide-react"
+import { Send, Loader2, CheckCircle2, AlertTriangle, User, Building2, RotateCcw } from "lucide-react"
 import { buildAuthenticatedJsonHeaders } from "@/lib/firebase/api-auth"
 import { extractFirstLetter, findCdcForLetter, getRoutingName } from "@/lib/services/preterme-router"
 import type { WorkflowState, ClientImporte, DispatchStatut } from "@/types/preterme"
@@ -99,6 +99,7 @@ function CdcCard({
   dispatching: boolean
   onDispatch: (cdcId: string) => void
 }) {
+  const [confirmReSend, setConfirmReSend] = useState(false)
   const color = CDC_COLORS[colorIndex % CDC_COLORS.length]
   const doneCount = group.clients.filter(c => c.dispatchStatut === "ok").length
   const errorCount = group.clients.filter(c => c.dispatchStatut === "erreur").length
@@ -199,11 +200,63 @@ function CdcCard({
           )}
 
           {isDone && (
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 style={{ width: 13, height: 13, color: "#2dc596" }} />
-              <span style={{ fontSize: 11, color: "#2dc596", fontFamily: "DM Mono, monospace" }}>
-                {doneCount} ok{errorCount > 0 ? ` · ${errorCount} err` : ""}
-              </span>
+            <div className="flex items-center gap-2">
+              {/* Voyant "déjà envoyé" */}
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 style={{ width: 13, height: 13, color: "#2dc596" }} />
+                <span style={{ fontSize: 11, color: "#2dc596", fontFamily: "DM Mono, monospace" }}>
+                  {doneCount} envoyée{doneCount > 1 ? "s" : ""}{errorCount > 0 ? ` · ${errorCount} err` : ""}
+                </span>
+              </div>
+
+              {/* Bouton / confirmation renvoyer */}
+              {!confirmReSend ? (
+                <button
+                  onClick={() => setConfirmReSend(true)}
+                  disabled={dispatching}
+                  className="flex items-center gap-1 rounded-lg px-2 py-1"
+                  style={{
+                    fontSize: 10,
+                    background: "rgba(255,255,255,0.04)",
+                    border: "0.5px solid rgba(255,255,255,0.12)",
+                    color: "rgba(200,196,230,0.45)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <RotateCcw style={{ width: 9, height: 9 }} />
+                  Renvoyer
+                </button>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <span style={{ fontSize: 10, color: "rgba(200,196,230,0.5)" }}>Renvoyer ?</span>
+                  <button
+                    onClick={() => { setConfirmReSend(false); onDispatch(group.cdcId) }}
+                    className="rounded-lg px-2 py-0.5 font-semibold"
+                    style={{
+                      fontSize: 10,
+                      background: "rgba(239,159,39,0.15)",
+                      border: "0.5px solid rgba(239,159,39,0.4)",
+                      color: "#ef9f27",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Oui
+                  </button>
+                  <button
+                    onClick={() => setConfirmReSend(false)}
+                    className="rounded-lg px-2 py-0.5"
+                    style={{
+                      fontSize: 10,
+                      background: "rgba(255,255,255,0.04)",
+                      border: "0.5px solid rgba(255,255,255,0.1)",
+                      color: "rgba(200,196,230,0.5)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Non
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -349,9 +402,37 @@ function AgenceSection({
             onDispatch={cdcId => onDispatch(codeAgence, cdcId)}
           />
         ))}
-        {groups.length === 0 && (
+        {groups.length === 0 && retenus.length === 0 && (
           <span style={{ fontSize: 12, color: "rgba(200,196,230,0.4)" }}>Aucun client retenu.</span>
         )}
+        {groups.length === 0 && retenus.length > 0 && (() => {
+          const found = agencies.find(a => a.code === codeAgence)
+          if (!found) {
+            const availableCodes = agencies.map(a => a.code).join(", ") || "aucun"
+            return (
+              <div
+                className="rounded-xl p-4 flex items-start gap-3"
+                style={{ background: "rgba(248,113,113,0.06)", border: "0.5px solid rgba(248,113,113,0.25)" }}
+              >
+                <AlertTriangle style={{ width: 16, height: 16, color: "#f87171", flexShrink: 0, marginTop: 1 }} />
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#f87171", fontFamily: "Syne, sans-serif" }}>
+                    Agence « {codeAgence} » absente de la config Trello
+                  </div>
+                  <div style={{ fontSize: 11, color: "rgba(248,113,113,0.7)", marginTop: 4 }}>
+                    Codes disponibles dans Paramètres Trello : <strong>{availableCodes}</strong>
+                  </div>
+                  <div style={{ fontSize: 11, color: "rgba(200,196,230,0.45)", marginTop: 6 }}>
+                    Modifiez le code de l&apos;agence dans <em>Paramètres Trello</em> pour qu&apos;il corresponde exactement à <strong style={{ color: "#f0eeff" }}>{codeAgence}</strong>.
+                  </div>
+                </div>
+              </div>
+            )
+          }
+          return (
+            <span style={{ fontSize: 12, color: "rgba(200,196,230,0.4)" }}>Aucun CDC configuré pour cette agence.</span>
+          )
+        })()}
       </div>
     </div>
   )

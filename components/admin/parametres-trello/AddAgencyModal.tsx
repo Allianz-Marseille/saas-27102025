@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { Agency } from '@/lib/trello-config/types'
 
+const KNOWN_AGENCY_CODES = ["H91358", "H92083"]
+
 interface Props {
   open: boolean
   initial?: Agency
@@ -54,13 +56,16 @@ export function AddAgencyModal({ open, initial, onClose, onSubmit }: Props) {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs text-slate-400 mb-1.5">Code agence</label>
-                <input
+                <select
                   value={code}
-                  onChange={e => setCode(e.target.value.toUpperCase())}
-                  placeholder="ex: KEN"
-                  maxLength={10}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                />
+                  onChange={e => setCode(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500"
+                >
+                  <option value="" disabled>Sélectionner un code…</option>
+                  {KNOWN_AGENCY_CODES.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1.5">Nom de l'agence</label>

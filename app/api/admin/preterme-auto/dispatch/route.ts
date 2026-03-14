@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { verifyAdmin } from "@/lib/utils/auth-utils"
 import { adminDb } from "@/lib/firebase/admin-config"
-import { createOrUpdateCard } from "@/lib/services/preterme-trello"
+import { createOrUpdateCard, type DispatchContext } from "@/lib/services/preterme-trello"
 import { routeClientsTocdcs } from "@/lib/services/preterme-router"
 import type { WorkflowState, ClientImporte, SnapshotCdc } from "@/types/preterme"
 import type { Agency } from "@/lib/trello-config/types"
@@ -65,6 +65,14 @@ export async function POST(req: NextRequest) {
   const toDispatch = filterCdcId ? routed.filter(rc => rc.cdcId === filterCdcId) : routed
 
   // Dispatch cards
+  const dispatchedAt = new Date().toISOString()
+  const ctx: DispatchContext = {
+    moisLabel: workflow.moisLabel,
+    seuilMajo: agence.seuilMajo,
+    seuilEtp: agence.seuilEtp,
+    dispatchedAt,
+  }
+
   let cartesCreees = 0
   let erreurs = 0
   const updatedClientsMap = new Map<string, Partial<ClientImporte>>()
@@ -81,7 +89,7 @@ export async function POST(req: NextRequest) {
       if (!original) return
 
       try {
-        const card = await createOrUpdateCard(original, rc.trelloListId, apiKey, token)
+        const card = await createOrUpdateCard(original, rc.trelloListId, apiKey, token, 2, ctx)
         updatedClientsMap.set(rc.numeroContrat, {
           trelloCardId: card.id,
           dispatchStatut: "ok",
@@ -115,7 +123,6 @@ export async function POST(req: NextRequest) {
     cdcMap.get(rc.cdcId)!.clients.push(rc)
   }
 
-  const snapshotNow = new Date().toISOString()
   const snapshotBatch = adminDb.batch()
 
   for (const [cdcId, { cdc, clients: cdcClients }] of cdcMap.entries()) {
@@ -125,7 +132,7 @@ export async function POST(req: NextRequest) {
 
     const snapshot: SnapshotCdc = {
       moisKey,
-      snapshotAt: snapshotNow,
+      snapshotAt: dispatchedAt,
       cdcId,
       cdcPrenom: cdc.firstName,
       codeAgence,
