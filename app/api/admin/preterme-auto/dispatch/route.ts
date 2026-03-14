@@ -109,14 +109,11 @@ export async function POST(req: NextRequest) {
     })
   )
 
-  // Update clients in workflow — on assainit undefined → null pour Firestore
+  // Update clients in workflow
   const updatedClients: ClientImporte[] = agence.clients.map(c => {
     const update = updatedClientsMap.get(c.numeroContrat)
     if (!update) return c
-    const merged = { ...c, ...update }
-    // Firestore n'accepte pas undefined — on le remplace par null
-    if (merged.dispatchErreur === undefined) merged.dispatchErreur = null as unknown as undefined
-    return merged
+    return { ...c, ...update }
   })
 
   // Build snapshots per CDC

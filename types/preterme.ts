@@ -32,7 +32,7 @@ export type ClientImporte = {
   gerant: string | null
   trelloCardId: string | null
   dispatchStatut: DispatchStatut
-  dispatchErreur?: string
+  dispatchErreur?: string | null
 }
 
 export type AgenceStatut2 = "en_attente" | "importé" | "bloqué"
