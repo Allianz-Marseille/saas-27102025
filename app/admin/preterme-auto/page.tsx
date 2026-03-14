@@ -9,6 +9,7 @@ import { Step3Classification } from "@/components/preterme/Step3Classification"
 import { Step4Gerants } from "@/components/preterme/Step4Gerants"
 import { Step5Dispatch } from "@/components/preterme/Step5Dispatch"
 import { Step6Slack } from "@/components/preterme/Step6Slack"
+import { HistoPanel } from "@/components/preterme/HistoPanel"
 import {
   getAllWorkflows,
   getWorkflow,
@@ -44,6 +45,7 @@ export default function PretermeAutoPage() {
   const [error, setError] = useState<string | null>(null)
   const [showNewWarning, setShowNewWarning] = useState(false)
   const [pendingNew, setPendingNew] = useState<{ moisKey: string; moisLabel: string } | null>(null)
+  const [showHisto, setShowHisto] = useState(false)
 
   useEffect(() => {
     loadAllWorkflows()
@@ -247,9 +249,16 @@ export default function PretermeAutoPage() {
         moisLabel={workflow?.moisLabel}
         statut={workflow?.statut}
         allWorkflows={allWorkflows}
+        showHisto={showHisto}
         onStepClick={handleStepClick}
         onSelectMonth={handleSelectMonth}
+        onToggleHisto={() => setShowHisto(prev => !prev)}
       />
+
+      {/* Histo panel — visible "à la marge" entre sidebar et contenu */}
+      {showHisto && (
+        <HistoPanel allWorkflows={allWorkflows} onClose={() => setShowHisto(false)} />
+      )}
 
       {/* Right content */}
       <div className="flex-1 overflow-y-auto" style={{ padding: "2rem", minWidth: 0 }}>

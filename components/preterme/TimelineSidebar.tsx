@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { cn } from "@/lib/utils"
-import { Check, Lock, ChevronDown, CheckCircle2, Clock, Plus } from "lucide-react"
+import { Check, Lock, ChevronDown, CheckCircle2, Clock, Plus, BarChart2 } from "lucide-react"
 import type { WorkflowState } from "@/types/preterme"
 
 type Step = {
@@ -26,8 +26,10 @@ type Props = {
   moisLabel?: string
   statut?: "en_cours" | "terminé"
   allWorkflows?: WorkflowState[]
+  showHisto?: boolean
   onStepClick: (step: 1 | 2 | 3 | 4 | 5 | 6) => void
   onSelectMonth?: (moisKey: string) => void
+  onToggleHisto?: () => void
 }
 
 export function TimelineSidebar({
@@ -36,8 +38,10 @@ export function TimelineSidebar({
   moisLabel,
   statut,
   allWorkflows = [],
+  showHisto = false,
   onStepClick,
   onSelectMonth,
+  onToggleHisto,
 }: Props) {
   const progress = ((etapeMax - 1) / 5) * 100
   const [showMonthPicker, setShowMonthPicker] = useState(false)
@@ -274,21 +278,39 @@ export function TimelineSidebar({
         </div>
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar + histo toggle */}
       <div className="px-5 py-4 border-t" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
         <div className="flex justify-between items-center mb-2">
           <span style={{ fontSize: 10, color: "rgba(200,196,230,0.4)", fontFamily: "DM Mono, monospace" }}>
             PROGRESSION
           </span>
-          <span
-            style={{
-              fontSize: 10,
-              color: statut === "terminé" ? "#2dc596" : "#9b87f5",
-              fontFamily: "DM Mono, monospace",
-            }}
-          >
-            {statut === "terminé" ? "✓ terminé" : `${Math.round(progress)}%`}
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              style={{
+                fontSize: 10,
+                color: statut === "terminé" ? "#2dc596" : "#9b87f5",
+                fontFamily: "DM Mono, monospace",
+              }}
+            >
+              {statut === "terminé" ? "✓ terminé" : `${Math.round(progress)}%`}
+            </span>
+            {allWorkflows.length > 0 && onToggleHisto && (
+              <button
+                onClick={onToggleHisto}
+                title="Historique"
+                className="flex items-center justify-center rounded-md transition-colors"
+                style={{
+                  width: 22, height: 22,
+                  background: showHisto ? "rgba(155,135,245,0.15)" : "rgba(255,255,255,0.04)",
+                  border: `0.5px solid ${showHisto ? "rgba(155,135,245,0.4)" : "rgba(255,255,255,0.08)"}`,
+                }}
+                onMouseEnter={e => { if (!showHisto) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)" }}
+                onMouseLeave={e => { if (!showHisto) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)" }}
+              >
+                <BarChart2 style={{ width: 11, height: 11, color: showHisto ? "#9b87f5" : "rgba(200,196,230,0.4)" }} />
+              </button>
+            )}
+          </div>
         </div>
         <div
           className="rounded-full overflow-hidden"
