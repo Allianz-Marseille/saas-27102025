@@ -5,29 +5,117 @@ type ClassificationResult = {
   classification: "particulier" | "entreprise"
 }
 
-const SYSTEM_PROMPT = `Tu es un classificateur de clients pour une compagnie d'assurance automobile française.
-Pour chaque client, détermine si le nom est un PARTICULIER (personne physique) ou une ENTREPRISE (personne morale).
+// ─── Heuristiques (mots-clés certains) ────────────────────────────────────────
 
-ENTREPRISE si le nom contient :
-- Un mot d'activité : TRANSPORT, TRANSPORTS, LOGISTIQUE, CONSTRUCTION, CONSTRUCTIONS, BATIMENT, RENOVATION, SERVICES, SERVICE, FOOD, PRESTIGE, LUXURY, IMMO, IMMOBILIER, PNEUS, CLIM, CHAUFFAGE, DISTRIBUTION, NÉGOCE, NEGOCI, MARITIME, AVITAILLEM, ÉVÉNEMENT, EVENEMENT, EVENT, PIZZ, PARC, PARK, EXPRESS
-- Un sigle ou acronyme (2-5 majuscules sans voyelle ou avec chiffre) : MD2J, MMS, KST, VTC, KFB, FNB, CCS, MEO, EKO, MK, DC, SM
-- Un mot juridique : SARL, SAS, EURL, SA, SCI, SNC, COMPAGNIE, ASSOCIES, GROUPE, HOLDING
-- Une enseigne/marque : NEPTING, PRAGMA, TALIS, APPS, INITRAME, SEGEDIA
+const MOTS_ENTREPRISE = [
+  // Activité transport
+  "TRANSPORT", "TRANSPORTS", "LOGISTIQUE", "FRET", "CARGO", "LIVRAISON",
+  "VTC", "TAXI", "CHAUFFEUR", "EXPRESS", "COURSIER",
+  // BTP / artisanat
+  "BATIMENT", "CONSTRUCTION", "CONSTRUCTIONS", "RENOVATION", "RENOVATIONS",
+  "TRAVAUX", "MACONNERIE", "ELECTRICITE", "PLOMBERIE", "MENUISERIE",
+  "PEINTURE", "TOITURE", "ISOLATION", "CARRELAGE", "CLIMATISATION",
+  "CLIM", "CHAUFFAGE", "VENTILATION", "SECURITE",
+  // Commerce / restauration
+  "FOOD", "RESTAURANT", "TRAITEUR", "PIZZ", "BOULANGERIE", "PATISSERIE",
+  "EPICERIE", "COMMERCE", "BOUTIQUE", "PRESSING", "LAVERIE", "COIFFURE",
+  // Auto / mobilité
+  "GARAGE", "CARROSSERIE", "MOTO", "CYCLES", "LOCATION",
+  "PRESTIGE", "LUXURY", "PNEUS", "PARE-BRISE",
+  // Services professionnels
+  "SERVICES", "SERVICE", "SOLUTIONS", "CONSULTING", "CONSEIL",
+  "INFORMATIQUE", "NUMERIQUE", "DIGITAL", "COMMUNICATION",
+  "NETTOYAGE", "GARDIENNAGE", "SECURITE", "SURVEILLANCE",
+  // Immobilier / finance
+  "IMMO", "IMMOBILIER", "INVEST", "INVESTISSEMENT", "CAPITAL",
+  "HOLDING", "GROUPE", "COMPAGNIE",
+  // Maritime / aérien
+  "MARITIME", "AVITAILLEM", "MARITIME",
+  // Événementiel / loisirs
+  "EVENT", "EVENEMENT", "EVÈNEMENT", "EVENEMENTS",
+  // Générique entreprise
+  "PARC", "PARK", "ASSOCIES", "PARTENAIRES", "INDUSTRIE",
+  "NEGOCI", "NEGOCE", "IMPORT", "EXPORT", "DISTRIBUTION",
+]
 
-PARTICULIER si le nom est : Prénom NOM ou NOM Prénom (personne physique identifiable).
+const FORMES_JURIDIQUES = [
+  "SARL", "SAS", "SASU", "EURL", "SCI", "SNC", "GIE", "SELARL",
+  "ASSOCIATION", "SYNDICAT", "COOPERATI",
+]
 
-En cas d'ambiguïté sur un prénom rare ou nom court, préfère ENTREPRISE.
+function normalise(s: string): string {
+  return s
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+}
 
-Réponds UNIQUEMENT avec un tableau JSON, sans texte ni balises markdown.
-Format strict : [{"numeroContrat": "...", "classification": "particulier"}, {"numeroContrat": "...", "classification": "entreprise"}]`
+/**
+ * Retourne "entreprise", "particulier", ou null (ambiguïté → Gemini).
+ */
+function classifierParHeuristique(nomClient: string): "particulier" | "entreprise" | null {
+  const nom = normalise(nomClient)
+  const mots = nom.split(/\s+/)
 
-export async function classifyClientsWithGemini(
+  // Forme juridique → entreprise certaine
+  for (const forme of FORMES_JURIDIQUES) {
+    if (nom.includes(forme)) return "entreprise"
+  }
+
+  // Mot-clé d'activité → entreprise certaine
+  for (const kw of MOTS_ENTREPRISE) {
+    // Word-boundary : le mot-clé doit être un token entier
+    if (mots.includes(kw) || mots.some(m => m.startsWith(kw) && m.length <= kw.length + 2)) {
+      return "entreprise"
+    }
+  }
+
+  // Sigle pur : 2-5 majuscules avec éventuellement chiffres (ex : MD2J, MMS, KFB, CCS, SM)
+  // Exclure les prénoms courants de 2-3 lettres ambigus (géré par Gemini)
+  if (/^[A-Z]{2,5}(\d+[A-Z]?)?$/.test(nom)) return "entreprise"
+
+  // Acronyme + numéro de département (ex: KST 13, LUXURY CAR 92)
+  if (mots.length >= 2 && /^\d{2,3}$/.test(mots[mots.length - 1])) return "entreprise"
+
+  // Nom contenant un chiffre (hors numéro de rue potentiel) → souvent entreprise
+  // ex: "BATI RENOVATION 63", "FNB ASSOCIES II"
+  if (/\d/.test(nom) && mots.length >= 2) return "entreprise"
+
+  // Nom en un seul mot trop court pour être "Prénom NOM" → ambigu
+  if (mots.length === 1 && nom.length <= 5) return null
+
+  // Nom avec II, III (numérotation entreprise)
+  if (mots.includes("II") || mots.includes("III")) return "entreprise"
+
+  return null // ambiguïté → laisser Gemini décider
+}
+
+// ─── Gemini pour les cas ambigus ─────────────────────────────────────────────
+
+const GEMINI_PROMPT = `Tu es un classificateur de clients assurance automobile française.
+Classe chaque nom en "particulier" (personne physique : prénom + nom) ou "entreprise" (raison sociale).
+Réponds UNIQUEMENT avec un tableau JSON strict, sans texte ni balises.
+Format : [{"numeroContrat":"...","classification":"particulier"},{"numeroContrat":"...","classification":"entreprise"}]
+
+Exemples :
+- "DUPUY PAULINE" → particulier
+- "AHAROUNIAN SERGE" → particulier
+- "NEPTING" → entreprise
+- "PRAGMA" → entreprise
+- "TALIS" → entreprise
+- "NOUR" → entreprise (nom commercial court)
+- "VALENTIN" → entreprise (un seul mot non identifiable comme personne)`
+
+async function classifierAvecGemini(
   clients: { numeroContrat: string; nomClient: string }[],
   apiKey: string
 ): Promise<ClassificationResult[]> {
+  if (clients.length === 0) return []
+
   const ai = new GoogleGenAI({ apiKey })
-  const input = JSON.stringify(clients)
-  const prompt = `${SYSTEM_PROMPT}\n\nClients à classifier :\n${input}`
+  const input = clients.map(c => ({ numeroContrat: c.numeroContrat, nomClient: c.nomClient }))
+  const prompt = `${GEMINI_PROMPT}\n\nClients :\n${JSON.stringify(input)}`
 
   async function attempt(): Promise<ClassificationResult[]> {
     const response = await ai.models.generateContent({
@@ -35,8 +123,16 @@ export async function classifyClientsWithGemini(
       contents: prompt,
       config: { responseMimeType: "application/json" },
     })
-    const raw = response.text ?? "[]"
-    return JSON.parse(raw) as ClassificationResult[]
+    const raw = (response.text ?? "").trim()
+    // Extraire le tableau JSON même si Gemini ajoute du texte autour
+    const match = raw.match(/\[[\s\S]*\]/)
+    if (!match) throw new Error("Pas de JSON valide")
+    const parsed = JSON.parse(match[0]) as ClassificationResult[]
+    // Normaliser les numéros de contrat (Gemini peut renvoyer des nombres)
+    return parsed.map(r => ({
+      ...r,
+      numeroContrat: String(r.numeroContrat),
+    }))
   }
 
   try {
@@ -45,10 +141,41 @@ export async function classifyClientsWithGemini(
     try {
       return await attempt()
     } catch {
-      return clients.map(c => ({
-        numeroContrat: c.numeroContrat,
-        classification: "particulier" as const,
-      }))
+      // Fallback : Gemini a échoué deux fois → on classe les ambigus comme particuliers
+      return clients.map(c => ({ numeroContrat: c.numeroContrat, classification: "particulier" as const }))
     }
   }
+}
+
+// ─── Export principal ─────────────────────────────────────────────────────────
+
+export async function classifyClientsWithGemini(
+  clients: { numeroContrat: string; nomClient: string }[],
+  apiKey: string
+): Promise<ClassificationResult[]> {
+  const results: ClassificationResult[] = []
+  const ambigus: typeof clients = []
+
+  // Passe 1 : heuristiques déterministes
+  for (const c of clients) {
+    const h = classifierParHeuristique(c.nomClient)
+    if (h !== null) {
+      results.push({ numeroContrat: c.numeroContrat, classification: h })
+    } else {
+      ambigus.push(c)
+    }
+  }
+
+  // Passe 2 : Gemini uniquement pour les ambigus
+  const geminiResults = await classifierAvecGemini(ambigus, apiKey)
+  const geminiMap = new Map(geminiResults.map(r => [r.numeroContrat, r.classification]))
+
+  for (const c of ambigus) {
+    results.push({
+      numeroContrat: c.numeroContrat,
+      classification: geminiMap.get(c.numeroContrat) ?? "particulier",
+    })
+  }
+
+  return results
 }
