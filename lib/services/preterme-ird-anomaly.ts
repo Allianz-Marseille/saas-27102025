@@ -1,47 +1,44 @@
-// @ts-nocheck
 /**
  * Moteur de filtrage métier des prétermes IARD.
  *
- * Règle : conserver un client si ETP >= seuilEtp/100 OU TauxVariation >= seuilVariation.
- * Différence vs Auto : l'ETP IARD est stocké en décimal (1.20 = 20% d'augmentation).
- * Le seuilEtp est conservé en entier dans la config UI (ex: 120) pour cohérence,
- * mais la comparaison utilise seuilEtp / 100.
+ * Règle : conserver un client si ETP >= seuilEtp OU TauxVariation >= seuilVariation.
+ * Différence vs Auto :
+ *   - Règle OU (Auto utilise aussi OU mais la logique métier IARD est documentée comme OU explicitement)
+ *   - seuilEtp est stocké en décimal (1.20) — comparaison directe, PAS de /100
  */
 
-import type { PretermeClient } from "@/types/preterme";
+import type { ClientIrdImporte } from "@/types/preterme-ird"
 
 export interface FilterStats {
-  total: number;
-  conserves: number;
-  exclus: number;
-  ratioConservation: number; // 0–100
+  total: number
+  conserves: number
+  exclus: number
+  ratioConservation: number // 0–100
 }
 
+// Nullable pour accepter les valeurs manquantes issues du parsing Excel
+type ClientForFilter = { etp: number | null; tauxVariation: number | null }
+
 /**
- * Détermine si un client IRD doit être conservé selon les seuils.
- * ETP IARD est décimal : etp >= seuilEtp / 100.
+ * Détermine si un client IRD doit être retenu selon les seuils.
+ * seuilEtp est décimal (ex: 1.20) — comparaison directe avec etp.
  */
-export function doitEtreIrdConserve(
-  client: Pick<PretermeClient, "etp" | "tauxVariation">,
+export function doitEtreIrdRetenu(
+  client: ClientForFilter,
   seuilEtp: number,
   seuilVariation: number
 ): boolean {
-  // Seuils à 0 = tout conserver
-  if (seuilEtp <= 0 && seuilVariation <= 0) {
-    return true;
-  }
+  if (seuilEtp <= 0 && seuilVariation <= 0) return true
 
   const etpOk =
-    client.etp !== null &&
-    client.etp !== undefined &&
-    client.etp >= seuilEtp / 100; // décimal : 1.20 >= 120/100
+    client.etp != null &&
+    client.etp >= seuilEtp  // décimal direct : 1.20 >= 1.20
 
   const variationOk =
-    client.tauxVariation !== null &&
-    client.tauxVariation !== undefined &&
-    client.tauxVariation >= seuilVariation;
+    client.tauxVariation != null &&
+    client.tauxVariation >= seuilVariation
 
-  return etpOk || variationOk;
+  return etpOk || variationOk
 }
 
 /**
@@ -49,33 +46,30 @@ export function doitEtreIrdConserve(
  * sans modifier les objets (lecture seule, pour le preview des sliders).
  */
 export function calculerIrdStatsConservation(
-  clients: Pick<PretermeClient, "etp" | "tauxVariation">[],
+  clients: ClientForFilter[],
   seuilEtp: number,
   seuilVariation: number
 ): FilterStats {
-  const total = clients.length;
-  const conserves = clients.filter((c) =>
-    doitEtreIrdConserve(c, seuilEtp, seuilVariation)
-  ).length;
-
+  const total = clients.length
+  const conserves = clients.filter(c => doitEtreIrdRetenu(c, seuilEtp, seuilVariation)).length
   return {
     total,
     conserves,
     exclus: total - conserves,
     ratioConservation: total > 0 ? Math.round((conserves / total) * 100) : 0,
-  };
+  }
 }
 
 /**
- * Applique le filtrage sur un tableau de clients (avec mutation du champ `conserve`).
+ * Applique le filtrage sur un tableau de clients (retourne un nouveau tableau avec `retenu` mis à jour).
  */
 export function appliquerIrdFiltrage(
-  clients: PretermeClient[],
+  clients: ClientIrdImporte[],
   seuilEtp: number,
   seuilVariation: number
-): PretermeClient[] {
-  return clients.map((c) => ({
+): ClientIrdImporte[] {
+  return clients.map(c => ({
     ...c,
-    conserve: doitEtreIrdConserve(c, seuilEtp, seuilVariation),
-  }));
+    retenu: doitEtreIrdRetenu(c, seuilEtp, seuilVariation),
+  }))
 }

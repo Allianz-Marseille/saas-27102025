@@ -28,7 +28,7 @@ const adminNavItems = [
   { href: "/admin/commissions-agence", label: "Commissions Agence", icon: Coins },
   // Process
   { href: "/admin/preterme-auto", label: "Prétermes Auto", icon: Car },
-  { href: "/admin/preterme-ird", label: "Prétermes IARD", icon: Shield, comingSoon: true },
+  { href: "/admin/preterme-ird", label: "Prétermes IARD", icon: Shield },
   { href: "/admin/mplus3", label: "M+3", icon: CalendarClock, comingSoon: true },
   { href: "/commun/process", label: "Nos Procédures", icon: Workflow },
   // Ressources

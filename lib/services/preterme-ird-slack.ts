@@ -1,151 +1,101 @@
 /**
- * Service Slack pour la synthèse de fin de traitement préterme IARD.
- *
- * Réutilise le même canal CE58HNVF0 que l'Auto.
- * Différences : header "Prétermes IARD", ETP affiché en décimal (seuilEtp/100).
+ * Construction du message Slack pour la synthèse Préterme IARD.
+ * Format texte brut mrkdwn — identique à Auto avec icône 🛡️ et label IARD.
+ * Deux passes : totaux globaux d'abord, puis blocs par agence (pour les pourcentages).
  */
 
-import { envoyerSlack, type SlackSynthesisData, type SlackSendResult } from "./preterme-slack";
+import { routeClientsTocdcs } from "@/lib/services/preterme-router"
+import type { WorkflowIrdState } from "@/types/preterme-ird"
+import type { Agency } from "@/lib/trello-config/types"
 
-interface SlackBlock {
-  type: string;
-  text?: { type: string; text: string; emoji?: boolean };
-  fields?: { type: string; text: string }[];
-  elements?: unknown[];
-}
+export function buildIrdSlackMessage(workflow: WorkflowIrdState, agencies: Agency[]): string {
+  const agenceCodes = Object.keys(workflow.agences)
 
-function formatMoisLabel(moisKey: string): string {
-  const [year, month] = moisKey.split("-");
-  return new Date(Number(year), Number(month) - 1, 1)
-    .toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-}
-
-/** Construit les blocs Slack pour le préterme IARD */
-export function buildIrdSlackBlocks(data: SlackSynthesisData): SlackBlock[] {
-  const totalGlobaux   = data.agences.reduce((s, a) => s + a.globaux,   0);
-  const totalConserves = data.agences.reduce((s, a) => s + a.conserves, 0);
-  const ratioGlobal = totalGlobaux > 0
-    ? Math.round((totalConserves / totalGlobaux) * 100)
-    : 0;
-
-  const moisLabel = formatMoisLabel(data.moisKey);
-  const seuilEtpDecimal = (data.seuilEtp / 100).toFixed(2);
-
-  const blocks: SlackBlock[] = [
-    {
-      type: "header",
-      text: {
-        type: "plain_text",
-        text: `🛡️ Prétermes IARD — ${moisLabel}`,
-        emoji: true,
-      },
-    },
-    { type: "divider" },
-    {
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: `*Synthèse globale*\n${totalGlobaux} prétermes importés → *${totalConserves} conservés* (${ratioGlobal}% de conservation)`,
-      },
-    },
-    {
-      type: "section",
-      fields: data.agences.map((a) => {
-        const ratio = a.globaux > 0 ? Math.round((a.conserves / a.globaux) * 100) : 0;
-        return {
-          type: "mrkdwn",
-          text: `*${a.code} – ${a.nom}*\n${a.globaux} importés · ${a.conserves} conservés · ${ratio}%`,
-        };
-      }),
-    },
-    { type: "divider" },
-    {
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: `*Charge par collaborateur*\n${
-          Object.entries(data.parCharge)
-            .sort(([, a], [, b]) => b - a)
-            .map(([prenom, nb]) => `• ${prenom} : *${nb}* dossiers`)
-            .join("\n")
-        }`,
-      },
-    },
-  ];
-
-  if (data.nbSocietesEnAttente > 0) {
-    blocks.push({
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: `⚠️ *${data.nbSocietesEnAttente} société(s) en attente de validation* (nom du gérant non renseigné — pas de carte Trello créée).`,
-      },
-    });
+  // Passe 1 — totaux globaux
+  let grandTotalClients = 0
+  let grandTotalRetenus = 0
+  let grandTotalCartes = 0
+  let grandTotalErreurs = 0
+  for (const code of agenceCodes) {
+    const a = workflow.agences[code]
+    const retenus = a.clients.filter(c => c.retenu)
+    grandTotalClients += a.clientsTotal
+    grandTotalRetenus += retenus.length
+    grandTotalCartes += retenus.filter(c => c.dispatchStatut === "ok").length
+    grandTotalErreurs += retenus.filter(c => c.dispatchStatut === "erreur").length
   }
 
-  blocks.push(
-    { type: "divider" },
-    {
-      type: "context",
-      elements: [
-        {
-          type: "mrkdwn",
-          text: `_Seuils appliqués : ETP ≥ ${seuilEtpDecimal} | Taux de variation ≥ ${data.seuilVariation}% — Règle : ETP OU Variation_`,
-        },
-      ],
-    }
-  );
+  // Passe 2 — blocs par agence
+  const agenceBlocks = agenceCodes.map(code => {
+    const a = workflow.agences[code]
+    const retenus = a.clients.filter(c => c.retenu)
+    const erreurs = retenus.filter(c => c.dispatchStatut === "erreur").length
+    const pct = grandTotalClients > 0 ? Math.round(retenus.length / grandTotalClients * 100) : 0
 
-  return blocks;
-}
+    const agency = agencies.find(ag => ag.code === code)
+    let cdcLine = ""
 
-/** Envoie la synthèse IARD sur Slack (avec blocs IARD) */
-export async function envoyerIrdSlack(
-  channelId: string,
-  botToken: string,
-  data: SlackSynthesisData
-): Promise<SlackSendResult> {
-  // On passe par envoyerSlack générique mais on remplace les blocs IARD
-  // via une adaptation du payload : reconstruire directement l'appel
-  if (!channelId || !botToken) {
-    return { success: false, error: "channelId et botToken sont requis." };
-  }
+    if (agency) {
+      const routed = routeClientsTocdcs(
+        retenus.map(c => ({
+          nomClient: c.nomClient,
+          numeroContrat: c.numeroContrat,
+          classificationFinale: c.classificationFinale,
+          gerant: c.gerant,
+        })),
+        agency
+      )
 
-  const blocks = buildIrdSlackBlocks(data);
-  const moisLabel = formatMoisLabel(data.moisKey);
+      const cdcMap = new Map<string, { prenom: string; total: number; err: number }>()
+      for (const rc of routed) {
+        const key = rc.cdcId ?? `__missing_${rc.premiereLettre}__`
+        if (!cdcMap.has(key)) {
+          cdcMap.set(key, { prenom: rc.cdcPrenom ?? `?${rc.premiereLettre}`, total: 0, err: 0 })
+        }
+        const entry = cdcMap.get(key)!
+        entry.total++
+        const client = retenus.find(c => c.numeroContrat === rc.numeroContrat)
+        if (client?.dispatchStatut === "erreur") entry.err++
+      }
 
-  try {
-    const res = await fetch("https://slack.com/api/chat.postMessage", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        Authorization: `Bearer ${botToken}`,
-      },
-      body: JSON.stringify({
-        channel: channelId,
-        text: `Synthèse prétermes IARD — ${moisLabel}`,
-        blocks,
-        unfurl_links: false,
-        unfurl_media: false,
-      }),
-    });
+      const parts = [...cdcMap.entries()]
+        .sort((a, b) => b[1].total - a[1].total)
+        .map(([, { prenom, total, err }]) =>
+          err > 0 ? `${prenom}: ${total} _(⚠️ ${err} err)_` : `${prenom}: ${total}`
+        )
 
-    const json = await res.json();
-
-    if (!json.ok) {
-      return { success: false, error: json.error ?? "Erreur API Slack" };
+      if (parts.length > 0) cdcLine = parts.join(" — ")
     }
 
-    return { success: true, ts: json.ts };
-  } catch (e) {
-    return {
-      success: false,
-      error: e instanceof Error ? e.message : "Erreur réseau",
-    };
-  }
-}
+    const agenceHeader = erreurs > 0
+      ? `🏢 *${code}* — ${retenus.length} retenus (${pct}% / ${grandTotalClients}) ⚠️`
+      : `🏢 *${code}* — ${retenus.length} retenus (${pct}% / ${grandTotalClients})`
 
-// Ré-exporte les types partagés
-export type { SlackSynthesisData, SlackSendResult };
-// Ré-exporte envoyerSlack si besoin
-export { envoyerSlack };
+    return [
+      agenceHeader,
+      ...(cdcLine ? [cdcLine] : []),
+    ].join("\n")
+  })
+
+  const date = new Date().toLocaleDateString("fr-FR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+  })
+
+  const divider = "━━━━━━━━━━━━━━━━━━━"
+  const cartesLabel = grandTotalErreurs > 0
+    ? `${grandTotalCartes}/${grandTotalRetenus} ⚠️`
+    : `${grandTotalCartes}/${grandTotalRetenus} ✅`
+
+  return [
+    `🛡️ *Préterme IARD — ${workflow.moisLabel}*`,
+    `_Traitement du ${date} · ${agenceCodes.length} agences_`,
+    "",
+    `📊 Nbre de contrats dans le préterme : *${grandTotalClients}*`,
+    `✅ Nbre retenu : *${grandTotalRetenus}*`,
+    `🃏 Nbre de cartes Trello : *${cartesLabel}*`,
+    "",
+    divider,
+    "",
+    agenceBlocks.join("\n\n"),
+  ].join("\n")
+}

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Parser Excel pour les exports de prétermes Allianz (périmètre IRD)
  *
@@ -6,15 +5,21 @@
  * Différences vs Auto :
  *   - Pas de Nb sinistres / Bonus-Malus
  *   - Nouvelle colonne : Taux d'augmentation indice (col 12)
- *   - ETP en décimal (ex: 1.20 = 20%) au lieu d'entier (120)
+ *   - ETP en décimal (ex: 1.20 = 20%)
  *   - Plusieurs en-têtes avec espaces parasites (trim les gère)
  * Identification agence : nom de fichier contenant "H91358" ou "H92083".
  */
 
 import ExcelJS from "exceljs";
-import type { AgenceCode } from "@/types/preterme";
-import { detectAgenceFromFilename } from "@/lib/utils/preterme-agence";
-export { detectAgenceFromFilename } from "@/lib/utils/preterme-agence";
+import type { AgenceCode } from "@/types/preterme-ird";
+
+// Inliné ici pour éviter la dépendance à preterme-agence.ts (@ts-nocheck)
+export function detectAgenceFromFilename(filename: string): AgenceCode | null {
+  const upper = filename.toUpperCase();
+  if (upper.includes("H91358")) return "H91358";
+  if (upper.includes("H92083")) return "H92083";
+  return null;
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
