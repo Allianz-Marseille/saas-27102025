@@ -325,7 +325,7 @@ function CdcCard({
                 <CheckCircle2 style={{ width: 11, height: 11, color: "#2dc596" }} />
               )}
               {client.dispatchStatut === "erreur" && (
-                <span title={client.dispatchErreur}>
+                <span title={client.dispatchErreur ?? undefined}>
                   <AlertTriangle style={{ width: 11, height: 11, color: "#f87171" }} />
                 </span>
               )}
