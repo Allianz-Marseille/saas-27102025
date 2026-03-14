@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Send, Loader2, CheckCircle2, AlertTriangle, User, Building2, RotateCcw } from "lucide-react"
 import { buildAuthenticatedJsonHeaders } from "@/lib/firebase/api-auth"
+import { toast } from "sonner"
 import { extractFirstLetter, findCdcForLetter, getRoutingName } from "@/lib/services/preterme-router"
 import type { WorkflowState, ClientImporte, DispatchStatut } from "@/types/preterme"
 import type { Agency } from "@/lib/trello-config/types"
@@ -472,12 +473,20 @@ export function Step5Dispatch({ workflow, onRefresh, onAdvance }: Omit<Props, "o
         body: JSON.stringify({ moisKey: workflow.moisKey, codeAgence, cdcId }),
       })
       if (!res.ok) {
-        const data = await res.json()
-        console.error("Dispatch error:", data.error)
+        const data = await res.json() as { error?: string }
+        toast.error("Erreur dispatch : " + (data.error ?? "inconnue"))
+      } else {
+        const data = await res.json() as { cartesCreees: number; erreurs: number }
+        if (data.erreurs > 0) {
+          toast.warning(`${data.cartesCreees} carte${data.cartesCreees > 1 ? "s" : ""} créée${data.cartesCreees > 1 ? "s" : ""} — ${data.erreurs} erreur${data.erreurs > 1 ? "s" : ""}`)
+        } else {
+          toast.success(`✅ ${data.cartesCreees} carte${data.cartesCreees > 1 ? "s" : ""} Trello envoyée${data.cartesCreees > 1 ? "s" : ""} avec succès`)
+        }
       }
       await onRefresh()
     } catch (e) {
       console.error("Dispatch failed:", e)
+      toast.error("Erreur réseau lors du dispatch")
     } finally {
       setDispatchingMap(prev => ({ ...prev, [cdcId]: false }))
     }
