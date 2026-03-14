@@ -252,7 +252,7 @@ export default function PretermeAutoPage() {
         )}
 
         {workflow?.etapeActive === 5 && (
-          <Step5Dispatch workflow={workflow} onUpdate={handleUpdate} onRefresh={handleRefresh} onAdvance={handleAdvance} />
+          <Step5Dispatch workflow={workflow} onRefresh={handleRefresh} onAdvance={handleAdvance} />
         )}
 
         {workflow?.etapeActive === 6 && (

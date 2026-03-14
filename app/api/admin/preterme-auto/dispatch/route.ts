@@ -17,7 +17,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
   }
 
-  const { moisKey, codeAgence } = await req.json() as { moisKey: string; codeAgence: string }
+  const { moisKey, codeAgence, cdcId: filterCdcId } = await req.json() as {
+    moisKey: string
+    codeAgence: string
+    cdcId?: string
+  }
 
   if (!moisKey || !codeAgence) {
     return NextResponse.json({ error: "moisKey et codeAgence requis" }, { status: 400 })
@@ -57,13 +61,16 @@ export async function POST(req: NextRequest) {
     agency
   )
 
+  // Filtrer sur un CDC spécifique si demandé
+  const toDispatch = filterCdcId ? routed.filter(rc => rc.cdcId === filterCdcId) : routed
+
   // Dispatch cards
   let cartesCreees = 0
   let erreurs = 0
   const updatedClientsMap = new Map<string, Partial<ClientImporte>>()
 
   await Promise.allSettled(
-    routed.map(async rc => {
+    toDispatch.map(async rc => {
       if (rc.erreur || !rc.trelloListId) {
         updatedClientsMap.set(rc.numeroContrat, { dispatchStatut: "erreur", dispatchErreur: rc.erreur ?? "ListId manquant" })
         erreurs++
@@ -135,16 +142,17 @@ export async function POST(req: NextRequest) {
 
   await snapshotBatch.commit()
 
-  const updatedAgences = {
-    ...workflow.agences,
-    [codeAgence]: {
-      ...agence,
-      dispatchStatut: erreurs > 0 ? "erreur" : "ok",
-      clients: updatedClients,
-    },
-  }
+  // Statut agence calculé sur l'ensemble des clients (pas seulement ce CDC)
+  const allRetenus = updatedClients.filter(c => c.retenu)
+  const allProcessed = allRetenus.every(c => c.dispatchStatut !== "en_attente")
+  const hasAnyError = allRetenus.some(c => c.dispatchStatut === "erreur")
+  const agenceDispatchStatut = !allProcessed ? "en_attente" : hasAnyError ? "erreur" : "ok"
 
-  await workflowRef.update({ agences: updatedAgences })
+  // Dot-notation pour éviter les écrasements si 2 CDC dispatchent en parallèle
+  await workflowRef.update({
+    [`agences.${codeAgence}.clients`]: updatedClients,
+    [`agences.${codeAgence}.dispatchStatut`]: agenceDispatchStatut,
+  })
 
   return NextResponse.json({ cartesCreees, erreurs, total: retenus.length })
 }

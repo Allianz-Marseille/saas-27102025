@@ -28,6 +28,22 @@ export type RoutedClient = {
   erreur: string | null
 }
 
+/**
+ * Retourne le nom à utiliser pour le routing :
+ * - Entreprise avec gérant → 1ère lettre du gérant
+ * - Particulier (ou entreprise sans gérant) → 1ère lettre du nomClient
+ */
+export function getRoutingName(client: {
+  nomClient: string
+  classificationFinale: "particulier" | "entreprise" | null
+  gerant: string | null
+}): string {
+  if (client.classificationFinale === "entreprise" && client.gerant?.trim()) {
+    return client.gerant.trim()
+  }
+  return client.nomClient
+}
+
 export function routeClientsTocdcs(
   clients: Array<{
     nomClient: string
@@ -38,7 +54,7 @@ export function routeClientsTocdcs(
   agency: Agency
 ): RoutedClient[] {
   return clients.map(client => {
-    const letter = extractFirstLetter(client.nomClient)
+    const letter = extractFirstLetter(getRoutingName(client))
     const cdc = findCdcForLetter(letter, agency.cdc)
 
     const classification = client.classificationFinale ?? "particulier"
