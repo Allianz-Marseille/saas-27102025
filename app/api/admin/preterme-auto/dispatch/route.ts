@@ -17,10 +17,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
   }
 
-  const { moisKey, codeAgence, cdcId: filterCdcId } = await req.json() as {
-    moisKey: string
-    codeAgence: string
-    cdcId?: string
+  let moisKey: string, codeAgence: string, filterCdcId: string | undefined
+  try {
+    const body = await req.json() as { moisKey: string; codeAgence: string; cdcId?: string }
+    moisKey = body.moisKey
+    codeAgence = body.codeAgence
+    filterCdcId = body.cdcId
+  } catch {
+    return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 })
   }
 
   if (!moisKey || !codeAgence) {
@@ -33,6 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "TRELLO_API_KEY ou TRELLO_TOKEN manquant" }, { status: 500 })
   }
 
+  try {
   // Read workflow
   const workflowRef = adminDb.collection("preterme_workflows").doc(moisKey)
   const workflowSnap = await workflowRef.get()
@@ -93,7 +98,7 @@ export async function POST(req: NextRequest) {
         updatedClientsMap.set(rc.numeroContrat, {
           trelloCardId: card.id,
           dispatchStatut: "ok",
-          dispatchErreur: undefined,
+          dispatchErreur: null, // null et non undefined — Firestore n'accepte pas undefined
         })
         cartesCreees++
       } catch (e) {
@@ -104,11 +109,14 @@ export async function POST(req: NextRequest) {
     })
   )
 
-  // Update clients in workflow
+  // Update clients in workflow — on assainit undefined → null pour Firestore
   const updatedClients: ClientImporte[] = agence.clients.map(c => {
     const update = updatedClientsMap.get(c.numeroContrat)
     if (!update) return c
-    return { ...c, ...update }
+    const merged = { ...c, ...update }
+    // Firestore n'accepte pas undefined — on le remplace par null
+    if (merged.dispatchErreur === undefined) merged.dispatchErreur = null as unknown as undefined
+    return merged
   })
 
   // Build snapshots per CDC
@@ -162,4 +170,9 @@ export async function POST(req: NextRequest) {
   })
 
   return NextResponse.json({ cartesCreees, erreurs, total: retenus.length })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Erreur interne"
+    console.error("[dispatch] erreur non gérée :", e)
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
 }

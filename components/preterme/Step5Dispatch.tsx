@@ -473,8 +473,9 @@ export function Step5Dispatch({ workflow, onRefresh, onAdvance }: Omit<Props, "o
         body: JSON.stringify({ moisKey: workflow.moisKey, codeAgence, cdcId }),
       })
       if (!res.ok) {
-        const data = await res.json() as { error?: string }
-        toast.error("Erreur dispatch : " + (data.error ?? "inconnue"))
+        let errMsg = `HTTP ${res.status}`
+        try { const d = await res.json() as { error?: string }; if (d.error) errMsg = d.error } catch { /* body vide */ }
+        toast.error("Erreur dispatch : " + errMsg)
       } else {
         const data = await res.json() as { cartesCreees: number; erreurs: number }
         if (data.erreurs > 0) {
