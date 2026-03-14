@@ -29,7 +29,7 @@ type ClientRow = {
   routingName: string
   dispatchStatut: DispatchStatut
   trelloCardId: string | null
-  dispatchErreur?: string
+  dispatchErreur?: string | null
 }
 
 type CdcGroup = {
