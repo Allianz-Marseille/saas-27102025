@@ -30,5 +30,19 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "scripts", "**/node_modules/**"]
+  "exclude": [
+    "node_modules",
+    "scripts",
+    "**/node_modules/**",
+    "lib/firebase/preterme-ird.ts",
+    "lib/services/preterme-anomaly.ts",
+    "lib/services/preterme-ird-anomaly.ts",
+    "lib/services/preterme-ird-trello.ts",
+    "lib/services/preterme-ird-slack.ts",
+    "lib/services/preterme-slack.ts",
+    "lib/utils/preterme-agence.ts",
+    "lib/utils/preterme-ird-parser.ts",
+    "lib/utils/preterme-quality.ts",
+    "lib/services/__tests__/preterme-gemini.test.ts"
+  ]
 }

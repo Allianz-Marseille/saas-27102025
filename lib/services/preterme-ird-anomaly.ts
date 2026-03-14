@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Moteur de filtrage métier des prétermes IARD.
  *

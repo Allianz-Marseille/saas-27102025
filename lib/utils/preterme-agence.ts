@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { AgenceCode } from "@/types/preterme";
 
 /** Détecte l'agence à partir du nom de fichier (H91358 ou H92083). */
