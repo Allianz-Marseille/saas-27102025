@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Sparkles, Loader2, Lock, Unlock, CheckCircle2, User, Building2 } from "lucide-react"
+import { useState } from "react"
+import { Sparkles, Loader2, Lock, Unlock, CheckCircle2, User, Building2, RotateCcw } from "lucide-react"
 import { buildAuthenticatedJsonHeaders } from "@/lib/firebase/api-auth"
 import type { WorkflowState, ClientImporte, ClassificationClient } from "@/types/preterme"
 
@@ -70,6 +70,8 @@ function AgenceClassif({
   onToggle,
   onLock,
   onUnlock,
+  onClassify,
+  onReset,
 }: {
   codeAgence: string
   workflow: WorkflowState
@@ -77,6 +79,8 @@ function AgenceClassif({
   onToggle: (code: string, numeroContrat: string) => void
   onLock: (code: string) => void
   onUnlock: (code: string) => void
+  onClassify: (code: string) => void
+  onReset: (code: string) => void
 }) {
   const agence = workflow.agences[codeAgence]
   if (!agence) return null
@@ -144,26 +148,69 @@ function AgenceClassif({
                   border: "0.5px solid rgba(255,255,255,0.1)",
                   color: "rgba(200,196,230,0.5)",
                 }}
+                title="Débloquer"
               >
                 <Unlock style={{ width: 12, height: 12 }} />
               </button>
             </>
-          ) : retenus.length > 0 ? (
-            <button
-              onClick={() => onLock(codeAgence)}
-              className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-medium transition-all"
-              style={{
-                fontSize: 12,
-                background: "rgba(45,197,150,0.1)",
-                border: "0.5px solid rgba(45,197,150,0.3)",
-                color: "#2dc596",
-                fontFamily: "Syne, sans-serif",
-              }}
-            >
-              <Lock style={{ width: 12, height: 12 }} />
-              Bloquer
-            </button>
-          ) : null}
+          ) : (
+            <>
+              {/* Bouton reset — visible si des classifications existent */}
+              {retenus.some(c => c.classificationFinale !== null) && !classifying && (
+                <button
+                  onClick={() => onReset(codeAgence)}
+                  className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 transition-all"
+                  style={{
+                    fontSize: 12,
+                    background: "rgba(255,255,255,0.04)",
+                    border: "0.5px solid rgba(255,255,255,0.1)",
+                    color: "rgba(200,196,230,0.5)",
+                    fontFamily: "Syne, sans-serif",
+                  }}
+                  title="Remettre à zéro et relancer"
+                >
+                  <RotateCcw style={{ width: 11, height: 11 }} />
+                  Relancer
+                </button>
+              )}
+
+              {/* Bouton lancer l'analyse */}
+              {retenus.length > 0 && !classifying && retenus.every(c => c.classificationFinale === null) && (
+                <button
+                  onClick={() => onClassify(codeAgence)}
+                  className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-medium transition-all"
+                  style={{
+                    fontSize: 12,
+                    background: "rgba(239,159,39,0.1)",
+                    border: "0.5px solid rgba(239,159,39,0.3)",
+                    color: "#ef9f27",
+                    fontFamily: "Syne, sans-serif",
+                  }}
+                >
+                  <Sparkles style={{ width: 12, height: 12 }} />
+                  Analyser
+                </button>
+              )}
+
+              {/* Bouton bloquer — visible si tous classifiés */}
+              {retenus.length > 0 && !classifying && retenus.some(c => c.classificationFinale !== null) && (
+                <button
+                  onClick={() => onLock(codeAgence)}
+                  className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-medium transition-all"
+                  style={{
+                    fontSize: 12,
+                    background: "rgba(45,197,150,0.1)",
+                    border: "0.5px solid rgba(45,197,150,0.3)",
+                    color: "#2dc596",
+                    fontFamily: "Syne, sans-serif",
+                  }}
+                >
+                  <Lock style={{ width: 12, height: 12 }} />
+                  Bloquer
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -242,25 +289,24 @@ export function Step3Classification({ workflow, onUpdate, onRefresh, onAdvance }
 
   const bothBlocked = AGENCES.every(code => workflow.agences[code]?.etape3Statut === "bloqué")
 
-  // Auto-trigger Gemini séquentiellement au chargement de l'étape
-  // (séquentiel pour éviter les écrasements Firestore concurrents)
-  useEffect(() => {
-    async function runSequential() {
-      for (const code of AGENCES) {
-        const agence = workflow.agences[code]
-        if (!agence) continue
-        if (agence.etape3Statut === "bloqué") continue
-        const retenus = agence.clients.filter(c => c.retenu)
-        if (retenus.length === 0) continue
-        const hasClassification = retenus.some(c => c.classificationFinale !== null)
-        if (!hasClassification) {
-          await triggerClassify(code)
-        }
-      }
+
+  async function handleReset(codeAgence: string) {
+    const agence = workflow.agences[codeAgence]
+    if (!agence) return
+    // Remettre toutes les classifications à null
+    const clients = agence.clients.map(c =>
+      c.retenu
+        ? { ...c, classificationIA: null, classificationFinale: null, corrigeParUtilisateur: false }
+        : c
+    )
+    const updated: WorkflowState = {
+      ...workflow,
+      agences: { ...workflow.agences, [codeAgence]: { ...agence, clients, etape3Statut: "en_attente" } },
     }
-    runSequential()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    await onUpdate(updated)
+    // Relancer automatiquement après reset
+    await triggerClassify(codeAgence)
+  }
 
   async function triggerClassify(codeAgence: string) {
     setClassifyingMap(prev => ({ ...prev, [codeAgence]: true }))
@@ -363,6 +409,8 @@ export function Step3Classification({ workflow, onUpdate, onRefresh, onAdvance }
             onToggle={handleToggle}
             onLock={handleLock}
             onUnlock={handleUnlock}
+            onClassify={triggerClassify}
+            onReset={handleReset}
           />
         ))}
       </div>
