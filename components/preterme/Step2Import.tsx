@@ -250,7 +250,7 @@ function AgenceCard({
               }}
             >
               <p style={{ fontSize: 10, color: "rgba(200,196,230,0.4)", marginBottom: 12, fontFamily: "DM Mono, monospace" }}>
-                CRITÈRES DE RÉTENTION
+                CRITÈRES DE RÉTENTION — logique OU
               </p>
 
               <div className="flex flex-col gap-4">

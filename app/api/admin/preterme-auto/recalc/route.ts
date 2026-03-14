@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   const updatedClients: ClientImporte[] = agence.clients.map(c => ({
     ...c,
-    retenu: c.tauxVariation >= seuilMajo && c.etp >= seuilEtp,
+    retenu: c.tauxVariation >= seuilMajo || c.etp >= seuilEtp,
   }))
 
   const clientsRetenus = updatedClients.filter(c => c.retenu).length

@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   // Build ClientImporte array with default classification/dispatch state
   const clients: ClientImporte[] = parsedClients.map(pc => ({
     ...pc,
-    retenu: pc.tauxVariation >= DEFAULT_SEUIL_MAJO && pc.etp >= DEFAULT_SEUIL_ETP,
+    retenu: pc.tauxVariation >= DEFAULT_SEUIL_MAJO || pc.etp >= DEFAULT_SEUIL_ETP,
     classificationIA: null,
     classificationFinale: null,
     corrigeParUtilisateur: false,
