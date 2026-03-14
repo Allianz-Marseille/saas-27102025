@@ -33,7 +33,7 @@ function buildSlackMessage(workflow: WorkflowState, agencies: Agency[]): string 
 
     // Routing per CDC depuis la config Trello
     const agency = agencies.find(ag => ag.code === code)
-    const cdcLines: string[] = []
+    let cdcLine = ""
 
     if (agency) {
       const routed = routeClientsTocdcs(
@@ -46,14 +46,12 @@ function buildSlackMessage(workflow: WorkflowState, agencies: Agency[]): string 
         agency
       )
 
-      // Grouper par CDC
-      const cdcMap = new Map<string, { prenom: string; letters: string[]; total: number; ok: number; err: number }>()
+      const cdcMap = new Map<string, { prenom: string; total: number; ok: number; err: number }>()
       for (const rc of routed) {
         const key = rc.cdcId ?? `__missing_${rc.premiereLettre}__`
         if (!cdcMap.has(key)) {
           cdcMap.set(key, {
-            prenom: rc.cdcPrenom ?? `Lettre "${rc.premiereLettre}" non couverte`,
-            letters: agency.cdc.find(c => c.id === rc.cdcId)?.letters ?? [],
+            prenom: rc.cdcPrenom ?? `?${rc.premiereLettre}`,
             total: 0, ok: 0, err: 0,
           })
         }
@@ -64,22 +62,25 @@ function buildSlackMessage(workflow: WorkflowState, agencies: Agency[]): string 
         else if (client?.dispatchStatut === "erreur") entry.err++
       }
 
-      for (const [, { prenom, letters, total, ok, err }] of [...cdcMap.entries()].sort((a, b) => b[1].total - a[1].total)) {
-        const letStr = letters.slice(0, 13).join(" ") + (letters.length > 13 ? " …" : "")
-        const status = err > 0 ? ` _(⚠️ ${err} err)_` : " ✅"
-        cdcLines.push(`     › *${prenom}* [${letStr}] — ${ok}/${total} carte${total > 1 ? "s" : ""}${status}`)
-      }
+      const parts = [...cdcMap.entries()]
+        .sort((a, b) => b[1].total - a[1].total)
+        .map(([, { prenom, ok, total, err }]) =>
+          err > 0
+            ? `${prenom} *${ok}/${total}* _(⚠️ ${err} err)_`
+            : `${prenom} *${ok}*`
+        )
+
+      if (parts.length > 0) cdcLine = `› ${parts.join(" · ")}`
     }
 
-    const errLabel = erreurs > 0 ? `  ⚠️ ${erreurs} erreur${erreurs > 1 ? "s" : ""}` : " ✅"
+    const cartesLabel = erreurs > 0
+      ? `${cartes}/${retenus.length} cartes ⚠️`
+      : `${cartes} cartes ✅`
+
     return [
-      `*🏢 AGENCE ${code}*`,
-      `     • Contrats importés (fichier ${workflow.moisLabel}) : ${a.clientsTotal}`,
-      `     • Retenus (critères)  : ${retenus.length}  _(majo ≥ ${a.seuilMajo} % | ETP ≥ ${a.seuilEtp.toFixed(2)})_`,
-      `     • Particuliers : ${particuliers}   Entreprises : ${entreprises}`,
-      `     • Cartes Trello créées : ${cartes}${errLabel}`,
-      ...(cdcLines.length > 0 ? ["", "     Détail par CDC :"] : []),
-      ...cdcLines,
+      `🏢 *${code}* — ${cartesLabel}`,
+      `${a.clientsTotal} importés · *${retenus.length} retenus* · ${particuliers} part. / ${entreprises} entr.`,
+      ...(cdcLine ? [cdcLine] : []),
     ].join("\n")
   })
 
@@ -87,17 +88,21 @@ function buildSlackMessage(workflow: WorkflowState, agencies: Agency[]): string 
     day: "2-digit", month: "2-digit", year: "numeric",
   })
 
+  const divider = "━━━━━━━━━━━━━━━━━━━"
+  const totalLabel = grandTotalErreurs > 0
+    ? `*TOTAL : ${grandTotalCartes}/${grandTotalRetenus} cartes créées* ⚠️`
+    : `*TOTAL : ${grandTotalCartes}/${grandTotalRetenus} cartes créées* ✅`
+
   return [
-    `📋 *Préterme Auto — ${workflow.moisLabel}*`,
-    `_Traitement terminé le ${date}_`,
+    `🚗 *Préterme Auto — ${workflow.moisLabel}*`,
+    `_Traitement du ${date} · ${agenceCodes.length} agences_`,
+    "",
+    divider,
+    `📊 ${totalLabel}`,
+    `${grandTotalClients} importés → *${grandTotalRetenus} retenus*`,
+    divider,
     "",
     agenceBlocks.join("\n\n"),
-    "",
-    "─────────────────────────────────",
-    `*📊 TOTAL CONSOLIDÉ — ${agenceCodes.length} agences*`,
-    `• Contrats importés : ${grandTotalClients}`,
-    `• Retenus      : ${grandTotalRetenus}`,
-    `• Cartes créées: ${grandTotalCartes}${grandTotalErreurs > 0 ? `   ⚠️ Erreurs : ${grandTotalErreurs}` : "   ✅"}`,
   ].join("\n")
 }
 

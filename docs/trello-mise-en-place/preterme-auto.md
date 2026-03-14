@@ -1,407 +1,451 @@
-# Workflow — Préterme Auto (from scratch)
+# Workflow — Préterme Auto
 
 ## Table des Matières
 
-1. [Étape 1 — Détermination du mois du préterme](#étape-1--détermination-du-mois-du-préterme)
-2. [Étape 2 — Import & Filtrage par agence](#étape-2--import--filtrage-par-agence)
-3. [Étape 3 — Classification Particulier / Entreprise](#étape-3--classification-particulier--entreprise)
-4. [Étape 4 — Détermination des gérants](#étape-4--détermination-des-gérants)
-5. [Étape 5 — Routing & Dispatch Trello](#étape-5--routing--dispatch-trello)
-6. [Étape 6 — Rapport Slack](#étape-6--rapport-slack)
-7. [Arrière-plan — Snapshot historique](#arrière-plan--snapshot-historique)
-8. [Persistance — État du workflow](#persistance--état-du-workflow)
-9. [Configuration — Trello & CDC](#configuration--trello--cdc)
-10. [IA — Gemini Flash](#ia--gemini-flash)
+1. [Contexte métier](#contexte-métier)
+2. [Architecture — Fichiers clés](#architecture--fichiers-clés)
+3. [Collections Firestore](#collections-firestore)
+4. [Étape 1 — Mois du préterme](#étape-1--mois-du-préterme)
+5. [Étape 2 — Import & Seuils par agence](#étape-2--import--seuils-par-agence)
+6. [Étape 3 — Classification IA (Gemini)](#étape-3--classification-ia-gemini)
+7. [Étape 4 — Gérants des entreprises](#étape-4--gérants-des-entreprises)
+8. [Étape 5 — Routing & Dispatch Trello](#étape-5--routing--dispatch-trello)
+9. [Étape 6 — Rapport Slack](#étape-6--rapport-slack)
+10. [Snapshot historique](#snapshot-historique)
+11. [Configuration — Paramètres Trello](#configuration--paramètres-trello)
+12. [IA — Gemini Flash](#ia--gemini-flash)
+13. [Design — Charte visuelle](#design--charte-visuelle)
+14. [Points techniques critiques](#points-techniques-critiques)
 
 ---
 
-## Contexte — Qu'est-ce qu'un préterme ?
+## Contexte métier
 
 Un **préterme** est un contrat dont l'échéance principale arrive le mois suivant.
 
 > Exemple : en **mars**, Allianz génère la liste des contrats qui arrivent à échéance en **avril**. C'est sur cette liste qu'on intervient — en mars — pour décider si on corrige, relance ou laisse partir le client avant que l'appel de cotisation parte.
 
-Le mois du préterme est donc toujours **mois courant + 1**.
+Le mois du préterme est toujours **mois courant + 1**.
+
+Le workflow couvre **2 agences** : `H91358` et `H92083`.
 
 ---
 
-## Étape 1 — Détermination du mois du préterme
+## Architecture — Fichiers clés
+
+### Types
+
+| Fichier | Rôle |
+|---|---|
+| `types/preterme.ts` | Toutes les interfaces TypeScript du workflow |
+
+### Services métier
+
+| Fichier | Rôle |
+|---|---|
+| `lib/utils/preterme-parser.ts` | Parser ExcelJS — 20 colonnes, mapping headers, normalisation, détection agence |
+| `lib/services/preterme-anomaly.ts` | Filtrage métier (seuils majo/ETP), calcul stats preview |
+| `lib/services/preterme-gemini.ts` | Classificateur Gemini batch 50, JSON strict, fallback `particulier` |
+| `lib/services/preterme-router.ts` | Routing par lettre/gérant → CDC |
+| `lib/services/preterme-trello.ts` | Dispatch Trello — titre, description, checklists, due date, retry 429 |
+
+### Firebase client
+
+| Fichier | Rôle |
+|---|---|
+| `lib/firebase/preterme.ts` | CRUD Firestore — `getDocFromServer` (anti-cache) pour les lectures post-dispatch |
+
+### API Routes
+
+| Route | Méthode | Rôle |
+|---|---|---|
+| `/api/admin/preterme-auto/upload` | POST | Import fichier Excel — idempotence sur `moisKey + numeroContrat` |
+| `/api/admin/preterme-auto/classify` | POST | Filtrage seuils + Gemini + écriture Firestore batch |
+| `/api/admin/preterme-auto/dispatch` | POST | Routing + création cartes Trello + snapshots CDC |
+| `/api/admin/preterme-auto/slack` | POST | Génération rapport + envoi `chat.postMessage` |
+| `/api/admin/preterme-auto/trello-lists` | GET | Liste les colonnes ouvertes d'un board Trello |
+
+### Composants UI
+
+| Composant | Étape |
+|---|---|
+| `components/preterme/Step1Periode.tsx` | Étape 1 |
+| `components/preterme/Step2Upload.tsx` | Étape 2 |
+| `components/preterme/Step3Thresholds.tsx` | Étape 2 (seuils + preview) |
+| `components/preterme/Step3Classify.tsx` | Étape 3 (classif IA) |
+| `components/preterme/Step4Gerants.tsx` | Étape 4 |
+| `components/preterme/Step5Dispatch.tsx` | Étape 5 |
+| `components/preterme/Step6Slack.tsx` | Étape 6 |
+
+Page principale : `app/admin/preterme-auto/page.tsx`
+
+---
+
+## Collections Firestore
+
+### `preterme_workflows`
+
+Document : `{moisKey}` (ex : `2026-04`)
+
+```typescript
+type WorkflowState = {
+  moisKey: string               // "2026-04"
+  moisLabel: string             // "Avril 2026"
+  confirmeAt: string            // ISO
+  etapeActive: 1 | 2 | 3 | 4 | 5 | 6
+  statut: "en_cours" | "terminé"
+  slackEnvoye?: boolean
+
+  agences: {
+    [codeAgence: string]: {     // ex: "H91358", "H92083"
+      fichierNom: string
+      clientsTotal: number
+      seuilMajo: number         // % — ex: 15
+      seuilEtp: number          // coefficient — ex: 1.20
+      clientsRetenus: number
+      etape2Statut: "en_attente" | "importé" | "bloqué"
+      etape3Statut: "en_attente" | "analysé" | "bloqué"
+      etape4Statut: "en_attente" | "complet" | "bloqué"
+      dispatchStatut: "en_attente" | "ok" | "erreur"
+      clients: ClientImporte[]  // tableau complet, mis à jour à chaque étape
+    }
+  }
+}
+```
+
+### `preterme_snapshots`
+
+Document : `{moisKey}_{cdcId}` — un document par CDC par mois, écrit au moment du dispatch.
+
+```typescript
+type SnapshotCdc = {
+  moisKey: string
+  snapshotAt: string            // ISO
+  cdcId: string
+  cdcPrenom: string             // copie figée — indépendant de la config
+  codeAgence: string
+  lettresAttribuees: string[]   // copie figée
+  clientsTotal: number
+  particuliers: number
+  entreprises: number
+  cartesCreees: number          // calculé sur l'état complet des clients (pas que ce batch)
+}
+```
+
+> **Important** : les snapshots ne sont écrits que pour les CDC effectivement dispatchés dans l'appel courant. Un dispatch sur un seul CDC ne doit pas écraser les snapshots des autres CDC déjà traités.
+
+### `config/trello`
+
+Voir section [Configuration — Paramètres Trello](#configuration--paramètres-trello).
+
+---
+
+## Étape 1 — Mois du préterme
 
 ### Objectif
 
-Confirmer le mois sur lequel porte le traitement avant toute action. C'est le contexte de référence pour tout le workflow.
+Confirmer le mois sur lequel porte le traitement. Ce mois est la **clé de référence** (`moisKey`) pour tout le workflow.
 
----
+### Règle de validation
 
-### Règle de validation de l'étape
-
-> L'étape 1 est **validée** quand l'utilisateur a confirmé le mois du préterme.
-
----
+L'étape 1 est validée quand l'utilisateur confirme le mois.
 
 ### Comportement
 
-- La date système est lue automatiquement
-- Le système propose le mois suivant comme mois du préterme (ex : si on est en **mars 2026**, le système propose **avril 2026**)
+- Date système lue automatiquement
+- Le système propose `mois courant + 1` (ex : mars → avril 2026)
 - L'utilisateur confirme ou modifie manuellement
-- Une fois validé, le mois est figé pour tout le workflow en cours
+- Une fois validé, le mois est figé — `moisKey` et `moisLabel` ne changent plus
 
----
-
-### Schéma de données (ébauche)
+### Données
 
 ```typescript
-type MoisPreterme = {
-  moisKey: string    // ex: "2026-04" — clé unique du workflow
-  moisLabel: string  // ex: "Avril 2026" — affiché dans l'UI
-  confirmeAt: Date
-}
+// Champs dans WorkflowState
+moisKey: "2026-04"    // format YYYY-MM
+moisLabel: "Avril 2026"
+confirmeAt: string    // ISO date
 ```
 
 ---
 
-## Étape 2 — Import & Filtrage par agence
+## Étape 2 — Import & Seuils par agence
 
 ### Objectif
 
-Importer les fichiers prétermes des deux agences, paramétrer les seuils de filtrage, visualiser les KPIs et valider les volumes avant de poursuivre.
+Importer les fichiers prétermes Excel des deux agences, paramétrer les seuils de filtrage, visualiser les KPIs, puis bloquer chaque agence pour figer les seuils.
 
----
+### Règle de validation
 
-### Règle de validation de l'étape
+L'étape 2 est validée quand les **deux agences sont bloquées**.
 
-> L'étape 2 est **validée** quand les **deux agences sont bloquées**.
+### Fichiers Excel
 
----
+- Un fichier par agence, format `.xlsx`
+- Le code agence est extrait du nom de fichier (ex : `H92083 LISTE PRETERMES DU Avr2026 BRANCHE AUTO.xlsx` → `H92083`)
+- **Détection automatique** via `detectAgenceFromFilename` (importé de `preterme-parser.ts`)
+- Fallback : sélection manuelle si la détection échoue
 
-### Fichiers à importer
+### Structure Excel — 20 colonnes (feuille `Feuil1`, ligne 1 = en-têtes)
 
-- Un fichier par agence (format Excel)
-- Le **code agence** est présent dans le nom du fichier (ex : `H92083 LISTE PRETERMES DU Avr2026 BRANCHE AUTO.xlsx`)
-- Il faut exactement **2 fichiers** pour pouvoir valider l'étape 2
-
----
-
-### Structure des fichiers Excel
-
-Les deux fichiers analysés (`H92083` et `H91358`) ont **exactement la même structure** — 20 colonnes, feuille unique `Feuil1`, ligne 1 = en-têtes.
-
-| # | En-tête | Type observé | Notes |
+| # | En-tête | Type | Notes |
 |---|---|---|---|
-| 1 | `Nom du client` | string | Utilisé pour le routing CDC (1ère lettre) |
-| 2 | `N° de Contrat` | string | **Identifiant unique du contrat** — clé de déduplication (voir ci-dessous) |
-| 3 | `Branche` | string | Toujours `"Auto"` dans ces fichiers |
-| 4 | `Echéance principale` | date | Format ISO |
-| 5 | `Code produit` | string / number | Ex : `"NOA2"`, `12222` |
-| 6 | `Mode de règlement` | string | Ex : `"PA"` |
-| 7 | `Code fractionnement` | string | Ex : `"Mensuel"` |
+| 1 | `Nom du client` | string | Routing CDC pour particuliers |
+| 2 | `N° de Contrat` | string | **Clé de déduplication** |
+| 3 | `Branche` | string | Toujours `"Auto"` |
+| 4 | `Echéance principale` | date | ISO |
+| 5 | `Code produit` | string/number | Ex : `NOA2`, `12222` |
+| 6 | `Mode de règlement` | string | Ex : `PA` |
+| 7 | `Code fractionnement` | string | Ex : `Mensuel` |
 | 8 | `Prime TTC annuelle précédente` | number | En € |
-| 9 | `Prime TTC annuelle actualisée` | number | En € (espace avant le nom) |
-| 10 | `Taux de variation` | number | **= Majoration** — en % (ex : `48.86` = +48,86 %) |
-| 11 | `Surveillance portefeuille` | string | `"Oui"` / `"Non"` (espace avant le nom) |
-| 12 | `Avantage client` | number / string | Ex : `10`, `"0.00"` |
-| 13 | `Formule` | string / number | Ex : `"C2"`, `5` |
-| 14 | `Packs` | null / string | Souvent vide |
+| 9 | `Prime TTC annuelle actualisée` | number | En € |
+| 10 | `Taux de variation` | number | **= Majoration** en % (ex : `48.86`) |
+| 11 | `Surveillance portefeuille` | string | `Oui` / `Non` |
+| 12 | `Avantage client` | number/string | Ex : `10` |
+| 13 | `Formule` | string/number | Ex : `C2` |
+| 14 | `Packs` | null/string | Souvent vide |
 | 15 | `Nb sinistres` | number | |
 | 16 | `Bonus/Malus` | number | Coefficient (ex : `0.57`) |
-| 17 | `ETP` | number | Coefficient multiplicateur (ex : `1.29` = 129 %) |
-| 18 | `Code gestion centrale` | number / null | Ex : `5000`, `1447` |
-| 19 | `Taux de modulation commission` | number | Toujours `0` observé |
-| 20 | `Date d'effet du dernier avenant` | date | Format ISO (espaces en fin de nom) |
+| 17 | `ETP` | number | Coefficient décimal (ex : `1.29` = 129 %) |
+| 18 | `Code gestion centrale` | number/null | |
+| 19 | `Taux de modulation commission` | number | |
+| 20 | `Date d'effet du dernier avenant` | date | ISO |
 
-> **Idempotence — N° de Contrat** : la clé de déduplication est la combinaison **`moisKey` + `N° de Contrat`**. Sur un même mois, un contrat ne peut pas être importé deux fois — il est mis à jour, jamais dupliqué. En revanche, le même contrat peut tout à fait réapparaître sur un mois futur (ex : une nouvelle correction un an plus tard) : ce sera une entrée distincte.
+> **Idempotence** : clé de déduplication = `moisKey` + `N° de Contrat`. Un contrat ne peut pas être importé deux fois sur le même mois — il est mis à jour, jamais dupliqué.
 
-> **ETP** : les valeurs sont des coefficients décimaux (ex : `1.29` = 129 %). Le seuil de rétention est `>= 1.20` dans le fichier (= 120 %).
-
----
-
-### KPIs affichés par agence
-
-| KPI | Description |
-|---|---|
-| **Clients total** | Nombre total de lignes dans le fichier |
-| **Clients retenus** | Clients correspondant aux deux critères actifs |
-| **Clients exclus** | Total − Retenus |
-
----
+> **ETP** : valeurs décimales (ex : `1.29`). Seuil par défaut : `>= 1.20`.
 
 ### Critères de rétention
 
-Un client est **retenu** si les deux conditions suivantes sont réunies (logique ET) :
+Un client est **retenu** si les **deux** conditions suivantes sont réunies :
 
 | Critère | Colonne | Valeur par défaut |
 |---|---|---|
-| **Taux de variation** | `col 10` | `>= 15` — en % |
-| **ETP** | `col 17` | `>= 1.20` — coefficient décimal (= 120 %) |
+| **Taux de variation** | col 10 | `>= 15` % |
+| **ETP** | col 17 | `>= 1.20` |
 
----
+Les seuils sont configurables indépendamment par agence. Modifier un seuil recalcule les KPIs en temps réel (preview sans ré-import).
 
-### Paramétrage par agence
-
-- Les seuils `majo` et `etp` sont **configurables indépendamment** pour chaque agence
-- Modifier un seuil recalcule instantanément les KPIs (preview temps réel)
-- Les deux agences peuvent avoir des seuils **différents**
-
----
-
-### Blocage d'une agence
-
-- Quand l'utilisateur est satisfait des volumes de clients retenus, il **bloque l'agence**
-- Le blocage **fige** les seuils `majo` et `etp` choisis pour cette agence
-- Une agence bloquée n'est plus modifiable (sauf déblocage explicite)
-- Les deux agences doivent être bloquées pour valider l'étape 2
-
----
-
-### États possibles d'une agence
+### États d'une agence
 
 | État | Description |
 |---|---|
 | `en_attente` | Fichier non importé |
 | `importé` | Fichier chargé, seuils modifiables, KPIs visibles |
-| `bloqué` | Seuils figés, agence prête — contribue à la validation de l'étape |
+| `bloqué` | Seuils figés — agence prête pour la suite |
 
 ---
 
-### Schéma de données (ébauche)
+## Étape 3 — Classification IA (Gemini)
+
+### Objectif
+
+Classifier chaque client retenu en **Particulier** ou **Entreprise** via Gemini Flash, avec correction manuelle possible.
+
+### Règle de validation
+
+L'étape 3 est validée quand les **deux agences sont bloquées**.
+
+### Comportement
+
+- **Déclenchement automatique** à l'ouverture de l'étape
+- Un appel Gemini par agence (batch de tous les clients retenus)
+- Affichage en deux colonnes : `Particulier` | `Entreprise`
+- Clic sur une carte → bascule dans l'autre colonne (toggle instantané)
+- Correction marquée `corrigeParUtilisateur: true`
+
+### Appel Gemini
+
+**Input :**
+```json
+[
+  { "numeroContrat": "60214313", "nomClient": "BARTHELEMY-RIO VIRGINIE" },
+  { "numeroContrat": "60198742", "nomClient": "SARL DUPONT SERVICES" }
+]
+```
+
+**System prompt :**
+```
+Tu es un classificateur. Pour chaque entrée, détermine si le nom correspond à un particulier
+(nom + prénom d'une personne physique) ou à une entreprise (raison sociale, sigle, forme juridique
+comme SARL, SAS, EURL, SA, SCI, AUTO-ENTREPRENEUR, etc.).
+
+Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans balises markdown.
+Format : [{ "numeroContrat": "...", "classification": "particulier" | "entreprise" }]
+
+En cas d'ambiguïté, utilise "particulier" par défaut.
+```
+
+**Output :**
+```json
+[
+  { "numeroContrat": "60214313", "classification": "particulier" },
+  { "numeroContrat": "60198742", "classification": "entreprise" }
+]
+```
+
+**Modèle** : `gemini-2.0-flash`
+**Clé API** : `GEMINI_API_KEY` (`.env.local`)
+**Fallback** : si la réponse n'est pas parseable → `particulier` par défaut
+
+---
+
+## Étape 4 — Gérants des entreprises
+
+### Objectif
+
+Saisir le nom du gérant pour chaque client classé **Entreprise**. Les particuliers ne sont pas concernés.
+
+### Règle de validation
+
+L'étape 4 est validée quand les **deux agences sont bloquées**.
+
+### Règles
+
+- Seuls les clients `classificationFinale === "entreprise"` sont affichés
+- Champ `gerant` obligatoire — pas de valeur vide autorisée
+- Les particuliers ont `gerant: null`
+
+### Impact sur le routing (étape 5)
+
+Le routing utilise la **première lettre du gérant** (pas du nom du client) pour les entreprises :
 
 ```typescript
-type AgenceImport = {
-  codeAgence: string    // ex: "H92083" — extrait du nom de fichier
-  fichierNom: string
-  clientsTotal: number
-  seuilMajo: number     // défaut: 15 (Taux de variation en %)
-  seuilEtp: number      // défaut: 1.20 (ETP coefficient décimal)
-  clientsRetenus: number  // calculé : tauxVariation >= seuilMajo AND etp >= seuilEtp
-  clientsExclus: number   // calculé : total - retenus
-  statut: "en_attente" | "importé" | "bloqué"
+// lib/services/preterme-router.ts
+function getRoutingName(client): string {
+  if (client.classificationFinale === "entreprise" && client.gerant?.trim()) {
+    return client.gerant.trim()  // routing sur le gérant
+  }
+  return client.nomClient  // routing sur le nom client
 }
 ```
 
 ---
 
-## Étape 3 — Classification Particulier / Entreprise
+## Étape 5 — Routing & Dispatch Trello
 
 ### Objectif
 
-Pour chaque agence, classer automatiquement les clients **retenus** (issus de l'étape 2) en deux catégories : **Particulier** ou **Entreprise**. Gemini propose une classification à l'ouverture de l'étape, l'utilisateur la vérifie et la corrige si besoin, puis bloque l'agence.
+Visualiser la charge par CDC, puis créer les cartes Trello dans le tableau de chaque CDC.
 
----
+### Routing — Règles
 
-### Règle de validation de l'étape
+1. Extraire la première lettre du nom de routing (`getRoutingName` → gérant si entreprise, sinon nom client)
+2. Normalisation : NFD → strip accents → uppercase → `[0]`
+3. Chercher le CDC dont le tableau `letters` contient cette lettre
+4. Si aucun CDC → client en erreur (`dispatchStatut: "erreur"`)
+5. Si le CDC n'a pas `boardId` ou `lists.pretermeAuto` configuré → erreur
 
-> L'étape 3 est **validée** quand les **deux agences sont bloquées**.
+### Dispatch — Fonctionnement
 
----
+- **Par CDC** : l'utilisateur peut dispatcher un CDC à la fois ou tous ensemble
+- **Idempotence** : si `client.trelloCardId` est renseigné → mise à jour de la carte (`PUT /cards/:id`), pas de doublon
+- **Position** : `pos: "bottom"` — cartes en fin de colonne
+- **Retry 429** : `sleep(1500ms)` puis retry (max 2 tentatives)
+- **Firestore** : mise à jour en dot-notation (`agences.H91358.clients`) pour éviter les conflits entre CDC dispatchés en parallèle
 
-### Comportement — Classification par Gemini
+### Format carte Trello
 
-- **Déclenchement automatique à l'ouverture de l'étape** — pas d'action manuelle requise
-- Un appel Gemini Flash par agence (batch) — voir section [IA — Gemini Flash](#ia--gemini-flash)
-- Gemini reçoit la liste complète des clients retenus de l'agence et retourne une classification pour chacun
-- Le résultat est affiché sous forme de **deux colonnes** : `Particulier` | `Entreprise`
-- Chaque client est placé dans la colonne correspondante
-
----
-
-### Correction manuelle
-
-- Un **clic sur une carte** la bascule dans l'autre colonne (toggle Particulier ↔ Entreprise)
-- La modification est instantanée et met à jour les KPIs en temps réel
-
----
-
-### KPIs par agence
-
-| KPI | Description |
-|---|---|
-| **Clients retenus** | Total hérité de l'étape 2 (inchangé) |
-| **Particuliers** | Nombre de clients classés Particulier |
-| **Entreprises** | Nombre de clients classés Entreprise |
-
-> Invariant : `Particuliers + Entreprises = Clients retenus`
-
----
-
-### Blocage d'une agence
-
-- Quand l'utilisateur est satisfait du classement d'une agence, il la **bloque**
-- Le blocage fige la répartition Particulier / Entreprise pour cette agence
-- Les deux agences doivent être bloquées pour valider l'étape 3
-
----
-
-### Schéma de données (ébauche)
-
-```typescript
-type ClassificationClient = "particulier" | "entreprise"
-
-type ClientRetenu = {
-  numeroContrat: string                         // clé — héritée étape 2
-  nomClient: string
-  classificationIA: ClassificationClient        // proposition de Gemini
-  classificationFinale: ClassificationClient    // après correction manuelle éventuelle
-  corrigeParUtilisateur: boolean
-}
-```
-
----
-
-## Étape 4 — Détermination des gérants
-
-### Objectif
-
-Pour les clients classés **Entreprise** (issus de l'étape 3), renseigner le nom du gérant. Les particuliers ne sont pas concernés par cette étape.
-
----
-
-### Règle de validation de l'étape
-
-> L'étape 4 est **validée** quand les **deux agences sont bloquées**.
-
----
-
-### Saisie des gérants
-
-- Seuls les clients **Entreprise** sont affichés
-- Pour chaque entreprise, un champ texte permet de saisir le nom du gérant
-- La saisie se fait **entreprise par entreprise**
-- Le nom du gérant est **obligatoire** — un gérant manquant bloque le passage à l'étape suivante
-- Pas de valeur vide ou N/A autorisée
-
----
-
-### Blocage d'une agence
-
-- Quand tous les gérants sont renseignés pour une agence, l'utilisateur la **bloque**
-- Les deux agences doivent être bloquées pour valider l'étape 4
-
----
-
-### Schéma de données (ébauche)
-
-```typescript
-type ClientEntreprise = {
-  numeroContrat: string    // clé — héritée étape 3
-  nomClient: string
-  gerant: string           // obligatoire — jamais null
-}
-```
-
----
-
-## Étape 5 — Routing vers les CDC
-
-### Objectif
-
-Visualiser la charge par CDC avant le dispatch, puis envoyer les données pour créer les cartes Trello dans le tableau de chaque CDC.
-
----
-
-### Phase 1 — Visualisation de la charge
-
-- Affichage **agence par agence**
-- Pour chaque CDC : nombre de clients assignés (particuliers + entreprises)
-- KPIs visuels par CDC : total clients, dont particuliers, dont entreprises
-- Routing automatique : première lettre du nom du client → CDC selon `/config/trello`
-
-```
-Exemple — Agence Kennedy :
-  Corentin (A–C + X) → 12 clients  (8 particuliers, 4 entreprises)
-  Emma     (D–F)     →  7 clients  (5 particuliers, 2 entreprises)
-  Donia    (G–W)     →  9 clients  (6 particuliers, 3 entreprises)
-```
-
----
-
-### Phase 2 — Dispatch Trello
-
-Une fois la charge validée visuellement, l'utilisateur déclenche l'envoi.
-
-**Source de configuration** : `/config/trello` (Firestore) — voir section [Configuration — Trello & CDC](#configuration--trello--cdc)
-
-**Une carte Trello est créée par client**, dans la colonne `Préterme Auto` du CDC assigné.
-
-> **Idempotence du dispatch** : si le dispatch est relancé sur un client déjà dispatché (`trelloCardId` non null), la carte existante est mise à jour — jamais dupliquée.
-
----
-
-### Format de la carte Trello
-
-Chaque carte doit permettre au CDC de comprendre la situation et préparer son action **sans ouvrir d'autre outil**.
-
-**Titre**
-
+**Titre :**
 ```
 [AUTO] NOM DU CLIENT — Échéance JJ/MM/AAAA
 ```
 
-Exemple :
-```
-[AUTO] BARTHELEMY-RIO VIRGINIE — Échéance 04/04/2026
-```
+**Date d'échéance** (`due`) : `echeancePrincipale` convertie en ISO, fixée à **midi UTC** pour éviter les décalages de fuseau. Uniquement sur les nouvelles cartes.
 
-**Description**
+**Description :**
+```markdown
+## 🔴 DOUBLE ALERTE — Préterme Auto Avril 2026
 
-```
-## Contrat
-- N° de contrat     : 60214313
-- Code produit      : NOA2
-- Formule           : C3
-- Fractionnement    : Mensuel
-- Mode de règlement : PA
-
-## Tarif
-- Prime précédente  : 962,28 €
-- Prime actualisée  : 1 078,44 €
-- Majoration        : +12,07 %
-- ETP               : 1,29
-
-## Sinistralité
-- Nb sinistres      : 2
-- Bonus/Malus       : 0,50
-
-## Client
-- Type              : Particulier
-- Surveillance      : Non
-- Avantage client   : 10
-- Dernier avenant   : 04/04/2025
-
-## Entreprise (si applicable)
-- Gérant            : [nom saisi étape 4]
-```
-
-**Champs non inclus dans la carte** (peu exploitables en action) : `Code gestion centrale`, `Taux de modulation commission`, `Packs`, `Branche`
+🤖 Carte générée le 14/03/2026 à 10:32 — suivi proactif avant échéance du 04/04/2026.
 
 ---
 
-### Cas d'erreur
+## 🎯 Pourquoi ce client ?
 
-| Cas | Comportement attendu |
+- 📈 Majoration tarifaire : +48.86 % → dépasse le seuil de 15 % ✅
+- 📊 ETP : 1.29 → dépasse le seuil de 1.2 ✅
+
+- 🏷️ Profil : 👤 Particulier (détection IA)
+
+---
+
+## 📋 Fiche contrat
+
+- 🔢 N° contrat      : 60214313
+- 🚗 Code produit    : NOA2
+- 📦 Formule         : C3
+- 🔄 Fractionnement  : Mensuel
+- 💳 Règlement       : PA
+- 📝 Dernier avenant : 04/04/2025
+- 📅 Échéance        : 04/04/2026
+
+---
+
+## 💶 Situation tarifaire
+
+- Prime N-1          : 962,28 €
+- Prime actualisée   : 1 078,44 €
+- ⚠️ Variation       : +48.86 %
+- ETP                : 1.29
+
+---
+
+## 🚨 Sinistralité (N-3)
+
+- Nb sinistres    : ⚠️ 2
+- Bonus/Malus     : 0.50
+- Surveillance PF : Non
+- Avantage client : 10
+
+---
+
+💡 Utilisez les checklists ci-dessous pour suivre vos actions, et les Commentaires pour noter chaque échange (date, canal, contenu, suite donnée).
+```
+
+**Niveau d'alerte dans le titre de description :**
+- `🔴 DOUBLE ALERTE` : majo ET ETP dépassent les seuils
+- `🟠 ALERTE` : un seul critère dépasse
+- `🟡 SURVEILLANCE` : aucun critère (cas rare)
+
+### Checklists Trello (créées uniquement à la première création — pas sur mise à jour)
+
+**📬 Tentatives de contact** (6 items) :
+- 📞 1er appel tenté — date : ___________
+- ✅ Client joint
+- 📱 SMS de relance — date : ___________
+- 📧 Mail de relance — date : ___________
+- 🎙️ Message vocal laissé — date : ___________
+- 🔁 Rappel client reçu — date : ___________
+
+**🤝 Entretien** (3 items) :
+- 📅 Entretien planifié — date/heure : ___________
+- ✅ Entretien réalisé
+- 📝 Compte-rendu rédigé
+
+**🏁 Résultat final** (4 items) :
+- 🟢 Fidélisé — contrat maintenu
+- 🔴 Résilié — départ client
+- ⚫ Sans suite — client injoignable
+- 🟡 En attente — suivi en cours
+
+> Les checklists sont non-bloquantes : si la création échoue, la carte est quand même créée.
+
+### Indicateurs UI (Step5Dispatch)
+
+- Badge vert `X envoyées` quand un CDC est dispatché
+- Bouton `↺ Renvoyer` → inline Oui / Non pour confirmation avant re-dispatch
+- Toast Sonner : succès (vert), avertissement erreurs partielles (amber), erreur complète (rouge)
+- Bannière erreur si l'agence est absente de la config Trello
+
+### Statut dispatch agence
+
+Calculé sur l'**ensemble** des clients retenus (pas seulement le CDC en cours) :
+
+| Statut | Condition |
 |---|---|
-| Première lettre non couverte dans la config | Client signalé en erreur — non dispatché |
-| `boardId` ou `lists.pretermeAuto` manquant pour un CDC | Bloque le dispatch pour ce CDC — avertissement |
-
----
-
-### Schéma de données (ébauche)
-
-```typescript
-type ClientRouté = {
-  numeroContrat: string
-  nomClient: string
-  premiereLettre: string
-  codeAgence: string
-  cdcId: string
-  cdcPrenom: string
-  boardId: string                   // depuis /config/trello
-  trelloListId: string              // lists.pretermeAuto depuis /config/trello
-  classification: "particulier" | "entreprise"
-  gerant: string | null
-  trelloCardId: string | null       // renseigné après création de la carte
-  dispatchStatut: "en_attente" | "ok" | "erreur"
-}
-```
+| `en_attente` | Au moins un client encore `en_attente` |
+| `ok` | Tous traités, aucune erreur |
+| `erreur` | Tous traités, au moins une erreur |
 
 ---
 
@@ -409,136 +453,83 @@ type ClientRouté = {
 
 ### Objectif
 
-Une fois les cartes des deux agences envoyées dans Trello, le système génère un rapport de synthèse et l'envoie automatiquement sur Slack.
-
----
-
-### Règle de déclenchement
-
-> L'étape 6 se débloque quand le dispatch Trello des **deux agences** est terminé.
-
----
+Envoyer une synthèse du traitement sur Slack. Se débloque quand les **deux agences** ont un `dispatchStatut` différent de `en_attente`.
 
 ### Canal cible
 
-- Channel ID : `CE58HNVF0`
-- Configuration Slack : `https://notre-saas-agence.com/admin/parametres-slack`
+- **Production** : `CE58HNVF0`
+- Scope Slack requis : `chat:write` **et** `chat:write.public` (pour les canaux publics sans le bot membre)
+- Configuration bot : `https://api.slack.com/apps` → OAuth & Permissions → réinstaller l'app après ajout de scope
+
+### Contenu du message Slack
+
+Le message est généré à la volée depuis les données du workflow (`preterme_workflows/{moisKey}`) + la config Trello (`config/trello`). **Pas de dépendance aux snapshots** — les données CDC sont recalculées par `routeClientsTocdcs`.
+
+```
+📋 *Préterme Auto — Avril 2026*
+_Traitement terminé le 14/03/2026_
+
+*🏢 AGENCE H91358*
+     • Contrats importés (fichier Avril 2026) : 450
+     • Retenus (critères)  : 134  _(majo ≥ 15 % | ETP ≥ 1,20)_
+     • Particuliers : 110   Entreprises : 24
+     • Cartes Trello créées : 132 ✅
+
+     Détail par CDC :
+     › *Corentin* [A B C D E F G H] — 45/46 cartes _(⚠️ 1 err)_
+     › *Emma* [I J K L M N O P Q] — 52/52 cartes ✅
+     › *Donia* [R S T U V W X Y Z] — 35/36 cartes _(⚠️ 1 err)_
+
+*🏢 AGENCE H92083*
+     • Contrats importés (fichier Avril 2026) : 380
+     • Retenus (critères)  : 98  _(majo ≥ 15 % | ETP ≥ 1,20)_
+     • Particuliers : 80   Entreprises : 18
+     • Cartes Trello créées : 98 ✅
+
+     Détail par CDC :
+     › *Joëlle* [A B C D E F G] — 27/28 cartes _(⚠️ 1 err)_
+     › *Matthieu* [H I J K L M N] — 35/35 cartes ✅
+     › *Sandra* [O P Q R S T U V W X Y Z] — 36/35 cartes ✅
+
+─────────────────────────────────
+*📊 TOTAL CONSOLIDÉ — 2 agences*
+• Contrats importés : 830
+• Retenus      : 232
+• Cartes créées: 230   ⚠️ Erreurs : 2
+```
+
+### Idempotence
+
+- Une fois envoyé, `slackEnvoye: true` et `statut: "terminé"` sont écrits dans Firestore
+- L'UI affiche `Rapport envoyé sur Slack` et masque le bouton d'envoi
 
 ---
 
-### Contenu du rapport
-
-Le système génère un message dynamique à partir de toutes les données du workflow. Le rapport doit être **lisible directement dans Slack**, sans avoir à ouvrir l'application.
-
-Structure :
-
-```
-📋 Préterme Auto — Avril 2026
-
-Traitement terminé. Voici la synthèse :
-
-AGENCE H92083
-• Clients total        : XX
-• Clients retenus      : XX  (majo ≥ 15 % | ETP ≥ 1,20)
-• Particuliers         : XX
-• Entreprises          : XX
-• Cartes Trello créées : XX
-
-AGENCE H91358
-• Clients total        : XX
-• Clients retenus      : XX
-• Particuliers         : XX
-• Entreprises          : XX
-• Cartes Trello créées : XX
-
-TOTAL — 2 agences
-• Clients retenus      : XX
-• Cartes créées        : XX
-• Erreurs dispatch     : XX
-```
-
----
-
-### Schéma de données (ébauche)
-
-```typescript
-type RapportSlack = {
-  moisKey: string             // ex: "2026-04"
-  moisLabel: string           // ex: "Avril 2026"
-  agences: {
-    codeAgence: string
-    clientsTotal: number
-    clientsRetenus: number
-    particuliers: number
-    entreprises: number
-    cartesCreees: number
-    erreurs: number
-  }[]
-  totalRetenus: number
-  totalCartesCreees: number
-  totalErreurs: number
-  slackChannelId: string      // "CE58HNVF0"
-  envoyeAt: Date
-}
-```
-
----
-
-## Arrière-plan — Snapshot historique
+## Snapshot historique
 
 ### Objectif
 
-Au moment du dispatch (étape 5), le système enregistre silencieusement une **photo figée** de la répartition. Ce snapshot est indépendant de la configuration Trello courante et ne sera jamais modifié.
-
----
-
-### Pourquoi figer ?
-
-Les effectifs évoluent : un CDC peut partir, changer d'agence, voir ses lettres redistribuées. Il faut pouvoir répondre à la question **"qui a traité quoi, ce mois-là ?"** sans que la réponse change avec le temps.
-
-> Exemple : Matthieu avait 24 clients en avril 2026. Il quitte l'agence en juin. Le snapshot d'avril doit toujours afficher ses 24 clients.
-
----
+Figer la répartition par CDC au moment du dispatch. Permet de répondre à "qui a traité quoi ce mois-là ?" même si la config Trello a changé depuis.
 
 ### Déclenchement
 
-- Automatique, invisible pour l'utilisateur
-- Déclenché en même temps que le dispatch Trello (étape 5)
-- Aucune action manuelle requise
+Automatique, invisible, au moment du dispatch (étape 5).
 
----
+### Règles importantes
 
-### Ce qui est figé
+1. **Écriture sélective** : on n'écrit que les snapshots des CDC dispatchés dans *cet* appel — pas de réécriture des CDC déjà traités.
+2. **Comptage correct** : `cartesCreees` est calculé depuis l'état complet des `updatedClients` (pas seulement les clients du batch courant).
+3. **Indépendance** : les données sont copiées — modifier ou supprimer un CDC dans les paramètres n'altère pas les snapshots passés.
 
-Pour chaque CDC ayant reçu des clients ce mois :
-
-| Champ | Description |
-|---|---|
-| `moisKey` | Ex : `"2026-04"` |
-| `cdcPrenom` | Copie du prénom au moment du dispatch — indépendant de la config |
-| `codeAgence` | Agence de rattachement au moment du dispatch |
-| `lettresAttribuees` | Copie de la plage de lettres au moment du dispatch |
-| `clientsTotal` | Nombre de clients assignés |
-| `particuliers` | Dont particuliers |
-| `entreprises` | Dont entreprises |
-| `cartesCreees` | Cartes Trello effectivement créées |
-| `snapshotAt` | Horodatage de la création du snapshot |
-
-> Les données sont copiées — elles ne pointent pas vers `/config/trello`. Modifier ou supprimer un CDC dans les paramètres n'altère pas les snapshots passés.
-
----
-
-### Schéma de données (ébauche)
+### Collection Firestore : `preterme_snapshots`
 
 ```typescript
-// Collection Firestore : preterme_snapshots
-// Document : `{moisKey}_{cdcId}` — un document par CDC par mois
-
+// Document : {moisKey}_{cdcId}
 type SnapshotCdc = {
-  moisKey: string           // ex: "2026-04"
-  snapshotAt: Date
-  cdcId: string             // copie de l'id au moment du dispatch
-  cdcPrenom: string         // copie — ne pas référencer /config/trello
+  moisKey: string
+  snapshotAt: string        // ISO
+  cdcId: string
+  cdcPrenom: string         // copie au moment du dispatch
   codeAgence: string
   lettresAttribuees: string[]
   clientsTotal: number
@@ -550,168 +541,79 @@ type SnapshotCdc = {
 
 ---
 
-## Persistance — État du workflow
+## Configuration — Paramètres Trello
 
-### Objectif
+### Page admin
 
-Permettre de reprendre un workflow en cours à tout moment, depuis n'importe quelle machine (agence le matin, maison le soir). Chaque action écrit immédiatement dans Firestore — l'état est toujours à jour.
+`/admin/parametres-trello`
 
----
-
-### Règles
-
-- **Un seul workflow actif à la fois** — identifié par son `moisKey`
-- Si un workflow `en_cours` existe déjà et qu'on tente d'en démarrer un nouveau, l'app avertit et propose de continuer l'existant ou de l'archiver
-- À l'ouverture de l'app, l'état est lu depuis Firestore et l'UI est restaurée exactement là où on s'était arrêté
-- Chaque action utilisateur (blocage agence, clic classification, saisie gérant, dispatch...) écrit immédiatement dans Firestore
-
----
-
-### Collection Firestore : `preterme_workflows`
-
-Document : `{moisKey}` — un seul document par mois actif
+### Collection Firestore : `config/trello`
 
 ```typescript
-type WorkflowState = {
-  moisKey: string              // "2026-04" — clé du document
-  moisLabel: string            // "Avril 2026"
-  confirmeAt: Date
-  etapeActive: 1 | 2 | 3 | 4 | 5 | 6
-  statut: "en_cours" | "terminé"
+type TrelloConfig = {
+  agencies: Agency[]
+}
 
-  agences: {
-    [codeAgence: string]: {
-      // Étape 2
-      fichierNom: string
-      clientsTotal: number
-      seuilMajo: number
-      seuilEtp: number
-      clientsRetenus: number
-      etape2Statut: "en_attente" | "importé" | "bloqué"
+type Agency = {
+  code: string          // ex: "H91358" — doit correspondre EXACTEMENT au code dans le nom de fichier
+  name: string          // ex: "Kennedy"
+  cdc: CDC[]
+}
 
-      // Étape 3
-      etape3Statut: "en_attente" | "analysé" | "bloqué"
-      clients: ClientRetenu[]
-
-      // Étape 4
-      etape4Statut: "en_attente" | "complet" | "bloqué"
-
-      // Étape 5
-      dispatchStatut: "en_attente" | "ok" | "erreur"
-    }
+type CDC = {
+  id: string            // ex: "corentin" — stable, jamais modifié
+  firstName: string     // ex: "Corentin" — affiché dans l'UI
+  letters: string[]     // ex: ["A","B","C","X"] — lettres individuelles, sans doublons
+  boardId?: string      // Trello board ID
+  lists?: {
+    pretermeAuto?: string   // Trello list ID de la colonne "Préterme Auto"
+    processM3?: string
+    pretermeIrd?: string
   }
 }
 ```
 
----
+### Règles de configuration
 
-## Configuration — Trello & CDC
+- `CDC.boardId` et `CDC.lists` sont **optionnels** — seul le prénom est requis pour créer un CDC
+- `isTrelloComplete(cdc)` : `true` si `boardId` + les 3 list IDs sont renseignés
+- `CdcCard` : badge **orange** si Trello manquant, **vert** si complet
+- Code agence dans la config **doit matcher** le code dans le nom de fichier Excel (ex : `H91358`, pas `Kennedy`)
+- Ajout d'une agence via `<select>` sur les codes connus (`H91358`, `H92083`) — pas de saisie libre
 
-### Collection Firestore : `/config/trello`
+### Routing des lettres
 
-La configuration Trello est lue à l'étape 5 pour le routing et le dispatch. Elle est également copiée dans les snapshots au moment du dispatch (indépendance historique).
-
----
-
-### Structure d'un CDC
-
-```typescript
-// Collection : config
-// Document   : trello
-// Sous-collection : cdc
-// Document   : {cdcId}
-
-type CdcConfig = {
-  cdcId: string           // ex: "corentin" — identifiant stable
-  cdcPrenom: string       // ex: "Corentin" — affiché dans l'UI
-  codeAgence: string      // ex: "H92083" — agence de rattachement
-  lettres: string[]       // ex: ["A","B","C","X","Y"]
-                          // Tableau de lettres individuelles — non contiguës possibles
-                          // 4 à 6 CDC par agence
-  boardId: string         // Trello board ID du CDC
-  lists: {
-    pretermeAuto: string  // Trello list ID de la colonne "Préterme Auto"
-  }
-}
-```
-
----
-
-### Routing
-
-- La première lettre du `Nom du client` (uppercase, sans accent) est comparée au tableau `lettres` de chaque CDC
-- Si aucun CDC ne couvre la lettre → client en erreur, non dispatché
-- Les lettres doivent couvrir l'ensemble de l'alphabet sans doublon (responsabilité de la configuration)
+- Les lettres couvrent idéalement l'alphabet complet sans doublons (responsabilité de la configuration)
+- Lettre non couverte → client en erreur, non dispatché
+- CDC sans Trello configuré → client en erreur, non dispatché
 
 ---
 
 ## IA — Gemini Flash
 
-### Usage
+### Modèle
 
-Gemini Flash (`gemini-2.0-flash`) est utilisé uniquement à l'**étape 3** pour la classification Particulier / Entreprise.
+`gemini-2.0-flash`
 
-La clé API est lue depuis `GEMINI_API_KEY` dans `.env.local`.
+### Usage dans le workflow
 
----
+Uniquement à l'**étape 3** — classification Particulier / Entreprise.
 
-### Appel — Classification
+### Clé API
 
-- **Un appel par agence** (batch) — tous les clients retenus de l'agence en une seule requête
-- Déclenché automatiquement à l'ouverture de l'étape 3
-
-**Input envoyé à Gemini :**
-
-```json
-[
-  { "numeroContrat": "60214313", "nomClient": "BARTHELEMY-RIO VIRGINIE" },
-  { "numeroContrat": "60198742", "nomClient": "SARL DUPONT SERVICES" }
-]
-```
-
-**System prompt :**
-
-```
-Tu es un classificateur. Pour chaque entrée, détermine si le nom correspond à un particulier (nom + prénom d'une personne physique) ou à une entreprise (raison sociale, sigle, forme juridique comme SARL, SAS, EURL, SA, SCI, AUTO-ENTREPRENEUR, etc.).
-
-Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans balises markdown.
-Format de réponse : [{ "numeroContrat": "...", "classification": "particulier" | "entreprise" }]
-
-En cas d'ambiguïté, utilise "particulier" par défaut.
-```
-
-**Output attendu :**
-
-```json
-[
-  { "numeroContrat": "60214313", "classification": "particulier" },
-  { "numeroContrat": "60198742", "classification": "entreprise" }
-]
-```
-
----
+`GEMINI_API_KEY` dans `.env.local`
 
 ### Gestion des erreurs
 
 | Cas | Comportement |
 |---|---|
-| Réponse non parseable | Retry une fois, puis afficher une erreur à l'utilisateur |
-| `numeroContrat` manquant dans la réponse | Client marqué `particulier` par défaut |
-| Timeout ou erreur réseau | Retry une fois, puis afficher une erreur à l'utilisateur |
-
----
+| Réponse non parseable | Retry 1 fois, puis fallback `particulier` |
+| `numeroContrat` absent dans la réponse | Client marqué `particulier` |
+| Timeout / erreur réseau | Retry 1 fois, puis erreur affichée à l'utilisateur |
 
 ---
 
 ## Design — Charte visuelle
-
-### Univers
-
-- **Mode** : dark mode exclusif
-- **Esthétique** : glassmorphism + gradients colorés + animations fluides (type Framer Motion)
-- **Stack** : Next.js / React
-
----
 
 ### Palette
 
@@ -719,97 +621,92 @@ En cas d'ambiguïté, utilise "particulier" par défaut.
 |---|---|---|
 | Background principal | `#0e0c1a` | Page, layout global |
 | Surface card | `rgba(255,255,255,0.03)` | Cartes, panneaux |
-| Surface card active | `rgba(155,135,245,0.06)` | Élément sélectionné / focus |
+| Surface card active | `rgba(155,135,245,0.06)` | Élément sélectionné |
 | Bordure subtile | `rgba(255,255,255,0.08)` | Bordures au repos |
-| Bordure active | `rgba(155,135,245,0.25)` | Bordures sélectionnées |
-| Accent violet | `#9b87f5` / `#c4b5fd` | Éléments principaux, timeline spine |
-| Accent amber | `#ef9f27` / `#fbbf24` | Badges IA / Gemini, arrière-plan |
-| Accent vert | `#2dc596` / `#34d399` | Badges "Auto", succès |
+| Accent violet | `#9b87f5` | Éléments principaux |
+| Accent vert | `#2dc596` | Succès, badges Auto |
+| Accent amber | `#ef9f27` | Badges IA / Gemini |
 | Texte primaire | `#f0eeff` | Titres |
-| Texte secondaire | `rgba(200,196,230,0.55)` | Descriptions, labels |
-
----
+| Texte secondaire | `rgba(200,196,230,0.55)` | Descriptions |
 
 ### Typographie
 
 | Élément | Police | Taille | Poids |
 |---|---|---|---|
-| Titres / headings | **Syne** | 22px / 14px | 700 / 600 |
-| Corps / descriptions | **DM Sans** | 13–14px | 300–500 |
-| Labels techniques | **DM Mono** | 11–12px | 400 |
-
----
+| Titres | **Syne** | 20–22px | 700 |
+| Labels étape | **DM Mono** | 11px | 600 |
+| Corps | **DM Sans** | 13–14px | 400 |
 
 ### Composants — principes
 
-**Cards (panneaux étape)**
-- `background: rgba(255,255,255,0.03)` + `backdrop-filter: blur(8px)`
-- `border: 0.5px solid rgba(255,255,255,0.08)`
-- `border-radius: 14px`
-- Au survol / actif : border violet + `box-shadow: 0 0 30px rgba(155,135,245,0.08)`
+**Cards** : `background: rgba(255,255,255,0.03)` + `backdrop-filter: blur(8px)` + `border: 0.5px solid rgba(255,255,255,0.08)` + `border-radius: 14px`
 
-**Badges**
-- Trois variantes : `lock` (violet), `ai` (amber), `auto` (vert)
-- `border-radius: 20px`, `font-size: 10px`, `letter-spacing: 0.04em`
-- Fond teinté + bordure 0.5px de la même couleur
+**Boutons d'action** : fond transparent au repos, glow `box-shadow: 0 0 16px rgba(X,X,X,0.15)` sur état actif
 
-**Boutons d'action**
-- Fond transparent au repos, `rgba(155,135,245,0.12)` au survol
-- Transition `0.2s ease` sur background et border
-- Pas d'ombre portée — uniquement glow `box-shadow: 0 0 16px rgba(155,135,245,0.3)` sur l'état actif
-
-**Inputs / champs texte**
-- `background: rgba(255,255,255,0.04)`, `border: 0.5px solid rgba(255,255,255,0.1)`
-- Focus : border violet, `box-shadow: 0 0 0 3px rgba(155,135,245,0.15)`
-- `border-radius: 8px`, padding `10px 14px`
+**Badges** : trois variantes — violet (lock), amber (IA), vert (auto)
 
 ---
 
-### Timeline — composant principal
+## Points techniques critiques
 
-La timeline verticale est le composant central de navigation entre les étapes.
+### Firestore — `undefined` non accepté par l'admin SDK
 
-- Spine verticale : `1px`, gradient `rgba(155,135,245,0)` → `rgba(155,135,245,0.4)` → `rgba(155,135,245,0)`
-- Dots : cercles 18px, border violet, inner dot 6px avec glow sur l'état actif
-- Étape active : card surlignée + dot glowant + détail expand (max-height animation)
-- Arrière-plan (snapshot) : style distinct — bordure dashed amber, opacité réduite
-- Barre de progression en bas : `2px`, gradient violet, labels des étapes
+Le SDK admin Firestore rejette silencieusement les champs `undefined` (erreur 500 côté serveur). Toujours utiliser `null` pour les champs optionnels absents.
 
----
+```typescript
+// ❌ Erreur
+dispatchErreur: undefined
 
-### Animations
+// ✅ Correct
+dispatchErreur: null
+```
 
-Toutes les animations doivent respecter `prefers-reduced-motion`.
+Le type `dispatchErreur` est donc `string | null` (pas `string | undefined`).
 
-| Interaction | Animation |
+### Firestore — Anti-cache côté client
+
+Après un dispatch (écrit via l'admin SDK), un `getDoc` côté client peut retourner des données en cache stale. Utiliser `getDocFromServer` :
+
+```typescript
+// lib/firebase/preterme.ts
+import { getDocFromServer } from "firebase/firestore"
+const snap = await getDocFromServer(doc(db, "preterme_workflows", moisKey))
+```
+
+### Firestore — Dot-notation pour éviter les race conditions
+
+Lors du dispatch de plusieurs CDC en parallèle, utiliser la dot-notation pour n'écraser que les champs concernés :
+
+```typescript
+await workflowRef.update({
+  [`agences.${codeAgence}.clients`]: updatedClients,
+  [`agences.${codeAgence}.dispatchStatut`]: agenceDispatchStatut,
+})
+```
+
+### Dispatch — Gestion du body vide sur erreur 500
+
+Si la route API lève une exception non gérée, le body peut être vide. Le client doit gérer `SyntaxError` :
+
+```typescript
+let data: { error?: string } = {}
+try { data = await res.json() } catch { /* body vide */ }
+if (!res.ok) throw new Error(data.error ?? `Erreur ${res.status}`)
+```
+
+### Slack — Scopes requis
+
+| Scope | Rôle |
 |---|---|
-| Ouverture d'étape | `max-height: 0 → 300px` + `opacity: 0 → 1`, `0.4s cubic-bezier(0.4,0,0.2,1)` |
-| Activation d'un dot | Border + glow, `0.3s ease` |
-| Progress bar | `width`, `0.4s ease` |
-| Apparition des cards | Staggered reveal au mount, `opacity + translateY(8px)`, délai `i × 60ms` |
-| Import fichier | Spinner puis KPIs fade-in |
-| Blocage agence | Flash de confirmation (border vert 300ms puis retour violet) |
-| Dispatch Trello | Compteur animé des cartes créées (count-up) |
+| `chat:write` | Envoyer dans les canaux où le bot est membre |
+| `chat:write.public` | Envoyer dans les canaux publics sans être membre |
+
+Après ajout d'un scope sur `api.slack.com` → **réinstaller l'app** dans le workspace (le token reste identique, les scopes sont mis à jour).
+
+### Rapport Slack — Source de données
+
+Le rapport Slack est calculé **à la volée** depuis `workflow.agences[code].clients` + la config Trello, via `routeClientsTocdcs`. Il n'utilise pas la collection `preterme_snapshots` (qui peut être incomplète si certains CDC n'ont pas encore été dispatchés).
 
 ---
 
-### Layout global
-
-```
-┌─────────────────────────────────────┐
-│  Header (logo + mois actif + statut)│
-├─────────────────────────────────────┤
-│  Timeline sidebar (étapes 1–6)      │  ← fixe à gauche
-│                                     │
-│  Contenu étape active               │  ← zone principale droite
-│  (KPIs, upload, classification...)  │
-└─────────────────────────────────────┘
-```
-
-- Sidebar : `280px` fixe, scrollable indépendamment
-- Zone principale : flex-grow, padding `2rem`
-- Responsive : sidebar collapse en stepper horizontal sous `768px`
-
----
-
-> Ce fichier est mis à jour au fil de la construction du workflow. Chaque étape est ajoutée ici une fois définie.
+> Dernière mise à jour : 14/03/2026 — Workflow complet, opérationnel en production.

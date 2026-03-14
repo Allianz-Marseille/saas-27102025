@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MessageSquare, Loader2, CheckCircle2, Send, User, Building2 } from "lucide-react"
+import { MessageSquare, Loader2, CheckCircle2, Send } from "lucide-react"
 import { buildAuthenticatedJsonHeaders } from "@/lib/firebase/api-auth"
 import { doc, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebase/config"
@@ -135,94 +135,72 @@ export function Step6Slack({ workflow, onUpdate }: Props) {
           <span style={{ fontSize: 11, color: "rgba(200,196,230,0.5)", fontFamily: "DM Mono, monospace" }}>Aperçu du message Slack</span>
         </div>
 
-        <div className="flex flex-col gap-4 p-5">
-          {/* Titre */}
-          <div>
+        <div className="flex flex-col gap-0 p-5">
+
+          {/* En-tête */}
+          <div className="mb-3">
             <div style={{ fontSize: 14, fontWeight: 700, color: "#f0eeff", fontFamily: "Syne, sans-serif" }}>
-              📋 Préterme Auto — {workflow.moisLabel}
+              🚗 Préterme Auto — {workflow.moisLabel}
+            </div>
+            <div style={{ fontSize: 11, color: "rgba(200,196,230,0.45)", fontFamily: "DM Mono, monospace", marginTop: 2 }}>
+              Traitement du {new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })} · {AGENCES.length} agences
             </div>
           </div>
 
-          {/* Par agence */}
-          {agenceSummaries.map(a => a && (
-            <div key={a.code} className="rounded-xl overflow-hidden" style={{ border: "0.5px solid rgba(255,255,255,0.07)" }}>
-              {/* Header agence */}
-              <div className="px-4 py-3" style={{ background: "rgba(255,255,255,0.04)", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>
-                <div className="flex items-center justify-between">
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#f0eeff", fontFamily: "Syne, sans-serif" }}>🏢 AGENCE {a.code}</span>
+          {/* Divider + Total */}
+          <div className="rounded-lg px-4 py-3 mb-4" style={{ background: "rgba(155,135,245,0.06)", border: "0.5px solid rgba(155,135,245,0.15)" }}>
+            <div className="flex items-center justify-between">
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#f0eeff", fontFamily: "Syne, sans-serif" }}>
+                📊 TOTAL : {grandTotalCartes}/{grandTotalRetenus} cartes créées
+              </span>
+              {grandTotalErreurs > 0
+                ? <span style={{ fontSize: 11, color: "#f87171" }}>⚠️ {grandTotalErreurs} err</span>
+                : <CheckCircle2 style={{ width: 14, height: 14, color: "#2dc596" }} />
+              }
+            </div>
+            <div style={{ fontSize: 11, color: "rgba(200,196,230,0.5)", fontFamily: "DM Mono, monospace", marginTop: 4 }}>
+              {grandTotalClients} importés → <span style={{ color: "#f0eeff", fontWeight: 600 }}>{grandTotalRetenus} retenus</span>
+            </div>
+          </div>
+
+          {/* Par agence — compact */}
+          <div className="flex flex-col gap-3">
+            {agenceSummaries.map(a => a && (
+              <div key={a.code} className="rounded-lg px-4 py-3" style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)" }}>
+                {/* Ligne 1 : agence + cartes */}
+                <div className="flex items-center justify-between mb-1">
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#f0eeff", fontFamily: "Syne, sans-serif" }}>🏢 {a.code}</span>
                   <span style={{ fontSize: 11, fontWeight: 600, color: a.erreurs > 0 ? "#f87171" : "#2dc596", fontFamily: "DM Mono, monospace" }}>
-                    {a.cartes} cartes {a.erreurs > 0 ? `⚠️ ${a.erreurs} err` : "✅"}
+                    {a.erreurs > 0 ? `${a.cartes}/${a.retenus} cartes ⚠️` : `${a.cartes} cartes ✅`}
                   </span>
                 </div>
-                {/* Volumes */}
-                <div className="flex flex-col gap-0.5 mt-2">
-                  <div style={{ fontSize: 11, color: "rgba(200,196,230,0.5)", fontFamily: "DM Mono, monospace" }}>
-                    Contrats importés ({workflow.moisLabel}) : <span style={{ color: "#f0eeff" }}>{a.clientsTotal}</span>
-                  </div>
-                  <div style={{ fontSize: 11, color: "rgba(200,196,230,0.5)", fontFamily: "DM Mono, monospace" }}>
-                    Retenus : <span style={{ color: "#f0eeff" }}>{a.retenus}</span>
-                    <span style={{ color: "rgba(200,196,230,0.35)" }}> (majo ≥ {a.seuilMajo} % | ETP ≥ {a.seuilEtp.toFixed(2)})</span>
-                  </div>
-                  <div className="flex items-center gap-3 mt-0.5">
-                    <span style={{ fontSize: 11, color: "rgba(200,196,230,0.5)" }}>
-                      <User style={{ display: "inline", width: 9, height: 9, marginRight: 3 }} />
-                      {a.particuliers} particuliers
-                    </span>
-                    <span style={{ fontSize: 11, color: "rgba(200,196,230,0.5)" }}>
-                      <Building2 style={{ display: "inline", width: 9, height: 9, marginRight: 3 }} />
-                      {a.entreprises} entreprises
-                    </span>
-                  </div>
+                {/* Ligne 2 : volumes */}
+                <div style={{ fontSize: 11, color: "rgba(200,196,230,0.5)", fontFamily: "DM Mono, monospace" }}>
+                  {a.clientsTotal} importés · <span style={{ color: "#f0eeff" }}>{a.retenus} retenus</span> · {a.particuliers} part. / {a.entreprises} entr.
                 </div>
+                {/* Ligne 3 : CDC inline */}
+                {a.cdcRows.length > 0 ? (
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2">
+                    <span style={{ fontSize: 10, color: "rgba(200,196,230,0.35)", fontFamily: "DM Mono, monospace" }}>›</span>
+                    {a.cdcRows.map((row, i) => (
+                      <span key={i} style={{ fontSize: 11, fontFamily: "DM Mono, monospace" }}>
+                        <span style={{ color: "rgba(200,196,230,0.7)" }}>{row.prenom}</span>
+                        {" "}
+                        <span style={{ fontWeight: 700, color: row.err > 0 ? "#f87171" : "#f0eeff" }}>
+                          {row.err > 0 ? `${row.ok}/${row.total}` : `${row.ok}`}
+                        </span>
+                        {row.err > 0 && <span style={{ color: "#f87171", fontSize: 10 }}> ⚠️</span>}
+                        {i < a.cdcRows.length - 1 && <span style={{ color: "rgba(200,196,230,0.2)" }}> ·</span>}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 11, color: "rgba(200,196,230,0.3)", fontFamily: "DM Mono, monospace", marginTop: 6 }}>
+                    {agencies.length === 0 ? "Chargement config Trello…" : "Agence absente de la config Trello"}
+                  </div>
+                )}
               </div>
-
-              {/* Lignes CDC */}
-              {a.cdcRows.length > 0 ? (
-                <div className="flex flex-col">
-                  {a.cdcRows.map((row, i) => {
-                    const letters = row.letters.slice(0, 13).join(" ") + (row.letters.length > 13 ? " …" : "")
-                    return (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between px-4 py-2"
-                        style={{ borderBottom: i < a.cdcRows.length - 1 ? "0.5px solid rgba(255,255,255,0.04)" : "none" }}
-                      >
-                        <div className="flex flex-col gap-0.5 min-w-0">
-                          <span style={{ fontSize: 12, fontWeight: 600, color: "#f0eeff" }}>{row.prenom}</span>
-                          {row.letters.length > 0 && (
-                            <span style={{ fontSize: 9, color: "rgba(200,196,230,0.3)", fontFamily: "DM Mono, monospace" }}>[{letters}]</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span style={{ fontSize: 11, color: "rgba(200,196,230,0.6)", fontFamily: "DM Mono, monospace" }}>{row.ok}/{row.total}</span>
-                          {row.err > 0
-                            ? <span style={{ fontSize: 10, color: "#f87171" }}>⚠️ {row.err} err</span>
-                            : <CheckCircle2 style={{ width: 12, height: 12, color: "#2dc596" }} />
-                          }
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <div className="px-4 py-2" style={{ fontSize: 11, color: "rgba(200,196,230,0.3)", fontFamily: "DM Mono, monospace" }}>
-                  {agencies.length === 0 ? "Chargement config Trello…" : "Agence absente de la config Trello"}
-                </div>
-              )}
-            </div>
-          ))}
-
-          {/* Total consolidé */}
-          <div className="rounded-xl px-4 py-3 flex flex-col gap-1" style={{ background: "rgba(155,135,245,0.06)", border: "0.5px solid rgba(155,135,245,0.15)" }}>
-            <div className="flex items-center justify-between">
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#f0eeff", fontFamily: "Syne, sans-serif" }}>📊 TOTAL — {AGENCES.length} agences</span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: grandTotalErreurs > 0 ? "#f87171" : "#2dc596", fontFamily: "DM Mono, monospace" }}>
-                {grandTotalCartes} cartes {grandTotalErreurs > 0 ? `⚠️ ${grandTotalErreurs} err` : "✅"}
-              </span>
-            </div>
-            <div style={{ fontSize: 11, color: "rgba(200,196,230,0.5)", fontFamily: "DM Mono, monospace" }}>
-              Importés : {grandTotalClients}  ·  Retenus : {grandTotalRetenus}
-            </div>
+            ))}
           </div>
         </div>
       </div>
