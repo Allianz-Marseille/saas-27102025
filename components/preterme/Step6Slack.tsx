@@ -15,7 +15,7 @@ type Props = {
 }
 
 const AGENCES = ["H91358", "H92083"]
-const SLACK_CHANNEL_ID = "C0ALGU83Z6H"
+const SLACK_CHANNEL_ID = "CE58HNVF0"
 
 type CdcRow = { prenom: string; letters: string[]; total: number; ok: number; err: number }
 

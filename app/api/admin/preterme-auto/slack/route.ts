@@ -9,7 +9,7 @@ import { routeClientsTocdcs } from "@/lib/services/preterme-router"
 import type { WorkflowState } from "@/types/preterme"
 import type { Agency } from "@/lib/trello-config/types"
 
-const SLACK_CHANNEL_ID = "C0ALGU83Z6H"
+const SLACK_CHANNEL_ID = "CE58HNVF0"
 
 function buildSlackMessage(workflow: WorkflowState, agencies: Agency[]): string {
   const agenceCodes = Object.keys(workflow.agences)
