@@ -308,7 +308,7 @@ export function Step4Gerants({ workflow, onUpdate, onAdvance }: Props) {
     setLastSaved(new Date())
   }, [localGerants, onUpdate, workflow])
 
-  // Blocage : sauvegarde mémoire + lock
+  // Blocage : sauvegarde mémoire + lock + mise à jour locale des badges
   async function handleLock(codeAgence: string) {
     await handleBlurSave()
     const agence = workflow.agences[codeAgence]
@@ -318,6 +318,24 @@ export function Step4Gerants({ workflow, onUpdate, onAdvance }: Props) {
       .map(c => ({ nomClient: c.nomClient, gerant: localGerants[c.numeroContrat] ?? "" }))
       .filter(e => e.gerant.trim())
     await saveGerantsMemo(entries)
+
+    // Mettre à jour memoGerants et vider modifiedContracts pour les contrats de cette agence
+    const newMemo: Record<string, string> = {}
+    const contractsToUnmark = new Set<string>()
+    entries.forEach(({ nomClient, gerant }) => {
+      newMemo[nomClient] = gerant
+    })
+    agence.clients
+      .filter(c => c.retenu && c.classificationFinale === "entreprise")
+      .forEach(c => contractsToUnmark.add(c.numeroContrat))
+
+    setMemoGerants(prev => ({ ...prev, ...newMemo }))
+    setModifiedContracts(prev => {
+      const next = new Set(prev)
+      contractsToUnmark.forEach(id => next.delete(id))
+      return next
+    })
+
     await onUpdate({
       ...workflow,
       agences: { ...workflow.agences, [codeAgence]: { ...agence, etape4Statut: "bloqué" } },
