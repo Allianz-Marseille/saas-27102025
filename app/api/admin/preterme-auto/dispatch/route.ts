@@ -116,10 +116,16 @@ export async function POST(req: NextRequest) {
     return { ...c, ...update }
   })
 
-  // Build snapshots per CDC
+  // Build snapshots — uniquement pour les CDC effectivement dispatchés dans cet appel
+  // pour ne pas écraser avec 0 les snapshots des autres CDC déjà traités.
+  const dispatchedCdcIds = new Set(
+    toDispatch.map(rc => rc.cdcId).filter((id): id is string => !!id)
+  )
+  const updatedClientsIdx = new Map(updatedClients.map(c => [c.numeroContrat, c]))
+
   const cdcMap = new Map<string, { cdc: { id: string; firstName: string; letters: string[] }; clients: typeof routed }>()
   for (const rc of routed) {
-    if (!rc.cdcId || !rc.cdcPrenom) continue
+    if (!rc.cdcId || !rc.cdcPrenom || !dispatchedCdcIds.has(rc.cdcId)) continue
     if (!cdcMap.has(rc.cdcId)) {
       const cdcObj = agency.cdc.find(c => c.id === rc.cdcId)
       if (!cdcObj) continue
@@ -133,7 +139,10 @@ export async function POST(req: NextRequest) {
   for (const [cdcId, { cdc, clients: cdcClients }] of cdcMap.entries()) {
     const particuliersCount = cdcClients.filter(c => c.classification === "particulier").length
     const entreprisesCount = cdcClients.filter(c => c.classification === "entreprise").length
-    const cartesCount = cdcClients.filter(c => updatedClientsMap.get(c.numeroContrat)?.dispatchStatut === "ok").length
+    // cartesCount calculé sur l'état complet des clients (y compris dispatches précédents)
+    const cartesCount = cdcClients.filter(rc =>
+      updatedClientsIdx.get(rc.numeroContrat)?.dispatchStatut === "ok"
+    ).length
 
     const snapshot: SnapshotCdc = {
       moisKey,
