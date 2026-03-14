@@ -157,7 +157,7 @@ export function Step6Slack({ workflow, onUpdate }: Props) {
                 {/* Volumes */}
                 <div className="flex flex-col gap-0.5 mt-2">
                   <div style={{ fontSize: 11, color: "rgba(200,196,230,0.5)", fontFamily: "DM Mono, monospace" }}>
-                    Portefeuille total : <span style={{ color: "#f0eeff" }}>{a.clientsTotal}</span> contrats
+                    Contrats importés ({workflow.moisLabel}) : <span style={{ color: "#f0eeff" }}>{a.clientsTotal}</span>
                   </div>
                   <div style={{ fontSize: 11, color: "rgba(200,196,230,0.5)", fontFamily: "DM Mono, monospace" }}>
                     Retenus : <span style={{ color: "#f0eeff" }}>{a.retenus}</span>
@@ -221,7 +221,7 @@ export function Step6Slack({ workflow, onUpdate }: Props) {
               </span>
             </div>
             <div style={{ fontSize: 11, color: "rgba(200,196,230,0.5)", fontFamily: "DM Mono, monospace" }}>
-              Portefeuille : {grandTotalClients}  ·  Retenus : {grandTotalRetenus}
+              Importés : {grandTotalClients}  ·  Retenus : {grandTotalRetenus}
             </div>
           </div>
         </div>

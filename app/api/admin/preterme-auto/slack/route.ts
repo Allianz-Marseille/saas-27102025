@@ -74,7 +74,7 @@ function buildSlackMessage(workflow: WorkflowState, agencies: Agency[]): string 
     const errLabel = erreurs > 0 ? `  ⚠️ ${erreurs} erreur${erreurs > 1 ? "s" : ""}` : " ✅"
     return [
       `*🏢 AGENCE ${code}*`,
-      `     • Portefeuille total : ${a.clientsTotal} contrats`,
+      `     • Contrats importés (fichier ${workflow.moisLabel}) : ${a.clientsTotal}`,
       `     • Retenus (critères)  : ${retenus.length}  _(majo ≥ ${a.seuilMajo} % | ETP ≥ ${a.seuilEtp.toFixed(2)})_`,
       `     • Particuliers : ${particuliers}   Entreprises : ${entreprises}`,
       `     • Cartes Trello créées : ${cartes}${errLabel}`,
@@ -95,7 +95,7 @@ function buildSlackMessage(workflow: WorkflowState, agencies: Agency[]): string 
     "",
     "─────────────────────────────────",
     `*📊 TOTAL CONSOLIDÉ — ${agenceCodes.length} agences*`,
-    `• Portefeuille : ${grandTotalClients} contrats`,
+    `• Contrats importés : ${grandTotalClients}`,
     `• Retenus      : ${grandTotalRetenus}`,
     `• Cartes créées: ${grandTotalCartes}${grandTotalErreurs > 0 ? `   ⚠️ Erreurs : ${grandTotalErreurs}` : "   ✅"}`,
   ].join("\n")
