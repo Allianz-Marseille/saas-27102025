@@ -244,7 +244,7 @@ export default function PretermeAutoPage() {
         )}
 
         {workflow?.etapeActive === 3 && (
-          <Step3Classification workflow={workflow} onUpdate={handleUpdate} onAdvance={handleAdvance} />
+          <Step3Classification workflow={workflow} onUpdate={handleUpdate} onRefresh={handleRefresh} onAdvance={handleAdvance} />
         )}
 
         {workflow?.etapeActive === 4 && (

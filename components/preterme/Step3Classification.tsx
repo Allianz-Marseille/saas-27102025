@@ -8,6 +8,7 @@ import type { WorkflowState, ClientImporte, ClassificationClient } from "@/types
 type Props = {
   workflow: WorkflowState
   onUpdate: (w: WorkflowState) => Promise<void>
+  onRefresh: () => Promise<void>
   onAdvance: () => void
 }
 
@@ -236,17 +237,23 @@ function AgenceClassif({
   )
 }
 
-export function Step3Classification({ workflow, onUpdate, onAdvance }: Props) {
+export function Step3Classification({ workflow, onUpdate, onRefresh, onAdvance }: Props) {
   const [classifyingMap, setClassifyingMap] = useState<Record<string, boolean>>({})
 
   const bothBlocked = AGENCES.every(code => workflow.agences[code]?.etape3Statut === "bloqué")
 
-  // Auto-trigger Gemini when step loads for non-analysed agences
+  // Auto-trigger Gemini when step loads :
+  // - agence en_attente avec clients retenus
+  // - agence "analysé" mais aucun client n'a de classificationFinale (bug précédent)
   useEffect(() => {
     AGENCES.forEach(code => {
       const agence = workflow.agences[code]
       if (!agence) return
-      if (agence.etape3Statut === "en_attente" && agence.clients.some(c => c.retenu)) {
+      if (agence.etape3Statut === "bloqué") return
+      const retenus = agence.clients.filter(c => c.retenu)
+      if (retenus.length === 0) return
+      const hasClassification = retenus.some(c => c.classificationFinale !== null)
+      if (!hasClassification) {
         triggerClassify(code)
       }
     })
@@ -262,7 +269,7 @@ export function Step3Classification({ workflow, onUpdate, onAdvance }: Props) {
         headers,
         body: JSON.stringify({ moisKey: workflow.moisKey, codeAgence }),
       })
-      await onUpdate({ ...workflow })
+      await onRefresh()
     } catch {}
     setClassifyingMap(prev => ({ ...prev, [codeAgence]: false }))
   }
