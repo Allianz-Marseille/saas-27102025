@@ -159,122 +159,6 @@ export function Step6Slack({ workflow, onUpdate }: Props) {
         </p>
       </div>
 
-      {/* Sélecteur de chaîne */}
-      <div className="rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.08)" }}>
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: showPicker ? "0.5px solid rgba(255,255,255,0.06)" : "none" }}>
-          <div className="flex items-center gap-2">
-            <Hash style={{ width: 13, height: 13, color: "#9b87f5" }} />
-            <span style={{ fontSize: 12, color: "rgba(200,196,230,0.5)" }}>Chaîne cible</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span style={{ fontSize: 12, color: "#9b87f5", fontFamily: "DM Mono, monospace" }}>
-              {selectedChannel.name !== selectedChannel.id ? `#${selectedChannel.name}` : selectedChannel.id}
-            </span>
-            <button
-              onClick={() => {
-                setShowPicker(prev => !prev)
-                if (!showPicker && channels.length === 0) fetchChannels()
-              }}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition-colors"
-              style={{
-                fontSize: 11,
-                background: showPicker ? "rgba(155,135,245,0.1)" : "rgba(255,255,255,0.04)",
-                border: `0.5px solid ${showPicker ? "rgba(155,135,245,0.3)" : "rgba(255,255,255,0.1)"}`,
-                color: showPicker ? "#9b87f5" : "rgba(200,196,230,0.6)",
-                fontFamily: "DM Mono, monospace",
-              }}
-            >
-              <ChevronDown style={{ width: 11, height: 11, transform: showPicker ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
-              {showPicker ? "Fermer" : "Changer"}
-            </button>
-          </div>
-        </div>
-
-        {/* Picker */}
-        {showPicker && (
-          <div className="flex flex-col">
-            {/* Barre recherche + refresh */}
-            <div className="flex items-center gap-2 px-3 py-2.5" style={{ borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
-              <Search style={{ width: 12, height: 12, color: "rgba(200,196,230,0.3)", flexShrink: 0 }} />
-              <input
-                value={channelSearch}
-                onChange={e => setChannelSearch(e.target.value)}
-                placeholder="Rechercher une chaîne…"
-                className="flex-1 bg-transparent text-sm placeholder-slate-600 focus:outline-none"
-                style={{ fontSize: 12, color: "#f0eeff", fontFamily: "DM Mono, monospace" }}
-              />
-              <button
-                onClick={fetchChannels}
-                disabled={loadingChannels}
-                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 transition-colors"
-                style={{
-                  fontSize: 10,
-                  background: "rgba(255,255,255,0.04)",
-                  border: "0.5px solid rgba(255,255,255,0.08)",
-                  color: "rgba(200,196,230,0.5)",
-                  fontFamily: "DM Mono, monospace",
-                }}
-              >
-                {loadingChannels
-                  ? <Loader2 style={{ width: 10, height: 10 }} className="animate-spin" />
-                  : <RefreshCw style={{ width: 10, height: 10 }} />
-                }
-                {loadingChannels ? "Chargement…" : "Actualiser"}
-              </button>
-            </div>
-
-            {/* Liste */}
-            <div style={{ maxHeight: 200, overflowY: "auto" }}>
-              {loadingChannels && channels.length === 0 ? (
-                <div className="flex items-center justify-center py-6 gap-2">
-                  <Loader2 style={{ width: 14, height: 14, color: "#9b87f5" }} className="animate-spin" />
-                  <span style={{ fontSize: 12, color: "rgba(200,196,230,0.4)" }}>Chargement des chaînes…</span>
-                </div>
-              ) : filteredChannels.length === 0 ? (
-                <div className="py-6 text-center" style={{ fontSize: 12, color: "rgba(200,196,230,0.3)" }}>
-                  {channels.length === 0 ? "Cliquez sur Actualiser pour charger les chaînes" : "Aucune chaîne trouvée"}
-                </div>
-              ) : (
-                filteredChannels.map(ch => {
-                  const isSelected = ch.id === selectedChannel.id
-                  return (
-                    <button
-                      key={ch.id}
-                      onClick={() => {
-                        setSelectedChannel({ id: ch.id, name: ch.name })
-                        setShowPicker(false)
-                        setChannelSearch("")
-                      }}
-                      className="flex items-center justify-between w-full px-4 py-2.5 transition-colors"
-                      style={{
-                        background: isSelected ? "rgba(155,135,245,0.08)" : "transparent",
-                        borderBottom: "0.5px solid rgba(255,255,255,0.03)",
-                      }}
-                      onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)" }}
-                      onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = "transparent" }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Hash style={{ width: 11, height: 11, color: isSelected ? "#9b87f5" : "rgba(200,196,230,0.3)" }} />
-                        <span style={{ fontSize: 12, color: isSelected ? "#f0eeff" : "rgba(200,196,230,0.7)", fontWeight: isSelected ? 600 : 400 }}>
-                          {ch.name}
-                        </span>
-                        <span style={{ fontSize: 10, color: "rgba(200,196,230,0.25)", fontFamily: "DM Mono, monospace" }}>
-                          {ch.num_members} mbr
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span style={{ fontSize: 10, color: "rgba(200,196,230,0.3)", fontFamily: "DM Mono, monospace" }}>{ch.id}</span>
-                        {isSelected && <CheckCircle2 style={{ width: 12, height: 12, color: "#2dc596" }} />}
-                      </div>
-                    </button>
-                  )
-                })
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Aperçu du message */}
       <div className="rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.08)", backdropFilter: "blur(8px)" }}>
         <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>
@@ -354,56 +238,160 @@ export function Step6Slack({ workflow, onUpdate }: Props) {
         </div>
       )}
 
-      {/* Actions */}
-      {alreadySent ? (
-        <div className="flex flex-col gap-4">
-          {/* Badge envoyé */}
-          <div className="flex items-center gap-3">
-            <CheckCircle2 style={{ width: 18, height: 18, color: "#2dc596" }} />
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#2dc596", fontFamily: "Syne, sans-serif" }}>Rapport envoyé sur Slack</div>
-              <div style={{ fontSize: 12, color: "rgba(200,196,230,0.5)", marginTop: 2 }}>
-                Dernier envoi → #{selectedChannel.name !== selectedChannel.id ? selectedChannel.name : selectedChannel.id}
-              </div>
+      {/* Badge "déjà envoyé" — informatif uniquement, ne bloque rien */}
+      {alreadySent && (
+        <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "rgba(45,197,150,0.06)", border: "0.5px solid rgba(45,197,150,0.2)" }}>
+          <CheckCircle2 style={{ width: 13, height: 13, color: "#2dc596", flexShrink: 0 }} />
+          <span style={{ fontSize: 12, color: "#2dc596" }}>Rapport déjà envoyé — vous pouvez sélectionner une autre chaîne et renvoyer.</span>
+        </div>
+      )}
+
+      {/* Bloc envoi — toujours visible */}
+      <div className="rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.02)", border: "0.5px solid rgba(255,255,255,0.07)" }}>
+        {/* Sélecteur de chaîne intégré */}
+        <div className="px-4 py-3" style={{ borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>
+          <div className="flex items-center justify-between mb-2">
+            <span style={{ fontSize: 11, color: "rgba(200,196,230,0.45)", fontFamily: "DM Mono, monospace" }}>CHAÎNE CIBLE</span>
+            <button
+              onClick={() => {
+                setShowPicker(prev => !prev)
+                if (!showPicker && channels.length === 0) fetchChannels()
+              }}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1 transition-colors"
+              style={{
+                fontSize: 11,
+                background: showPicker ? "rgba(155,135,245,0.1)" : "rgba(255,255,255,0.04)",
+                border: `0.5px solid ${showPicker ? "rgba(155,135,245,0.3)" : "rgba(255,255,255,0.1)"}`,
+                color: showPicker ? "#9b87f5" : "rgba(200,196,230,0.5)",
+                fontFamily: "DM Mono, monospace",
+              }}
+            >
+              <ChevronDown style={{ width: 10, height: 10, transform: showPicker ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+              {showPicker ? "Fermer" : "Changer"}
+            </button>
+          </div>
+
+          {/* Chaîne sélectionnée */}
+          <div className="flex items-center gap-2">
+            <Hash style={{ width: 13, height: 13, color: "#9b87f5" }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#f0eeff", fontFamily: "DM Mono, monospace" }}>
+              {selectedChannel.name !== selectedChannel.id ? selectedChannel.name : selectedChannel.id}
+            </span>
+            <span style={{ fontSize: 10, color: "rgba(200,196,230,0.3)", fontFamily: "DM Mono, monospace" }}>
+              {selectedChannel.name !== selectedChannel.id ? `· ${selectedChannel.id}` : ""}
+            </span>
+          </div>
+        </div>
+
+        {/* Picker dépliable */}
+        {showPicker && (
+          <div className="flex flex-col" style={{ borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>
+            <div className="flex items-center gap-2 px-3 py-2.5" style={{ borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
+              <Search style={{ width: 12, height: 12, color: "rgba(200,196,230,0.3)", flexShrink: 0 }} />
+              <input
+                value={channelSearch}
+                onChange={e => setChannelSearch(e.target.value)}
+                placeholder="Rechercher par nom ou ID…"
+                className="flex-1 bg-transparent focus:outline-none"
+                style={{ fontSize: 12, color: "#f0eeff", fontFamily: "DM Mono, monospace" }}
+              />
+              <button
+                onClick={fetchChannels}
+                disabled={loadingChannels}
+                className="flex items-center gap-1 rounded-lg px-2 py-1 transition-colors"
+                style={{
+                  fontSize: 10, fontFamily: "DM Mono, monospace",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "0.5px solid rgba(255,255,255,0.08)",
+                  color: "rgba(200,196,230,0.5)",
+                }}
+              >
+                {loadingChannels ? <Loader2 style={{ width: 10, height: 10 }} className="animate-spin" /> : <RefreshCw style={{ width: 10, height: 10 }} />}
+                {loadingChannels ? "…" : "Actualiser"}
+              </button>
+            </div>
+
+            <div style={{ maxHeight: 200, overflowY: "auto" }}>
+              {loadingChannels && channels.length === 0 ? (
+                <div className="flex items-center justify-center py-5 gap-2">
+                  <Loader2 style={{ width: 13, height: 13, color: "#9b87f5" }} className="animate-spin" />
+                  <span style={{ fontSize: 12, color: "rgba(200,196,230,0.4)" }}>Chargement…</span>
+                </div>
+              ) : filteredChannels.length === 0 ? (
+                <div className="py-5 text-center" style={{ fontSize: 12, color: "rgba(200,196,230,0.3)" }}>
+                  {channels.length === 0 ? "Cliquez sur Actualiser pour charger les chaînes" : "Aucune chaîne trouvée"}
+                </div>
+              ) : (
+                filteredChannels.map(ch => {
+                  const isSelected = ch.id === selectedChannel.id
+                  return (
+                    <button
+                      key={ch.id}
+                      onClick={() => { setSelectedChannel({ id: ch.id, name: ch.name }); setShowPicker(false); setChannelSearch("") }}
+                      className="flex items-center justify-between w-full px-4 py-2.5"
+                      style={{ background: isSelected ? "rgba(155,135,245,0.08)" : "transparent", borderBottom: "0.5px solid rgba(255,255,255,0.03)" }}
+                      onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)" }}
+                      onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = isSelected ? "rgba(155,135,245,0.08)" : "transparent" }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Hash style={{ width: 11, height: 11, color: isSelected ? "#9b87f5" : "rgba(200,196,230,0.3)" }} />
+                        <span style={{ fontSize: 12, color: isSelected ? "#f0eeff" : "rgba(200,196,230,0.7)", fontWeight: isSelected ? 600 : 400 }}>
+                          {ch.name}
+                        </span>
+                        <span style={{ fontSize: 10, color: "rgba(200,196,230,0.2)", fontFamily: "DM Mono, monospace" }}>{ch.num_members} mbr</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span style={{ fontSize: 10, color: "rgba(200,196,230,0.25)", fontFamily: "DM Mono, monospace" }}>{ch.id}</span>
+                        {isSelected && <CheckCircle2 style={{ width: 11, height: 11, color: "#2dc596" }} />}
+                      </div>
+                    </button>
+                  )
+                })
+              )}
             </div>
           </div>
-          {/* Renvoyer vers une autre chaîne */}
+        )}
+
+        {/* Bouton d'envoi */}
+        <div className="px-4 py-3">
           <button
             onClick={handleSend}
             disabled={sending}
-            className="self-start flex items-center gap-2 rounded-xl font-semibold transition-all"
+            className="flex items-center gap-2 rounded-xl font-semibold transition-all w-full justify-center"
             style={{
-              height: 40, paddingInline: 20,
-              background: sending ? "rgba(155,135,245,0.04)" : "rgba(155,135,245,0.08)",
-              border: "0.5px solid rgba(155,135,245,0.25)",
-              color: "rgba(155,135,245,0.8)", fontSize: 13,
+              height: 44,
+              background: sending
+                ? "rgba(45,197,150,0.04)"
+                : alreadySent
+                ? "rgba(155,135,245,0.1)"
+                : "rgba(45,197,150,0.12)",
+              border: sending
+                ? "0.5px solid rgba(255,255,255,0.06)"
+                : alreadySent
+                ? "0.5px solid rgba(155,135,245,0.3)"
+                : "0.5px solid rgba(45,197,150,0.4)",
+              color: sending ? "rgba(200,196,230,0.3)" : alreadySent ? "#c4b5fd" : "#2dc596",
+              fontSize: 14,
               fontFamily: "Syne, sans-serif",
+              boxShadow: (!sending && !alreadySent) ? "0 0 16px rgba(45,197,150,0.12)" : "none",
               cursor: sending ? "not-allowed" : "pointer",
             }}
           >
-            {sending ? <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} /> : <RotateCcw style={{ width: 14, height: 14 }} />}
-            {sending ? "Envoi en cours…" : `Renvoyer vers #${selectedChannel.name !== selectedChannel.id ? selectedChannel.name : selectedChannel.id}`}
+            {sending
+              ? <Loader2 className="animate-spin" style={{ width: 16, height: 16 }} />
+              : alreadySent
+              ? <RotateCcw style={{ width: 15, height: 15 }} />
+              : <Send style={{ width: 15, height: 15 }} />
+            }
+            {sending
+              ? "Envoi en cours…"
+              : alreadySent
+              ? `Renvoyer vers #${selectedChannel.name !== selectedChannel.id ? selectedChannel.name : selectedChannel.id}`
+              : `Envoyer vers #${selectedChannel.name !== selectedChannel.id ? selectedChannel.name : selectedChannel.id}`
+            }
           </button>
         </div>
-      ) : (
-        <button
-          onClick={handleSend}
-          disabled={sending}
-          className="self-start flex items-center gap-2 rounded-xl font-semibold transition-all"
-          style={{
-            height: 44, paddingInline: 24,
-            background: sending ? "rgba(45,197,150,0.06)" : "rgba(45,197,150,0.12)",
-            border: "0.5px solid rgba(45,197,150,0.4)",
-            color: "#2dc596", fontSize: 14,
-            fontFamily: "Syne, sans-serif",
-            boxShadow: sending ? "none" : "0 0 16px rgba(45,197,150,0.15)",
-            cursor: sending ? "not-allowed" : "pointer",
-          }}
-        >
-          {sending ? <Loader2 className="animate-spin" style={{ width: 16, height: 16 }} /> : <Send style={{ width: 16, height: 16 }} />}
-          {sending ? "Envoi en cours…" : "Envoyer sur Slack"}
-        </button>
-      )}
+      </div>
     </div>
   )
 }
