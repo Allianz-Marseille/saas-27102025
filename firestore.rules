@@ -251,7 +251,15 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
-    // Prétermes IARD — collections admin uniquement
+    // Prétermes IARD — collections admin uniquement (nouvelles)
+    match /preterme_ird_workflows/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /preterme_ird_snapshots/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Prétermes IARD — anciennes collections legacy (conservées pour compatibilité)
     match /preterme_iard_configs/{docId} {
       allow read, write: if isAdmin();
     }
