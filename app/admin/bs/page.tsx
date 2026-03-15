@@ -1,24 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, HelpCircle, BarChart3, LayoutDashboard, FileText } from "lucide-react";
+import { Users, HelpCircle, BarChart3, FileText } from "lucide-react";
 import { GestionSalaries } from "@/components/admin/bs/GestionSalaries";
 import { DeclarationNav } from "@/components/admin/bs/DeclarationNav";
 import { getCollaborateurs } from "@/lib/firebase/collaborateurs";
 import type { Collaborateur } from "@/types/collaborateur";
 import { toast } from "sonner";
 
-type Tab = "dashboard" | "salaries" | "declarations" | "faq";
+type Tab = "salaries" | "declarations" | "faq";
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "salaries", label: "Gestion salarié", icon: Users },
   { id: "declarations", label: "Déclarations", icon: FileText },
   { id: "faq", label: "FAQ", icon: HelpCircle },
 ];
 
 export default function BsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [activeTab, setActiveTab] = useState<Tab>("salaries");
   const [collaborateurs, setCollaborateurs] = useState<Collaborateur[]>([]);
 
   useEffect(() => {
@@ -60,13 +59,6 @@ export default function BsPage() {
 
       {/* Contenu */}
       <div>
-        {activeTab === "dashboard" && (
-          <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground space-y-2">
-            <LayoutDashboard className="w-10 h-10 mx-auto opacity-30" />
-            <p className="font-medium">Dashboard à venir</p>
-            <p className="text-sm">Les indicateurs du Bilan Social seront affichés ici.</p>
-          </div>
-        )}
         {activeTab === "salaries" && <GestionSalaries />}
         {activeTab === "declarations" && (
           <DeclarationNav collaborateurs={collaborateurs} />
