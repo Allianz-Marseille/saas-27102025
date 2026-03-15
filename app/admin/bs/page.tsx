@@ -1,37 +1,60 @@
 "use client";
 
-import { HardHat, UsersRound } from "lucide-react";
-import Link from "next/link";
+import { useState } from "react";
+import { Users, HelpCircle, BarChart3 } from "lucide-react";
+import { GestionSalaries } from "@/components/admin/bs/GestionSalaries";
+
+type Tab = "salaries" | "faq";
+
+const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
+  { id: "salaries", label: "Gestion salarié", icon: Users },
+  { id: "faq", label: "FAQ", icon: HelpCircle },
+];
 
 export default function BsPage() {
+  const [activeTab, setActiveTab] = useState<Tab>("salaries");
+
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8">
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col items-center justify-center py-12 gap-6 text-center">
-        <div className="flex items-center justify-center w-20 h-20 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-          <HardHat className="w-10 h-10 text-amber-500" />
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+          <BarChart3 className="w-5 h-5 text-amber-500" />
         </div>
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">En construction</h1>
-          <p className="text-muted-foreground text-lg">
-            Cette section est en cours de développement.
-          </p>
+        <div>
+          <h1 className="text-xl font-semibold">Bilan Social</h1>
+          <p className="text-sm text-muted-foreground">Gestion RH et informations agence</p>
         </div>
       </div>
 
-      {/* Raccourcis */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Link href="/admin/collaborateurs">
-          <div className="group rounded-xl border bg-card p-5 flex items-center gap-4 hover:shadow-md hover:border-violet-500/40 transition-all cursor-pointer">
-            <div className="w-11 h-11 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors shrink-0">
-              <UsersRound className="w-5 h-5 text-violet-400" />
-            </div>
-            <div>
-              <p className="font-semibold text-sm">Collaborateurs</p>
-              <p className="text-xs text-muted-foreground">Gérer les effectifs</p>
-            </div>
+      {/* Menu tabs */}
+      <div className="flex gap-2 border-b pb-0">
+        {TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-colors -mb-px ${
+              activeTab === id
+                ? "border-primary text-primary bg-primary/5"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            }`}
+          >
+            <Icon className="w-4 h-4" />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Contenu */}
+      <div>
+        {activeTab === "salaries" && <GestionSalaries />}
+        {activeTab === "faq" && (
+          <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground space-y-2">
+            <HelpCircle className="w-10 h-10 mx-auto opacity-30" />
+            <p className="font-medium">FAQ à venir</p>
+            <p className="text-sm">Les explications sur le fonctionnement du Bilan Social seront disponibles ici.</p>
           </div>
-        </Link>
+        )}
       </div>
     </div>
   );

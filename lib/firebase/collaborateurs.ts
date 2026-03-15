@@ -24,6 +24,7 @@ function toCollaborateur(id: string, data: Record<string, unknown>): Collaborate
     id,
     firstName: data.firstName as string,
     pole: data.pole as Collaborateur["pole"],
+    contrat: (data.contrat ?? "cdi") as Collaborateur["contrat"],
     joursParSemaine: data.joursParSemaine as number,
     joursTravail: (data.joursTravail as string[]) as Collaborateur["joursTravail"],
     createdAt: (data.createdAt as { toDate: () => Date })?.toDate?.() ?? new Date(),

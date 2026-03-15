@@ -4,17 +4,26 @@ export type Pole =
   | "commercial"
   | "sinistre";
 
+export type Contrat = "cdi" | "cdd" | "alternant";
+
 export type JourTravail = "L" | "M" | "Me" | "J" | "V" | "S";
 
 export interface Collaborateur {
   id: string;
   firstName: string;
   pole: Pole;
+  contrat: Contrat;
   joursParSemaine: number; // 0.25 à 5, par pas de 0.25
   joursTravail: JourTravail[];
   createdAt: Date;
   updatedAt: Date;
 }
+
+export const CONTRAT_LABELS: Record<Contrat, string> = {
+  cdi: "CDI",
+  cdd: "CDD",
+  alternant: "Alternant",
+};
 
 export type CollaborateurInput = Omit<Collaborateur, "id" | "createdAt" | "updatedAt">;
 
