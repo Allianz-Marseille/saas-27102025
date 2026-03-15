@@ -235,18 +235,46 @@ Chaque carte collaborateur affiche ses engagements actifs, avec un bouton **"+ A
 
 ---
 
-## Phase 4 — Intégration Google Calendar
+## Phase 4 — Intégration Google Calendar + parsing Gemini
+
+### 4a — Lecture Google Calendar
 
 - [ ] Connexion API Google Calendar (service account ou OAuth)
 - [ ] Lecture des événements du mois sur le calendrier agence
-- [ ] Filtrage : `cp`, `malade`, `école` dans le titre
-- [ ] Détection journée complète vs demi-journée (événement avec heure = demi-journée)
-- [ ] Matching prénom dans le titre → salarié dans Firestore
-- [ ] Respect des jours déclarés : CP un jour non travaillé = ignoré
-- [ ] Signalement ⚠️ des salariés hors effectif (présents dans le calendrier mais plus dans `collaborateurs`)
+- [ ] Récupération du titre, date, présence d'une heure (demi-journée)
 
 **Calendrier agence :**
 `https://calendar.google.com/calendar/u/0?cid=YWxsaWFuei1ub2dhcm8uZnJfMmJ1ZWE5M2h2NDdrMGJkaGluZTRlYWFzNWNAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ`
+
+### 4b — Parsing Gemini (`lib/services/bs-gemini.ts`) ✅ Créé
+
+Gemini interprète les titres d'événements bruts pour en extraire une structure propre.
+
+**Pourquoi Gemini ?**
+Les titres sont saisis librement et varient : `"virginie cp"`, `"virginie-cp"`, `"CP Virginie"`, `"cp de virginie"`, `"Virginie - congé"`, `"virginie (cp)"` → Gemini normalise tout.
+
+**Ce que Gemini extrait pour chaque événement :**
+
+| Champ | Exemple |
+|---|---|
+| `prenom` | `"virginie"` (normalisé, sans accent, sans tiret) |
+| `type` | `"cp"` / `"malade"` / `"ecole"` / `"ignore"` |
+| `date` | `"2026-01-05"` ou `"2026-01-16/2026-01-25"` |
+| `demiJournee` | `true` si heure dans le titre (ex: `9h-12h30`) |
+| `titreOriginal` | Titre brut pour traçabilité |
+
+**Mots-clés reconnus :**
+- CP : `cp`, `congé`, `conge`, `vacances` et toutes variantes avec tiret, espace, majuscule
+- Maladie : `malade`, `maladie`, `arrêt`, `arret`, `am`
+- École : `école`, `ecole`, `school`
+
+**Robustesse :** retry x1 en cas d'échec, fallback tableau vide (jamais de crash).
+
+### 4c — Post-traitement
+
+- [ ] Matching `prenom` Gemini → salarié Firestore (comparaison normalisée)
+- [ ] Respect des jours déclarés : CP un jour non travaillé pour ce salarié = ignoré
+- [ ] Signalement ⚠️ des salariés hors effectif (dans le calendrier mais plus dans `collaborateurs`)
 
 ---
 
