@@ -25,7 +25,10 @@ export async function fetchEvenementsCalendrier(
     throw new Error("[bs-calendar] Variables d'environnement manquantes (GOOGLE_CALENDAR_ID, GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY)")
   }
 
-  const privateKey = privateKeyRaw.replace(/\\n/g, "\n")
+  const privateKey = privateKeyRaw
+    .replace(/\\n/g, "\n")
+    .replace(/"/g, "")
+    .trim()
 
   // Calcul de la plage du mois
   const [year, month] = moisKey.split("-").map(Number)
