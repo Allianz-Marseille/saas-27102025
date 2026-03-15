@@ -1,18 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Users, HelpCircle, BarChart3 } from "lucide-react";
+import { Users, HelpCircle, BarChart3, LayoutDashboard } from "lucide-react";
 import { GestionSalaries } from "@/components/admin/bs/GestionSalaries";
 
-type Tab = "salaries" | "faq";
+type Tab = "dashboard" | "salaries" | "faq";
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "salaries", label: "Gestion salarié", icon: Users },
   { id: "faq", label: "FAQ", icon: HelpCircle },
 ];
 
 export default function BsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("salaries");
+  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -47,6 +48,13 @@ export default function BsPage() {
 
       {/* Contenu */}
       <div>
+        {activeTab === "dashboard" && (
+          <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground space-y-2">
+            <LayoutDashboard className="w-10 h-10 mx-auto opacity-30" />
+            <p className="font-medium">Dashboard à venir</p>
+            <p className="text-sm">Les indicateurs du Bilan Social seront affichés ici.</p>
+          </div>
+        )}
         {activeTab === "salaries" && <GestionSalaries />}
         {activeTab === "faq" && (
           <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground space-y-2">
