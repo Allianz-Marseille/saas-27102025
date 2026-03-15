@@ -173,7 +173,7 @@ export function GestionSalaries() {
           {/* Global */}
           <div className="rounded-xl border bg-card p-4 flex flex-col gap-1 col-span-2 sm:col-span-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">ETP Global</p>
-            <p className="text-2xl font-bold">{etpGlobal.toFixed(2)}</p>
+            <p className="text-2xl font-bold">{etpGlobal.toFixed(1)}</p>
             <p className="text-xs text-muted-foreground">{collaborateurs.length} salarié{collaborateurs.length !== 1 ? "s" : ""}</p>
           </div>
           {/* Par pôle */}
@@ -182,7 +182,7 @@ export function GestionSalaries() {
             return (
               <div key={pole} className={`rounded-xl border ${c.border} ${c.bg} p-4 flex flex-col gap-1`}>
                 <p className={`text-xs uppercase tracking-wide font-medium ${c.text}`}>{POLE_LABELS[pole]}</p>
-                <p className={`text-2xl font-bold ${c.text}`}>{etp.toFixed(2)}</p>
+                <p className={`text-2xl font-bold ${c.text}`}>{etp.toFixed(1)}</p>
                 <p className="text-xs text-muted-foreground">{count} salarié{count !== 1 ? "s" : ""}</p>
               </div>
             );
