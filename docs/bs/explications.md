@@ -9,7 +9,8 @@
 5. [Règles Maladie](#règles-maladie)
 6. [Jours travaillés vs jours chômés](#jours-travaillés-vs-jours-chômés)
 7. [Règles Tickets Restaurants](#règles-tickets-restaurants)
-8. [Exemple — Janvier 2026](#exemple--janvier-2026)
+8. [Commissions](#commissions)
+9. [Exemple — Janvier 2026](#exemple--janvier-2026)
 
 ---
 
@@ -84,6 +85,33 @@ Le nombre maximum de tickets par semaine = **nombre de jours déclarés** si auc
 
 - Nejma (L, M, Me, J, V — 5 j/sem) → 5 tickets max/semaine
 - Karen (M, J, V — 3 j/sem) → 3 tickets max/semaine
+
+---
+
+## Commissions
+
+### Qui est concerné ?
+
+| Pôle | Commissions |
+|---|---|
+| Commercial | ✅ Oui |
+| Santé Individuelle | ✅ Oui |
+| Santé Collective | ✅ Oui |
+| Sinistre | ❌ Non |
+
+### Commissions réelles vs potentielles
+
+> ⚠️ **Seules les commissions réelles sont déclarées à l'expert-comptable.** Ne pas confondre avec les commissions potentielles.
+
+- **Commissions potentielles** : estimées sur la base des actes en cours — ne pas transmettre
+- **Commissions réelles** : validées et constatées pour le mois concerné — à déclarer
+
+### Où les trouver ?
+
+Les commissions réelles du mois sont disponibles dans le SaaS :
+- Aller dans la section **Commissions** correspondant au pôle du salarié
+- Vérifier le mois concerné (ex : pour les salaires de février → commissions réelles de **janvier**)
+- Relever le montant réel pour chaque salarié concerné
 
 ---
 
