@@ -251,10 +251,15 @@ export function GestionSalaries() {
                 </div>
               </div>
               <div className="space-y-1.5 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs uppercase tracking-wide font-medium">J/sem</span>
-                  <span className="font-semibold text-foreground">
-                    {JOURS_PAR_SEMAINE_OPTIONS.find((o) => o.value === c.joursParSemaine)?.label ?? c.joursParSemaine}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-wide font-medium">J/sem</span>
+                    <span className="font-semibold text-foreground">
+                      {JOURS_PAR_SEMAINE_OPTIONS.find((o) => o.value === c.joursParSemaine)?.label ?? c.joursParSemaine}
+                    </span>
+                  </div>
+                  <span className="text-xs font-mono bg-muted px-2 py-0.5 rounded font-semibold text-foreground">
+                    {etpOf(c).toFixed(1)} ETP
                   </span>
                 </div>
                 <div className="flex gap-1 flex-wrap">
