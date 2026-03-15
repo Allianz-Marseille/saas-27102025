@@ -7,8 +7,9 @@
 3. [Événements impactant les salaires](#événements-impactant-les-salaires)
 4. [Règles Congés Payés (CP)](#règles-congés-payés-cp)
 5. [Règles Maladie](#règles-maladie)
-6. [Règles Tickets Restaurants](#règles-tickets-restaurants)
-7. [Exemple — Janvier 2026](#exemple--janvier-2026)
+6. [Jours travaillés vs jours chômés](#jours-travaillés-vs-jours-chômés)
+7. [Règles Tickets Restaurants](#règles-tickets-restaurants)
+8. [Exemple — Janvier 2026](#exemple--janvier-2026)
 
 ---
 
@@ -56,20 +57,33 @@ Tous les événements de l'agence y figurent, mais **seuls ceux contenant `cp` o
 
 ---
 
+## Jours travaillés vs jours chômés
+
+**Seuls les jours déclarés pour chaque salarié sont des jours travaillés.**
+
+La référence est la fiche salarié dans [Gestion des salariés](https://notre-saas-agence.com/admin/bs) (menu "Gestion salarié"). Un événement calendrier tombant un jour **non déclaré** pour ce salarié n'a aucun impact (le salarié ne travaille pas ce jour-là).
+
+> Exemple : si Karen travaille M/J/V et qu'un CP est posé un lundi, ce CP est ignoré — Karen ne travaille pas le lundi.
+
+---
+
 ## Règles Tickets Restaurants
+
+Le nombre de tickets est calculé **uniquement sur les jours déclarés** du salarié.
 
 | Situation | Ticket restaurant |
 |---|---|
-| Journée de présence | ✅ 1 ticket |
-| Journée complète de CP | ❌ Pas de ticket |
+| Jour déclaré travaillé, présent | ✅ 1 ticket |
+| Jour non déclaré (chômé pour ce salarié) | — Non comptabilisé |
+| Journée complète de CP (jour déclaré) | ❌ Pas de ticket |
 | Demi-journée de CP ou maladie | ✅ Ticket maintenu |
-| Journée maladie complète | ❌ Pas de ticket |
-| Alternant — journée école | ❌ Pas de ticket |
+| Journée maladie complète (jour déclaré) | ❌ Pas de ticket |
+| Alternant — journée école (jour déclaré) | ❌ Pas de ticket |
 
-Le nombre maximum de tickets par mois dépend des **jours de travail déclarés** :
+Le nombre maximum de tickets par semaine = **nombre de jours déclarés** si aucun CP ni maladie :
 
-- Nejma (L→V, 5 j/sem) → 5 tickets max par semaine si aucun CP ni maladie
-- Karen (M, J, V — 3 j/sem) → 3 tickets max par semaine si aucun CP ni maladie
+- Nejma (L, M, Me, J, V — 5 j/sem) → 5 tickets max/semaine
+- Karen (M, J, V — 3 j/sem) → 3 tickets max/semaine
 
 ---
 
