@@ -53,6 +53,23 @@ const POLE_COLORS: Record<Pole, string> = {
   sinistre: "bg-orange-500/10 text-orange-400 border-orange-500/20",
 };
 
+const POLE_KPI_COLORS: Record<Pole, { bg: string; text: string; border: string }> = {
+  sante_ind:  { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20" },
+  sante_coll: { bg: "bg-blue-500/10",    text: "text-blue-400",    border: "border-blue-500/20"    },
+  commercial: { bg: "bg-violet-500/10",  text: "text-violet-400",  border: "border-violet-500/20"  },
+  sinistre:   { bg: "bg-orange-500/10",  text: "text-orange-400",  border: "border-orange-500/20"  },
+};
+
+function computeEtp(list: Collaborateur[]) {
+  const global = list.reduce((sum, c) => sum + c.joursParSemaine / 5, 0);
+  const parPole = (Object.keys(POLE_LABELS) as Pole[]).map((pole) => ({
+    pole,
+    etp: list.filter((c) => c.pole === pole).reduce((sum, c) => sum + c.joursParSemaine / 5, 0),
+    count: list.filter((c) => c.pole === pole).length,
+  }));
+  return { global, parPole };
+}
+
 const defaultForm: CollaborateurInput = {
   firstName: "",
   pole: "commercial",
@@ -142,8 +159,33 @@ export function GestionSalaries() {
     }
   }
 
+  const { global: etpGlobal, parPole } = computeEtp(collaborateurs);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* KPIs ETP */}
+      {!loading && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {/* Global */}
+          <div className="rounded-xl border bg-card p-4 flex flex-col gap-1 col-span-2 sm:col-span-1">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">ETP Global</p>
+            <p className="text-2xl font-bold">{etpGlobal.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground">{collaborateurs.length} salarié{collaborateurs.length !== 1 ? "s" : ""}</p>
+          </div>
+          {/* Par pôle */}
+          {parPole.map(({ pole, etp, count }) => {
+            const c = POLE_KPI_COLORS[pole];
+            return (
+              <div key={pole} className={`rounded-xl border ${c.border} ${c.bg} p-4 flex flex-col gap-1`}>
+                <p className={`text-xs uppercase tracking-wide font-medium ${c.text}`}>{POLE_LABELS[pole]}</p>
+                <p className={`text-2xl font-bold ${c.text}`}>{etp.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">{count} salarié{count !== 1 ? "s" : ""}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           {collaborateurs.length} collaborateur{collaborateurs.length !== 1 ? "s" : ""}
