@@ -275,6 +275,11 @@ service cloud.firestore {
       allow update, delete: if false; // logs immuables
     }
 
+    // Collaborateurs (Bilan Social) — admin uniquement
+    match /collaborateurs/{docId} {
+      allow read, write: if isAdmin();
+    }
+
     // Admin messages collection
     // Messages envoyés par les administrateurs aux commerciaux
     // Lecture : ADMIN uniquement (les récepteurs accèdent via message_recipients)
