@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -240,6 +241,9 @@ export default function CollaborateursPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{editing ? "Modifier le collaborateur" : "Nouveau collaborateur"}</DialogTitle>
+            <DialogDescription>
+              {editing ? `Modification de ${editing.firstName}` : "Renseignez les informations du collaborateur."}
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
