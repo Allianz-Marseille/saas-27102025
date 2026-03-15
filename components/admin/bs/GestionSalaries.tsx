@@ -60,11 +60,15 @@ const POLE_KPI_COLORS: Record<Pole, { bg: string; text: string; border: string }
   sinistre:   { bg: "bg-orange-500/10",  text: "text-orange-400",  border: "border-orange-500/20"  },
 };
 
+function etpOf(c: Collaborateur): number {
+  return c.contrat === "alternant" ? 0.5 : c.joursParSemaine / 5;
+}
+
 function computeEtp(list: Collaborateur[]) {
-  const global = list.reduce((sum, c) => sum + c.joursParSemaine / 5, 0);
+  const global = list.reduce((sum, c) => sum + etpOf(c), 0);
   const parPole = (Object.keys(POLE_LABELS) as Pole[]).map((pole) => ({
     pole,
-    etp: list.filter((c) => c.pole === pole).reduce((sum, c) => sum + c.joursParSemaine / 5, 0),
+    etp: list.filter((c) => c.pole === pole).reduce((sum, c) => sum + etpOf(c), 0),
     count: list.filter((c) => c.pole === pole).length,
   }));
   return { global, parPole };
