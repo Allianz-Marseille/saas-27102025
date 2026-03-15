@@ -43,7 +43,7 @@ import {
   CONTRAT_LABELS,
   JOURS_LABELS,
   JOURS_ORDER,
-  JOURS_PAR_SEMAINE_OPTIONS,
+  etpOf,
 } from "@/types/collaborateur";
 
 const POLE_COLORS: Record<Pole, string> = {
@@ -60,10 +60,6 @@ const POLE_KPI_COLORS: Record<Pole, { bg: string; text: string; border: string }
   sinistre:   { bg: "bg-orange-500/10",  text: "text-orange-400",  border: "border-orange-500/20"  },
 };
 
-function etpOf(c: Collaborateur): number {
-  return c.contrat === "alternant" ? 0.5 : c.joursParSemaine / 5;
-}
-
 function computeEtp(list: Collaborateur[]) {
   const global = list.reduce((sum, c) => sum + etpOf(c), 0);
   const parPole = (Object.keys(POLE_LABELS) as Pole[]).map((pole) => ({
@@ -78,7 +74,6 @@ const defaultForm: CollaborateurInput = {
   firstName: "",
   pole: "commercial",
   contrat: "cdi",
-  joursParSemaine: 5,
   joursTravail: ["L", "M", "Me", "J", "V"],
 };
 
@@ -116,7 +111,7 @@ export function GestionSalaries() {
 
   function openEdit(c: Collaborateur) {
     setEditing(c);
-    setForm({ firstName: c.firstName, pole: c.pole, contrat: c.contrat, joursParSemaine: c.joursParSemaine, joursTravail: [...c.joursTravail] });
+    setForm({ firstName: c.firstName, pole: c.pole, contrat: c.contrat, joursTravail: [...c.joursTravail] });
     setDialogOpen(true);
   }
 
@@ -172,7 +167,6 @@ export function GestionSalaries() {
       {/* KPIs ETP */}
       {!loading && (
         <div className="space-y-3">
-          {/* Toggle agent */}
           <div className="flex justify-end">
             <button
               onClick={() => setAvecAgent((v) => !v)}
@@ -188,24 +182,24 @@ export function GestionSalaries() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {/* Global */}
-          <div className="rounded-xl border bg-card p-4 flex flex-col gap-1 col-span-2 sm:col-span-1">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">ETP Global</p>
-            <p className="text-2xl font-bold">{etpGlobal.toFixed(1)}</p>
-            <p className="text-xs text-muted-foreground">{collaborateurs.length} salarié{collaborateurs.length !== 1 ? "s" : ""}{avecAgent ? " + agent" : ""}</p>
+            <div className="rounded-xl border bg-card p-4 flex flex-col gap-1 col-span-2 sm:col-span-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">ETP Global</p>
+              <p className="text-2xl font-bold">{etpGlobal.toFixed(1)}</p>
+              <p className="text-xs text-muted-foreground">
+                {collaborateurs.length} salarié{collaborateurs.length !== 1 ? "s" : ""}{avecAgent ? " + agent" : ""}
+              </p>
+            </div>
+            {parPole.map(({ pole, etp, count }) => {
+              const cl = POLE_KPI_COLORS[pole];
+              return (
+                <div key={pole} className={`rounded-xl border ${cl.border} ${cl.bg} p-4 flex flex-col gap-1`}>
+                  <p className={`text-xs uppercase tracking-wide font-medium ${cl.text}`}>{POLE_LABELS[pole]}</p>
+                  <p className={`text-2xl font-bold ${cl.text}`}>{etp.toFixed(1)}</p>
+                  <p className="text-xs text-muted-foreground">{count} salarié{count !== 1 ? "s" : ""}</p>
+                </div>
+              );
+            })}
           </div>
-          {/* Par pôle */}
-          {parPole.map(({ pole, etp, count }) => {
-            const c = POLE_KPI_COLORS[pole];
-            return (
-              <div key={pole} className={`rounded-xl border ${c.border} ${c.bg} p-4 flex flex-col gap-1`}>
-                <p className={`text-xs uppercase tracking-wide font-medium ${c.text}`}>{POLE_LABELS[pole]}</p>
-                <p className={`text-2xl font-bold ${c.text}`}>{etp.toFixed(1)}</p>
-                <p className="text-xs text-muted-foreground">{count} salarié{count !== 1 ? "s" : ""}</p>
-              </div>
-            );
-          })}
-        </div>
         </div>
       )}
 
@@ -252,22 +246,16 @@ export function GestionSalaries() {
               </div>
               <div className="space-y-1.5 text-sm text-muted-foreground">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wide font-medium">J/sem</span>
-                    <span className="font-semibold text-foreground">
-                      {JOURS_PAR_SEMAINE_OPTIONS.find((o) => o.value === c.joursParSemaine)?.label ?? c.joursParSemaine}
-                    </span>
+                  <div className="flex gap-1 flex-wrap">
+                    {JOURS_ORDER.map((j) => (
+                      <span key={j} className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold ${c.joursTravail.includes(j) ? "bg-violet-500/15 text-violet-400" : "bg-muted text-muted-foreground/40"}`}>
+                        {j}
+                      </span>
+                    ))}
                   </div>
                   <span className="text-xs font-mono bg-muted px-2 py-0.5 rounded font-semibold text-foreground">
                     {etpOf(c).toFixed(1)} ETP
                   </span>
-                </div>
-                <div className="flex gap-1 flex-wrap">
-                  {JOURS_ORDER.map((j) => (
-                    <span key={j} className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold ${c.joursTravail.includes(j) ? "bg-violet-500/15 text-violet-400" : "bg-muted text-muted-foreground/40"}`}>
-                      {j}
-                    </span>
-                  ))}
                 </div>
               </div>
             </div>
@@ -305,19 +293,8 @@ export function GestionSalaries() {
               <Select value={form.contrat} onValueChange={(v) => setForm((f) => ({ ...f, contrat: v as Contrat }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(CONTRAT_LABELS) as Contrat[]).map((c) => (
-                    <SelectItem key={c} value={c}>{CONTRAT_LABELS[c]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Jours / semaine</Label>
-              <Select value={String(form.joursParSemaine)} onValueChange={(v) => setForm((f) => ({ ...f, joursParSemaine: Number(v) }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {JOURS_PAR_SEMAINE_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
+                  {(Object.keys(CONTRAT_LABELS) as Contrat[]).map((ct) => (
+                    <SelectItem key={ct} value={ct}>{CONTRAT_LABELS[ct]}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -336,6 +313,11 @@ export function GestionSalaries() {
               </div>
               <p className="text-xs text-muted-foreground">
                 {JOURS_ORDER.filter((j) => form.joursTravail.includes(j)).map((j) => JOURS_LABELS[j]).join(", ") || "Aucun jour sélectionné"}
+                {form.joursTravail.length > 0 && (
+                  <span className="ml-2 font-semibold text-foreground">
+                    → {form.contrat === "alternant" ? "0.5" : (form.joursTravail.length / 5).toFixed(1)} ETP
+                  </span>
+                )}
               </p>
             </div>
           </div>

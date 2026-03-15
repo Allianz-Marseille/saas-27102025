@@ -13,10 +13,16 @@ export interface Collaborateur {
   firstName: string;
   pole: Pole;
   contrat: Contrat;
-  joursParSemaine: number; // 0.25 à 5, par pas de 0.25
   joursTravail: JourTravail[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+export type CollaborateurInput = Omit<Collaborateur, "id" | "createdAt" | "updatedAt">;
+
+/** ETP calculé : alternant = 0.5 fixe, sinon nb de jours travaillés / 5 */
+export function etpOf(c: Pick<Collaborateur, "contrat" | "joursTravail">): number {
+  return c.contrat === "alternant" ? 0.5 : c.joursTravail.length / 5;
 }
 
 export const CONTRAT_LABELS: Record<Contrat, string> = {
@@ -24,8 +30,6 @@ export const CONTRAT_LABELS: Record<Contrat, string> = {
   cdd: "CDD",
   alternant: "Alternant",
 };
-
-export type CollaborateurInput = Omit<Collaborateur, "id" | "createdAt" | "updatedAt">;
 
 export const POLE_LABELS: Record<Pole, string> = {
   sante_ind: "Santé Individuelle",
@@ -44,18 +48,3 @@ export const JOURS_LABELS: Record<JourTravail, string> = {
 };
 
 export const JOURS_ORDER: JourTravail[] = ["L", "M", "Me", "J", "V", "S"];
-
-// Génère 0.25, 0.5, … 5.0
-export const JOURS_PAR_SEMAINE_OPTIONS: { value: number; label: string }[] = Array.from(
-  { length: 20 },
-  (_, i) => {
-    const v = (i + 1) * 0.25;
-    const int = Math.floor(v);
-    const dec = Math.round((v - int) * 4); // quarts
-    let label = "";
-    if (dec === 0) label = `${int}`;
-    else if (int === 0) label = `${dec}/4`;
-    else label = `${int} ${dec}/4`;
-    return { value: v, label };
-  }
-);
