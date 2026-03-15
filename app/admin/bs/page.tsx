@@ -23,8 +23,8 @@ export default function BsPage() {
           <BarChart3 className="w-5 h-5 text-amber-500" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold">Bilan Social</h1>
-          <p className="text-sm text-muted-foreground">Gestion RH et informations agence</p>
+          <h1 className="text-xl font-semibold">Éléments à déclarer / salaires</h1>
+          <p className="text-sm text-muted-foreground">Éléments variables à communiquer à l'expert-comptable</p>
         </div>
       </div>
 
