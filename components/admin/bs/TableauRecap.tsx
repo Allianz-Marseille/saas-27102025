@@ -2,8 +2,9 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
-import { Copy, Download } from "lucide-react"
+import { Copy, FileSpreadsheet, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { buildAuthenticatedJsonHeaders } from "@/lib/firebase/api-auth"
 import type { BsDeclaration, SalarieDeclaration } from "@/types/bs"
 import type { Collaborateur } from "@/types/collaborateur"
 
@@ -53,6 +54,7 @@ function escapeCSV(val: unknown): string {
 
 export function TableauRecap({ declaration, collaborateurs }: Props) {
   const [copied, setCopied] = useState(false)
+  const [exportingXlsx, setExportingXlsx] = useState(false)
 
   // Collaborateurs présents dans la déclaration, triés par prénom
   const collabs = collaborateurs
@@ -115,6 +117,36 @@ export function TableauRecap({ declaration, collaborateurs }: Props) {
     URL.revokeObjectURL(url)
   }
 
+  async function handleExportXlsx() {
+    setExportingXlsx(true)
+    try {
+      const headers = await buildAuthenticatedJsonHeaders()
+      const res = await fetch(`/api/admin/bs/export?moisKey=${declaration.moisKey}`, { headers })
+      if (!res.ok) throw new Error("Erreur lors de l'export")
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `bs_${declaration.moisKey}.xlsx`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error("Impossible de générer le fichier Excel")
+    } finally {
+      setExportingXlsx(false)
+    }
+  }
+
+  // Semaines avec au moins une absence
+  const allAbsWeeks = Array.from(
+    new Set(collabs.flatMap((c) => (declaration.salaries[c.id]?.absences ?? []).map((a) => a.semaine)))
+  ).sort((a, b) => a - b)
+
+  // Semaines avec des tickets restaurants
+  const allTRWeeks = Array.from(
+    new Set(collabs.flatMap((c) => (declaration.salaries[c.id]?.ticketsRestaurants ?? []).map((tr) => tr.semaine)))
+  ).sort((a, b) => a - b)
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -127,6 +159,10 @@ export function TableauRecap({ declaration, collaborateurs }: Props) {
           <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-1.5">
             <Download className="w-3.5 h-3.5" />
             CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportXlsx} disabled={exportingXlsx} className="gap-1.5">
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            {exportingXlsx ? "Export…" : "Excel"}
           </Button>
         </div>
       </div>
@@ -146,8 +182,9 @@ export function TableauRecap({ declaration, collaborateurs }: Props) {
             </tr>
           </thead>
           <tbody>
+            {/* ── Éléments variables ── */}
             {lignesVisibles.map((l) => (
-              <tr key={l.key} className="border-b last:border-0 hover:bg-muted/20">
+              <tr key={l.key} className="border-b hover:bg-muted/20">
                 <td className="px-3 py-2 font-medium text-xs sticky left-0 bg-background">
                   {l.label}
                 </td>
@@ -168,6 +205,78 @@ export function TableauRecap({ declaration, collaborateurs }: Props) {
                 })}
               </tr>
             ))}
+
+            {/* ── Section CP / Absences ── */}
+            {allAbsWeeks.length > 0 && (
+              <>
+                <tr className="border-b bg-muted/60">
+                  <td
+                    colSpan={collabs.length + 1}
+                    className="px-3 py-1.5 text-xs font-semibold text-primary/80 uppercase tracking-wide"
+                  >
+                    CP / Maladie / École
+                  </td>
+                </tr>
+                {allAbsWeeks.map((semaine) => (
+                  <tr key={`abs-${semaine}`} className="border-b hover:bg-muted/20">
+                    <td className="px-3 py-2 text-xs text-muted-foreground sticky left-0 bg-background pl-5">
+                      Semaine {semaine}
+                    </td>
+                    {collabs.map((c) => {
+                      const absWeek = declaration.salaries[c.id]?.absences?.find((a) => a.semaine === semaine)
+                      return (
+                        <td key={c.id} className="px-3 py-2 text-center text-xs">
+                          {absWeek ? (
+                            <div className="flex flex-wrap gap-0.5 justify-center">
+                              {absWeek.evenements.map((ev, i) => (
+                                <span key={i} className="px-1.5 py-0.5 rounded text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                  {ev}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground/30">—</span>
+                          )}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </>
+            )}
+
+            {/* ── Section Tickets restaurants ── */}
+            {allTRWeeks.length > 0 && (
+              <>
+                <tr className="border-b bg-muted/60">
+                  <td
+                    colSpan={collabs.length + 1}
+                    className="px-3 py-1.5 text-xs font-semibold text-amber-400/80 uppercase tracking-wide"
+                  >
+                    Tickets restaurants
+                  </td>
+                </tr>
+                {allTRWeeks.map((semaine) => (
+                  <tr key={`tr-${semaine}`} className="border-b last:border-0 hover:bg-muted/20">
+                    <td className="px-3 py-2 text-xs text-muted-foreground sticky left-0 bg-background pl-5">
+                      Semaine {semaine}
+                    </td>
+                    {collabs.map((c) => {
+                      const trWeek = declaration.salaries[c.id]?.ticketsRestaurants?.find((tr) => tr.semaine === semaine)
+                      return (
+                        <td key={c.id} className="px-3 py-2 text-center text-xs">
+                          {trWeek !== undefined ? (
+                            <span className="font-mono font-semibold">{trWeek.nb}</span>
+                          ) : (
+                            <span className="text-muted-foreground/30">—</span>
+                          )}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </>
+            )}
           </tbody>
         </table>
       </div>

@@ -3,7 +3,7 @@ import { verifyAdmin } from "@/lib/utils/auth-utils"
 import { adminDb } from "@/lib/firebase/admin-config"
 import { fetchEvenementsCalendrier } from "@/lib/services/bs-calendar"
 import { parseEvenementsCalendrier } from "@/lib/services/bs-gemini"
-import { matchEvenements, groupAbsencesParSemaine } from "@/lib/services/bs-matcher"
+import { matchEvenements, groupAbsencesParSemaine, computeTicketsRestaurants } from "@/lib/services/bs-matcher"
 import { isEngagementActif } from "@/types/bs"
 import type { Collaborateur } from "@/types/collaborateur"
 import type { BsEngagement, BsDeclaration, SalarieDeclaration } from "@/types/bs"
@@ -96,6 +96,7 @@ export async function POST(req: NextRequest) {
       const existingSalarie = existingSalaries[collab.id] ?? {}
       const events = matched.get(collab.id) ?? []
       const absences = groupAbsencesParSemaine(events)
+      const ticketsRestaurants = computeTicketsRestaurants(moisKey, collab.joursTravail, events)
 
       // Engagement actif de ce collaborateur
       const eng = engagementsActifs.find((e) => e.collaborateurId === collab.id)
@@ -103,6 +104,7 @@ export async function POST(req: NextRequest) {
       salaries[collab.id] = {
         // Champs auto (écrasés)
         absences,
+        ticketsRestaurants,
         garantieVariable: eng?.type === "garantie_variable" ? eng.montantMensuel : undefined,
         primeFormation: eng?.type === "prime_formation" ? eng.montantMensuel : undefined,
         // Champs manuels (conservés)

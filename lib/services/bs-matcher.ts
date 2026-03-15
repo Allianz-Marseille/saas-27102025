@@ -1,6 +1,7 @@
 import type { EvenementParse } from "./bs-gemini"
 import type { Collaborateur } from "@/types/collaborateur"
-import type { AbsenceSemaine } from "@/types/bs"
+import type { AbsenceSemaine, TicketRestaurantSemaine } from "@/types/bs"
+import type { JourTravail } from "@/types/collaborateur"
 
 /** Normalise un prénom : minuscules, sans accents, trim */
 export function normalizePrenom(s: string): string {
@@ -70,6 +71,74 @@ export function groupAbsencesParSemaine(events: EvenementParse[]): AbsenceSemain
   return Array.from(byWeek.entries())
     .sort((a, b) => a[0] - b[0])
     .map(([semaine, evenements]) => ({ semaine, evenements }))
+}
+
+/** Mapping JourTravail → numéro JS (0=dim, 1=lun, …) */
+const JOUR_TO_JS: Record<JourTravail, number> = {
+  L: 1, M: 2, Me: 3, J: 4, V: 5, S: 6,
+}
+
+/**
+ * Calcule les tickets restaurants par semaine ISO pour un collaborateur.
+ * - Base : jours travaillés du collaborateur dans la semaine (tombant dans le mois)
+ * - -1 par journée d'absence complète (CP, maladie, école) sur un jour travaillé
+ * - Les demi-journées n'ont pas d'impact
+ */
+export function computeTicketsRestaurants(
+  moisKey: string,
+  joursTravail: JourTravail[],
+  events: EvenementParse[],
+): TicketRestaurantSemaine[] {
+  const [year, month] = moisKey.split("-").map(Number)
+  const workDayNums = new Set(joursTravail.map((j) => JOUR_TO_JS[j]))
+
+  // Recense toutes les dates travaillées du mois avec leur semaine ISO
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const workDateToWeek = new Map<string, number>()
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(year, month - 1, d)
+    if (workDayNums.has(date.getDay())) {
+      const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+      workDateToWeek.set(dateStr, getISOWeek(dateStr))
+    }
+  }
+
+  // Initialise le compteur TR par semaine
+  const trByWeek = new Map<number, number>()
+  for (const week of workDateToWeek.values()) {
+    trByWeek.set(week, (trByWeek.get(week) ?? 0) + 1)
+  }
+
+  // Soustrait les absences journée complète (pas demiJournee) sur les jours travaillés
+  for (const evt of events) {
+    if (evt.type === "ignore" || evt.demiJournee) continue
+
+    const parts = evt.date.split("/")
+    const dates: string[] = []
+
+    if (parts.length === 2) {
+      const cur = new Date(parts[0])
+      const end = new Date(parts[1])
+      while (cur <= end) {
+        dates.push(cur.toISOString().split("T")[0])
+        cur.setDate(cur.getDate() + 1)
+      }
+    } else {
+      dates.push(parts[0])
+    }
+
+    for (const dateStr of dates) {
+      const week = workDateToWeek.get(dateStr)
+      if (week !== undefined) {
+        trByWeek.set(week, Math.max(0, (trByWeek.get(week) ?? 0) - 1))
+      }
+    }
+  }
+
+  return Array.from(trByWeek.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([semaine, nb]) => ({ semaine, nb }))
 }
 
 export interface MatchResult {

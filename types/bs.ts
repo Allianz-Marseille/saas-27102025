@@ -30,19 +30,25 @@ export interface AbsenceSemaine {
   evenements: string[]
 }
 
+export interface TicketRestaurantSemaine {
+  semaine: number
+  nb: number
+}
+
 export interface SalarieDeclaration {
-  absences: AbsenceSemaine[]         // auto (depuis Calendar + Gemini)
-  garantieVariable?: number          // auto (engagement actif)
-  primeFormation?: number            // auto (engagement actif)
-  commissions?: number               // manuel
-  boostGoogle?: number               // manuel
-  primeMacron?: number               // manuel
-  primeNoel?: number                 // manuel
-  avance?: number                    // manuel
-  avanceFrais?: number               // manuel
-  frais?: number                     // manuel
-  heuresSup?: number                 // manuel
-  regul?: string                     // manuel (texte libre)
+  absences: AbsenceSemaine[]                        // auto (depuis Calendar + Gemini)
+  ticketsRestaurants: TicketRestaurantSemaine[]     // auto (calculé depuis joursTravail + absences)
+  garantieVariable?: number                         // auto (engagement actif)
+  primeFormation?: number                           // auto (engagement actif)
+  commissions?: number                              // manuel
+  boostGoogle?: number                              // manuel
+  primeMacron?: number                              // manuel
+  primeNoel?: number                                // manuel
+  avance?: number                                   // manuel
+  avanceFrais?: number                              // manuel
+  frais?: number                                    // manuel
+  heuresSup?: number                                // manuel
+  regul?: string                                    // manuel (texte libre)
 }
 
 export interface BsDeclaration {
