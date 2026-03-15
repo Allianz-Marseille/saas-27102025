@@ -1,3 +1,4 @@
+import crypto from "crypto"
 import { EvenementCalendrier } from "./bs-gemini"
 
 interface GoogleCalendarEvent {
@@ -90,56 +91,34 @@ function getPreviousDay(dateStr: string): string {
 }
 
 /**
- * Obtient un access token OAuth2 via JWT service account (sans librairie externe).
+ * Obtient un access token OAuth2 via JWT service account.
+ * Utilise le module crypto de Node.js (createSign) — plus fiable que Web Crypto API
+ * dans les environnements serverless Next.js / Vercel.
  */
 async function getAccessToken(email: string, privateKey: string): Promise<string> {
   const now = Math.floor(Date.now() / 1000)
-  const expiry = now + 3600
-
-  const header = { alg: "RS256", typ: "JWT" }
-  const payload = {
-    iss: email,
-    scope: "https://www.googleapis.com/auth/calendar.readonly",
-    aud: "https://oauth2.googleapis.com/token",
-    exp: expiry,
-    iat: now,
-  }
 
   const encode = (obj: object) =>
     Buffer.from(JSON.stringify(obj)).toString("base64url")
 
-  const headerB64 = encode(header)
-  const payloadB64 = encode(payload)
-  const signingInput = `${headerB64}.${payloadB64}`
+  const header = encode({ alg: "RS256", typ: "JWT" })
+  const payload = encode({
+    iss: email,
+    scope: "https://www.googleapis.com/auth/calendar.readonly",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now,
+  })
 
-  // Signature RS256 via Web Crypto API (disponible dans Node.js 18+)
-  const keyData = privateKey
-    .replace(/-----BEGIN RSA PRIVATE KEY-----/, "")
-    .replace(/-----END RSA PRIVATE KEY-----/, "")
-    .replace(/-----BEGIN PRIVATE KEY-----/, "")
-    .replace(/-----END PRIVATE KEY-----/, "")
-    .replace(/\s+/g, "")
+  const signingInput = `${header}.${payload}`
 
-  const binaryKey = Buffer.from(keyData, "base64")
+  // crypto.createSign gère les clés PEM directement, pas besoin de strip manuel
+  const signer = crypto.createSign("RSA-SHA256")
+  signer.update(signingInput)
+  const signature = signer.sign(privateKey, "base64url")
 
-  const cryptoKey = await crypto.subtle.importKey(
-    "pkcs8",
-    binaryKey,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"]
-  )
+  const jwt = `${signingInput}.${signature}`
 
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    cryptoKey,
-    Buffer.from(signingInput)
-  )
-
-  const signatureB64 = Buffer.from(signature).toString("base64url")
-  const jwt = `${signingInput}.${signatureB64}`
-
-  // Échange du JWT contre un access token
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
