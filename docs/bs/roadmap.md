@@ -2,27 +2,93 @@
 
 ## Table des Matières
 
-1. [Vision](#vision)
-2. [Architecture cible](#architecture-cible)
-3. [Phase 1 — Socle salariés](#phase-1--socle-salariés-fait-)
-4. [Phase 2 — Engagements multi-mois](#phase-2--engagements-multi-mois)
-5. [Phase 3 — Navigation mensuelle & déclarations](#phase-3--navigation-mensuelle--déclarations)
-6. [Phase 4 — Intégration Google Calendar](#phase-4--intégration-google-calendar)
-7. [Phase 5 — Calculs automatiques](#phase-5--calculs-automatiques)
-8. [Phase 6 — Tableau récapitulatif expert-comptable](#phase-6--tableau-récapitulatif-expert-comptable)
-9. [Modèle de données Firestore](#modèle-de-données-firestore)
+1. [Vision & UX cible](#vision--ux-cible)
+2. [Ce que le SaaS récupère automatiquement](#ce-que-le-saas-récupère-automatiquement)
+3. [Ce que le SaaS demande à l'utilisateur](#ce-que-le-saas-demande-à-lutilisateur)
+4. [Architecture cible](#architecture-cible)
+5. [Phase 1 — Socle salariés](#phase-1--socle-salariés-fait-)
+6. [Phase 2 — Engagements multi-mois](#phase-2--engagements-multi-mois)
+7. [Phase 3 — Navigation mensuelle & workflow BS](#phase-3--navigation-mensuelle--workflow-bs)
+8. [Phase 4 — Intégration Google Calendar](#phase-4--intégration-google-calendar)
+9. [Phase 5 — Calculs automatiques](#phase-5--calculs-automatiques)
+10. [Phase 6 — Tableau récapitulatif expert-comptable](#phase-6--tableau-récapitulatif-expert-comptable)
+11. [Modèle de données Firestore](#modèle-de-données-firestore)
 
 ---
 
-## Vision
+## Vision & UX cible
 
-Générer chaque mois, **automatiquement**, un tableau récapitulatif des éléments variables à communiquer à l'expert-comptable :
-- CP, maladie, absences (lu depuis Google Calendar)
-- Tickets restaurants (calculés selon jours déclarés)
-- Commissions réelles (récupérées depuis le SaaS)
-- Primes, garanties, boosts, frais (saisis ou automatiques)
+En fin de mois, l'administrateur clique sur **"Préparer le BS de [mois]"**.
 
-> Spécification fonctionnelle complète : `docs/bs/bilan_social_spec.md`
+Le SaaS enchaîne alors deux étapes :
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ÉTAPE 1 — Récupération automatique                         │
+│  → Google Calendar : CP, maladies, absences                 │
+│  → Commissions réelles du mois (depuis le SaaS)             │
+│  → Boost Google du mois (depuis le SaaS)                    │
+│  → Engagements actifs : garantie variable, prime formation  │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│  ÉTAPE 2 — Complétion manuelle (salarié par salarié)        │
+│  → Le SaaS demande : y a-t-il un élément ponctuel ce mois ? │
+│  → Prime Macron, Prime Noël, Avance, Avance sur frais,      │
+│    Frais, Heures sup, Régul                                  │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│  ÉTAPE 3 — Génération du tableau récapitulatif              │
+│  → Prêt à copier / exporter pour l'expert-comptable         │
+│  → Clôture du mois                                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Ce que le SaaS récupère automatiquement
+
+| Source | Données récupérées | Condition |
+|---|---|---|
+| **Google Calendar agence** | CP, maladie, école (par salarié, par jour) | Mots-clés `cp`, `malade`, `école` dans le titre |
+| **Commissions réelles** | Montant commission du mois (depuis le SaaS) | Pôles Commercial, Santé Ind, Santé Coll uniquement — pas Sinistre |
+| **Boost Google** | Prime Boost du mois précédent (depuis le SaaS) | Tous pôles |
+| **Engagements actifs** | Garantie de variable, prime formation | Si engagement déclaré sur la fiche salarié et période couvrant le mois |
+
+> ⚠️ Pour les commissions : on déclare les **commissions réelles**, jamais les potentielles.
+> Le décalage s'applique : salaires de **février** = commissions réelles de **janvier**.
+
+---
+
+## Ce que le SaaS demande à l'utilisateur
+
+### Éléments ponctuels (salarié par salarié, mois par mois)
+
+Le SaaS présente chaque salarié et demande si l'un de ces éléments s'applique ce mois :
+
+| Élément | Type | Valeur saisie |
+|---|---|---|
+| Prime Macron | Ponctuel | Montant (€) |
+| Prime Noël | Ponctuel | Montant (€) |
+| Avance | Ponctuel | Montant (€) |
+| Avance sur frais | Ponctuel | Montant (€) |
+| Frais | Ponctuel | Montant (€) |
+| Heures supplémentaires | Ponctuel | Nombre d'heures |
+| Régul | Ponctuel | Texte libre (instruction à l'expert-comptable) |
+
+Ces éléments sont **non récurrents** — ils doivent être saisis à chaque mois concerné.
+
+### Engagements multi-mois (déclarés dans la fiche salarié)
+
+Les engagements suivants sont déclarés **une fois** dans la fiche de chaque salarié et s'appliquent automatiquement sur tous les mois couverts :
+
+| Élément | Déclaration | Logique mensuelle |
+|---|---|---|
+| **Garantie de variable** | Mois de début → mois de fin + montant mensuel | `max(commissions réelles, garantie)` |
+| **Prime formation** | Mois de début → mois de fin + montant mensuel | Montant fixe chaque mois |
+
+> Exemple : garantie de 300 €/mois de janvier à juin 2026 → déclarée une fois sur la fiche du salarié → appliquée automatiquement sur chaque BS mensuel de janvier à juin.
 
 ---
 
@@ -30,17 +96,19 @@ Générer chaque mois, **automatiquement**, un tableau récapitulatif des élém
 
 ```
 /admin/bs
-  ├── Dashboard         ← KPIs ETP (fait ✅)
-  ├── Gestion salarié   ← CRUD salariés (fait ✅)
-  ├── Engagements       ← Garanties variable, primes formation
-  ├── Déclarations      ← Navigation mensuelle + saisie + calculs
+  ├── Dashboard              ← KPIs ETP (fait ✅)
+  ├── Gestion salarié        ← CRUD salariés + engagements multi-mois (fait partiel ✅)
+  ├── Déclarations           ← Navigation mensuelle + workflow BS
   └── FAQ
 ```
 
 **Collections Firestore :**
-- `collaborateurs` — salariés déclarés (fait ✅)
-- `bs_engagements` — garanties variable et primes formation
-- `bs_declarations/{moisKey}` — déclaration mensuelle complète (état + données saisies)
+
+| Collection | Rôle | Phase |
+|---|---|---|
+| `collaborateurs` | Salariés déclarés | ✅ Fait |
+| `bs_engagements` | Garanties variable, primes formation par salarié | Phase 2 |
+| `bs_declarations/{moisKey}` | Déclaration mensuelle complète | Phase 3 |
 
 ---
 
@@ -55,91 +123,108 @@ Générer chaque mois, **automatiquement**, un tableau récapitulatif des élém
 
 ## Phase 2 — Engagements multi-mois
 
-> Onglet **Engagements** dans `/admin/bs`
+> Intégrés dans la **fiche salarié** (carte collaborateur dans "Gestion salarié")
+
+### UX
+
+Chaque carte collaborateur affiche ses engagements actifs, avec un bouton **"+ Ajouter un engagement"** :
+
+```
+┌─────────────────────────────────┐
+│ Karen — CDI — Commercial        │
+│ M / J / V — 0.6 ETP             │
+│                                 │
+│ Engagements actifs :            │
+│ 🟡 Garantie variable            │
+│    300 €/mois · jan→juin 2026   │
+│                                 │
+│ [+ Ajouter un engagement]       │
+└─────────────────────────────────┘
+```
 
 ### Fonctionnalités
 
-- [ ] CRUD engagements : type, salarié, montant/mois, date début, durée en mois
-- [ ] Calcul automatique de la date de fin
-- [ ] Vue liste avec statut : `🟡 En cours` / `✅ Terminé` / `🔜 À venir`
+- [ ] Ajout d'un engagement depuis la fiche salarié (type, montant, mois début, mois fin)
+- [ ] Affichage des engagements actifs sur la carte
 - [ ] Clôture manuelle anticipée
-
-### Types d'engagements
-
-| Type | Bénéficiaire | Logique |
-|---|---|---|
-| Garantie de variable | Salarié concerné | `max(commissions réelles, garantie mensuelle)` |
-| Prime formation | CDC formateur | Montant fixe mensuel sur la période |
+- [ ] Calcul automatique de la date de fin depuis nb de mois
 
 ### Collection Firestore : `bs_engagements`
 
 ```ts
 {
   id: string
-  type: "garantie_variable" | "prime_formation"
   collaborateurId: string
-  montantMensuel: number       // en euros
-  dateDebut: Timestamp         // 1er du mois
+  type: "garantie_variable" | "prime_formation"
+  montantMensuel: number          // €
+  moisDebut: string               // "2026-01"
+  moisFin: string                 // "2026-06" (calculé)
   nbMois: number
-  dateFin: Timestamp           // calculée automatiquement
-  clos: boolean                // clôture manuelle
+  clos: boolean
   createdAt: Timestamp
 }
 ```
 
 ---
 
-## Phase 3 — Navigation mensuelle & déclarations
+## Phase 3 — Navigation mensuelle & workflow BS
 
 > Onglet **Déclarations** dans `/admin/bs`
 
 ### Navigation mensuelle
 
-- [ ] Sélecteur mois/année (type `← Janvier 2026 →`)
-- [ ] Pour chaque mois : badge de statut
+- [ ] Sélecteur `← Janvier 2026 →`
+- [ ] Badge statut par mois :
   - `⬜ Vide` — aucune saisie
   - `🟡 En cours` — saisie partielle
-  - `✅ Clôturé` — transmis à l'expert-comptable
-- [ ] Historique : pouvoir consulter les mois passés (lecture seule si clôturé)
+  - `✅ Clôturé` — transmis à l'expert-comptable (lecture seule)
+- [ ] Bouton **"Préparer le BS de [mois]"** → déclenche la récupération automatique puis la complétion manuelle
 
-### Saisie mensuelle
+### Workflow de génération
 
-Pour chaque mois sélectionné, une page de saisie avec :
-
-- [ ] **Section commissions** : affichage auto des commissions réelles du mois (depuis le SaaS) — Commercial, Santé Ind, Santé Coll uniquement
-- [ ] **Section garanties** : application automatique des engagements actifs sur ce mois
-- [ ] **Section Boost Google** : montant auto depuis le SaaS (mois précédent)
-- [ ] **Section occasionnels** : saisie manuelle ligne par ligne (Prime Macron, Noël, Avance, Frais, Heures sup, Régul)
-- [ ] **Section CP / Absences** : lu depuis Google Calendar (phase 4) ou saisie manuelle de secours
-- [ ] **Section Tickets Restaurants** : calculés automatiquement (phase 5)
+```
+1. Clic "Préparer le BS de janvier 2026"
+   ↓
+2. Récupération auto (spinner)
+   - Google Calendar → CP, maladie, école du mois
+   - Commissions réelles janvier
+   - Boost Google janvier
+   - Engagements actifs sur janvier
+   ↓
+3. Revue des données auto (affichage pour validation)
+   ↓
+4. Complétion manuelle — salarié par salarié
+   "Y a-t-il un élément ponctuel pour [prénom] ce mois ?"
+   → Champs optionnels : Prime Macron, Avance, Frais, Heures sup, Régul…
+   ↓
+5. Génération du tableau récapitulatif
+   ↓
+6. Bouton "Clôturer" → statut = clos, lecture seule
+```
 
 ### Collection Firestore : `bs_declarations/{moisKey}`
 
 ```ts
 {
-  moisKey: string              // ex : "2026-01"
+  moisKey: string                 // "2026-01"
   statut: "vide" | "en_cours" | "clos"
   salaries: {
     [collaborateurId: string]: {
+      // Auto-récupérés
       commissions?: number
-      garantieVariable?: number
       boostGoogle?: number
+      garantieVariable?: number
       primeFormation?: number
+      absences: { semaine: number; evenements: string[] }[]
+      ticketsRestaurants: { semaine: number; nb: number }[]
+      // Saisis manuellement
       primeMacron?: number
       primeNoel?: number
       avance?: number
       avanceFrais?: number
-      heuresSup?: number       // nombre d'heures
       frais?: number
-      regul?: string           // texte libre
-      absences: {              // par semaine
-        semaine: number        // 1 à 5
-        evenements: string[]   // ex: ["2/1 cp", "16->25/1 cp"]
-      }[]
-      ticketsRestaurants: {    // par semaine
-        semaine: number
-        nb: number
-      }[]
+      heuresSup?: number
+      regul?: string
     }
   }
   closedAt?: Timestamp
@@ -152,23 +237,23 @@ Pour chaque mois sélectionné, une page de saisie avec :
 
 ## Phase 4 — Intégration Google Calendar
 
-- [ ] Connexion API Google Calendar (OAuth ou service account)
-- [ ] Lecture automatique des événements du mois pour le calendrier de l'agence
-- [ ] Filtrage sur les mots-clés : `cp`, `malade`, `école`
+- [ ] Connexion API Google Calendar (service account ou OAuth)
+- [ ] Lecture des événements du mois sur le calendrier agence
+- [ ] Filtrage : `cp`, `malade`, `école` dans le titre
 - [ ] Détection journée complète vs demi-journée (événement avec heure = demi-journée)
-- [ ] Matching événement → salarié (par prénom dans le titre de l'événement)
-- [ ] Respect des jours déclarés : un CP sur un jour non travaillé est ignoré
-- [ ] Signalement des salariés hors effectif (⚠️) mais inclus si événements les concernent
+- [ ] Matching prénom dans le titre → salarié dans Firestore
+- [ ] Respect des jours déclarés : CP un jour non travaillé = ignoré
+- [ ] Signalement ⚠️ des salariés hors effectif (présents dans le calendrier mais plus dans `collaborateurs`)
 
-**URL calendrier agence :**
+**Calendrier agence :**
 `https://calendar.google.com/calendar/u/0?cid=YWxsaWFuei1ub2dhcm8uZnJfMmJ1ZWE5M2h2NDdrMGJkaGluZTRlYWFzNWNAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ`
 
 ---
 
 ## Phase 5 — Calculs automatiques
 
-- [ ] **Tickets restaurants** : pour chaque salarié, pour chaque semaine
-  - Base = jours déclarés travaillés cette semaine
+- [ ] **Tickets restaurants** par salarié, par semaine
+  - Base = jours déclarés travaillés dans la semaine
   - `-1` par journée CP complète, maladie complète, école
   - Demi-journée CP/maladie = pas d'impact
 - [ ] **CP décompte** : total de jours CP par salarié sur le mois (journée = 1, demi = 0.5)
@@ -178,28 +263,47 @@ Pour chaque mois sélectionné, une page de saisie avec :
 
 ## Phase 6 — Tableau récapitulatif expert-comptable
 
-- [ ] Génération du tableau au format attendu (colonnes = salariés, lignes = éléments)
-- [ ] Affichage dans l'UI avec mise en forme
-- [ ] Bouton **Copier** (copie le tableau dans le presse-papier)
+- [ ] Génération du tableau (colonnes = salariés, lignes = éléments)
+- [ ] Les lignes occasionnelles n'apparaissent que si renseignées
+- [ ] Bouton **Copier** (presse-papier)
 - [ ] Bouton **Exporter** (Excel ou PDF)
-- [ ] Bouton **Clôturer le mois** → passe le statut à `clos`, verrouille la saisie
+- [ ] Bouton **Clôturer le mois**
 
 ### Format des cellules CP / Absence
 
-| Valeur affichée | Signification |
+| Valeur | Signification |
 |---|---|
 | `2/1 cp` | CP le 2 janvier |
-| `16->25/1 cp` | CP du 16 au 25 janvier |
-| `8/1 cp (demi-j)` | Demi-journée de CP |
+| `16->25/1 cp` | CP du 16 au 25 |
+| `8/1 cp (demi-j)` | Demi-journée CP |
 | `ÉCOLE` | Journée école alternant |
 | `5/1 maladie` | Maladie le 5 janvier |
 
----
+### Structure du tableau
 
-## Modèle de données Firestore — Vue d'ensemble
-
-| Collection | Rôle | Phase |
-|---|---|---|
-| `collaborateurs` | Salariés déclarés | ✅ Fait |
-| `bs_engagements` | Garanties variable, primes formation | Phase 2 |
-| `bs_declarations/{moisKey}` | Déclaration mensuelle complète | Phase 3 |
+```
+                    │ Salarié 1 │ Salarié 2 │ …
+────────────────────┼───────────┼───────────┼──
+Commissions         │           │           │
+Garantie variable   │           │           │
+Boost Google        │           │           │
+────────────────────┼───────────┼───────────┼──
+[OCCASIONNELS]      │           │           │
+Prime Macron        │           │           │
+Avance              │           │           │
+Frais               │           │           │
+Heures sup          │           │           │
+Régul               │           │           │
+────────────────────┼───────────┼───────────┼──
+CP / MALADIE        │           │           │
+  Semaine 1         │           │           │
+  Semaine 2         │           │           │
+  Semaine 3         │           │           │
+  Semaine 4         │           │           │
+────────────────────┼───────────┼───────────┼──
+TICKETS RESTAURANTS │           │           │
+  Semaine 1         │           │           │
+  Semaine 2         │           │           │
+  Semaine 3         │           │           │
+  Semaine 4         │           │           │
+```
