@@ -1,19 +1,31 @@
 "use client";
 
-import { useState } from "react";
-import { Users, HelpCircle, BarChart3, LayoutDashboard } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Users, HelpCircle, BarChart3, LayoutDashboard, FileText } from "lucide-react";
 import { GestionSalaries } from "@/components/admin/bs/GestionSalaries";
+import { DeclarationNav } from "@/components/admin/bs/DeclarationNav";
+import { getCollaborateurs } from "@/lib/firebase/collaborateurs";
+import type { Collaborateur } from "@/types/collaborateur";
+import { toast } from "sonner";
 
-type Tab = "dashboard" | "salaries" | "faq";
+type Tab = "dashboard" | "salaries" | "declarations" | "faq";
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "salaries", label: "Gestion salarié", icon: Users },
+  { id: "declarations", label: "Déclarations", icon: FileText },
   { id: "faq", label: "FAQ", icon: HelpCircle },
 ];
 
 export default function BsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [collaborateurs, setCollaborateurs] = useState<Collaborateur[]>([]);
+
+  useEffect(() => {
+    getCollaborateurs()
+      .then(setCollaborateurs)
+      .catch(() => toast.error("Erreur lors du chargement des collaborateurs"));
+  }, []);
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -24,7 +36,7 @@ export default function BsPage() {
         </div>
         <div>
           <h1 className="text-xl font-semibold">Éléments à déclarer / salaires</h1>
-          <p className="text-sm text-muted-foreground">Éléments variables à communiquer à l'expert-comptable</p>
+          <p className="text-sm text-muted-foreground">Éléments variables à communiquer à l&apos;expert-comptable</p>
         </div>
       </div>
 
@@ -56,6 +68,9 @@ export default function BsPage() {
           </div>
         )}
         {activeTab === "salaries" && <GestionSalaries />}
+        {activeTab === "declarations" && (
+          <DeclarationNav collaborateurs={collaborateurs} />
+        )}
         {activeTab === "faq" && (
           <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground space-y-2">
             <HelpCircle className="w-10 h-10 mx-auto opacity-30" />

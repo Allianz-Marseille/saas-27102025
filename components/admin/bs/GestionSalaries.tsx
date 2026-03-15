@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { EngagementBadge } from "@/components/admin/bs/EngagementBadge";
+import { EngagementDialog } from "@/components/admin/bs/EngagementDialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -89,6 +91,7 @@ export function GestionSalaries() {
   const [deleteTarget, setDeleteTarget] = useState<Collaborateur | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [avecAgent, setAvecAgent] = useState(false);
+  const [engagementDialogFor, setEngagementDialogFor] = useState<string | null>(null);
 
   async function load() {
     try {
@@ -258,6 +261,12 @@ export function GestionSalaries() {
                   </span>
                 </div>
               </div>
+              <div className="border-t border-border/50 pt-2 mt-2">
+                <EngagementBadge
+                  collaborateurId={c.id}
+                  onManage={() => setEngagementDialogFor(c.id)}
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -327,6 +336,16 @@ export function GestionSalaries() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog Engagements */}
+      {engagementDialogFor && (
+        <EngagementDialog
+          collaborateurId={engagementDialogFor}
+          firstName={collaborateurs.find((c) => c.id === engagementDialogFor)?.firstName ?? ""}
+          open={!!engagementDialogFor}
+          onOpenChange={(o) => { if (!o) setEngagementDialogFor(null) }}
+        />
+      )}
 
       {/* Dialog Suppression */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>

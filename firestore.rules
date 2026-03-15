@@ -280,6 +280,16 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Engagements BS (garanties variables, primes formation) — admin uniquement
+    match /bs_engagements/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Déclarations BS mensuelles — admin uniquement
+    match /bs_declarations/{docId} {
+      allow read, write: if isAdmin();
+    }
+
     // Admin messages collection
     // Messages envoyés par les administrateurs aux commerciaux
     // Lecture : ADMIN uniquement (les récepteurs accèdent via message_recipients)
