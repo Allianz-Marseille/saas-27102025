@@ -93,6 +93,7 @@ export function GestionSalaries() {
 
   const [deleteTarget, setDeleteTarget] = useState<Collaborateur | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [avecAgent, setAvecAgent] = useState(false);
 
   async function load() {
     try {
@@ -163,18 +164,35 @@ export function GestionSalaries() {
     }
   }
 
-  const { global: etpGlobal, parPole } = computeEtp(collaborateurs);
+  const { global: etpBase, parPole } = computeEtp(collaborateurs);
+  const etpGlobal = etpBase + (avecAgent ? 2 : 0);
 
   return (
     <div className="space-y-6">
       {/* KPIs ETP */}
       {!loading && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="space-y-3">
+          {/* Toggle agent */}
+          <div className="flex justify-end">
+            <button
+              onClick={() => setAvecAgent((v) => !v)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                avecAgent
+                  ? "bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/25"
+                  : "bg-muted text-muted-foreground border-transparent hover:border-border"
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${avecAgent ? "bg-amber-400" : "bg-muted-foreground/40"}`} />
+              {avecAgent ? "Avec agent (+2 ETP)" : "Sans agent"}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Global */}
           <div className="rounded-xl border bg-card p-4 flex flex-col gap-1 col-span-2 sm:col-span-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">ETP Global</p>
             <p className="text-2xl font-bold">{etpGlobal.toFixed(1)}</p>
-            <p className="text-xs text-muted-foreground">{collaborateurs.length} salarié{collaborateurs.length !== 1 ? "s" : ""}</p>
+            <p className="text-xs text-muted-foreground">{collaborateurs.length} salarié{collaborateurs.length !== 1 ? "s" : ""}{avecAgent ? " + agent" : ""}</p>
           </div>
           {/* Par pôle */}
           {parPole.map(({ pole, etp, count }) => {
@@ -187,6 +205,7 @@ export function GestionSalaries() {
               </div>
             );
           })}
+        </div>
         </div>
       )}
 
