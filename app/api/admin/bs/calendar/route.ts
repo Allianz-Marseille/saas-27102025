@@ -9,8 +9,11 @@ import { parseEvenementsCalendrier } from "@/lib/services/bs-gemini"
  * Retourne les événements bruts + les événements parsés par Gemini.
  */
 export async function GET(req: NextRequest) {
-  const authError = await verifyAdmin(req)
-  if (authError) return authError
+  try {
+    await verifyAdmin(req)
+  } catch {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+  }
 
   const mois = req.nextUrl.searchParams.get("mois")
   if (!mois || !/^\d{4}-\d{2}$/.test(mois)) {
